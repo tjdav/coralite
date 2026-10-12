@@ -32,6 +32,7 @@
   "scripts": {
     "lint:format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
+    "test:smoke": "sh ../../scripts/run-smoke.sh",
     "test:unit": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --test --test-timeout=30000 --test-concurrency=4 --max-old-space-size=2048 \"./tests/unit/**/*.spec.js\"",
     "test:unit:watch": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --test --test-timeout=30000 --test-concurrency=4 --max-old-space-size=2048 --watch \"./tests/unit/**/*.spec.js\"",
     "test:unit:coverage": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --experimental-test-coverage --test --test-timeout=30000 --test-concurrency=4 --max-old-space-size=2048 \"./tests/unit/**/*.spec.js\"",
