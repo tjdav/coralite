@@ -301,38 +301,38 @@ export function findAndExtractScript (code) {
             // Get source slice
             let source = code.slice(value.start, value.end)
             walkAncestorJS(value, {
-              AssignmentExpression (node, ancestorsInClient) {
+              AssignmentExpression (assignNode, ancestorsInClient) {
                 if (
-                  node.left.type === 'MemberExpression' &&
-                  node.left.property.type === 'Identifier' &&
-                  (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML')
+                  assignNode.left.type === 'MemberExpression' &&
+                  assignNode.left.property.type === 'Identifier' &&
+                  (assignNode.left.property.name === 'innerHTML' || assignNode.left.property.name === 'outerHTML')
                 ) {
-                  findHTMLComponents(node.right, [...ancestors, ...ancestorsInClient])
+                  findHTMLComponents(assignNode.right, [...ancestors, ...ancestorsInClient])
                   replacements.push({
-                    start: node.right.start - value.start,
-                    end: node.right.start - value.start,
+                    start: assignNode.right.start - value.start,
+                    end: assignNode.right.start - value.start,
                     replacement: 'processHTML('
                   })
                   replacements.push({
-                    start: node.right.end - value.start,
-                    end: node.right.end - value.start,
+                    start: assignNode.right.end - value.start,
+                    end: assignNode.right.end - value.start,
                     replacement: `, ${instanceIdVar})`
                   })
                 }
               },
-              CallExpression (node, ancestorsInClient) {
+              CallExpression (callNode, ancestorsInClient) {
                 const combinedAncestors = [...ancestors, ...ancestorsInClient]
                 if (
-                  node.callee &&
-                  node.callee.type === 'MemberExpression' &&
-                  node.callee.object &&
-                  node.callee.object.type === 'Identifier' &&
-                  node.callee.object.name === 'document' &&
-                  node.callee.property &&
-                  node.callee.property.type === 'Identifier' &&
-                  node.callee.property.name === 'createElement'
+                  callNode.callee &&
+                  callNode.callee.type === 'MemberExpression' &&
+                  callNode.callee.object &&
+                  callNode.callee.object.type === 'Identifier' &&
+                  callNode.callee.object.name === 'document' &&
+                  callNode.callee.property &&
+                  callNode.callee.property.type === 'Identifier' &&
+                  callNode.callee.property.name === 'createElement'
                 ) {
-                  const arg = node.arguments[0]
+                  const arg = callNode.arguments[0]
                   if (arg) {
                     const values = resolveStringValues(arg, combinedAncestors)
                     let isCustom = false
@@ -345,8 +345,8 @@ export function findAndExtractScript (code) {
 
                     if (isCustom || (arg.type === 'Literal' && typeof arg.value === 'string' && arg.value.includes('-')) || arg.type !== 'Literal') {
                       replacements.push({
-                        start: node.callee.start - value.start,
-                        end: node.callee.end - value.start,
+                        start: callNode.callee.start - value.start,
+                        end: callNode.callee.end - value.start,
                         replacement: 'createCoraliteElement'
                       })
                     }
@@ -354,13 +354,13 @@ export function findAndExtractScript (code) {
                 }
 
                 if (
-                  node.callee &&
-                  node.callee.type === 'MemberExpression' &&
-                  node.callee.property &&
-                  node.callee.property.type === 'Identifier' &&
-                  node.callee.property.name === 'insertAdjacentHTML'
+                  callNode.callee &&
+                  callNode.callee.type === 'MemberExpression' &&
+                  callNode.callee.property &&
+                  callNode.callee.property.type === 'Identifier' &&
+                  callNode.callee.property.name === 'insertAdjacentHTML'
                 ) {
-                  const arg = node.arguments[1]
+                  const arg = callNode.arguments[1]
                   if (arg) {
                     findHTMLComponents(arg, combinedAncestors)
                     replacements.push({
@@ -694,6 +694,7 @@ export function replaceToken ({
         node.attribs[attribute] = String(value)
       }
     } else {
+      // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
       const strVal = value == null ? '' : String(value)
       if (node.attribs[attribute] !== undefined) {
         node.attribs[attribute] = node.attribs[attribute].replace(content, strVal)

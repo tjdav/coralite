@@ -48,6 +48,7 @@ export class AgentTargetError extends Error {
  * Returns a de-duplicated array of valid target keys.
  */
 export function normalizeTargets (target) {
+  // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
   if (target == null || target === '' || target === 'all') {
     return [...ALL_TARGETS]
   }
@@ -74,7 +75,9 @@ export function normalizeTargets (target) {
 
 function interpolate (content, vars) {
   return content.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (match, key) => {
+    // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
     const value = key.split('.').reduce((acc, k) => (acc == null ? acc : acc[k]), vars)
+    // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
     return value == null ? match : String(value)
   })
 }

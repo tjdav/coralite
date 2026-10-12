@@ -366,6 +366,7 @@ export function normalizeObjectFunctions (target, transform = null, seen = new W
         const normalizedString = normalizeFunction(target[key])
         const originalFunction = target[key]
 
+        /** @this {any} */
         const wrapper = function () {
           return originalFunction.apply(this, arguments)
         }
@@ -991,8 +992,8 @@ export function createReactiveProxy (target, onChange, proxies = new WeakMap()) 
   const isArray = Array.isArray(target)
 
   const handler = {
-    get (target, property, receiver) {
-      const value = Reflect.get(target, property, receiver)
+    get (t, property, receiver) {
+      const value = Reflect.get(t, property, receiver)
       if (isArray) {
         return value
       }
@@ -1002,33 +1003,33 @@ export function createReactiveProxy (target, onChange, proxies = new WeakMap()) 
       }
       return value
     },
-    set (target, property, value, receiver) {
-      const oldValue = target[property]
-      if (oldValue === value && property in target) {
+    set (t, property, value, receiver) {
+      const oldValue = t[property]
+      if (oldValue === value && property in t) {
         return true
       }
 
-      const result = Reflect.set(target, property, value, receiver)
+      const result = Reflect.set(t, property, value, receiver)
       if (result) {
         onChange({
           property,
           value,
           oldValue,
-          target
+          target: t
         })
       }
       return result
     },
-    deleteProperty (target, property) {
-      const hadProperty = Object.prototype.hasOwnProperty.call(target, property)
-      const oldValue = target[property]
-      const result = Reflect.deleteProperty(target, property)
+    deleteProperty (t, property) {
+      const hadProperty = Object.prototype.hasOwnProperty.call(t, property)
+      const oldValue = t[property]
+      const result = Reflect.deleteProperty(t, property)
       if (result && hadProperty) {
         onChange({
           property,
           value: undefined,
           oldValue,
-          target,
+          target: t,
           deleted: true
         })
       }
@@ -1060,8 +1061,8 @@ export function createReadOnlyProxy (target, proxies = new WeakMap(), tracker = 
   const hasTracker = tracker !== null
 
   const handler = {
-    get (target, property) {
-      const value = target[property]
+    get (t, property) {
+      const value = t[property]
 
       if (hasTracker && tracker.activeCollector && typeof property === 'string') {
         tracker.activeCollector(property)

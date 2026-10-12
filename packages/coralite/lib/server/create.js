@@ -83,7 +83,7 @@ export async function createCoralite ({
     })
   }
 
-  const path = {
+  const configPath = {
     components: normalize(components),
     pages: normalize(pages)
   }
@@ -100,7 +100,7 @@ export async function createCoralite ({
     ignoreByAttribute,
     skipRenderByAttribute,
     mode,
-    path,
+    path: configPath,
     output: output ? normalize(output) : undefined,
     onComponentBuild,
     testing,
@@ -461,12 +461,13 @@ export async function createCoralite ({
      * @returns {string[]} An array of page pathnames that include the specified component.
      */
     getPagePathsUsingCustomElement: (targetPath) => {
+      let resolvedPath = targetPath
       // @ts-ignore
-      if (targetPath.startsWith(app.options.path.components)) {
+      if (resolvedPath.startsWith(app.options.path.components)) {
         // @ts-ignore
-        targetPath = targetPath.substring(app.options.path.components.length + 1)
+        resolvedPath = resolvedPath.substring(app.options.path.components.length + 1)
       }
-      const item = app.components.getItem(targetPath)
+      const item = app.components.getItem(resolvedPath)
       const results = []
       if (item) {
         const id = item.result.id
@@ -475,8 +476,8 @@ export async function createCoralite ({
           pce.forEach(p => results.push(p))
         }
       } else {
-        // Fallback to searching by tag name directly if targetPath is an ID
-        const pce = app._dependencyGraph.pageCustomElements[targetPath]
+        // Fallback to searching by tag name directly if resolvedPath is an ID
+        const pce = app._dependencyGraph.pageCustomElements[resolvedPath]
         if (pce) {
           pce.forEach(p => results.push(p))
         }

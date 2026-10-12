@@ -195,15 +195,16 @@ export function displayError (message, error) {
     const errorLines = errorDetails.split('\n')
     let firstLine = true
 
-    const errorResult = errorLines.reduce((previousValue, currentValue) => {
+    const errorResult = errorLines.reduce((acc, currentValue) => {
+      let lineOutput = acc
       if (firstLine) {
-        previousValue += colours.red(indent + currentValue + '\n')
+        lineOutput += colours.red(indent + currentValue + '\n')
         firstLine = false
       } else {
-        previousValue += colours.grey(indent + currentValue + '\n')
+        lineOutput += colours.grey(indent + currentValue + '\n')
       }
 
-      return previousValue
+      return lineOutput
     }, '')
     process.stdout.write(errorResult + '\n')
   }
