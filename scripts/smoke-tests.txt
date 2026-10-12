@@ -40,3 +40,4 @@ packages/coralite/tests/unit/client/hydration-store.spec.js
 packages/coralite/tests/unit/plugins/static-assets.spec.js
 packages/coralite/tests/unit/plugins/testing.spec.js
 packages/coralite/tests/unit/lib/shared/page.spec.js
+packages/coralite/tests/unit/lib/server/plugin-e107.spec.js

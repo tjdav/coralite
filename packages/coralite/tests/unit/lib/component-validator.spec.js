@@ -744,7 +744,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     const stateDiag = e107s.find(d => d.message.includes("deprecated top-level 'state'"))
     assert.ok(stateDiag)
 
-    const unknownDiag = e107s.find(d => d.message.includes("unknown option 'unknownOption'"))
+    const unknownDiag = e107s.find(d => d.message.includes('Unknown block "unknownOption" in defineComponent'))
     assert.ok(unknownDiag)
 
     const formDiag = e107s.find(d => d.message.includes("'formAssociated' must be a boolean"))

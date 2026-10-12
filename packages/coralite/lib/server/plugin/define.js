@@ -8,6 +8,16 @@ import { CoraliteError } from '../../shared/errors.js'
 import { validatePluginConfigBlocks, validateValues } from '../../shared/plugin-config-schema.js'
 
 const VALID_MODES = new Set(['development', 'testing', 'production'])
+const ALLOWED_PLUGIN_KEYS = new Set([
+  'name',
+  'config',
+  'server',
+  'client',
+  'dependencies',
+  'modes',
+  'rootDir',
+  'filePath'
+])
 
 /**
  * Validates plugin modes declaration
@@ -125,20 +135,33 @@ function processComponents (path) {
 
 /**
  * Creates a new Coralite plugin instance based on provided configuration options.
- * @param {CoralitePlugin & { config?: Record<string, any>, server?: { config?: Record<string, any>, components?: string[] }, client?: { config?: Record<string, any> } }} options - Plugin configuration object
+ * @param {Partial<CoralitePlugin & { config?: Record<string, any>, server?: { config?: Record<string, any>, components?: string[] }, client?: { config?: Record<string, any> } }>} [options={}] - Plugin configuration object
  * @returns {CoralitePlugin} A configured plugin instance ready to be registered with Coralite
  */
-export function definePlugin ({
-  name,
-  dependencies,
-  depends,
-  modes,
-  rootDir,
-  filePath,
-  config,
-  server,
-  client
-}) {
+export function definePlugin (options = {}) {
+  if (options && typeof options === 'object') {
+    for (const key of Object.keys(options)) {
+      if (key !== 'depends' && !ALLOWED_PLUGIN_KEYS.has(key)) {
+        throw new CoraliteError(
+          `Unknown block "${key}" in definePlugin. Valid blocks are: ${Array.from(ALLOWED_PLUGIN_KEYS).join(', ')}.`,
+          { code: 'CORALITE-E107' }
+        )
+      }
+    }
+  }
+
+  const {
+    name,
+    dependencies,
+    depends,
+    modes,
+    rootDir,
+    filePath,
+    config,
+    server,
+    client
+  } = options
+
   validateNonEmptyString(name, 'name')
   if (depends !== undefined) {
     throw new CoraliteError(

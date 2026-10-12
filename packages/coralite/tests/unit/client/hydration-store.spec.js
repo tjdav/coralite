@@ -162,5 +162,6 @@ describe('Live hydration store', () => {
     const runtimeFile = compiled.outputFiles['coralite-runtime.js'] || Object.values(compiled.outputFiles).find(f => f.path.includes('coralite-runtime'))
     assert.ok(runtimeFile)
     assert.ok(runtimeFile.text.includes('hydrationStore'))
+    await sm.disposeContext()
   })
 })
