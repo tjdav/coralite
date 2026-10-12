@@ -1,0 +1,25 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths () {
+      return [{ id: '42' }, { id: '99' }]
+    },
+    client ({ route, routeAware }) {
+      if (typeof window !== 'undefined') {
+        window.__page_client_route = route
+        window.__plugin_route_via_context = routeAware?.getPluginRoute ? routeAware.getPluginRoute() : undefined
+      }
+    }
+  })
+</script>
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Plugin Route Host Page</title>
+</head>
+<body>
+  <h1>Plugin Route Host Page</h1>
+</body>
+</html>
