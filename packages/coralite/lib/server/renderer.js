@@ -481,18 +481,14 @@ export function createRenderer ({
    * @returns {Promise<CoraliteAnyNode | CoraliteAnyNode[] | void>} The rendered AST node(s) for the component.
    */
   const createComponentElement = async ({ id, state = {}, element, page, root, contextId, index, session, noHydration, head = true, contextFrames = [] }) => {
-    if (!session) {
-      session = _createSession()
-    }
+    const currentSession = session || _createSession()
     const moduleComponent = app.components.getItem(id)
     if (!moduleComponent || !moduleComponent.result) {
       return
     }
 
     const componentId = moduleComponent.result.id
-    if (!contextId) {
-      contextId = session.generateId(componentId)
-    }
+    const currentContextId = contextId || currentSession.generateId(componentId)
 
     let componentState = { ...state }
     let evaluatedScriptMeta = null
@@ -501,7 +497,7 @@ export function createRenderer ({
       const hasAstMutatingHooks = hooks.hasComponentRenderHooks ? hooks.hasComponentRenderHooks() : false
 
       if (moduleComponent.result.__opsCapable && !hasAstMutatingHooks && !noHydration) {
-        session._fragFast = (session._fragFast || 0) + 1
+        currentSession._fragFast = (currentSession._fragFast || 0) + 1
         return await emitFragment({
           id,
           moduleComponent,
@@ -509,9 +505,9 @@ export function createRenderer ({
           element,
           page,
           root,
-          contextId,
+          contextId: currentContextId,
           index,
-          session,
+          session: currentSession,
           noHydration,
           evaluate,
           createComponentElement,
@@ -521,8 +517,8 @@ export function createRenderer ({
         })
       }
 
-      session._fragLegacy = (session._fragLegacy || 0) + 1
-      const instanceId = contextId
+      currentSession._fragLegacy = (currentSession._fragLegacy || 0) + 1
+      const instanceId = currentContextId
       if (head) {
         // @ts-ignore
         if (element && element.attribs) {
@@ -545,7 +541,7 @@ export function createRenderer ({
         attributes: module.values.attributes,
         page,
         element,
-        session,
+        session: currentSession,
         app
       })
       componentState = mappedComponentContext.state
@@ -568,8 +564,8 @@ export function createRenderer ({
       if (module.styles.length) {
         const selector = module.id
         const formattedCss = await _getFormattedCss(moduleComponent, module)
-        if (!session.styles.has(selector)) {
-          session.styles.set(selector, formattedCss)
+        if (!currentSession.styles.has(selector)) {
+          currentSession.styles.set(selector, formattedCss)
         }
       }
 
@@ -583,8 +579,8 @@ export function createRenderer ({
             page,
             root: element || root,
             module,
-            id: contextId,
-            session,
+            id: currentContextId,
+            session: currentSession,
             noHydration
           }
 
@@ -598,16 +594,17 @@ export function createRenderer ({
             page,
             route: page?.route,
             root: element || root,
-            contextId,
-            session,
+            contextId: currentContextId,
+            session: currentSession,
             noHydration,
             mode: app.options.mode,
             contextFrames
           })
         } catch (error) {
-          throw createExecutionError(error, module, moduleComponent, page, contextId)
+          throw createExecutionError(error, module, moduleComponent, page, currentContextId)
         }
 
+        // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
         if (scriptResult && scriptResult.__script__ != null) {
           evaluatedScriptMeta = scriptResult.__script__
           /** @type {any} */
@@ -685,7 +682,7 @@ export function createRenderer ({
             delete inheritedState.__script__
             await _processDependentComponents({
               componentIds: mergedComponents,
-              session,
+              session: currentSession,
               page,
               root,
               state: inheritedState
@@ -696,8 +693,8 @@ export function createRenderer ({
             scriptResult.__script__.state = {}
           }
           if (!noHydration) {
-            session.scripts.add(page.file.pathname, {
-              id: contextId,
+            currentSession.scripts.add(page.file.pathname, {
+              id: currentContextId,
               componentId: module.id,
               page,
               state: scriptResult.__script__.state,
@@ -710,7 +707,7 @@ export function createRenderer ({
         componentState = Object.assign(componentState, scriptResult)
       }
 
-      session.state[contextId] = componentState
+      currentSession.state[currentContextId] = componentState
 
       // Evaluate provided context values and build immutable childContextFrames for SSR
       let childContextFrames = contextFrames
@@ -764,6 +761,7 @@ export function createRenderer ({
         for (let j = 0; j < tokens.length; j++) {
           const token = tokens[j]
           let value = resolveTokenKey(token.name, componentState, page?.route)
+          // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
           if (value == null) {
             value = ''
           }
@@ -784,6 +782,7 @@ export function createRenderer ({
         for (let j = 0; j < tokens.length; j++) {
           const token = tokens[j]
           let value = resolveTokenKey(token.name, componentState, page?.route)
+          // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
           if (value == null) {
             value = ''
           }
@@ -835,8 +834,8 @@ export function createRenderer ({
           continue
         }
 
-        const childContextId = session.generateId(customElement.name)
-        const currentProperties = session.state[childContextId] || {}
+        const childContextId = currentSession.generateId(customElement.name)
+        const currentProperties = currentSession.state[childContextId] || {}
 
         let childState = { ...state }
         if (typeof customElement.attribs === 'object') {
@@ -858,7 +857,7 @@ export function createRenderer ({
           }
         }
 
-        session.state[childContextId] = childState
+        currentSession.state[childContextId] = childState
         const childNoHydration = noHydration || (customElement.attribs && 'no-hydration' in customElement.attribs)
 
         createComponentTasks.push(createComponentElement({
@@ -869,7 +868,7 @@ export function createRenderer ({
           root,
           contextId: childContextId,
           index,
-          session,
+          session: currentSession,
           noHydration: childNoHydration,
           head: false,
           contextFrames: childContextFrames
@@ -916,7 +915,7 @@ export function createRenderer ({
 
             customElement.attribs['data-cid'] = childContextId
             customElement.attribs['data-coralite-initial'] = ''
-            session.componentTags.add(customElement.name)
+            currentSession.componentTags.add(customElement.name)
           }
         }
       }
@@ -930,7 +929,7 @@ export function createRenderer ({
         page,
         root,
         index,
-        session,
+        session: currentSession,
         noHydration,
         contextFrames: childContextFrames
       })
@@ -1040,7 +1039,7 @@ export function createRenderer ({
         attributes: module.values.attributes,
         page,
         element,
-        session,
+        session: currentSession,
         app
       })
 
@@ -1320,7 +1319,7 @@ export function createRenderer ({
     let isFallbackRender = false
     let pageContextFrames = []
 
-    const resolveTokenKey = (key, stateObj, routeObjParam) => {
+    const resolvePageTokenKey = (key, stateObj, routeObjParam) => {
       if (key === 'route') {
         return routeObjParam
       }
@@ -1332,7 +1331,8 @@ export function createRenderer ({
         const parts = key.split('.')
         let curr = stateObj
         for (const p of parts) {
-          if (curr === null || curr === undefined) {
+          // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
+          if (curr == null) {
             return undefined
           }
           curr = curr[p]
@@ -1349,7 +1349,7 @@ export function createRenderer ({
       if (node.type === 'text') {
         if (node.data && node.data.includes('{{')) {
           node.data = node.data.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
-            const val = resolveTokenKey(key, stateObj, routeObjParam)
+            const val = resolvePageTokenKey(key, stateObj, routeObjParam)
             return val !== undefined && val !== null ? String(val) : ''
           })
         }
@@ -1358,7 +1358,7 @@ export function createRenderer ({
           for (const [attrName, attrVal] of Object.entries(node.attribs)) {
             if (typeof attrVal === 'string' && attrVal.includes('{{')) {
               node.attribs[attrName] = attrVal.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
-                const val = resolveTokenKey(key, stateObj, routeObjParam)
+                const val = resolvePageTokenKey(key, stateObj, routeObjParam)
                 return val !== undefined && val !== null ? String(val) : ''
               })
             }
@@ -3166,7 +3166,8 @@ function resolveTokenKey (key, stateObj, routeObjParam) {
     const parts = key.split('.')
     let curr = stateObj
     for (const p of parts) {
-      if (curr === null || curr === undefined) {
+      // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
+      if (curr == null) {
         return undefined
       }
       curr = curr[p]

@@ -18,8 +18,9 @@ export async function release (type, options) {
   const git = simpleGit()
 
   try {
+    let releaseType = type
     // If type is not provided, prompt for it
-    if (!type) {
+    if (!releaseType) {
       const selectedType = await prompts.select({
         message: 'Select release type:',
         options: RELEASE_TYPES.map(t => ({
@@ -32,9 +33,9 @@ export async function release (type, options) {
         process.exit(0)
       }
       // @ts-ignore
-      type = selectedType
-    } else if (!RELEASE_TYPES.includes(type)) {
-      prompts.log.error(`Invalid release type: ${type}. Must be one of: ${RELEASE_TYPES.join(', ')}`)
+      releaseType = selectedType
+    } else if (!RELEASE_TYPES.includes(releaseType)) {
+      prompts.log.error(`Invalid release type: ${releaseType}. Must be one of: ${RELEASE_TYPES.join(', ')}`)
       process.exit(1)
     }
 
@@ -76,7 +77,7 @@ export async function release (type, options) {
     const pkgContent = readFileSync(pkgPath, 'utf8')
     const pkg = JSON.parse(pkgContent)
     const oldVersion = pkg.version
-    const newVersion = calculateNewVersion(oldVersion, type, options.preid || 'rc')
+    const newVersion = calculateNewVersion(oldVersion, releaseType, options.preid || 'rc')
 
     prompts.log.info('Release Plan:')
     console.log(`  ${pkg.name}: ${oldVersion} → ${newVersion}`)

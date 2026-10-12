@@ -2241,6 +2241,7 @@ export class CoraliteElement extends BaseElement {
       },
 
       set (t, p, v) {
+        let nextValue = v
         if (!self._assertNotObservingStateMutation(p)) {
           return true
         }
@@ -2250,7 +2251,7 @@ export class CoraliteElement extends BaseElement {
         }
         if (p === 'errors') {
           const existingKeys = Object.keys(errorsTarget)
-          const newKeys = (v && typeof v === 'object') ? Object.keys(v) : []
+          const newKeys = (nextValue && typeof nextValue === 'object') ? Object.keys(nextValue) : []
           const affectedKeys = new Set([...existingKeys, ...newKeys])
 
           for (const key of existingKeys) {
@@ -2261,9 +2262,9 @@ export class CoraliteElement extends BaseElement {
             target['error_' + kebabName] = ''
           }
 
-          if (v && typeof v === 'object') {
-            for (const key of Object.keys(v)) {
-              const val = v[key]
+          if (nextValue && typeof nextValue === 'object') {
+            for (const key of Object.keys(nextValue)) {
+              const val = nextValue[key]
               errorsTarget[key] = val
               const camelName = kebabToCamel(key)
               const kebabName = camelToKebab(camelName)
@@ -2295,7 +2296,7 @@ export class CoraliteElement extends BaseElement {
           kebabName = camelToKebab(camelName)
           const schema = options.attributes[camelName] || options.attributes[p]
           if (schema) {
-            const res = validateAttributeValue(v, schema, camelName, options.componentId, {
+            const res = validateAttributeValue(nextValue, schema, camelName, options.componentId, {
               instanceId: self._instanceId,
               graceful: true
             })
@@ -2323,16 +2324,18 @@ export class CoraliteElement extends BaseElement {
               self._scheduleUpdate()
               return true
             }
-            v = res.value !== undefined ? res.value : v
+            if (res.value !== undefined) {
+              nextValue = res.value
+            }
           }
         }
 
         const oldValue = t[p]
-        if (oldValue === v) {
+        if (oldValue === nextValue) {
           return true
         }
 
-        t[p] = v
+        t[p] = nextValue
 
         if (isStrProp) {
           if (!kebabName) {
@@ -4353,6 +4356,7 @@ export async function setupPageRuntime (pageConfig) {
       const parts = key.split('.')
       let curr = stateProxy
       for (const p of parts) {
+        // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
         if (curr == null) {
           return undefined
         }

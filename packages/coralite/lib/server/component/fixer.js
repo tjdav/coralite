@@ -211,15 +211,13 @@ export function generateColorizedDiff (oldCode, newCode, filePath = '') {
 export function applyComponentFixes (sourceCode, diagnostics = null, options = {}) {
   const filePath = options.filePath || ''
 
-  if (!diagnostics) {
-    const report = validateComponentSource(sourceCode, filePath)
-    diagnostics = report.diagnostics
-  }
+  const effectiveDiagnostics = diagnostics || validateComponentSource(sourceCode, filePath).diagnostics
+  const diagnosticsList = effectiveDiagnostics
 
   let code = sourceCode
   const fixesApplied = []
 
-  const fixableDiagnostics = diagnostics.filter(d => Boolean(d.fix && d.fix.action))
+  const fixableDiagnostics = diagnosticsList.filter(d => Boolean(d.fix && d.fix.action))
 
   if (fixableDiagnostics.length === 0) {
     return {
@@ -234,7 +232,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
   const gettersToInject = []
 
   // 1.1 CORALITE-E201 (Template Expression Lifting)
-  const e201Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E201' && d.fix)
+  const e201Diagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E201' && d.fix)
   for (const diag of e201Diagnostics) {
     const getterInfo = diag.fix.getter
     if (!getterInfo) {
@@ -264,7 +262,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
   }
 
   // 1.2 CORALITE-E202 (Single-Candidate Ref Injection)
-  const e202Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E202' && d.fix?.action === 'inject_ref')
+  const e202Diagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E202' && d.fix?.action === 'inject_ref')
   for (const diag of e202Diagnostics) {
     const matchMsg = diag.message.match(/Missing ref "([^"]+)"/)
     const strippedRef = matchMsg ? matchMsg[1] : null
@@ -377,7 +375,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
   }
 
   // 1.4 CORALITE-W402 (Unused Ref Attribute Removal)
-  const w402Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-W402' && d.fix?.action === 'remove_unused_ref')
+  const w402Diagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-W402' && d.fix?.action === 'remove_unused_ref')
   if (w402Diagnostics.length > 0) {
     const templateBlock = extractTemplateBlock(code)
     if (templateBlock) {
@@ -423,7 +421,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
   }
 
   // 1.3 CORALITE-E203 (Inline Event Listener Removal)
-  const e203Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E203' && d.fix?.action === 'remove_attribute')
+  const e203Diagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E203' && d.fix?.action === 'remove_attribute')
   if (e203Diagnostics.length > 0) {
     const templateBlock = extractTemplateBlock(code)
     if (templateBlock) {
@@ -499,7 +497,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
       })
 
       // 2.0 CORALITE-E105 (Rewrite getter (state) context to ({ state }))
-      const e105GetterDiagnostics = diagnostics.filter(d => d.code === 'CORALITE-E105' && d.fix?.action === 'rewrite_getter_context')
+      const e105GetterDiagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E105' && d.fix?.action === 'rewrite_getter_context')
       if (e105GetterDiagnostics.length > 0) {
         const getterReplacements = []
 
@@ -586,7 +584,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
       }
 
       // 2.0 CORALITE-E105 (Rewrite context.attributes to context.state)
-      const e105Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E105' && d.fix?.action === 'rewrite_context_attributes')
+      const e105Diagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E105' && d.fix?.action === 'rewrite_context_attributes')
       if (e105Diagnostics.length > 0) {
         const e105Replacements = []
 
@@ -667,7 +665,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
       }
 
       // 2.0 CORALITE-W204 (Unwrap Redundant Ref Guards)
-      const w204Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-W204' && d.fix?.action === 'unwrap_ref_guard')
+      const w204Diagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-W204' && d.fix?.action === 'unwrap_ref_guard')
       if (w204Diagnostics.length > 0) {
         const scriptStartLine = isHtmlFile && scriptContent
           ? (code.slice(0, scriptStart).split('\n').length - 1)
@@ -724,7 +722,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
       }
 
       // 2.1 CORALITE-E102 (Attribute Mutex Resolution: strip default when required: true)
-      const e102Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E102')
+      const e102Diagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E102')
       if (e102Diagnostics.length > 0) {
         walkAncestorJS(ast, {
           CallExpression (node) {
@@ -828,7 +826,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
       }
 
       // 2.3 CORALITE-E301 (Smart Client Dynamic Import Rewrite)
-      const e301Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E301' && d.fix?.action === 'dynamic_import')
+      const e301Diagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E301' && d.fix?.action === 'dynamic_import')
       if (e301Diagnostics.length > 0) {
         const targetSymbols = new Set()
         const sharedSymbols = new Set()

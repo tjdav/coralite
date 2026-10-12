@@ -126,11 +126,11 @@ export function processHTML (html, instanceId) {
     return html
   }
 
-  html = sanitizeTokenAttributes(html)
+  const sanitizedHtml = sanitizeTokenAttributes(html)
 
   if (instanceId) {
     const prefix = instanceId + '__'
-    return html.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
+    return sanitizedHtml.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
       let newAttrs = attrs
       const refRegex = /\s+ref\s*=\s*(['"])(.*?)\1/g
       newAttrs = newAttrs.replace(refRegex, (attrMatch, quote, refValue) => {
@@ -145,7 +145,7 @@ export function processHTML (html, instanceId) {
     })
   }
 
-  return html
+  return sanitizedHtml
 }
 
 export { defineComponent, definePlugin, createContext, ContextRequestEvent }

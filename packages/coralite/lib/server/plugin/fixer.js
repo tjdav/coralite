@@ -22,15 +22,13 @@ export { generateColorizedDiff }
 export function applyPluginFixes (sourceCode, diagnostics = null, options = {}) {
   const filePath = options.filePath || ''
 
-  if (!diagnostics) {
-    const report = validatePluginSource(sourceCode, filePath)
-    diagnostics = report.diagnostics
-  }
+  const effectiveDiagnostics = diagnostics || validatePluginSource(sourceCode, filePath).diagnostics
+  const diagnosticsList = effectiveDiagnostics
 
   let code = sourceCode
   const fixesApplied = []
 
-  const fixableDiagnostics = diagnostics.filter(d => Boolean(d.fix && d.fix.action))
+  const fixableDiagnostics = diagnosticsList.filter(d => Boolean(d.fix && d.fix.action))
 
   if (fixableDiagnostics.length === 0) {
     return {
@@ -51,7 +49,7 @@ export function applyPluginFixes (sourceCode, diagnostics = null, options = {}) 
     })
 
     // 1.1 CORALITE-P201 (Wrap Context into Two-Phase Curried Function)
-    const p201Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-P201' && d.fix?.action === 'wrap_two_phase_context')
+    const p201Diagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-P201' && d.fix?.action === 'wrap_two_phase_context')
     if (p201Diagnostics.length > 0) {
       /** @type {Array<{ start: number, end: number, replacement: string }>} */
       const replacements = []
@@ -117,7 +115,7 @@ export function applyPluginFixes (sourceCode, diagnostics = null, options = {}) 
     }
 
     // 1.2 CORALITE-P401 (Wrap Return Object in definePlugin and Inject Import if missing)
-    const p401Diagnostics = diagnostics.filter(d => (d.code === 'CORALITE-P401' || d.code === 'NO_DEFINE_PLUGIN_CALL') && d.fix?.action === 'wrap_define_plugin')
+    const p401Diagnostics = diagnosticsList.filter(d => (d.code === 'CORALITE-P401' || d.code === 'NO_DEFINE_PLUGIN_CALL') && d.fix?.action === 'wrap_define_plugin')
     if (p401Diagnostics.length > 0) {
       let exportNode = null
       for (const stmt of ast.body) {

@@ -174,7 +174,6 @@ export async function buildCommand (config, options, logger = null) {
         await mkdir(dirname(outFile), { recursive: true })
         await writeFile(outFile, file.text)
         if (options.verbose) {
-          const dash = colours.gray(' ─ ')
           log(toTime() + toMS(0) + dash + outFile + '\n')
         }
       })

@@ -202,9 +202,9 @@ async function createProject () {
   if (!template) {
     const selectedTemplate = await prompts.select({
       message: 'Please choose from below: ',
-      options: TEMPLATES.map((template) => ({
-        label: template.colour(template.name),
-        value: template.value
+      options: TEMPLATES.map((tmpl) => ({
+        label: tmpl.colour(tmpl.name),
+        value: tmpl.value
       }))
     })
 
@@ -264,11 +264,11 @@ async function createProject () {
   }
 
   // update package.json
-  const pkg = JSON.parse(
+  const templatePkg = JSON.parse(
     fs.readFileSync(path.join(templateDir, 'package.json'), 'utf-8')
   )
-  pkg.name = packageName
-  write('package.json', JSON.stringify(pkg, null, 2) + '\n')
+  templatePkg.name = packageName
+  write('package.json', JSON.stringify(templatePkg, null, 2) + '\n')
 
   if (includeAi) {
     const { written } = generateAgentRules({

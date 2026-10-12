@@ -431,7 +431,7 @@ async function server (config, options, runMode = 'dev') {
             }
 
             const start = process.hrtime()
-            let duration, dash = colours.gray(' ─ ')
+            const dash = colours.gray(' ─ ')
 
             let rebuildScript = '</body>\n'
 
@@ -447,11 +447,11 @@ async function server (config, options, runMode = 'dev') {
             }
 
             // build the HTML for this page using the built-in compiler.
-            const documents = await coralite.build(pathname, async (result) => {
+            const documents = await coralite.build(pathname, async (buildResult) => {
               // inject a script to enable live reload via Server-Sent Events
-              const injectedHtml = result.content.replace(/<\/body>/i, rebuildScript)
+              const injectedHtml = buildResult.content.replace(/<\/body>/i, rebuildScript)
 
-              const relPath = relative(config.pages, result.path.pathname)
+              const relPath = relative(config.pages, buildResult.path.pathname)
               const normalizedKey = relPath.split(sep).join('/')
 
               // map in memory page to source
@@ -465,9 +465,9 @@ async function server (config, options, runMode = 'dev') {
               }
 
               return {
-                path: result.path,
+                path: buildResult.path,
                 content: injectedHtml,
-                duration: result.duration
+                duration: buildResult.duration
               }
             })
 
@@ -489,15 +489,15 @@ async function server (config, options, runMode = 'dev') {
             }
 
             // prints time and path to the file that has been changed or added.
-            duration = process.hrtime(start)
-            process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(duration) + dash + '/' + cacheKey + '\n')
+            const compileDuration = process.hrtime(start)
+            process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(compileDuration) + dash + '/' + cacheKey + '\n')
 
             // find the document that matches the request path
-            const doc = documents.find(doc => {
-              if (!doc) {
+            const doc = documents.find(matchedDoc => {
+              if (!matchedDoc) {
                 return false
               }
-              const relPath = relative(config.pages, doc.path.pathname)
+              const relPath = relative(config.pages, matchedDoc.path.pathname)
               const normalizedKey = relPath.split(sep).join('/')
               return normalizedKey === cacheKey
             })
@@ -684,13 +684,13 @@ async function server (config, options, runMode = 'dev') {
 
     const listener = app.listen(port, () => {
       // @ts-ignore
-      const access = localAccess({ port })
+      const netAccess = localAccess({ port })
       const PAD = '  '
       const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
       // print server status
       process.stdout.write('\n' + PAD + colours.green('Coralite is ready! 🚀\n\n'))
-      process.stdout.write(PAD + `${colours.bold('- Local:')}      ${access.local}\n\n`)
-      process.stdout.write(PAD + `${colours.bold('- Network:')}    ${access.network}\n\n`)
+      process.stdout.write(PAD + `${colours.bold('- Local:')}      ${netAccess.local}\n\n`)
+      process.stdout.write(PAD + `${colours.bold('- Network:')}    ${netAccess.network}\n\n`)
       process.stdout.write(border + colours.inverse(' LOGS ') + border + '\n\n')
     })
 

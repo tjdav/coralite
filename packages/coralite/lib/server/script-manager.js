@@ -42,6 +42,17 @@ export const isWhitespace = (char) => {
  * @param {string} [content] - The content of the function to check.
  * @returns {boolean} - Returns true if the function matches the empty fallback signature.
  */
+/**
+ * Helper to extract client configuration from a script module or plugin.
+ * @param {any} module
+ * @returns {any}
+ */
+export function getPluginConfig (module) {
+  return module.client?.config !== undefined
+    ? module.client.config
+    : (module.config !== undefined ? module.config : {})
+}
+
 export const isEmptyFunction = (content) => {
   if (!content) {
     return true
@@ -342,7 +353,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
   for (let i = 0; i < this.scriptModules.length; i++) {
     const module = this.scriptModules[i]
     const pluginName = module.client?.name || module.name || `plugin-${i}`
-    const rawConfig = module.client?.config !== undefined ? module.client.config : (module.config !== undefined ? module.config : {})
+    const rawConfig = getPluginConfig(module)
     try {
       validateSerializable(rawConfig, `plugin "${pluginName}" client.config`)
     } catch (err) {
@@ -933,7 +944,7 @@ export default {
               }
 
               let contents = ''
-              const rawClientConfig = module.client?.config !== undefined ? module.client.config : (module.config !== undefined ? module.config : {})
+              const rawClientConfig = getPluginConfig(module)
               const configContent = `const pluginConfig = Object.freeze(${serialize(rawClientConfig)});`
 
               contents += configContent + '\n'
