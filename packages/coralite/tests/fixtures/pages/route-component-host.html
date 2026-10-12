@@ -1,0 +1,24 @@
+<script type="module">
+  import { definePage } from 'coralite'
+  export default definePage({
+    paths () {
+      return [{ id: 'item-1' }]
+    }
+  })
+</script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Route Component Host</title>
+</head>
+<body>
+  <route-in-component-getters></route-in-component-getters>
+  <route-in-component-slots>
+    <p>Slotted content</p>
+  </route-in-component-slots>
+  <route-in-component-provide>
+    <consume-route-from-component></consume-route-from-component>
+  </route-in-component-provide>
+  <route-in-component-client></route-in-component-client>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<template id="route-in-component-client">
+  <div class="client-route-target">Client Route Target</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ route, root }) => {
+      root.dataset.routePath = route.path
+    }
+  })
+</script>
