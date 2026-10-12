@@ -505,10 +505,12 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         try {
           const runtime = (typeof window !== 'undefined' && window.__coralite__) || {};
           const app = (typeof window !== 'undefined' && (window.__coralite__?.app || window.__coralite__)) || {};
+          const route = typeof window !== 'undefined' && window.__coralite_hydration__ ? window.__coralite_hydration__.__route__ : undefined;
           await p.init({
             config: p.config || {},
             runtime,
             app,
+            route,
             onCleanup
           });
         } catch (error) {
@@ -848,7 +850,7 @@ export default {
               const pluginFilePath = module?.filePath || module?.client?.filePath
               if (pluginFilePath && !pluginFilePath.startsWith('/component-')) {
                 return {
-                  path: pluginFilePath,
+                  path: `${pluginFilePath}?coralite-script-index=${index}`,
                   pluginData: {
                     isScriptModule: true,
                     moduleIndex: index
@@ -963,6 +965,7 @@ export default {
                 contents += `    const pluginContext = new Proxy(globalContext, {
                             get (target, prop) {
                               if (prop === 'config') return pluginConfig;
+                              if (prop === 'route') return typeof window !== 'undefined' && window.__coralite_hydration__ ? window.__coralite_hydration__.__route__ : undefined;
                               if (prop in target) return target[prop];
                               return undefined;
                             },
@@ -1053,6 +1056,7 @@ export default {
                 contents += `    const pluginContext = new Proxy(globalContext, {
                             get (target, prop) {
                               if (prop === 'config') return pluginConfig;
+                              if (prop === 'route') return typeof window !== 'undefined' && window.__coralite_hydration__ ? window.__coralite_hydration__.__route__ : undefined;
                               if (prop in target) return target[prop];
                               return undefined;
                             },
