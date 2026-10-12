@@ -71,9 +71,9 @@ Ordered verification commands:
 2. `pnpm lint`
 3. `pnpm build`
 4. `pnpm build:html:dev`
-5. `pnpm test:unit`
+5. `pnpm --filter coralite test:smoke`
 
-All must exit clean.
+All must exit clean for per-task verification (`pnpm test:unit` runs on merge to `v1`).
 
 ## 8. Naming
 

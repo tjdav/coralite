@@ -18,7 +18,7 @@ Run commands scoped to `coralite`:
 - `pnpm --filter coralite lint:format`
 - `pnpm --filter coralite lint`
 - `pnpm --filter coralite build`
-- `pnpm --filter coralite test:unit`
+- `pnpm --filter coralite test:smoke`
 
 ## 4. Reserved names
 
