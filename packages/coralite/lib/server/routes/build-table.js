@@ -45,6 +45,11 @@ export function buildRouteTable (pages) {
     }
 
     const page = item.result?.page || item.page || item
+    if (page?.is404) {
+      // The 404 page is not a matchable route
+      continue
+    }
+
     const routePattern = page?.routePattern
     if (!routePattern) {
       // Pages without a routePattern are skipped

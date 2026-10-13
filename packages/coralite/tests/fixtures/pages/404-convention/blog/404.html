@@ -1,0 +1,16 @@
+<script>
+import { definePage } from 'coralite'
+
+export default definePage({
+  server ({ route }) {
+    return {
+      blogMessage: 'Blog Specific 404 Page',
+      routePath: route.path
+    }
+  }
+})
+</script>
+
+<title>Blog Not Found</title>
+<h1>{{ blogMessage }}</h1>
+<p>Blog route: {{ routePath }}</p>

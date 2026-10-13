@@ -38,7 +38,7 @@ export function createPageHandlers ({
   const onFileSetLocal = async (data) => {
     // @ts-ignore
     const rootPath = data.type === 'component' ? app.options.path.components : app.options.path.pages
-    const relPath = relative(rootPath, data.path.pathname)
+    const relPath = relative(rootPath, data.path.pathname).replace(/\\/g, '/')
     const urlPathname = pathToFileURL(join('/', relPath)).pathname
 
     const { pattern: routePattern, params: routeParams, segments: routeSegments } = parsePagePattern(data.path.pathname, rootPath)
@@ -69,6 +69,7 @@ export function createPageHandlers ({
       routePattern,
       routeParams,
       routeSegments,
+      is404: relPath === '404.html',
       enumeratedPaths: []
     }
 

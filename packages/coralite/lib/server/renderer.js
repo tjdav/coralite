@@ -68,9 +68,18 @@ import { validateAndNormalizeRedirect, generateRedirectStub } from './page/redir
  * @param {string} patternPath - Raw pattern or concrete route path
  * @param {boolean} cleanUrls - Whether clean URLs are enabled
  * @param {string} pagesRoot - Root directory for pages
+ * @param {boolean} [is404=false] - Whether this page is the root 404 page
  * @returns {{ routePath: string, relOutPath: string, targetOutPath: string }} Computed route and output paths
  */
-export function computeRouteAndOutputPath (patternPath, cleanUrls, pagesRoot) {
+export function computeRouteAndOutputPath (patternPath, cleanUrls, pagesRoot, is404 = false) {
+  if (is404) {
+    return {
+      routePath: '/404',
+      relOutPath: '404.html',
+      targetOutPath: join(pagesRoot, '404.html')
+    }
+  }
+
   let clean = patternPath || '/'
   if (clean !== '/') {
     if (clean.endsWith('/')) {
@@ -2869,7 +2878,7 @@ export function createRenderer ({
       } else {
         const pagesRoot = normalizedOptions.path.pages
         const staticPattern = pageObj?.routePattern || pageObj?.url?.pathname || '/'
-        const { routePath, targetOutPath } = computeRouteAndOutputPath(staticPattern, normalizedOptions.cleanUrls, pagesRoot)
+        const { routePath, targetOutPath } = computeRouteAndOutputPath(staticPattern, normalizedOptions.cleanUrls, pagesRoot, pageObj?.is404)
         const targetRoute = {
           path: routePath,
           pattern: pageObj?.route?.pattern || staticPattern,
@@ -2883,6 +2892,22 @@ export function createRenderer ({
           targetOutPath,
           targetRoute
         })
+      }
+    }
+
+    const outPathToTaskMap = new Map()
+    for (const task of renderTasks) {
+      if (outPathToTaskMap.has(task.targetOutPath)) {
+        const existingTask = outPathToTaskMap.get(task.targetOutPath)
+        const existingPagePath = existingTask.pageItem.path?.pathname || existingTask.pageItem.file?.pathname || ''
+        const currentPagePath = task.pageItem.path?.pathname || task.pageItem.file?.pathname || ''
+        if (existingPagePath !== currentPagePath) {
+          throw new CoraliteBuildError(
+            `Output path collision detected: pages "${existingPagePath}" and "${currentPagePath}" both produce output path "${task.targetOutPath}".`
+          )
+        }
+      } else {
+        outPathToTaskMap.set(task.targetOutPath, task)
       }
     }
 

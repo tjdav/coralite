@@ -1,0 +1,37 @@
+<script>
+import { definePage } from 'coralite'
+
+export default definePage({
+  server ({ route }) {
+    return {
+      message: 'Custom 404 Page',
+      visitedPath: route.path
+    }
+  },
+  getters: {
+    formattedMessage ({ state }) {
+      return state.message.toUpperCase()
+    }
+  },
+  style: {
+    '--bg-color': '#f00'
+  },
+  provide: {
+    notFoundContext: '404-active'
+  },
+  client ({ state, route }) {
+    window.__404_client_ran__ = true
+    window.__404_route_path__ = route.path
+  }
+})
+</script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Page Not Found</title>
+</head>
+<body>
+  <h1>{{ formattedMessage }}</h1>
+  <p>Requested: {{ route.path }}</p>
+</body>
+</html>
