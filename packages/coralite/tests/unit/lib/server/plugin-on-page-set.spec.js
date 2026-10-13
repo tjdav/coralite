@@ -457,4 +457,94 @@ describe('Task P2.06 - onPageSet return { paths } plugin route enumeration', () 
       })
     }
   })
+
+  it('plugin returns duplicate paths -> throws CoraliteBuildError naming plugin source', async () => {
+    const tempPagesDir = await createTempPagesDir({
+      '[slug].html': '<h1>Post</h1>'
+    })
+
+    try {
+      const plugin = definePlugin({
+        name: 'duplicate-plugin',
+        server: {
+          onPageSet () {
+            return { paths: [{ slug: 'dupe' }, { slug: 'dupe' }] }
+          }
+        }
+      })
+
+      const app = await createCoralite({
+        components: componentsDir,
+        pages: tempPagesDir,
+        plugins: [plugin],
+        mode: 'testing'
+      })
+
+      await assert.rejects(
+        async () => {
+          await app.build('[slug].html')
+        },
+        (err) => {
+          assert.ok(err.message.includes('Duplicate path in'))
+          assert.ok(err.message.includes('Source: plugin "duplicate-plugin"'))
+          return true
+        }
+      )
+    } finally {
+      await rm(tempPagesDir, {
+        recursive: true,
+        force: true
+      })
+    }
+  })
+
+  it('plugin returns path colliding with definePage.paths -> throws CoraliteBuildError naming both sources', async () => {
+    const tempPagesDir = await createTempPagesDir({
+      '[slug].html': `
+        <h1>Post</h1>
+        <script>
+          import { definePage } from 'coralite'
+          export default definePage({
+            paths () {
+              return [{ slug: 'conflict-slug' }]
+            }
+          })
+        </script>
+      `
+    })
+
+    try {
+      const plugin = definePlugin({
+        name: 'colliding-plugin',
+        server: {
+          onPageSet () {
+            return { paths: [{ slug: 'conflict-slug' }] }
+          }
+        }
+      })
+
+      const app = await createCoralite({
+        components: componentsDir,
+        pages: tempPagesDir,
+        plugins: [plugin],
+        mode: 'testing'
+      })
+
+      await assert.rejects(
+        async () => {
+          await app.build('[slug].html')
+        },
+        (err) => {
+          assert.ok(err.message.includes('Conflicting path in'))
+          assert.ok(err.message.includes('Sources: definePage.paths and plugin "colliding-plugin"'))
+          return true
+        }
+      )
+    } finally {
+      await rm(tempPagesDir, {
+        recursive: true,
+        force: true
+      })
+    }
+  })
 })

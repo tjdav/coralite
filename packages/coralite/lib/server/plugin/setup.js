@@ -263,10 +263,14 @@ export async function setupPlugins ({
       if (plugin.server.components) {
         plugin.server.components.forEach(c => plugins.components.push(c))
       }
-      const wrapHook = (hook) => (ctx) => {
-        const hookContext = Object.create(ctx)
-        hookContext.config = hookConfig
-        return hook(hookContext)
+      const wrapHook = (hook) => {
+        const wrapped = (ctx) => {
+          const hookContext = Object.create(ctx)
+          hookContext.config = hookConfig
+          return hook(hookContext)
+        }
+        wrapped._pluginName = plugin.name
+        return wrapped
       }
 
       if (plugin.server.onPageSet) {
