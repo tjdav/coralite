@@ -1,0 +1,13 @@
+<template id="x-server-with-shadowed">
+  <div>{{ val }}</div>
+</template>
+
+<script>
+export default defineComponent({
+  server() {
+    const headers = { 'content-type': 'text/plain' }
+    console.log(headers)
+    return { val: 'test' }
+  }
+})
+</script>

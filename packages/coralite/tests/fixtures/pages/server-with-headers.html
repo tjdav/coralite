@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Page with headers</title>
+    <script>
+      export default definePage({
+        server() {
+          console.log(headers)
+          return { pageTitle: 'Test' }
+        }
+      })
+    </script>
+  </head>
+  <body>
+    <h1>{{ pageTitle }}</h1>
+  </body>
+</html>

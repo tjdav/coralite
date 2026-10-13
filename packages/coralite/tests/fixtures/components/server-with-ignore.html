@@ -1,0 +1,13 @@
+<template id="x-server-with-ignore">
+  <div>{{ val }}</div>
+</template>
+
+<!-- coralite-ignore E401 -->
+<script>
+export default defineComponent({
+  server() {
+    console.log(headers)
+    return { val: 'test' }
+  }
+})
+</script>
