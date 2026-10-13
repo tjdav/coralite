@@ -1,0 +1,27 @@
+<script>
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths() {
+      return [
+        { id: '1' },
+        { id: '2' }
+      ]
+    },
+    server({ route }) {
+      if (route.params.id === '1') {
+        return {
+          __redirect: {
+            to: '/target-1'
+          }
+        }
+      }
+      return {
+        id: route.params.id,
+        title: 'Normal Page 2'
+      }
+    }
+  })
+</script>
+
+<h1>Page ID: {{ id }}</h1>

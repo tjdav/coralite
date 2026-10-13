@@ -1,0 +1,15 @@
+<script>
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server() {
+      return {
+        __redirect: {
+          to: 'https://example.com/external'
+        }
+      }
+    }
+  })
+</script>
+
+<h1>External Redirect Page</h1>
