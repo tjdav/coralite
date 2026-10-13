@@ -142,7 +142,18 @@ describe('Page route param extraction and paths validation', () => {
       }
 
       const res = await handlers.onPageSet(data)
+      assert.strictEqual(res.value.page.routePattern, '/posts/:id')
       assert.deepEqual(res.value.page.routeParams, ['id'])
+      assert.deepEqual(res.value.page.routeSegments, [
+        {
+          type: 'static',
+          value: 'posts'
+        },
+        {
+          type: 'param',
+          value: 'id'
+        }
+      ])
       assert.deepEqual(res.value.page.enumeratedPaths, [{ id: 'intro' }, { id: 'advanced' }])
     })
 
@@ -312,7 +323,14 @@ describe('Page route param extraction and paths validation', () => {
       }
 
       const res = await handlers.onPageSet(data)
+      assert.strictEqual(res.value.page.routePattern, '/about')
       assert.deepStrictEqual(res.value.page.routeParams, [])
+      assert.deepStrictEqual(res.value.page.routeSegments, [
+        {
+          type: 'static',
+          value: 'about'
+        }
+      ])
       assert.deepStrictEqual(res.value.page.enumeratedPaths, [])
     })
 
