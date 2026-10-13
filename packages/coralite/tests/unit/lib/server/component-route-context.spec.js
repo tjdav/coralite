@@ -187,7 +187,7 @@ describe('Server-side Route Context in Component Blocks', () => {
         import { defineComponent } from 'coralite'
         export default defineComponent({
           slots: {
-            default (nodes, { route }) {
+            default ({ nodes, route }) {
               return nodes.map(n => {
                 if (n.attribs) {
                   n.attribs['data-slot-route'] = route.path

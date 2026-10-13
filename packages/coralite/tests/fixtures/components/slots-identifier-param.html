@@ -1,0 +1,13 @@
+<template id="x-slots-identifier-param">
+  <div><slot></slot></div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  slots: {
+    default: (context) => context.nodes
+  }
+})
+</script>

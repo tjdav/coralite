@@ -5,6 +5,7 @@ import kleur from 'kleur'
 import { validateComponentSource } from './validator.js'
 import { kebabToCamel, camelToKebab, indexOfCI, extractTemplateBlock } from '../../shared/core.js'
 import { extractInlineExpression } from '../../shared/diagnostics.js'
+import { applySlotsFixes } from '../slots/fixer.js'
 
 const INTERACTIVE_TAGS = new Set(['button', 'input', 'form', 'a', 'select', 'textarea'])
 
@@ -495,6 +496,22 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
         locations: true,
         ranges: true
       })
+
+      // 2.0 CORALITE-E105 (Slots context migration)
+      const e105SlotsDiagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E105' && d.fix?.action === 'slots_context_migration')
+      if (e105SlotsDiagnostics.length > 0) {
+        const slotsRes = applySlotsFixes(ast, scriptContent)
+        if (slotsRes.fixesApplied.length > 0) {
+          scriptContent = slotsRes.scriptContent
+          fixesApplied.push(...slotsRes.fixesApplied)
+          ast = parseJS(scriptContent, {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            locations: true,
+            ranges: true
+          })
+        }
+      }
 
       // 2.0 CORALITE-E105 (Rewrite getter/style (state) context to ({ state }))
       const e105GetterDiagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E105' && (d.fix?.action === 'rewrite_getter_context' || d.fix?.action === 'style_context_migration'))

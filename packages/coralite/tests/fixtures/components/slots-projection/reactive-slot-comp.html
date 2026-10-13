@@ -21,19 +21,19 @@
       statusText: String
     },
     slots: {
-      badge (nodes, state) {
+      badge ({ nodes, state }) {
         if (!state.badgeCount || state.badgeCount <= 0) {
           return null
         }
         return `<span class="badge-item">${state.badgeCount}</span>`
       },
-      status (nodes, state) {
+      status ({ nodes, state }) {
         if (!state.statusText) {
           return null
         }
         return `<span class="status-indicator">${state.statusText}</span>`
       },
-      custom (nodes, state) {
+      custom ({ nodes, state }) {
         if (!state.customBadge) {
           return null
         }

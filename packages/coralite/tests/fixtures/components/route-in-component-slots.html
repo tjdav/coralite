@@ -7,7 +7,7 @@
   import { defineComponent } from 'coralite'
   export default defineComponent({
     slots: {
-      default (nodes, { route }) {
+      default ({ nodes, route }) {
         return nodes.map(node => {
           if (node.attribs) {
             node.attribs['data-route'] = route.path

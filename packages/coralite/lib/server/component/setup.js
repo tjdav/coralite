@@ -404,6 +404,8 @@ async function _processServerSlots (slots, state, root, context, app, module) {
       }
 
       const slotContext = new Proxy({
+        ...context,
+        nodes: slotContent,
         state,
         route,
         root: root || null,
@@ -413,9 +415,10 @@ async function _processServerSlots (slots, state, root, context, app, module) {
         },
         emit: () => false,
         signal: NOOP_SIGNAL,
+        isServer: true,
+        isClient: false,
         // @ts-ignore
-        instanceId: context.instanceId || module.id,
-        ...context
+        instanceId: context?.instanceId || module.id
       }, {
         get (target, prop, receiver) {
           if (typeof prop === 'symbol') {
@@ -454,7 +457,7 @@ async function _processServerSlots (slots, state, root, context, app, module) {
 
       let result
       try {
-        result = computedSlot(slotContent, slotContext)
+        result = computedSlot(slotContext)
         result = result && typeof result.then === 'function' ? await result : result
       } catch {
         // Gracefully catch browser-only API access or SSR errors, falling back to original slot content

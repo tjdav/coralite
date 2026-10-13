@@ -778,8 +778,8 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
       color: ({ state }) => state.count > 0 ? 'red' : 'blue'
     },
     slots: {
-      default (context) {
-        return context.state.count > 0 ? 'Active' : 'Empty'
+      default ({ state }) {
+        return state.count > 0 ? 'Active' : 'Empty'
       }
     }
   })
@@ -1156,8 +1156,8 @@ ${templateLines}
         import { defineComponent } from 'coralite'
         export default defineComponent({
           slots: {
-            header (context) { return 'Header' },
-            default (context) { return 'Default' }
+            header ({ nodes }) { return 'Header' },
+            default ({ nodes }) { return 'Default' }
           }
         })
       </script>
@@ -1166,7 +1166,7 @@ ${templateLines}
     assert.deepEqual(result.defined.slots, ['header', 'default'])
   })
 
-  test('slots: single-argument and two-argument slot functions track state and suppress CORALITE-W401', () => {
+  test('slots: single-argument slot functions track state and suppress CORALITE-W401', () => {
     const componentSource = `
       <template id="slot-tracking">
         <slot name="computedSlot"></slot>
@@ -1180,11 +1180,11 @@ ${templateLines}
             moduleTitle: { type: String }
           },
           slots: {
-            computedSlot (context) {
-              return context.state.computedTitle
+            computedSlot ({ state }) {
+              return state.computedTitle
             },
-            moduleSlot (nodes, context) {
-              return context.state.moduleTitle
+            moduleSlot ({ state }) {
+              return state.moduleTitle
             }
           }
         })

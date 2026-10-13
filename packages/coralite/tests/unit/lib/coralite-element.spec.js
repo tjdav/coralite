@@ -357,7 +357,7 @@ describe('CoraliteElement', () => {
       componentId: 'wrapper-comp',
       templateHTML: '<div><slot name="actions"></slot></div>',
       slots: {
-        actions (nodes) {
+        actions ({ nodes }) {
           const wrapper = document.createElement('div')
           wrapper.className = 'actions-wrapper'
           wrapper.replaceChildren(...nodes)
@@ -952,21 +952,21 @@ describe('CoraliteElement', () => {
         iconName: String
       },
       slots: {
-        badge (_nodes, state) {
+        badge ({ nodes, state }) {
           if (!state.badge) {
             return null
           }
-          if (_nodes && _nodes.length > 0) {
-            return _nodes
+          if (nodes && nodes.length > 0) {
+            return nodes
           }
           return `<span class="badge">${state.badge}</span>`
         },
-        icon (_nodes, state) {
+        icon ({ nodes, state }) {
           if (!state.iconName) {
             return null
           }
-          if (_nodes && _nodes.length > 0) {
-            return _nodes
+          if (nodes && nodes.length > 0) {
+            return nodes
           }
           return `<i class="icon">${state.iconName}</i>`
         }
@@ -1019,7 +1019,7 @@ describe('CoraliteElement', () => {
     const ChildElement = createCoraliteClass({
       componentId: childTag,
       slots: {
-        default (_nodes) {
+        default () {
           return '<span class="child-slot">Child Slot Content</span>'
         }
       }
@@ -1028,7 +1028,7 @@ describe('CoraliteElement', () => {
     const ParentElement = createCoraliteClass({
       componentId: parentTag,
       slots: {
-        default (_nodes) {
+        default () {
           return '<div class="parent-slot">Parent Slot Content</div>'
         }
       }
@@ -1203,9 +1203,9 @@ describe('CoraliteElement', () => {
       componentId: 'child-interp-comp',
       templateHTML: '<div><slot></slot></div>',
       slots: {
-        default (_nodes) {
+        default ({ nodes }) {
           // Return live projected nodes to preserve owner component binding references
-          return _nodes
+          return nodes
         }
       }
     })
@@ -1352,9 +1352,16 @@ describe('CoraliteElement', () => {
           }]
         },
         slots: {
-          content (_nodes, context) {
-            receivedContext = context
-            return `<div class="slot-title">${context.state.title}</div>`
+          content ({ state, root, refs, observe, signal, instanceId }) {
+            receivedContext = {
+              state,
+              root,
+              refs,
+              observe,
+              signal,
+              instanceId
+            }
+            return `<div class="slot-title">${state.title}</div>`
           }
         }
       })
@@ -1393,7 +1400,7 @@ describe('CoraliteElement', () => {
           title: 'Legacy Title'
         },
         slots: {
-          default (_nodes, state) {
+          default ({ state }) {
             readTitle = state.title
             return `<span>${state.title}</span>`
           }
@@ -1424,7 +1431,7 @@ describe('CoraliteElement', () => {
           count: 0
         },
         slots: {
-          default (_nodes, { state, observe }) {
+          default ({ state, observe }) {
             outerFnCallCount++
             observe('count', (newVal) => {
               observerCallCount++
@@ -1511,7 +1518,7 @@ describe('CoraliteElement', () => {
           num: 1
         },
         slots: {
-          default (_nodes, { observe }) {
+          default ({ observe }) {
             disposerFn = observe('num', (val) => {
               observeCount++
               return `<span>${val}</span>`
@@ -1563,7 +1570,7 @@ describe('CoraliteElement', () => {
           step: 1
         },
         slots: {
-          default (_nodes, { state }) {
+          default ({ state }) {
             const delay = state.step === 1 ? 50 : 5
             const currentStep = state.step
             return new Promise(resolve => {
@@ -1693,9 +1700,9 @@ describe('CoraliteElement', () => {
         componentId: 'computed-recon',
         templateHTML: '<div><slot name="items"></slot></div>',
         slots: {
-          items (originalNodes) {
+          items ({ nodes }) {
             transformCallCount++
-            return originalNodes.map(node => {
+            return nodes.map(node => {
               const wrapper = document.createElement('li')
               wrapper.className = 'item-wrapper'
               wrapper.appendChild(node)
@@ -2028,7 +2035,7 @@ describe('CoraliteElement', () => {
         componentId: 'fwd-comp-child',
         templateHTML: '<div><slot name="header"></slot></div>',
         slots: {
-          header (nodes) {
+          header ({ nodes }) {
             transformerNodes = nodes
             return nodes.map(n => {
               const wrapper = document.createElement('div')
@@ -2242,7 +2249,7 @@ describe('CoraliteElement', () => {
           b: 2
         },
         slots: {
-          foo (_nodes, { state }) {
+          foo ({ state }) {
             return `<span>${state.a} - ${state.b}</span>`
           }
         }
@@ -2282,7 +2289,7 @@ describe('CoraliteElement', () => {
           items: []
         },
         slots: {
-          bar (_nodes, { state }) {
+          bar ({ state }) {
             return `<span>${state.x}</span>`
           }
         },
@@ -2348,7 +2355,7 @@ describe('CoraliteElement', () => {
         templateHTML: '<div><button id="revive-btn">Revive</button><slot name="computed"></slot></div>',
         defaultValues: { val: 'Initial' },
         slots: {
-          computed (_nodes, { state }) {
+          computed ({ state }) {
             return `<span class="val">${state.val}</span>`
           }
         },
