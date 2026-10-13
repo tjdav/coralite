@@ -7,7 +7,7 @@ import { CoraliteError } from '../../shared/errors.js'
  *
  * @param {string} absolutePath - Page file absolute or relative path
  * @param {string} [pagesRoot=''] - Pages root directory absolute or relative path
- * @returns {{ pattern: string, params: string[], segments: Array<{ type: 'static'|'param', value: string }> }}
+ * @returns {{ pattern: string, params: string[], segments: Array<{ type: 'static'|'param'|'catchall', value: string }> }}
  */
 export function parsePagePattern (absolutePath, pagesRoot = '') {
   const normAbs = (absolutePath || '').replace(/\\/g, '/')
@@ -38,12 +38,31 @@ export function parsePagePattern (absolutePath, pagesRoot = '') {
   }
 
   const params = []
-  /** @type {Array<{ type: 'static'|'param', value: string }>} */
+  /** @type {Array<{ type: 'static'|'param'|'catchall', value: string }>} */
   const segments = []
 
   const validParamRegex = /^\[(\.\.\.)?([a-zA-Z0-9_\-$]+)\]$/
 
+  // Pre-validate catch-all count across segments
+  let catchAllCount = 0
   for (const seg of rawSegments) {
+    if (seg.includes('[')) {
+      const match = seg.match(validParamRegex)
+      if (match && match[1]) {
+        catchAllCount++
+      }
+    }
+  }
+
+  if (catchAllCount > 1) {
+    throw new CoraliteError(
+      `A pattern can have at most one catch-all segment in path "${absolutePath}".`,
+      { filePath: absolutePath }
+    )
+  }
+
+  for (let i = 0; i < rawSegments.length; i++) {
+    const seg = rawSegments[i]
     if (seg.includes('[')) {
       const match = seg.match(validParamRegex)
       if (!match) {
@@ -52,12 +71,21 @@ export function parsePagePattern (absolutePath, pagesRoot = '') {
           { filePath: absolutePath }
         )
       }
+      const isCatchAll = Boolean(match[1])
       const paramName = match[2]
+
+      if (isCatchAll && i !== rawSegments.length - 1) {
+        throw new CoraliteError(
+          `Catch-all segment must be the last segment in path "${absolutePath}".`,
+          { filePath: absolutePath }
+        )
+      }
+
       if (!params.includes(paramName)) {
         params.push(paramName)
       }
       segments.push({
-        type: 'param',
+        type: isCatchAll ? 'catchall' : 'param',
         value: paramName
       })
     } else {
@@ -70,7 +98,15 @@ export function parsePagePattern (absolutePath, pagesRoot = '') {
 
   let pattern = '/'
   if (segments.length > 0) {
-    pattern = '/' + segments.map(s => (s.type === 'param' ? `:${s.value}` : s.value)).join('/')
+    pattern = '/' + segments.map(s => {
+      if (s.type === 'catchall') {
+        return `:${s.value}*`
+      }
+      if (s.type === 'param') {
+        return `:${s.value}`
+      }
+      return s.value
+    }).join('/')
   }
 
   return {

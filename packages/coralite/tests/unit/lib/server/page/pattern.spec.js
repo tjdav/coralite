@@ -135,10 +135,10 @@ describe('parsePagePattern', () => {
     })
   })
 
-  it('parses docs/[...slug].html treating catch-all as param segment', () => {
+  it('parses docs/[...slug].html producing catchall segment and :slug* pattern', () => {
     const result = parsePagePattern('/app/pages/docs/[...slug].html', '/app/pages')
     assert.deepStrictEqual(result, {
-      pattern: '/docs/:slug',
+      pattern: '/docs/:slug*',
       params: ['slug'],
       segments: [
         {
@@ -146,11 +146,66 @@ describe('parsePagePattern', () => {
           value: 'docs'
         },
         {
-          type: 'param',
+          type: 'catchall',
           value: 'slug'
         }
       ]
     })
+  })
+
+  it('parses [...slug].html at root producing catchall segment and /:slug* pattern', () => {
+    const result = parsePagePattern('/app/pages/[...slug].html', '/app/pages')
+    assert.deepStrictEqual(result, {
+      pattern: '/:slug*',
+      params: ['slug'],
+      segments: [
+        {
+          type: 'catchall',
+          value: 'slug'
+        }
+      ]
+    })
+  })
+
+  it('parses posts/[id]/[...rest].html producing param then catchall', () => {
+    const result = parsePagePattern('/app/pages/posts/[id]/[...rest].html', '/app/pages')
+    assert.deepStrictEqual(result, {
+      pattern: '/posts/:id/:rest*',
+      params: ['id', 'rest'],
+      segments: [
+        {
+          type: 'static',
+          value: 'posts'
+        },
+        {
+          type: 'param',
+          value: 'id'
+        },
+        {
+          type: 'catchall',
+          value: 'rest'
+        }
+      ]
+    })
+  })
+
+  it('throws CoraliteError when pattern has multiple catch-all segments', () => {
+    assert.throws(
+      () => parsePagePattern('/app/pages/docs/[...a]/[...b].html', '/app/pages'),
+      (err) => err instanceof CoraliteError && err.message.includes('at most one catch-all') && err.filePath === '/app/pages/docs/[...a]/[...b].html'
+    )
+  })
+
+  it('throws CoraliteError when catch-all segment is not the last segment', () => {
+    assert.throws(
+      () => parsePagePattern('/app/pages/docs/[...slug]/extra.html', '/app/pages'),
+      (err) => err instanceof CoraliteError && err.message.includes('must be the last segment') && err.filePath === '/app/pages/docs/[...slug]/extra.html'
+    )
+
+    assert.throws(
+      () => parsePagePattern('/app/pages/docs/[...slug]/[id].html', '/app/pages'),
+      (err) => err instanceof CoraliteError && err.message.includes('must be the last segment') && err.filePath === '/app/pages/docs/[...slug]/[id].html'
+    )
   })
 
   it('normalizes leading ./ on relative paths', () => {

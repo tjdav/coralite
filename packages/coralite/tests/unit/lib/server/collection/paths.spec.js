@@ -334,16 +334,16 @@ describe('Page route param extraction and paths validation', () => {
       assert.deepStrictEqual(res.value.page.enumeratedPaths, [])
     })
 
-    it('emits CORALITE-W601 warning and treats [...slug] as slug for catch-all pattern', async () => {
+    it('parses catch-all [...slug] segment and evaluates paths block without emitting W601', async () => {
       const mockApp = createMockApp()
-      let warningData = null
+      const emittedWarnings = []
 
       const handlers = createPageHandlers({
         app: mockApp,
         triggerHook,
         handleError: (data) => {
-          if (data.code === 'CORALITE-W601') {
-            warningData = data
+          if (data.level === 'WARN') {
+            emittedWarnings.push(data)
           }
         },
         evaluate
@@ -370,10 +370,19 @@ describe('Page route param extraction and paths validation', () => {
       }
 
       const res = await handlers.onPageSet(data)
-      assert.ok(warningData)
-      assert.strictEqual(warningData.code, 'CORALITE-W601')
-      assert.strictEqual(warningData.level, 'WARN')
+      assert.strictEqual(emittedWarnings.length, 0)
+      assert.strictEqual(res.value.page.routePattern, '/docs/:slug*')
       assert.deepEqual(res.value.page.routeParams, ['slug'])
+      assert.deepEqual(res.value.page.routeSegments, [
+        {
+          type: 'static',
+          value: 'docs'
+        },
+        {
+          type: 'catchall',
+          value: 'slug'
+        }
+      ])
       assert.deepEqual(res.value.page.enumeratedPaths, [{ slug: 'getting-started' }])
     })
   })

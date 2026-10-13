@@ -42,29 +42,6 @@ export function createPageHandlers ({
     const urlPathname = pathToFileURL(join('/', relPath)).pathname
 
     const { pattern: routePattern, params: routeParams, segments: routeSegments } = parsePagePattern(data.path.pathname, rootPath)
-    const isCatchAll = /\[\.\.\.[^\]]+\]/.test(relPath)
-
-    if (isCatchAll) {
-      try {
-        if (typeof app.onError === 'function') {
-          app.onError({
-            code: 'CORALITE-W601',
-            level: 'WARN',
-            message: `Catch-all route pattern detected in "${data.path.pathname}". Pattern parsing for catch-all is deferred to Phase 2.`,
-            filePath: data.path.pathname
-          })
-        } else if (typeof handleError === 'function') {
-          handleError({
-            code: 'CORALITE-W601',
-            level: 'WARN',
-            message: `Catch-all route pattern detected in "${data.path.pathname}". Pattern parsing for catch-all is deferred to Phase 2.`,
-            filePath: data.path.pathname
-          })
-        }
-      } catch {
-        /* ignore warning handler errors */
-      }
-    }
 
     let parsedScript = {
       hasDefinePage: false,
