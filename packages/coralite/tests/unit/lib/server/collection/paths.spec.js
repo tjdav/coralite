@@ -301,6 +301,47 @@ describe('Page route param extraction and paths validation', () => {
       assert.strictEqual(handledError.level, 'ERR')
     })
 
+    it('marks page as failed when paths block returns duplicate param sets', async () => {
+      const mockApp = createMockApp()
+      let handledError = null
+
+      const handlers = createPageHandlers({
+        app: mockApp,
+        triggerHook,
+        handleError: (data) => {
+          handledError = data
+        },
+        evaluate
+      })
+
+      const data = {
+        type: 'page',
+        path: {
+          pathname: '/pages/posts/[id].html',
+          dirname: '/pages/posts',
+          filename: '[id].html'
+        },
+        content: `
+          <script type="module">
+            import { definePage } from 'coralite'
+            export default definePage({
+              paths () {
+                return [{ id: 'intro' }, { id: 'intro' }]
+              }
+            })
+          </script>
+        `,
+        state: {}
+      }
+
+      const res = await handlers.onPageSet(data)
+      assert.strictEqual(res.value.page.failed, true)
+      assert.strictEqual(res.value.page.enumeratedPaths.length, 0)
+      assert.ok(res.value.page.error.message.includes('Duplicate path in'))
+      assert.ok(handledError)
+      assert.strictEqual(handledError.level, 'ERR')
+    })
+
     it('defaults static pages (no paths block) to page.enumeratedPaths = []', async () => {
       const mockApp = createMockApp()
       const handlers = createPageHandlers({

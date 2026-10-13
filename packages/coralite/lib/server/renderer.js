@@ -2738,15 +2738,35 @@ export function createRenderer ({
       return false
     }
 
+    const failedPages = []
     const renderTasks = []
     for (const pageItem of queue) {
-      const pageObj = pageItem.result?.page || pageItem.page || pageItem
+      const pageObj = pageItem.result?.page || pageItem.value?.page || pageItem.page || pageItem
       const routePattern = pageObj?.routePattern || '/'
       const routeParams = Array.isArray(pageObj?.routeParams) ? pageObj.routeParams : []
       const routeSegments = Array.isArray(pageObj?.routeSegments) ? pageObj.routeSegments : []
       const enumeratedPaths = Array.isArray(pageObj?.enumeratedPaths) ? pageObj.enumeratedPaths : []
 
       const isDynamic = routeParams.length > 0 || routeSegments.some(s => s.type === 'param' || s.type === 'catchall')
+
+      if (pageObj?.failed) {
+        /** @type {CoraliteBuildResult} */
+        const failedResult = {
+          type: 'page',
+          // @ts-ignore
+          path: pageItem.path,
+          route: {
+            path: pageObj?.url?.pathname || routePattern || '/',
+            pattern: routePattern,
+            params: {},
+            dynamic: isDynamic
+          },
+          status: 'failed',
+          error: pageObj.error || new CoraliteError(`Page collection failed for "${pageItem.path?.pathname}"`)
+        }
+        failedPages.push(failedResult)
+        continue
+      }
 
       if (isDynamic) {
         if (enumeratedPaths.length === 0) {
@@ -3028,7 +3048,6 @@ export function createRenderer ({
     const limit = pLimit(maxConcurrent)
     const variables = buildOptions?.variables
     const results = new Array(tasksToRender.length)
-    const failedPages = []
     let allWorkerTasks = null
     let buildError = null
 
@@ -3163,7 +3182,7 @@ export function createRenderer ({
 
       const finalRenderedResults = results.filter(Boolean)
 
-      // Combine with skipped pages
+      // Combine with skipped pages and failed pages
       for (const skipped of skippedPages) {
         if (typeof buildCallback === 'function') {
           const transformed = await buildCallback(skipped)
@@ -3172,6 +3191,19 @@ export function createRenderer ({
           }
         } else {
           finalRenderedResults.push(skipped)
+        }
+      }
+
+      for (const failed of failedPages) {
+        if (!results.includes(failed)) {
+          if (typeof buildCallback === 'function') {
+            const transformed = await buildCallback(failed)
+            if (transformed) {
+              finalRenderedResults.push(transformed)
+            }
+          } else {
+            finalRenderedResults.push(failed)
+          }
         }
       }
 

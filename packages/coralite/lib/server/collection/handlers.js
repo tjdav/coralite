@@ -4,7 +4,7 @@ import { parseHTML, parseModule } from '../utils/parse.js'
 import { extractPageScript } from '../parser/html.js'
 import { registerBaseComponent } from '../component/setup.js'
 import { prepareAllComponentOps } from '../utils/fragment.js'
-import { validateEnumeratedPaths, validatePluginEnumeratedPaths } from '../page/route.js'
+import { validateEnumeratedPaths, validatePluginEnumeratedPaths, deduplicateEnumeratedPaths } from '../page/route.js'
 import { parsePagePattern } from '../page/pattern.js'
 import { CoraliteError } from '../../shared/errors.js'
 
@@ -72,6 +72,8 @@ export function createPageHandlers ({
       enumeratedPaths: []
     }
 
+    const contributions = []
+
     if (parsedScript.script && evaluate) {
       try {
         const module = {
@@ -98,7 +100,10 @@ export function createPageHandlers ({
           if (typeof pageExports.paths === 'function') {
             const rawPaths = await pageExports.paths({ app })
             validateEnumeratedPaths(rawPaths, routeParams, data.path.pathname)
-            page.enumeratedPaths = rawPaths
+            contributions.push({
+              source: 'definePage.paths',
+              paths: rawPaths
+            })
           }
         }
       } catch (err) {
@@ -179,11 +184,54 @@ export function createPageHandlers ({
       page,
       data
     }
-    if (Array.isArray(pluginHookResults?.rawResults)) {
-      for (const res of pluginHookResults.rawResults) {
+    if (!page.failed && Array.isArray(pluginHookResults?.rawResults)) {
+      for (const item of pluginHookResults.rawResults) {
+        const res = item && typeof item === 'object' && 'result' in item ? item.result : item
+        const pluginName = item?.pluginName
         if (res && typeof res === 'object' && Object.hasOwn(res, 'paths')) {
           validatePluginEnumeratedPaths(res.paths, routeParams, data.path.pathname)
-          page.enumeratedPaths.push(...res.paths)
+          contributions.push({
+            source: pluginName ? `plugin "${pluginName}"` : 'plugin',
+            paths: res.paths
+          })
+        }
+      }
+    }
+
+    if (!page.failed) {
+      try {
+        page.enumeratedPaths = deduplicateEnumeratedPaths(contributions, data.path.pathname)
+      } catch (err) {
+        const pageErr = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
+          code: err.code || 'CORALITE-E402',
+          cause: err,
+          filePath: data.path.pathname
+        })
+        pageErr.filePath = pageErr.filePath || data.path.pathname
+        page.failed = true
+        page.error = pageErr
+        page.enumeratedPaths = []
+
+        try {
+          if (typeof app.onError === 'function') {
+            app.onError({
+              level: 'ERR',
+              code: pageErr.code,
+              message: `Failed route deduplication for page "${data.path.pathname}": ${pageErr.message}`,
+              error: pageErr,
+              filePath: data.path.pathname
+            })
+          } else if (typeof handleError === 'function') {
+            handleError({
+              level: 'ERR',
+              code: pageErr.code,
+              message: `Failed route deduplication for page "${data.path.pathname}": ${pageErr.message}`,
+              error: pageErr,
+              filePath: data.path.pathname
+            })
+          }
+        } catch {
+          /* ignore throw to preserve collection loading */
         }
       }
     }

@@ -295,9 +295,9 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
     await mkdir(pagesDir, { recursive: true })
     await mkdir(compsDir, { recursive: true })
 
-    const fixturePath = fileURLToPath(new URL('../../../fixtures/pages/plugin-route-host.html', import.meta.url))
+    const fixturePath = fileURLToPath(new URL('../../../fixtures/pages/plugin-route-host/[id].html', import.meta.url))
     const hostHtml = await readFile(fixturePath, 'utf8')
-    await writeFile(join(pagesDir, 'plugin-route-host.html'), hostHtml)
+    await writeFile(join(pagesDir, '[id].html'), hostHtml)
 
     try {
       const coralite = await createCoralite({
@@ -309,8 +309,8 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
       })
 
       const results = await coralite.build()
-      const hostResult = results.find(r => r.path?.pathname?.includes('plugin-route-host.html'))
-      assert.ok(hostResult, 'plugin-route-host.html page result must exist')
+      const hostResult = results.find(r => r.path?.pathname?.includes('42.html') || r.path?.pathname?.includes('99.html'))
+      assert.ok(hostResult, 'plugin-route-host page result must exist')
       assert.ok(hostResult.content.includes('Plugin Route Host Page'), 'HTML content should render successfully')
     } finally {
       await rm(tempDir, {

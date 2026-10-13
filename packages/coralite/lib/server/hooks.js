@@ -95,7 +95,10 @@ export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name
     }
 
     if (returnAllResults) {
-      rawResults.push(result)
+      rawResults.push({
+        pluginName: pluginHooks[i]._pluginName || pluginHooks[i].name || null,
+        result
+      })
     }
 
     if (result !== undefined && result !== null) {

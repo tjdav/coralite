@@ -47,14 +47,16 @@ export class CoraliteError extends Error {
 export class CoraliteBuildError extends CoraliteError {
   /**
    * @param {string} message - The error message summarizing failed pages.
-   * @param {Object} [options]
+   * @param {Object} [options] - Additional options for the build error.
    * @param {Array<import('../../types/index.js').CoraliteBuildResult>} [options.failedPages] - List of failed page build results.
+   * @param {string} [options.filePath] - The path to the file where the error occurred.
+   * @param {string} [options.code] - Diagnostic error code.
    * @param {Error} [options.cause] - Root cause error.
    */
-  constructor (message, { failedPages = [], cause } = {}) {
-    super(message, { cause })
+  constructor (message, options = {}) {
+    super(message, options)
     this.name = 'CoraliteBuildError'
-    this.failedPages = failedPages
+    this.failedPages = options.failedPages || []
   }
 }
 

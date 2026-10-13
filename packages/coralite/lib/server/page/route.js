@@ -1,4 +1,5 @@
-import { CoraliteError } from '../../shared/errors.js'
+import { inspect } from 'node:util'
+import { CoraliteError, CoraliteBuildError } from '../../shared/errors.js'
 import { parsePagePattern } from './pattern.js'
 
 /**
@@ -104,6 +105,82 @@ export function validateEnumeratedPaths (rawPaths, routeParams = [], filePath = 
       }
     }
   }
+}
+
+/**
+ * Generates a canonical string key for a parameter object by sorting keys and values.
+ *
+ * @param {Object} obj - The parameter object
+ * @returns {string} Unique parameter key
+ */
+function paramsKey (obj) {
+  if (!obj || typeof obj !== 'object') {
+    return ''
+  }
+  const sortedKeys = Object.keys(obj).sort()
+  return sortedKeys.map(k => `${JSON.stringify(k)}:${JSON.stringify(obj[k])}`).join(',')
+}
+
+/**
+ * Deduplicates enumerated path param objects from multiple contribution sources.
+ *
+ * @param {Array<{ source: string, paths: Array<Object> }>} contributions - Array of contribution objects containing source label and array of param objects
+ * @param {string} [filePath] - Path to page file for diagnostics
+ * @returns {Array<Object>} Deduplicated array of param objects
+ * @throws {CoraliteBuildError} On duplicate paths from same source or cross-source conflicts
+ */
+export function deduplicateEnumeratedPaths (contributions, filePath = '') {
+  const seen = new Map()
+  const result = []
+
+  if (!Array.isArray(contributions)) {
+    return result
+  }
+
+  for (const contrib of contributions) {
+    if (!contrib || !Array.isArray(contrib.paths)) {
+      continue
+    }
+    const source = contrib.source || 'unknown'
+
+    for (const paramObj of contrib.paths) {
+      if (!paramObj || typeof paramObj !== 'object') {
+        continue
+      }
+      const key = paramsKey(paramObj)
+
+      if (!seen.has(key)) {
+        seen.set(key, {
+          paramObj,
+          sources: [source]
+        })
+        result.push(paramObj)
+      } else {
+        seen.get(key).sources.push(source)
+      }
+    }
+  }
+
+  for (const entry of seen.values()) {
+    if (entry.sources.length > 1) {
+      const uniqueSources = Array.from(new Set(entry.sources))
+      const formattedParam = inspect(entry.paramObj)
+
+      if (uniqueSources.length === 1) {
+        throw new CoraliteBuildError(
+          `Duplicate path in ${filePath}: ${formattedParam}\nSource: ${uniqueSources[0]}`,
+          { filePath }
+        )
+      } else {
+        throw new CoraliteBuildError(
+          `Conflicting path in ${filePath}: ${formattedParam}\nSources: ${uniqueSources.join(' and ')}`,
+          { filePath }
+        )
+      }
+    }
+  }
+
+  return result
 }
 
 /**
