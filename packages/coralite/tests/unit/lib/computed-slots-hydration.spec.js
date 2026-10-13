@@ -35,7 +35,7 @@ test('Computed Slots Hydration & Input Parity', async (t) => {
       componentId,
       defaultValues: {},
       slots: {
-        default: (nodes) => {
+        default: ({ nodes }) => {
           const text = nodes.map(n => n.textContent || n.data || '').join('')
           return text + '!'
         }
@@ -76,7 +76,7 @@ test('Computed Slots Hydration & Input Parity', async (t) => {
       componentId,
       defaultValues: { count: 0 },
       slots: {
-        default: (nodes) => {
+        default: ({ nodes }) => {
           lastNodesLength = nodes.length
           return (!nodes || nodes.length === 0) ? 'Computed Fallback' : 'Light DOM Content'
         }
@@ -121,7 +121,7 @@ test('Computed Slots Hydration & Input Parity', async (t) => {
       componentId,
       defaultValues: { prefix: 'Item' },
       slots: {
-        default: (nodes, { state }) => {
+        default: ({ nodes, state }) => {
           const raw = nodes.map(n => n.textContent || '').join('').trim()
           return `${state.prefix}: ${raw}`
         }
@@ -168,10 +168,10 @@ test('Computed Slots Hydration & Input Parity', async (t) => {
       componentId,
       defaultValues: { tag: 'BADGE' },
       slots: {
-        header: (nodes) => {
+        header: ({ nodes }) => {
           return (!nodes || nodes.length === 0) ? 'Default Header' : nodes
         },
-        body: (nodes, { state }) => {
+        body: ({ nodes, state }) => {
           const content = nodes.map(n => n.textContent || '').join('')
           return `[${state.tag}] ${content}`
         }

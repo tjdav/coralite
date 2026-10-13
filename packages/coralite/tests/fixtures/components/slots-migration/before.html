@@ -1,0 +1,17 @@
+<template id="x-slots-migration">
+  <div><slot></slot></div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  slots: {
+    default(nodes, { state }) {
+      return state.hide ? [] : nodes
+    },
+    header: (content, { state }) => state.hide ? [] : content,
+    passthrough: () => undefined
+  }
+})
+</script>

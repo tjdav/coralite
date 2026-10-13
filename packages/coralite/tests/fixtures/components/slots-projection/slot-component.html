@@ -14,13 +14,13 @@
 
   export default defineComponent({
     slots: {
-      header: (nodes) => {
+      header: ({ nodes }) => {
         if (!nodes || nodes.length === 0) {
           return undefined
         }
         return nodes
       },
-      default: (nodes) => {
+      default: ({ nodes }) => {
         if (!nodes || nodes.length === 0) {
           return 'Fallback Content'
         }

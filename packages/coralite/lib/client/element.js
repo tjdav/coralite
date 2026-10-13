@@ -3817,10 +3817,11 @@ export class CoraliteElement extends BaseElement {
    * Creates a context proxy for slot transformer evaluation.
    * @param {string} slotName - The slot name.
    * @param {CoraliteSlotElement} slotEl - The target slot element.
+   * @param {Node[]} [origNodes=[]] - The original light DOM nodes.
    * @returns {Proxy} The context proxy.
    * @private
    */
-  _createSlotContext (slotName, slotEl) {
+  _createSlotContext (slotName, slotEl, origNodes = []) {
     const baseCtx = this._resolvedClientContext || {
       instanceId: this._instanceId,
       state: this._state,
@@ -3829,12 +3830,25 @@ export class CoraliteElement extends BaseElement {
       slots: this._getSlotsHelper(),
       signal: this._abortController?.signal,
       refs: (id) => this._resolveRef(id),
+      emit: (name, detail, options = {}) => {
+        const eventDetail = detail !== undefined ? detail : options?.detail
+        const CustomEventCtor = typeof window !== 'undefined' && window.CustomEvent ? window.CustomEvent : CustomEvent
+        const event = new CustomEventCtor(name, {
+          bubbles: true,
+          composed: true,
+          cancelable: false,
+          ...options,
+          detail: eventDetail
+        })
+        return this.dispatchEvent(event)
+      },
       isServer: false,
       isClient: true
     }
 
     const slotContextObj = {
       ...baseCtx,
+      nodes: origNodes,
       observe: (key, cb) => {
         if (!this._slotHasInternalObservers) {
           this._slotHasInternalObservers = new Map()
@@ -3906,6 +3920,10 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
+    if (!this._slotOriginalNodes) {
+      this._slotOriginalNodes = new Map()
+    }
+
     const slotElements = this._getOwnSlots()
     slotElements.forEach(slotEl => {
       const slotName = slotEl.getAttribute('name') || 'default'
@@ -3915,22 +3933,25 @@ export class CoraliteElement extends BaseElement {
         const isServerComputed = slotEl.hasAttribute('data-coralite-slot-computed')
         const isFallback = slotEl.hasAttribute('data-coralite-fallback')
 
+        let origNodes = slotEl._originalNodes || this._slotOriginalNodes.get(slotName)
+        if (!origNodes) {
+          if (isFallback) {
+            origNodes = []
+          } else {
+            origNodes = Array.from(slotEl.childNodes)
+          }
+          slotEl._originalNodes = origNodes
+          this._slotOriginalNodes.set(slotName, origNodes)
+        } else {
+          slotEl._originalNodes = origNodes
+          this._slotOriginalNodes.set(slotName, origNodes)
+        }
+
         if (!slotEl._slotEvaluated) {
           if (isServerComputed) {
             slotEl._slotEvaluated = true
-            if (!slotEl._originalNodes) {
-              if (isFallback) {
-                slotEl._originalNodes = []
-              } else {
-                slotEl._originalNodes = Array.from(slotEl.childNodes)
-              }
-            }
             slotEl.removeAttribute('data-coralite-slot-computed')
             return
-          } else {
-            if (!slotEl._originalNodes) {
-              slotEl._originalNodes = Array.from(slotEl.childNodes)
-            }
           }
         }
 
@@ -3942,11 +3963,11 @@ export class CoraliteElement extends BaseElement {
           return
         }
 
-        const slotContext = this._createSlotContext(slotName, slotEl)
+        const slotContext = this._createSlotContext(slotName, slotEl, origNodes)
         const renderVersion = ++this._slotRenderVersionCounter
         slotEl._slotRenderVersion = renderVersion
 
-        const result = slotFn(slotEl._originalNodes, slotContext)
+        const result = slotFn(slotContext)
         slotEl._slotEvaluated = true
 
         this._applySlotResult(slotEl, result, renderVersion)

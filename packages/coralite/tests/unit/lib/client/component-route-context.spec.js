@@ -96,7 +96,7 @@ describe('Client-side Route Context in Component Blocks (lib/client)', () => {
       componentId: 'slot-client-route-comp',
       templateHTML: '<div><slot></slot></div>',
       slots: {
-        default: (nodes, { route }) => {
+        default: ({ nodes, route }) => {
           slotRoute = route
           return nodes
         }

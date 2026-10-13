@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-imports -- Node test runner spec; requires node:* builtins */
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { dirname, join } from 'node:path'

@@ -229,10 +229,10 @@ describe('emit Helper in Client Context', () => {
 
     const options = {
       slots: {
-        default (nodes, context) {
+        default (context) {
           assert.strictEqual(typeof context.emit, 'function')
           ssrEmitResult = context.emit('ssr-event', { data: 1 })
-          return nodes
+          return context.nodes
         }
       }
     }
@@ -257,11 +257,11 @@ describe('emit Helper in Client Context', () => {
       componentId: 'slot-emit-comp',
       templateHTML: '<div><slot></slot></div>',
       slots: {
-        default (nodes, context) {
+        default (context) {
           if (typeof context.emit === 'function') {
             clientSlotEmitResult = context.emit('slot-custom-event', { slotData: 'abc' })
           }
-          return nodes
+          return context.nodes
         }
       }
     })
@@ -299,7 +299,7 @@ describe('emit Helper in Client Context', () => {
             }
           },
           slots: {
-            default(nodes) { return nodes }
+            default({ nodes }) { return nodes }
           }
         })
       </script>

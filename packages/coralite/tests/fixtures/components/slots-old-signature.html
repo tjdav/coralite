@@ -1,0 +1,13 @@
+<template id="x-slots-old-signature">
+  <div><slot></slot></div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  slots: {
+    default: (nodes, { state }) => state.hide ? [] : nodes
+  }
+})
+</script>
