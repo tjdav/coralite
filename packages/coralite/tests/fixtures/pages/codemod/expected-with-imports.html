@@ -1,0 +1,16 @@
+<script type="module">
+  import { definePage } from 'coralite'
+  import { readFile } from 'node:fs/promises'
+
+  export default definePage({
+    paths: async () => {
+      const data = JSON.parse(await readFile('content/posts.json', 'utf-8'))
+      return data.map(p => ({ id: String(p.id) }))
+    },
+    server: async ({ route }) => {
+      return { title: `Post ${route.params.id}` }
+    }
+  })
+</script>
+
+<h1>With Imports</h1>

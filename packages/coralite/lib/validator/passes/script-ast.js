@@ -603,7 +603,11 @@ export function parseScriptAST (context) {
         line,
         column,
         sourceCode: context.sourceCode,
-        cause: 'Page uses deprecated bare exports ("paths", "server"). Use export default definePage({ ... }) instead.'
+        cause: 'Page uses deprecated bare exports ("paths", "server"). Use export default definePage({ ... }) instead.',
+        fix: {
+          action: 'migrate_bare_exports',
+          description: 'Convert bare exports to definePage({ ... })'
+        }
       }))
     }
   } catch {

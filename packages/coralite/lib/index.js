@@ -9,6 +9,7 @@ export * from './server/component/fixer.js'
 export * from './server/plugin/validator.js'
 export * from './server/plugin/fixer.js'
 export * from './server/page/validator.js'
+export * from './server/page/fixer.js'
 export * from './server/plugin/define.js'
 export * from './server/config.js'
 

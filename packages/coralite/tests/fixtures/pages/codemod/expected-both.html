@@ -1,0 +1,14 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths: async () => {
+      return [{ params: { id: '1' } }]
+    },
+    server: async ({ route }) => {
+      return { title: `Post ${route.params.id}` }
+    }
+  })
+</script>
+
+<h1>Both</h1>
