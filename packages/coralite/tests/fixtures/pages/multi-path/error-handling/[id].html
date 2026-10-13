@@ -1,0 +1,30 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths () {
+      return [
+        { id: 'ok1' },
+        { id: 'fail' },
+        { id: 'ok2' }
+      ]
+    },
+    server ({ route }) {
+      if (route.params.id === 'fail') {
+        throw new Error('Server error for path fail')
+      }
+      return {
+        status: `Success ${route.params.id}`
+      }
+    }
+  })
+</script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Server Throws Test</title>
+</head>
+<body>
+  <p>{{ status }}</p>
+</body>
+</html>

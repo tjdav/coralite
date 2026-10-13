@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { dirname, join, relative } from 'node:path'
+import { basename, dirname, join, relative } from 'node:path'
 import { availableParallelism } from 'node:os'
 import { readFile, writeFile, mkdir, rename, access } from 'node:fs/promises'
 import pLimit from 'p-limit'
@@ -60,7 +60,19 @@ import { emitFragment, prepareAllComponentOps } from './utils/fragment.js'
 import { createServerSlotsHelper } from './component/setup.js'
 import { validateLateBoundClientConfig } from '../shared/plugin-config-schema.js'
 import { buildRouteTable } from './routes/build-table.js'
-import { validateRouteTable } from './routes/validate.js'
+import { validateRouteTable, buildConcreteUrl } from './routes/validate.js'
+
+function computeOutputPath (concretePath, sourceFilename) {
+  const isIndex = sourceFilename === 'index.html' || (typeof sourceFilename === 'string' && sourceFilename.endsWith('/index.html'))
+  if (concretePath === '/') {
+    return 'index.html'
+  }
+  const clean = concretePath.startsWith('/') ? concretePath.slice(1) : concretePath
+  if (isIndex) {
+    return `${clean}/index.html`
+  }
+  return `${clean}.html`
+}
 
 /**
  * @import {
@@ -1201,7 +1213,7 @@ export function createRenderer ({
     }
   }
 
-  const _renderSinglePage = async (pageItem, buildId, state = {}, buildOptions = {}) => {
+  const _renderSinglePage = async (pageItem, buildId, state = {}, buildOptions = {}, targetRoute = null, targetOutPath = null) => {
     const isProduction = normalizedOptions.mode === 'production'
     const startTime = performance.now()
     const originalDocument = pageItem.result
@@ -1276,6 +1288,10 @@ export function createRenderer ({
     const initialPageState = Object.assign({}, originalDocument.state, component.state, state)
     component.state = initialPageState
 
+    if (targetRoute && pageContext) {
+      pageContext.route = targetRoute
+    }
+
     const session = _createSession(buildId)
     session.mode = normalizedOptions.mode
 
@@ -1295,7 +1311,7 @@ export function createRenderer ({
 
     pageContext = mappedSession.page || mappedComponent?.page || pageContext
     const pageExports = pageContext?.exports || originalDocument?.page?.exports || pageItem.result?.page?.exports || null
-    const rawRoute = pageContext.route
+    const rawRoute = pageContext?.route || targetRoute
     const routeObj = typeof rawRoute === 'object' && rawRoute !== null
       ? {
         path: rawRoute.path || pageContext.url?.pathname || '/',
@@ -1311,9 +1327,15 @@ export function createRenderer ({
       }
     if (pageContext) {
       pageContext.route = routeObj
+      if (pageContext.url) {
+        pageContext.url.pathname = routeObj.path
+      }
     }
     if (activePageState && activePageState.page) {
       activePageState.page.route = routeObj
+      if (activePageState.page.url) {
+        activePageState.page.url.pathname = routeObj.path
+      }
     }
     if (mappedComponent) {
       mappedComponent.page = pageContext
@@ -2089,7 +2111,7 @@ export function createRenderer ({
       if (isExternalScripts) {
         const fullScriptHash = hash(scriptContent)
         const shortScriptHash = fullScriptHash.slice(0, 8)
-        const relativePagePath = relative(normalizedOptions.path.pages, pageItem.path.pathname)
+        const relativePagePath = relative(normalizedOptions.path.pages, targetOutPath || pageItem.path.pathname)
         const pageStem = relativePagePath.replace(/\.html$/, '').replace(/[\/\\]/g, '-') || 'index'
         const relPath = `pages/${pageStem}-${shortScriptHash}.js`
         const fullPath = `assets/js/${relPath}`
@@ -2202,13 +2224,23 @@ export function createRenderer ({
 
     const rawHTML = transformNode(mappedComponent.root)
 
+    const outPathname = targetOutPath || mappedComponent.path.pathname
+    const outDirname = dirname(outPathname)
+    const outFilename = basename(outPathname)
+
     /** @type {CoraliteBuildResult} */
     const result = {
       type: 'page',
-      path: mappedComponent.path,
+      path: {
+        ...mappedComponent.path,
+        pathname: outPathname,
+        dirname: outDirname,
+        filename: outFilename
+      },
       content: rawHTML,
       duration: performance.now() - startTime,
-      session: mappedSessionObject
+      session: mappedSessionObject,
+      route: routeObj
     }
 
     if (runtimeChunkPath !== null) {
@@ -2706,12 +2738,74 @@ export function createRenderer ({
       return false
     }
 
+    const renderTasks = []
     for (const pageItem of queue) {
+      const pageObj = pageItem.result?.page || pageItem.page || pageItem
+      const routePattern = pageObj?.routePattern || '/'
+      const routeParams = Array.isArray(pageObj?.routeParams) ? pageObj.routeParams : []
+      const routeSegments = Array.isArray(pageObj?.routeSegments) ? pageObj.routeSegments : []
+      const enumeratedPaths = Array.isArray(pageObj?.enumeratedPaths) ? pageObj.enumeratedPaths : []
+
+      const isDynamic = routeParams.length > 0 || routeSegments.some(s => s.type === 'param' || s.type === 'catchall')
+
+      if (isDynamic) {
+        if (enumeratedPaths.length === 0) {
+          continue
+        }
+        const patternEntry = {
+          pattern: routePattern,
+          params: routeParams,
+          segments: routeSegments
+        }
+        const pathTasks = enumeratedPaths.map(paramObj => {
+          const concretePath = buildConcreteUrl(patternEntry, paramObj)
+          const relOutPath = computeOutputPath(concretePath, pageItem.path?.filename)
+          const pagesRoot = normalizedOptions.path.pages
+          const targetOutPath = join(pagesRoot, relOutPath)
+          const targetRoute = {
+            path: concretePath,
+            pattern: routePattern,
+            params: paramObj,
+            dynamic: true
+          }
+          return {
+            pageItem,
+            paramObj,
+            concretePath,
+            targetOutPath,
+            targetRoute
+          }
+        })
+        pathTasks.sort((a, b) => a.concretePath.localeCompare(b.concretePath))
+        renderTasks.push(...pathTasks)
+      } else {
+        const staticPath = pageObj?.route?.path || pageObj?.url?.pathname || routePattern || '/'
+        const targetOutPath = pageItem.path.pathname
+        const targetRoute = {
+          path: staticPath,
+          pattern: pageObj?.route?.pattern || pageObj?.url?.pathname || routePattern || '/',
+          params: {},
+          dynamic: false
+        }
+        renderTasks.push({
+          pageItem,
+          paramObj: {},
+          concretePath: staticPath,
+          targetOutPath,
+          targetRoute
+        })
+      }
+    }
+
+    const tasksToRender = []
+
+    for (const task of renderTasks) {
+      const { pageItem, targetOutPath, targetRoute } = task
       let shouldRebuild = false
 
       if (normalizedOptions.output && (normalizedOptions.mode === 'production' || normalizedOptions.mode === 'testing')) {
-        const relativeDir = relative(normalizedOptions.path.pages, pageItem.path.dirname)
-        const outFile = join(normalizedOptions.output, relativeDir, pageItem.path.filename)
+        const relativeDir = relative(normalizedOptions.path.pages, dirname(targetOutPath))
+        const outFile = join(normalizedOptions.output, relativeDir, basename(targetOutPath))
         try {
           await access(outFile)
         } catch {
@@ -2735,10 +2829,10 @@ export function createRenderer ({
         shouldRebuild = true
       }
 
-      const wasFailedInManifest = Boolean(manifest.failed && Array.isArray(manifest.failed) && manifest.failed.includes(pageItem.path.pathname))
+      const wasFailedInManifest = Boolean(manifest.failed && Array.isArray(manifest.failed) && manifest.failed.includes(targetOutPath))
 
       if (pageItem.virtual) {
-        const existingVirtualMeta = manifest.virtual ? manifest.virtual[pageItem.path.pathname] : null
+        const existingVirtualMeta = manifest.virtual ? manifest.virtual[targetOutPath] : null
         if (!shouldRebuild) {
           shouldRebuild = wasFailedInManifest || await checkPageAssetsAndManifest(existingVirtualMeta)
         }
@@ -2748,7 +2842,7 @@ export function createRenderer ({
         if (!newManifest.virtual) {
           newManifest.virtual = {}
         }
-        newManifest.virtual[pageItem.path.pathname] = { cacheKey: pageItem.cacheKey }
+        newManifest.virtual[targetOutPath] = { cacheKey: pageItem.cacheKey }
 
         if (!shouldRebuildVirtual) {
           /** @type {CoraliteBuildResult} */
@@ -2757,9 +2851,13 @@ export function createRenderer ({
             // @ts-ignore
             path: {
               ...pageItem.path,
+              pathname: targetOutPath,
+              dirname: dirname(targetOutPath),
+              filename: basename(targetOutPath),
               pages: normalizedOptions.path.pages,
               components: normalizedOptions.path.components
             },
+            route: targetRoute,
             status: 'skipped'
           }
 
@@ -2767,28 +2865,28 @@ export function createRenderer ({
 
           if (existingVirtualMeta) {
             if (existingVirtualMeta.runtimeChunk !== undefined) {
-              newManifest.virtual[pageItem.path.pathname].runtimeChunk = existingVirtualMeta.runtimeChunk
+              newManifest.virtual[targetOutPath].runtimeChunk = existingVirtualMeta.runtimeChunk
             }
             if (existingVirtualMeta.pageScript) {
-              newManifest.virtual[pageItem.path.pathname].pageScript = existingVirtualMeta.pageScript
+              newManifest.virtual[targetOutPath].pageScript = existingVirtualMeta.pageScript
             }
             if (existingVirtualMeta.pageScriptHash) {
-              newManifest.virtual[pageItem.path.pathname].pageScriptHash = existingVirtualMeta.pageScriptHash
+              newManifest.virtual[targetOutPath].pageScriptHash = existingVirtualMeta.pageScriptHash
             }
             if (existingVirtualMeta.pageStyle) {
-              newManifest.virtual[pageItem.path.pathname].pageStyle = existingVirtualMeta.pageStyle
+              newManifest.virtual[targetOutPath].pageStyle = existingVirtualMeta.pageStyle
             }
             if (existingVirtualMeta.pageStyleHash) {
-              newManifest.virtual[pageItem.path.pathname].pageStyleHash = existingVirtualMeta.pageStyleHash
+              newManifest.virtual[targetOutPath].pageStyleHash = existingVirtualMeta.pageStyleHash
             }
             if (existingVirtualMeta.componentHashes) {
-              newManifest.virtual[pageItem.path.pathname].componentHashes = existingVirtualMeta.componentHashes
+              newManifest.virtual[targetOutPath].componentHashes = existingVirtualMeta.componentHashes
             }
             if (existingVirtualMeta.injectedAssets) {
-              newManifest.virtual[pageItem.path.pathname].injectedAssets = existingVirtualMeta.injectedAssets
+              newManifest.virtual[targetOutPath].injectedAssets = existingVirtualMeta.injectedAssets
             }
             if (existingVirtualMeta.dependencies) {
-              newManifest.virtual[pageItem.path.pathname].dependencies = existingVirtualMeta.dependencies
+              newManifest.virtual[targetOutPath].dependencies = existingVirtualMeta.dependencies
             }
 
             if (existingVirtualMeta.pageScript && app.trackOutputFile) {
@@ -2804,19 +2902,19 @@ export function createRenderer ({
             }
           }
         } else {
-          pagesToRender.push(pageItem)
+          tasksToRender.push(task)
         }
       } else {
-        const { changed, metadata } = await checkFileChange(pageItem.path.pathname, manifest.physical[pageItem.path.pathname])
-        newManifest.physical[pageItem.path.pathname] = metadata
+        const { changed, metadata } = await checkFileChange(pageItem.path.pathname, manifest.physical[targetOutPath])
+        newManifest.physical[targetOutPath] = metadata
 
-        const existingPageMeta = manifest.physical[pageItem.path.pathname]
+        const existingPageMeta = manifest.physical[targetOutPath]
         if (!shouldRebuild) {
           shouldRebuild = wasFailedInManifest || await checkPageAssetsAndManifest(existingPageMeta)
         }
 
         if (!isIncremental || changed || shouldRebuild || normalizedOptions.mode === 'development') {
-          pagesToRender.push(pageItem)
+          tasksToRender.push(task)
         } else {
           /** @type {CoraliteBuildResult} */
           const skippedResult = {
@@ -2824,36 +2922,40 @@ export function createRenderer ({
             // @ts-ignore
             path: {
               ...pageItem.path,
+              pathname: targetOutPath,
+              dirname: dirname(targetOutPath),
+              filename: basename(targetOutPath),
               pages: normalizedOptions.path.pages,
               components: normalizedOptions.path.components
             },
+            route: targetRoute,
             status: 'skipped'
           }
 
           if (existingPageMeta) {
             if (existingPageMeta.runtimeChunk !== undefined) {
-              newManifest.physical[pageItem.path.pathname].runtimeChunk = existingPageMeta.runtimeChunk
+              newManifest.physical[targetOutPath].runtimeChunk = existingPageMeta.runtimeChunk
             }
             if (existingPageMeta.pageScript) {
-              newManifest.physical[pageItem.path.pathname].pageScript = existingPageMeta.pageScript
+              newManifest.physical[targetOutPath].pageScript = existingPageMeta.pageScript
             }
             if (existingPageMeta.pageScriptHash) {
-              newManifest.physical[pageItem.path.pathname].pageScriptHash = existingPageMeta.pageScriptHash
+              newManifest.physical[targetOutPath].pageScriptHash = existingPageMeta.pageScriptHash
             }
             if (existingPageMeta.pageStyle) {
-              newManifest.physical[pageItem.path.pathname].pageStyle = existingPageMeta.pageStyle
+              newManifest.physical[targetOutPath].pageStyle = existingPageMeta.pageStyle
             }
             if (existingPageMeta.pageStyleHash) {
-              newManifest.physical[pageItem.path.pathname].pageStyleHash = existingPageMeta.pageStyleHash
+              newManifest.physical[targetOutPath].pageStyleHash = existingPageMeta.pageStyleHash
             }
             if (existingPageMeta.componentHashes) {
-              newManifest.physical[pageItem.path.pathname].componentHashes = existingPageMeta.componentHashes
+              newManifest.physical[targetOutPath].componentHashes = existingPageMeta.componentHashes
             }
             if (existingPageMeta.injectedAssets) {
-              newManifest.physical[pageItem.path.pathname].injectedAssets = existingPageMeta.injectedAssets
+              newManifest.physical[targetOutPath].injectedAssets = existingPageMeta.injectedAssets
             }
             if (existingPageMeta.dependencies) {
-              newManifest.physical[pageItem.path.pathname].dependencies = existingPageMeta.dependencies
+              newManifest.physical[targetOutPath].dependencies = existingPageMeta.dependencies
             }
 
             if (existingPageMeta.pageScript && app.trackOutputFile) {
@@ -2925,7 +3027,7 @@ export function createRenderer ({
 
     const limit = pLimit(maxConcurrent)
     const variables = buildOptions?.variables
-    const results = new Array(pagesToRender.length)
+    const results = new Array(tasksToRender.length)
     const failedPages = []
     let allWorkerTasks = null
     let buildError = null
@@ -2936,7 +3038,7 @@ export function createRenderer ({
         throw combinedSignal.reason
       }
 
-      allWorkerTasks = pagesToRender.map((pageItem, q) => {
+      allWorkerTasks = tasksToRender.map((task, q) => {
         return limit(async () => {
           if (combinedSignal.aborted) {
             throw combinedSignal.reason
@@ -2944,18 +3046,18 @@ export function createRenderer ({
 
           let pageResult
           try {
-            pageResult = await _renderSinglePage(pageItem, buildId, variables, buildOptions)
+            pageResult = await _renderSinglePage(task.pageItem, buildId, variables, buildOptions, task.targetRoute, task.targetOutPath)
           } catch (err) {
             if (combinedSignal.aborted) {
               throw combinedSignal.reason
             }
-            const diagnosticError = createExecutionError(err, null, null, pageItem, null)
+            const diagnosticError = createExecutionError(err, null, null, task.pageItem, null)
             try {
               handleError({
                 level: 'WARN',
-                message: `[Page Build Failed] ${pageItem.path.pathname}: ${diagnosticError.message}`,
+                message: `[Page Build Failed] ${task.targetOutPath}: ${diagnosticError.message}`,
                 error: diagnosticError,
-                pagePath: pageItem.path.pathname
+                pagePath: task.targetOutPath
               })
             } catch {
               /* ignore handler throw to preserve fault isolation */
@@ -2966,10 +3068,14 @@ export function createRenderer ({
               type: 'page',
               // @ts-ignore
               path: {
-                ...pageItem.path,
+                ...task.pageItem.path,
+                pathname: task.targetOutPath,
+                dirname: dirname(task.targetOutPath),
+                filename: basename(task.targetOutPath),
                 pages: normalizedOptions.path.pages,
                 components: normalizedOptions.path.components
               },
+              route: task.targetRoute,
               status: 'failed',
               error: diagnosticError
             }

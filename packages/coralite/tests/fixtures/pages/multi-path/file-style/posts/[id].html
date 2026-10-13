@@ -1,0 +1,30 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths () {
+      return [
+        { id: 'intro' },
+        { id: 'advanced' },
+        { id: 'conclusion' }
+      ]
+    },
+    server ({ route }) {
+      return {
+        postTitle: `Title for ${route.params.id}`
+      }
+    },
+    getters: {
+      heading: ({ state, route }) => `${state.postTitle} at ${route.path}`
+    }
+  })
+</script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Post</title>
+</head>
+<body>
+  <h1>{{ heading }}</h1>
+</body>
+</html>

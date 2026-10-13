@@ -1,0 +1,23 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths () {
+      return []
+    },
+    server () {
+      return {
+        msg: 'Should not run'
+      }
+    }
+  })
+</script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Empty Paths Test</title>
+</head>
+<body>
+  <p>{{ msg }}</p>
+</body>
+</html>
