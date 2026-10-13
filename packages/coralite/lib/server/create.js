@@ -287,13 +287,13 @@ export async function createCoralite ({
   // Helper to register a component via its ID
   const getComponent = (id) => app.components.getItem(id)
 
-  const _triggerPluginHookLocal = (name, initialData) => triggerPluginHook({
+  const _triggerPluginHookLocal = (name, initialData, options) => triggerPluginHook({
     app,
     hooks: plugins.hooks,
     serverGlobalContext,
     name,
     initialData
-  })
+  }, options)
 
   const _triggerPluginAggregateHookLocal = (name, contextData) => triggerPluginAggregateHook({
     app,

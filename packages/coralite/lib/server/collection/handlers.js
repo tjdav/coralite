@@ -4,7 +4,7 @@ import { parseHTML, parseModule } from '../utils/parse.js'
 import { extractPageScript } from '../parser/html.js'
 import { registerBaseComponent } from '../component/setup.js'
 import { prepareAllComponentOps } from '../utils/fragment.js'
-import { validateEnumeratedPaths } from '../page/route.js'
+import { validateEnumeratedPaths, validatePluginEnumeratedPaths } from '../page/route.js'
 import { parsePagePattern } from '../page/pattern.js'
 import { CoraliteError } from '../../shared/errors.js'
 
@@ -165,13 +165,28 @@ export function createPageHandlers ({
       app._refreshDependencyGraph()
     }
 
-    const mappedContext = await triggerHook('onPageSet', {
+    const pluginHookResults = await triggerHook('onPageSet', {
       elements,
       state,
       page,
       data,
       app
-    })
+    }, { returnAllResults: true })
+
+    const mappedContext = pluginHookResults?.mergedData || {
+      elements,
+      state,
+      page,
+      data
+    }
+    if (Array.isArray(pluginHookResults?.rawResults)) {
+      for (const res of pluginHookResults.rawResults) {
+        if (res && typeof res === 'object' && Object.hasOwn(res, 'paths')) {
+          validatePluginEnumeratedPaths(res.paths, routeParams, data.path.pathname)
+          page.enumeratedPaths.push(...res.paths)
+        }
+      }
+    }
 
     const isStatic = app.options.mode === 'production' || app.options.mode === 'testing'
     if (isStatic && !data.virtual) {
