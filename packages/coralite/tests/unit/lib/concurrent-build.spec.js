@@ -123,8 +123,8 @@ describe('Concurrent Page Generation', () => {
     for (let i = 0; i < results.length; i++) {
       const expectedNum = String(i + 1).padStart(2, '0')
       assert.ok(
-        results[i].path.pathname.endsWith(`page-${expectedNum}.html`),
-        `Result at index ${i} should be page-${expectedNum}.html, but got ${results[i].path.pathname}`
+        results[i].path.pathname.includes(`page-${expectedNum}`),
+        `Result at index ${i} should be page-${expectedNum}, but got ${results[i].path.pathname}`
       )
     }
   })
@@ -194,7 +194,7 @@ describe('Concurrent Page Generation', () => {
         return err.name === 'CoraliteBuildError' &&
           err.failedPages &&
           err.failedPages.length === 1 &&
-          err.failedPages[0].path.pathname.includes('page-03.html') &&
+          err.failedPages[0].path.pathname.includes('page-03') &&
           err.message.includes('Simulated worker rendering failure on page 3')
       }
     )

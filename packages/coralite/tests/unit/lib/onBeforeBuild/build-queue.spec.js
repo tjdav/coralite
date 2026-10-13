@@ -38,7 +38,7 @@ describe('onBeforeBuild Build Queue', () => {
     })
 
     const results = await app.build()
-    const virtualPage = results.find(r => r.path.pathname === '/virtual-page')
+    const virtualPage = results.find(r => r.path.pathname.includes('virtual-page'))
     assert.ok(virtualPage, 'Virtual page should be in the build results')
     assert.strictEqual(virtualPage.content.includes('Virtual Page'), true)
   })
@@ -88,7 +88,7 @@ describe('onBeforeBuild Build Queue', () => {
     })
 
     const results = await app.build()
-    const explicitPage = results.find(r => r.path.pathname === '/explicit-virtual-page')
+    const explicitPage = results.find(r => r.path.pathname.includes('explicit-virtual-page'))
     assert.ok(explicitPage, 'Explicitly added virtual page should be in full build results when added via addRenderQueue')
     assert.strictEqual(explicitPage.content.includes('Explicit'), true)
 
@@ -123,7 +123,7 @@ describe('onBeforeBuild Build Queue', () => {
     })
 
     const results = await app.build()
-    const duplicatePages = results.filter(r => r.path.pathname === '/duplicate-page')
+    const duplicatePages = results.filter(r => r.path.pathname.includes('duplicate-page'))
     assert.strictEqual(duplicatePages.length, 1, 'Duplicate page should only appear once in build results')
   })
 })

@@ -39,8 +39,8 @@ describe('Incremental Static Regeneration (ISR)', () => {
     // Second build without changes
     const results2 = await coralite.build()
     assert.strictEqual(results2.length, 2)
-    assert.strictEqual(results2.find(r => r.path.pathname.endsWith('pure-ssr.html') || r.path.pathname.endsWith('index.html')).status, 'skipped')
-    assert.strictEqual(results2.find(r => r.path.pathname.endsWith('interactive.html')).status, 'skipped', 'Pages with client controllers should also be skipped when unchanged')
+    assert.strictEqual(results2.find(r => r.path.pathname.endsWith('index.html') && !r.path.pathname.includes('interactive')).status, 'skipped')
+    assert.strictEqual(results2.find(r => r.path.pathname.includes('interactive')).status, 'skipped', 'Pages with client controllers should also be skipped when unchanged')
   })
 
   it('should rebuild when a file content changes', async () => {
@@ -89,13 +89,13 @@ describe('Incremental Static Regeneration (ISR)', () => {
     })
 
     const results1 = await coralite.build()
-    const virtualResult1 = results1.find(r => r.path.pathname === 'virtual.html')
+    const virtualResult1 = results1.find(r => r.path.pathname.includes('virtual'))
     assert.ok(virtualResult1)
     assert.strictEqual(virtualResult1.status, undefined)
 
     // Second build with same cacheKey
     const results2 = await coralite.build()
-    const virtualResult2 = results2.find(r => r.path.pathname === 'virtual.html')
+    const virtualResult2 = results2.find(r => r.path.pathname.includes('virtual'))
     assert.strictEqual(virtualResult2.status, 'skipped')
   })
 
@@ -115,7 +115,7 @@ describe('Incremental Static Regeneration (ISR)', () => {
     // Change cacheKey
     options.cacheKey = 'v2'
     const results = await coralite.build()
-    const virtualResult = results.find(r => r.path.pathname === 'virtual.html')
+    const virtualResult = results.find(r => r.path.pathname.includes('virtual'))
     assert.strictEqual(virtualResult.status, undefined)
   })
 
@@ -133,7 +133,7 @@ describe('Incremental Static Regeneration (ISR)', () => {
     await coralite.build()
 
     const results = await coralite.build()
-    const volatileResult = results.find(r => r.path.pathname === 'volatile.html')
+    const volatileResult = results.find(r => r.path.pathname.includes('volatile'))
     assert.strictEqual(volatileResult.status, undefined)
   })
 

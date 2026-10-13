@@ -159,6 +159,7 @@
  * @property {boolean} [preserveTestId] - Whether to preserve data-testid in production.
  * @property {CoraliteTestingConfig} [testing] - Configuration for testing mode.
  * @property {CoraliteCSPConfig} [csp] - Configuration for Content Security Policy.
+ * @property {boolean} [cleanUrls=true] - Whether output URLs and route paths are directory-style (clean) or file-style.
  * @property {boolean} [suppressValidationWarnings] - Whether to suppress attribute validation warning messages.
  * @property {boolean} [incremental=true] - Whether to skip rebuilding unchanged pages and components.
  * @property {string} [projectRoot] - The root directory of the project.

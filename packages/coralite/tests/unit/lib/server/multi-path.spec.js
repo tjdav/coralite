@@ -37,7 +37,8 @@ describe('Multi-Path Rendering (P2.05)', () => {
       pages: pagesDir,
       output: OUTPUT_DIR,
       mode: 'production',
-      incremental: false
+      incremental: false,
+      cleanUrls: false
     })
 
     const results = await app.save()
@@ -127,7 +128,7 @@ describe('Multi-Path Rendering (P2.05)', () => {
     const results = await app.save()
     const htmlResults = results.filter(r => r.path.endsWith('.html'))
     assert.equal(htmlResults.length, 1)
-    assert.ok(htmlResults[0].path.endsWith('about.html'))
+    assert.ok(htmlResults[0].path.endsWith(join('about', 'index.html')))
   })
 
   it('fault isolation: server throwing for one path still produces outputs for other paths', async () => {
@@ -139,7 +140,8 @@ describe('Multi-Path Rendering (P2.05)', () => {
       output: OUTPUT_DIR,
       mode: 'production',
       incremental: false,
-      continueOnError: true
+      continueOnError: true,
+      cleanUrls: false
     })
 
     try {
@@ -158,7 +160,7 @@ describe('Multi-Path Rendering (P2.05)', () => {
 
     const manifestContent = await readFile(join(TEST_DIR, '.coralite', 'manifest.json'), 'utf8')
     const manifest = JSON.parse(manifestContent)
-    assert.ok(manifest.failed.some(f => f.endsWith('fail.html')), 'Failed path should be recorded in manifest.failed')
+    assert.ok(manifest.failed.some(f => f.includes('fail')), 'Failed path should be recorded in manifest.failed')
   })
 
   it('onError hook provides fallback for a single failing path in dynamic page', async () => {
@@ -195,7 +197,8 @@ describe('Multi-Path Rendering (P2.05)', () => {
       pages: errPagesDir,
       output: OUTPUT_DIR,
       mode: 'production',
-      incremental: false
+      incremental: false,
+      cleanUrls: false
     })
 
     const results = await app.save()

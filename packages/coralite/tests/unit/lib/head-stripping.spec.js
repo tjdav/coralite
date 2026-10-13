@@ -29,7 +29,7 @@ describe('Head Stripping', () => {
 
     const results = await coralite.build()
 
-    const indexPage = results.find(r => r.path.filename === 'head-stripping-page.html')
+    const indexPage = results.find(r => r.path.pathname.includes('head-stripping-page'))
     assert.ok(indexPage, 'Head stripping page should be built')
 
     const content = indexPage.content

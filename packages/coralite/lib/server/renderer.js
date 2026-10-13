@@ -62,16 +62,56 @@ import { validateLateBoundClientConfig } from '../shared/plugin-config-schema.js
 import { buildRouteTable } from './routes/build-table.js'
 import { validateRouteTable, buildConcreteUrl } from './routes/validate.js'
 
-function computeOutputPath (concretePath, sourceFilename) {
-  const isIndex = sourceFilename === 'index.html' || (typeof sourceFilename === 'string' && sourceFilename.endsWith('/index.html'))
-  if (concretePath === '/') {
-    return 'index.html'
+/**
+ * Computes route.path and output file path based on cleanUrls configuration.
+ * @param {string} patternPath - Raw pattern or concrete route path
+ * @param {boolean} cleanUrls - Whether clean URLs are enabled
+ * @param {string} pagesRoot - Root directory for pages
+ * @returns {{ routePath: string, relOutPath: string, targetOutPath: string }} Computed route and output paths
+ */
+export function computeRouteAndOutputPath (patternPath, cleanUrls, pagesRoot) {
+  let clean = patternPath || '/'
+  if (clean !== '/') {
+    if (clean.endsWith('/')) {
+      clean = clean.slice(0, -1)
+    }
+    if (clean.endsWith('.html')) {
+      clean = clean.slice(0, -5)
+    }
+    if (clean.endsWith('/index')) {
+      clean = clean.slice(0, -6)
+    }
+    if (!clean || clean === '') {
+      clean = '/'
+    }
   }
-  const clean = concretePath.startsWith('/') ? concretePath.slice(1) : concretePath
-  if (isIndex) {
-    return `${clean}/index.html`
+
+  if (clean === '/') {
+    return {
+      routePath: '/',
+      relOutPath: 'index.html',
+      targetOutPath: join(pagesRoot, 'index.html')
+    }
   }
-  return `${clean}.html`
+
+  const subPath = clean.startsWith('/') ? clean.slice(1) : clean
+  const normalizedRoute = clean.startsWith('/') ? clean : '/' + clean
+
+  if (cleanUrls) {
+    const relOutPath = `${subPath}/index.html`
+    return {
+      routePath: normalizedRoute,
+      relOutPath,
+      targetOutPath: join(pagesRoot, relOutPath)
+    }
+  } else {
+    const relOutPath = `${subPath}.html`
+    return {
+      routePath: `${normalizedRoute}.html`,
+      relOutPath,
+      targetOutPath: join(pagesRoot, relOutPath)
+    }
+  }
 }
 
 /**
@@ -2777,13 +2817,12 @@ export function createRenderer ({
           params: routeParams,
           segments: routeSegments
         }
+        const pagesRoot = normalizedOptions.path.pages
         const pathTasks = enumeratedPaths.map(paramObj => {
           const concretePath = buildConcreteUrl(patternEntry, paramObj)
-          const relOutPath = computeOutputPath(concretePath, pageItem.path?.filename)
-          const pagesRoot = normalizedOptions.path.pages
-          const targetOutPath = join(pagesRoot, relOutPath)
+          const { routePath, targetOutPath } = computeRouteAndOutputPath(concretePath, normalizedOptions.cleanUrls, pagesRoot)
           const targetRoute = {
-            path: concretePath,
+            path: routePath,
             pattern: routePattern,
             params: paramObj,
             dynamic: true
@@ -2791,7 +2830,7 @@ export function createRenderer ({
           return {
             pageItem,
             paramObj,
-            concretePath,
+            concretePath: routePath,
             targetOutPath,
             targetRoute
           }
@@ -2799,18 +2838,19 @@ export function createRenderer ({
         pathTasks.sort((a, b) => a.concretePath.localeCompare(b.concretePath))
         renderTasks.push(...pathTasks)
       } else {
-        const staticPath = pageObj?.route?.path || pageObj?.url?.pathname || routePattern || '/'
-        const targetOutPath = pageItem.path.pathname
+        const pagesRoot = normalizedOptions.path.pages
+        const staticPattern = pageObj?.routePattern || pageObj?.url?.pathname || '/'
+        const { routePath, targetOutPath } = computeRouteAndOutputPath(staticPattern, normalizedOptions.cleanUrls, pagesRoot)
         const targetRoute = {
-          path: staticPath,
-          pattern: pageObj?.route?.pattern || pageObj?.url?.pathname || routePattern || '/',
+          path: routePath,
+          pattern: pageObj?.route?.pattern || staticPattern,
           params: {},
           dynamic: false
         }
         renderTasks.push({
           pageItem,
           paramObj: {},
-          concretePath: staticPath,
+          concretePath: routePath,
           targetOutPath,
           targetRoute
         })

@@ -75,8 +75,8 @@ describe('Asset Injection & SRI Flush Pass', () => {
     })
 
     const results = await app.build()
-    const indexResult = results.find(r => r.path.filename === 'index.html')
-    const docsResult = results.find(r => r.path.filename === 'docs.html')
+    const indexResult = results.find(r => r.path.pathname.endsWith('index.html') && !r.path.pathname.includes('docs'))
+    const docsResult = results.find(r => r.path.pathname.includes('docs'))
 
     assert.ok(!indexResult.content.includes('vendor.js'))
     assert.ok(docsResult.content.includes('vendor.js'))
