@@ -60,6 +60,7 @@ import { emitFragment, prepareAllComponentOps } from './utils/fragment.js'
 import { createServerSlotsHelper } from './component/setup.js'
 import { validateLateBoundClientConfig } from '../shared/plugin-config-schema.js'
 import { buildRouteTable } from './routes/build-table.js'
+import { validateRouteTable } from './routes/validate.js'
 
 /**
  * @import {
@@ -2577,6 +2578,7 @@ export function createRenderer ({
       testingMocksHash: mocksHash,
       routes: buildRouteTable(app.pages)
     }
+    validateRouteTable(newManifest.routes, app.pages)
 
     // Check components first for dependency cascading
     const componentChanges = new Map()
