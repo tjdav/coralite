@@ -60,24 +60,32 @@ export async function triggerPluginAggregateHook ({ app, hooks, serverGlobalCont
 /**
  * Executes all plugin callbacks registered under the specified hook name sequentially.
  *
- * @param {Object} options - The options used to trigger the plugin hook.
- * @param {Object} options.app - The global Coralite app instance.
- * @param {Object} options.hooks - The collection of registered plugin hooks.
- * @param {Object} options.serverGlobalContext - The global server-side context.
- * @param {string} options.name - The name of the hook to trigger.
- * @param {any} options.initialData - The initial data to be modified by the hooks.
+ * @param {Object} hookData - The options used to trigger the plugin hook.
+ * @param {Object} hookData.app - The global Coralite app instance.
+ * @param {Object} hookData.hooks - The collection of registered plugin hooks.
+ * @param {Object} hookData.serverGlobalContext - The global server-side context.
+ * @param {string} hookData.name - The name of the hook to trigger.
+ * @param {any} hookData.initialData - The initial data to be modified by the hooks.
+ * @param {Object} [options] - Additional options.
+ * @param {boolean} [options.returnAllResults] - Whether to return raw results from each hook execution.
  * @returns {Promise<any>} Merged data
  */
-export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name, initialData }) {
+export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name, initialData }, options = {}) {
   const pluginHooks = hooks[name]
+  const returnAllResults = options?.returnAllResults === true
 
   if (!pluginHooks || pluginHooks.length === 0) {
-    return initialData
+    return returnAllResults ? {
+      mergedData: initialData,
+      rawResults: []
+    } : initialData
   }
 
   let currentData = typeof initialData === 'object' && initialData !== null
     ? Object.assign({ app }, serverGlobalContext, initialData)
     : initialData
+
+  const rawResults = []
 
   for (let i = 0; i < pluginHooks.length; i++) {
     let result = pluginHooks[i](currentData)
@@ -86,12 +94,19 @@ export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name
       result = await result
     }
 
+    if (returnAllResults) {
+      rawResults.push(result)
+    }
+
     if (result !== undefined && result !== null) {
       currentData = mergePluginState(currentData, result)
     }
   }
 
-  return currentData
+  return returnAllResults ? {
+    mergedData: currentData,
+    rawResults
+  } : currentData
 }
 
 /**
