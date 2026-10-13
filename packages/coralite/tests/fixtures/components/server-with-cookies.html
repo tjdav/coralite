@@ -1,0 +1,12 @@
+<template id="x-server-with-cookies">
+  <div>{{ val }}</div>
+</template>
+
+<script>
+export default defineComponent({
+  server() {
+    console.log(cookies)
+    return { val: 'test' }
+  }
+})
+</script>

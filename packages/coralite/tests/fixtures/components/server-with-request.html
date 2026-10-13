@@ -1,0 +1,12 @@
+<template id="x-server-with-request">
+  <div>{{ val }}</div>
+</template>
+
+<script>
+export default defineComponent({
+  server() {
+    console.log(request)
+    return { val: 'test' }
+  }
+})
+</script>

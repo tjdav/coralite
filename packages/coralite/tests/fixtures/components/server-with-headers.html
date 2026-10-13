@@ -1,0 +1,12 @@
+<template id="x-server-with-headers">
+  <div>{{ val }}</div>
+</template>
+
+<script>
+export default defineComponent({
+  server() {
+    console.log(headers)
+    return { val: 'test' }
+  }
+})
+</script>
