@@ -1,0 +1,7 @@
+<script type="module">
+  export const server = async ({ route }) => {
+    return { title: `Post ${route.params.id}` }
+  }
+</script>
+
+<h1>Server Only</h1>

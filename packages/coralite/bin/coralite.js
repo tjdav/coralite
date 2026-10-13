@@ -12,6 +12,7 @@ import { validateComponentsDir, formatComponentValidationReport } from '#lib/ser
 import { applyComponentFixes } from '#lib/server/component/fixer.js'
 import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/server/plugin/validator.js'
 import { applyPluginFixes } from '#lib/server/plugin/fixer.js'
+import { applyPageFixes } from '#lib/server/page/fixer.js'
 import { validatePagesDir, formatPageValidationReport } from '#lib/server/page/validator.js'
 import {
   promptCheckOptions,
@@ -434,6 +435,7 @@ program
     const runFixPass = async (opts) => {
       let compOpt = opts.components
       let pluginOpt = opts.plugins
+      let pageOpt = opts.pages
 
       if (Array.isArray(opts.domains)) {
         if (!opts.domains.includes('components') && !opts.components) {
@@ -442,10 +444,14 @@ program
         if (!opts.domains.includes('plugins') && !opts.plugins) {
           pluginOpt = false
         }
+        if (!opts.domains.includes('pages') && !opts.pages) {
+          pageOpt = false
+        }
       }
 
       const compDir = resolvePath(compOpt, 'components', ['src/components', 'tests/fixtures/components'])
       const pluginTarget = resolvePath(pluginOpt, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
+      const pageDir = resolvePath(pageOpt, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'])
 
       const targetCodesSet = normalizeErrorCodes(opts.errorCode || opts.code || opts.errorCodes)
 
@@ -479,6 +485,39 @@ program
                 process.stdout.write(fixResult.diff + '\n')
               } else {
                 await writeFile(compRes.filePath, fixResult.outputCode, 'utf8')
+              }
+            }
+          })
+        )
+      }
+
+      // Fix Pages
+      if (pageDir && existsSync(pageDir)) {
+        const pageReport = await validatePagesDir(pageDir)
+
+        await Promise.all(
+          pageReport.pages.map(async (pageRes) => {
+            if (!pageRes.filePath) {
+              return
+            }
+
+            const rawDiagnostics = pageRes.diagnostics || []
+            const diagnostics = targetCodesSet ? rawDiagnostics.filter(d => matchesErrorCode(d.code, targetCodesSet)) : rawDiagnostics
+
+            const rawCode = await readFile(pageRes.filePath, 'utf8')
+            const fixResult = applyPageFixes(rawCode, diagnostics, {
+              filePath: pageRes.filePath,
+              dryRun: opts.dryRun
+            })
+
+            if (fixResult.modified) {
+              totalFixesCount += fixResult.fixesApplied.length
+              modifiedFiles.push(pageRes.filePath)
+
+              if (opts.dryRun) {
+                process.stdout.write(fixResult.diff + '\n')
+              } else {
+                await writeFile(pageRes.filePath, fixResult.outputCode, 'utf8')
               }
             }
           })

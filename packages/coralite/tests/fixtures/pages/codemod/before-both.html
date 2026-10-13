@@ -1,0 +1,11 @@
+<script type="module">
+  export const paths = async () => {
+    return [{ params: { id: '1' } }]
+  }
+
+  export const server = async ({ route }) => {
+    return { title: `Post ${route.params.id}` }
+  }
+</script>
+
+<h1>Both</h1>

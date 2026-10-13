@@ -1,0 +1,11 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server: async ({ route }) => {
+      return { title: `Post ${route.params.id}` }
+    }
+  })
+</script>
+
+<h1>Server Only</h1>
