@@ -1,7 +1,9 @@
 import { Parser } from 'htmlparser2'
 import { isValidCustomElementName } from '../../shared/tags.js'
 import { getLocForSubstring } from '../../shared/diagnostics.js'
+import { kebabToCamel } from '../../shared/core.js'
 import {
+  RESERVED_IDENTIFIERS,
   extractIdentifiersFromExpr,
   deriveGetterName,
   generateGetterCode,
@@ -32,7 +34,22 @@ export function validateTemplate (context) {
     let currentSection = null
     let templateDepth = 0
     let templateSearchOffset = 0
-    const existingKeys = new Set([...definedGetters, ...definedAttributes, ...definedServerProps])
+    const definedStateProps = context.definedStateProps || new Set()
+    const existingKeys = new Set([...definedGetters, ...definedAttributes, ...definedServerProps, ...definedStateProps])
+
+    const isConclusive = Boolean(
+      context.configObj &&
+      (context.hasStateBlock || context.hasServerBlock) &&
+      (!context.hasStateBlock || !context.hasUnresolvableState) &&
+      (!context.hasServerBlock || !context.hasUnresolvableServer)
+    )
+
+    const resolvableSymbols = new Set([
+      ...definedGetters,
+      ...definedAttributes,
+      ...definedServerProps,
+      ...definedStateProps
+    ])
 
     const extractMustacheFromText = (text, searchFromIndex) => {
       const mustacheRegex = /\{\{\s*([\s\S]+?)\s*\}\}/g
@@ -45,6 +62,23 @@ export function validateTemplate (context) {
 
         if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr)) {
           templateTokens.add(expr)
+
+          if (isConclusive) {
+            if (!RESERVED_IDENTIFIERS.has(expr) && !/[.[\]\s]/.test(expr)) {
+              if (!resolvableSymbols.has(expr) && !resolvableSymbols.has(kebabToCamel(expr))) {
+                diagnostics.push(createDiagnostic({
+                  code: 'CORALITE-E205',
+                  severity: 'error',
+                  message: `Template token "{{ ${expr} }}" does not resolve to any declared symbol.`,
+                  filePath,
+                  line: loc.line,
+                  column: loc.column,
+                  sourceCode,
+                  cause: 'Searched: attributes, state, getters, server return shape.'
+                }))
+              }
+            }
+          }
         } else {
           // Non-pure identifier expression -> CORALITE-E201
           extractIdentifiersFromExpr(expr, templateTokens)

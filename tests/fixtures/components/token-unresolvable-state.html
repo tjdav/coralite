@@ -1,0 +1,15 @@
+<template id="token-unresolvable-state">
+  <div>{{ title }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  function getInitialState () {
+    return { title: 'Dynamic Title' }
+  }
+
+  export default defineComponent({
+    state: getInitialState()
+  })
+</script>

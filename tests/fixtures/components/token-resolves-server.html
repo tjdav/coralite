@@ -1,0 +1,15 @@
+<template id="token-resolves-server">
+  <div>{{ title }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    async server () {
+      return {
+        title: 'Server Title'
+      }
+    }
+  })
+</script>
