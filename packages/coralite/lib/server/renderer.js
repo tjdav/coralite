@@ -59,6 +59,7 @@ import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from '.
 import { emitFragment, prepareAllComponentOps } from './utils/fragment.js'
 import { createServerSlotsHelper } from './component/setup.js'
 import { validateLateBoundClientConfig } from '../shared/plugin-config-schema.js'
+import { buildRouteTable } from './routes/build-table.js'
 
 /**
  * @import {
@@ -2573,7 +2574,8 @@ export function createRenderer ({
       virtual: {},
       dependencies: {},
       components: {},
-      testingMocksHash: mocksHash
+      testingMocksHash: mocksHash,
+      routes: buildRouteTable(app.pages)
     }
 
     // Check components first for dependency cascading
