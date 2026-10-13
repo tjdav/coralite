@@ -1,0 +1,12 @@
+<script>
+import { definePage } from 'coralite'
+
+export default definePage({
+  paths () {
+    return [{ id: '404' }]
+  }
+})
+</script>
+
+<title>Dynamic Page</title>
+<h1>ID: {{ route.params.id }}</h1>
