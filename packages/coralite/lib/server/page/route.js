@@ -1,4 +1,5 @@
 import { CoraliteError } from '../../shared/errors.js'
+import { parsePagePattern } from './pattern.js'
 
 /**
  * Extracts route parameters from a page relative path.
@@ -14,25 +15,11 @@ export function extractRouteParams (relPath) {
     }
   }
 
-  const normPath = relPath.replace(/\\/g, '/')
-  const routeParams = []
-  let isCatchAll = false
-
-  const paramRegex = /\[(\.\.\.)?([^\]]+)\]/g
-  let match
-
-  while ((match = paramRegex.exec(normPath)) !== null) {
-    if (match[1] === '...') {
-      isCatchAll = true
-    }
-    const paramName = match[2]
-    if (paramName && !routeParams.includes(paramName)) {
-      routeParams.push(paramName)
-    }
-  }
+  const { params } = parsePagePattern(relPath, '')
+  const isCatchAll = /\[\.\.\.[^\]]+\]/.test(relPath)
 
   return {
-    routeParams,
+    routeParams: params,
     isCatchAll
   }
 }

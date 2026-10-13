@@ -4,7 +4,8 @@ import { parseHTML, parseModule } from '../utils/parse.js'
 import { extractPageScript } from '../parser/html.js'
 import { registerBaseComponent } from '../component/setup.js'
 import { prepareAllComponentOps } from '../utils/fragment.js'
-import { extractRouteParams, validateEnumeratedPaths } from '../page/route.js'
+import { validateEnumeratedPaths } from '../page/route.js'
+import { parsePagePattern } from '../page/pattern.js'
 import { CoraliteError } from '../../shared/errors.js'
 
 /**
@@ -40,7 +41,8 @@ export function createPageHandlers ({
     const relPath = relative(rootPath, data.path.pathname)
     const urlPathname = pathToFileURL(join('/', relPath)).pathname
 
-    const { routeParams, isCatchAll } = extractRouteParams(relPath)
+    const { pattern: routePattern, params: routeParams, segments: routeSegments } = parsePagePattern(data.path.pathname, rootPath)
+    const isCatchAll = /\[\.\.\.[^\]]+\]/.test(relPath)
 
     if (isCatchAll) {
       try {
@@ -87,7 +89,9 @@ export function createPageHandlers ({
       blocks: parsedScript.blocks,
       hasDefinePage: parsedScript.hasDefinePage,
       script: parsedScript.script,
+      routePattern,
       routeParams,
+      routeSegments,
       enumeratedPaths: []
     }
 
