@@ -1,0 +1,26 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths () {
+      return [
+        { id: 'intro' },
+        { id: 'advanced' }
+      ]
+    },
+    server ({ route }) {
+      return {
+        item: route.params.id
+      }
+    }
+  })
+</script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dir Post</title>
+</head>
+<body>
+  <p>{{ item }}</p>
+</body>
+</html>

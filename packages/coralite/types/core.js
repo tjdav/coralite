@@ -193,6 +193,7 @@
  * @property {Record<string, { js: string, css: string | null }>} [componentHashes] - Hashes for components included on this page.
  * @property {'skipped' | 'failed'} [status] - Optional status if the build was skipped via ISR or failed.
  * @property {Error} [error] - Error diagnostic if rendering failed.
+ * @property {Object} [route] - The route object for this page output.
  */
 
 /**

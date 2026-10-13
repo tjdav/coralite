@@ -8,7 +8,7 @@ import { CoraliteBuildError } from '../../shared/errors.js'
  * @param {Record<string, any>} paramObj - Parameter key-value map.
  * @returns {string} The concrete URL path.
  */
-function buildConcreteUrl (patternEntry, paramObj) {
+export function buildConcreteUrl (patternEntry, paramObj) {
   const segments = patternEntry.segments || []
   if (segments.length === 0) {
     return '/'
