@@ -1018,6 +1018,11 @@ export function createRenderer ({
 
         // 2. Component style properties (overriding tag style on collision)
         const roState = createReadOnlyProxy(componentState)
+        const styleCtx = {
+          state: roState,
+          isServer: true,
+          signal: NOOP_SIGNAL
+        }
         for (const [key, valOrFn] of Object.entries(componentStyleObj)) {
           const normKey = normalizeStyleKey(key)
           if (!normKey) {
@@ -1027,7 +1032,7 @@ export function createRenderer ({
           let val
           if (typeof valOrFn === 'function') {
             try {
-              val = valOrFn(roState)
+              val = valOrFn(styleCtx)
             } catch (err) {
               if (err instanceof CoraliteError) {
                 throw err
@@ -1513,12 +1518,17 @@ export function createRenderer ({
         if (pageExports.style && typeof pageExports.style === 'object') {
           const roState = createReadOnlyProxy(activePageState)
           const computedStylesMap = new Map()
+          const pageStyleCtx = {
+            state: roState,
+            isServer: true,
+            signal: NOOP_SIGNAL
+          }
           for (const [sKey, sValOrFn] of Object.entries(pageExports.style)) {
             const normKey = normalizeStyleKey(sKey)
             if (!normKey) {
               continue
             }
-            const sVal = typeof sValOrFn === 'function' ? sValOrFn(roState) : sValOrFn
+            const sVal = typeof sValOrFn === 'function' ? sValOrFn(pageStyleCtx) : sValOrFn
             if (sVal && typeof sVal.then === 'function') {
               throw new CoraliteError(`Page style property "${sKey}" getter must be synchronous.`, {
                 filePath: pageItem.path?.pathname

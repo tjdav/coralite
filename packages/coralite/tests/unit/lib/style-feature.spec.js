@@ -40,8 +40,8 @@ describe('Component Reactive style Feature', () => {
               size: { type: Number, default: 16 }
             },
             style: {
-              '--btn-bg': (state) => state.variant === 'primary' ? 'blue' : 'gray',
-              fontSize: (state) => state.size,
+              '--btn-bg': ({ state }) => state.variant === 'primary' ? 'blue' : 'gray',
+              fontSize: ({ state }) => state.size,
               lineHeight: 1.5,
               color: 'white'
             }
@@ -110,9 +110,9 @@ describe('Component Reactive style Feature', () => {
           count: 5
         },
         style: {
-          '--badge-bg': (state) => (state.active ? 'green' : 'gray'),
-          opacity: (state) => (state.active ? 1 : 0),
-          zIndex: (state) => state.count
+          '--badge-bg': ({ state }) => (state.active ? 'green' : 'gray'),
+          opacity: ({ state }) => (state.active ? 1 : 0),
+          zIndex: ({ state }) => state.count
         }
       }
 
@@ -148,10 +148,10 @@ describe('Component Reactive style Feature', () => {
           val: 'initial'
         },
         style: {
-          display: (state) => (state.val === 'none' ? false : 'block'),
-          color: (state) => (state.val === 'clear' ? null : 'black'),
-          borderColor: (state) => (state.val === 'clear' ? undefined : 'red'),
-          borderWidth: (state) => (state.val === 'clear' ? '' : '1px')
+          display: ({ state }) => (state.val === 'none' ? false : 'block'),
+          color: ({ state }) => (state.val === 'clear' ? null : 'black'),
+          borderColor: ({ state }) => (state.val === 'clear' ? undefined : 'red'),
+          borderWidth: ({ state }) => (state.val === 'clear' ? '' : '1px')
         }
       }
 
@@ -192,8 +192,8 @@ describe('Component Reactive style Feature', () => {
           orderVal: 0
         },
         style: {
-          opacity: (state) => state.opacityVal,
-          order: (state) => state.orderVal
+          opacity: ({ state }) => state.opacityVal,
+          order: ({ state }) => state.orderVal
         }
       }
 
@@ -295,7 +295,7 @@ describe('Component Reactive style Feature', () => {
         },
         style: {
           backgroundColor: 'blue',
-          color: (state) => {
+          color: ({ state }) => {
             if (state.fail) {
               throw new Error('Getter failure')
             }
@@ -371,8 +371,8 @@ describe('Component Reactive style Feature', () => {
               themeColor: { type: String, default: 'blue' }
             },
             style: {
-              '--bg': (state) => state.variant === 'primary' ? 'black' : 'white',
-              color: (state) => state.themeColor
+              '--bg': ({ state }) => state.variant === 'primary' ? 'black' : 'white',
+              color: ({ state }) => state.themeColor
             }
           })
         </script>

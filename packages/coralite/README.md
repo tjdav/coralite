@@ -199,7 +199,7 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
 
     // STYLE: Declarative reactive inline CSS and custom properties on host
     style: {
-      '--accent-color': (state) => state.theme === 'dark' ? '#38bdf8' : '#0284c7'
+      '--accent-color': ({ state }) => state.theme === 'dark' ? '#38bdf8' : '#0284c7'
     },
 
     // SLOTS: Transform or build projected slot content

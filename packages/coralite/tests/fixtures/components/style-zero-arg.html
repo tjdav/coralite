@@ -1,0 +1,13 @@
+<template id="style-zero-arg">
+  <div>Zero arg style test</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    style: {
+      '--static': () => '4px'
+    }
+  })
+</script>

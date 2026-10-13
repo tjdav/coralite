@@ -402,7 +402,7 @@ describe('Server-side Route Context in Component Blocks', () => {
         import { defineComponent } from 'coralite'
         export default defineComponent({
           style: {
-            '--check': (state) => {
+            '--check': ({ state }) => {
               const hasRouteProperty = Boolean(state && state.route)
               return hasRouteProperty ? 'failed' : 'passed'
             }
