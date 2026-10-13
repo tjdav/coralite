@@ -118,8 +118,8 @@ describe('Route Hydration Payload Serialization', () => {
       server: {
         onBeforePageRender ({ page }) {
           page.route = {
-            path: '/posts/intro.html',
-            pattern: '/posts/[id].html',
+            path: '/posts/intro',
+            pattern: '/posts/[id]',
             params: { id: 'intro' },
             dynamic: true
           }
@@ -146,8 +146,8 @@ describe('Route Hydration Payload Serialization', () => {
     const payload = Function(`return ${match[1]}`)()
     assert.ok(payload.__route__, 'Payload must contain __route__ key')
 
-    assert.equal(payload.__route__.path, '/posts/intro.html')
-    assert.equal(payload.__route__.pattern, '/posts/[id].html')
+    assert.equal(payload.__route__.path, '/posts/intro')
+    assert.equal(payload.__route__.pattern, '/posts/[id]')
     assert.equal(payload.__route__.params.id, 'intro')
     assert.equal(payload.__route__.dynamic, true)
 

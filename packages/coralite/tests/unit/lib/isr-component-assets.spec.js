@@ -101,13 +101,13 @@ describe('ISR Component Assets, Migration & Self-Healing', () => {
     })
 
     const results1 = await coralite.build()
-    const vResult1 = results1.find(r => r.path.pathname === 'virtual-index.html')
+    const vResult1 = results1.find(r => r.path.pathname.includes('virtual-index'))
     assert.strictEqual(vResult1.status, undefined)
     assert.ok(vResult1.componentHashes['v-comp'])
 
     // Build 2: Unchanged -> Virtual page skipped and carries forward componentHashes
     const results2 = await coralite.build()
-    const vResult2 = results2.find(r => r.path.pathname === 'virtual-index.html')
+    const vResult2 = results2.find(r => r.path.pathname.includes('virtual-index'))
     assert.strictEqual(vResult2.status, 'skipped')
 
     // Build 3: Update component template/script
@@ -122,7 +122,7 @@ describe('ISR Component Assets, Migration & Self-Healing', () => {
     `)
 
     const results3 = await coralite.build()
-    const vResult3 = results3.find(r => r.path.pathname === 'virtual-index.html')
+    const vResult3 = results3.find(r => r.path.pathname.includes('virtual-index'))
     assert.strictEqual(vResult3.status, undefined, 'Virtual page must re-render when constituent component changes')
   })
 

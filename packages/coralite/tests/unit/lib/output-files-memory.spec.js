@@ -265,7 +265,7 @@ describe('outputFiles & Asset Cache Memory Management', () => {
       await utimes(assetPath, now, now)
       const results = await app.build('sri-page.html')
 
-      const page = results.find(r => r.path.filename === 'sri-page.html')
+      const page = results.find(r => r.path.pathname.includes('sri-page'))
       assert.ok(page, 'sri-page.html should be rendered')
       const expectedDigest = calculateSRIDigest(Buffer.from(content), 'sha384')
       assert.ok(

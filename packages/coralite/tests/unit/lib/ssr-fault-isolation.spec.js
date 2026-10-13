@@ -91,7 +91,7 @@ describe('SSR Page-Level Fault Isolation & Component Error Boundaries', () => {
 
     assert.ok(thrownError instanceof CoraliteBuildError, 'Should throw CoraliteBuildError')
     assert.equal(thrownError.failedPages.length, 1)
-    assert.ok(thrownError.failedPages[0].path.pathname.includes('page-5.html'))
+    assert.ok(thrownError.failedPages[0].path.pathname.includes('page-5'))
     assert.ok(thrownError.message.includes('Build completed with 1 failed page(s)'))
   })
 
@@ -128,15 +128,15 @@ describe('SSR Page-Level Fault Isolation & Component Error Boundaries', () => {
     assert.ok(thrownError instanceof CoraliteBuildError)
 
     // Check disk: healthy pages exist, failed page was skipped
-    const page1Content = await readFile(join(OUTPUT_DIR, 'page-1.html'), 'utf8')
+    const page1Content = await readFile(join(OUTPUT_DIR, 'page-1', 'index.html'), 'utf8')
     assert.ok(page1Content.includes('Card 1'))
 
-    const page3Content = await readFile(join(OUTPUT_DIR, 'page-3.html'), 'utf8')
+    const page3Content = await readFile(join(OUTPUT_DIR, 'page-3', 'index.html'), 'utf8')
     assert.ok(page3Content.includes('Card 3'))
 
     let page2Exists = false
     try {
-      await readFile(join(OUTPUT_DIR, 'page-2.html'), 'utf8')
+      await readFile(join(OUTPUT_DIR, 'page-2', 'index.html'), 'utf8')
       page2Exists = true
     } catch {
       page2Exists = false
@@ -169,8 +169,8 @@ describe('SSR Page-Level Fault Isolation & Component Error Boundaries', () => {
     const results = await coralite.build(null, { failOnError: false })
 
     assert.equal(results.length, 2)
-    const goodResult = results.find(r => r.path.pathname.includes('good.html'))
-    const badResult = results.find(r => r.path.pathname.includes('bad.html'))
+    const goodResult = results.find(r => r.path.pathname.includes('good'))
+    const badResult = results.find(r => r.path.pathname.includes('bad'))
 
     assert.ok(goodResult)
     assert.ok(goodResult.content.includes('Good'))
@@ -204,7 +204,7 @@ describe('SSR Page-Level Fault Isolation & Component Error Boundaries', () => {
     const manifestPath = join(TEST_DIR, '.coralite', 'manifest.json')
     const manifestContent = JSON.parse(await readFile(manifestPath, 'utf8'))
     assert.ok(Array.isArray(manifestContent.failed))
-    assert.ok(manifestContent.failed.some(p => p.includes('flaky.html')))
+    assert.ok(manifestContent.failed.some(p => p.includes('flaky')))
 
     // Fix component source so it succeeds
     await writeFile(
@@ -222,7 +222,7 @@ describe('SSR Page-Level Fault Isolation & Component Error Boundaries', () => {
 
     // Re-build (incremental = true)
     const results = await coralite.build()
-    const fixedResult = results.find(r => r.path.pathname.includes('flaky.html'))
+    const fixedResult = results.find(r => r.path.pathname.includes('flaky'))
 
     assert.ok(fixedResult)
     assert.notEqual(fixedResult.status, 'skipped', 'Previously failed page should not be skipped')

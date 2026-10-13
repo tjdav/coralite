@@ -43,6 +43,16 @@ export function defineConfig (options, { onError } = {}) {
     }
   }
 
+  // Validate urlStyle deprecation
+  if ('urlStyle' in options) {
+    throw new CoraliteError('Config property "urlStyle" is deprecated and has been removed. Use "cleanUrls" (boolean) instead.')
+  }
+
+  // Validate cleanUrls
+  if (options.cleanUrls !== undefined && typeof options.cleanUrls !== 'boolean') {
+    throw new CoraliteError(`Config property "cleanUrls" must be a boolean, received ${typeof options.cleanUrls}`)
+  }
+
   // Validate mode
   if (options.mode !== undefined) {
     const validModes = ['production', 'development', 'testing']

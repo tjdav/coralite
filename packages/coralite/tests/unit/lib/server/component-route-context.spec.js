@@ -66,7 +66,7 @@ describe('Server-side Route Context in Component Blocks', () => {
     const results = await coralite.build()
     assert.equal(results.length, 1)
     const html = results[0].content
-    assert.ok(html.includes('/page-a.html'), 'Component server block must receive enclosing page route')
+    assert.ok(html.includes('/page-a'), 'Component server block must receive enclosing page route')
   })
 
   it('component getters receives route with correct shape for a static page and bakes output into rendered HTML', async () => {
@@ -106,7 +106,7 @@ describe('Server-side Route Context in Component Blocks', () => {
     const results = await coralite.build()
     assert.equal(results.length, 1)
     const html = results[0].content
-    assert.ok(html.includes('Path: /static-page.html (dynamic:false)'), 'Component getter output depending on route must be baked into HTML')
+    assert.ok(html.includes('Path: /static-page (dynamic:false)'), 'Component getter output depending on route must be baked into HTML')
   })
 
   it('component getters receives route with correct shape for a dynamic page', async () => {
@@ -150,8 +150,8 @@ describe('Server-side Route Context in Component Blocks', () => {
         onBeforePageRender ({ page }) {
           if (page.enumeratedPaths && page.enumeratedPaths.length > 0) {
             page.route = {
-              path: '/items/99.html',
-              pattern: '/items/[id].html',
+              path: '/items/99',
+              pattern: '/items/[id]',
               params: { id: '99' },
               dynamic: true
             }
@@ -172,7 +172,7 @@ describe('Server-side Route Context in Component Blocks', () => {
     const results = await coralite.build()
     assert.equal(results.length, 1)
     const html = results[0].content
-    assert.ok(html.includes('ID: 99 at /items/99.html (pattern:/items/[id].html)'), 'Component getter must receive dynamic route params and pattern')
+    assert.ok(html.includes('ID: 99 at /items/99 (pattern:/items/[id])'), 'Component getter must receive dynamic route params and pattern')
   })
 
   it('component slots receives route', async () => {
@@ -223,7 +223,7 @@ describe('Server-side Route Context in Component Blocks', () => {
     const results = await coralite.build()
     assert.equal(results.length, 1)
     const html = results[0].content
-    assert.ok(html.includes('data-slot-route="/slot-page.html"'), 'Component slots context must receive route')
+    assert.ok(html.includes('data-slot-route="/slot-page"'), 'Component slots context must receive route')
   })
 
   it('component provide receives route and descendant consumes context', async () => {
@@ -282,7 +282,7 @@ describe('Server-side Route Context in Component Blocks', () => {
     const results = await coralite.build()
     assert.equal(results.length, 1)
     const html = results[0].content
-    assert.ok(html.includes('/provide-page.html'), 'Component provide block must receive route')
+    assert.ok(html.includes('/provide-page'), 'Component provide block must receive route')
   })
 
   it('two components on the same page receive the same route', async () => {
@@ -338,7 +338,7 @@ describe('Server-side Route Context in Component Blocks', () => {
     const results = await coralite.build()
     assert.equal(results.length, 1)
     const html = results[0].content
-    assert.ok(html.includes('/multi-comp.html'))
+    assert.ok(html.includes('/multi-comp'))
   })
 
   it('a component rendered via slots projection receives the host page route', async () => {
@@ -389,7 +389,7 @@ describe('Server-side Route Context in Component Blocks', () => {
     const results = await coralite.build()
     assert.equal(results.length, 1)
     const html = results[0].content
-    assert.ok(html.includes('/projection-page.html'))
+    assert.ok(html.includes('/projection-page'))
   })
 
   it('negative assertion: component style does not receive route object', async () => {

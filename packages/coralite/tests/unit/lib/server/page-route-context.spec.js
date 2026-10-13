@@ -77,7 +77,7 @@ describe('Server-side Route Context in Page Blocks', () => {
     assert.equal(results.length, 1)
 
     const html = results[0].content
-    assert.ok(html.includes('<h1>Alice at /about.html (dynamic:false)</h1>'), 'Page getter output depending on route must be baked into HTML')
+    assert.ok(html.includes('<h1>Alice at /about (dynamic:false)</h1>'), 'Page getter output depending on route must be baked into HTML')
   })
 
   it('page getters receives route with correct shape for a dynamic page per enumerated path', async () => {
@@ -110,8 +110,8 @@ describe('Server-side Route Context in Page Blocks', () => {
         onBeforePageRender ({ page }) {
           if (page.enumeratedPaths && page.enumeratedPaths.length > 0) {
             page.route = {
-              path: '/posts/intro.html',
-              pattern: '/posts/[id].html',
+              path: '/posts/intro',
+              pattern: '/posts/[id]',
               params: { id: 'intro' },
               dynamic: true
             }
@@ -133,7 +133,7 @@ describe('Server-side Route Context in Page Blocks', () => {
     assert.equal(results.length, 1)
 
     const html = results[0].content
-    assert.ok(html.includes('<h2>Post intro at /posts/intro.html (pattern:/posts/[id].html, dynamic:true)</h2>'))
+    assert.ok(html.includes('<h2>Post intro at /posts/intro (pattern:/posts/[id], dynamic:true)</h2>'))
   })
 
   it('page provide receives route and descendant components consuming page-provided context read route values correctly', async () => {
@@ -168,7 +168,7 @@ describe('Server-side Route Context in Page Blocks', () => {
     assert.equal(results.length, 1)
 
     const html = results[0].content
-    assert.ok(html.includes('/provided.html'), 'Consumed context value from page provide must be rendered into component output')
+    assert.ok(html.includes('/provided'), 'Consumed context value from page provide must be rendered into component output')
   })
 
   it('negative test: page style block receives state directly and does not receive context object', async () => {

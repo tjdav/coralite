@@ -112,7 +112,7 @@ describe('Page Blocks - Build-Time Execution (getters, style, provide, client)',
     const results = await app.build(join(projectDir, 'pages/with-getters.html'))
     assert.equal(results.length, 1)
     const content = results[0].content
-    assert.ok(content.includes('Welcome back to /with-getters.html'), 'Greeting token resolved with route')
+    assert.ok(content.includes('Welcome back to /with-getters'), 'Greeting token resolved with route')
     assert.ok(content.includes('Alice Smith'), 'FullName getter token resolved with state')
   })
 

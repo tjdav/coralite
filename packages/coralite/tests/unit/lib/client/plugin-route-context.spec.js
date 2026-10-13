@@ -309,7 +309,7 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
       })
 
       const results = await coralite.build()
-      const hostResult = results.find(r => r.path?.pathname?.includes('42.html') || r.path?.pathname?.includes('99.html'))
+      const hostResult = results.find(r => r.path?.pathname?.includes('42') || r.path?.pathname?.includes('99'))
       assert.ok(hostResult, 'plugin-route-host page result must exist')
       assert.ok(hostResult.content.includes('Plugin Route Host Page'), 'HTML content should render successfully')
     } finally {

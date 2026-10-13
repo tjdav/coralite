@@ -265,7 +265,7 @@ describe('Coralite', () => {
         assert.ok(files.length > 0, 'assets directory should contain at least one chunk file')
 
         // Verify the orchestrator in the HTML file points to the right chunk
-        const htmlContent = await fs.readFile(path.join(outputDir, 'with-script.html'), 'utf-8')
+        const htmlContent = await fs.readFile(path.join(outputDir, 'with-script', 'index.html'), 'utf-8').catch(() => fs.readFile(path.join(outputDir, 'with-script.html'), 'utf-8'))
         assert.ok(htmlContent.includes('/assets/js/coralite-runtime'), 'HTML orchestrator should reference the assets directory')
       } catch (err) {
         assert.fail(`Asset directory or files missing: ${err.message}`)
@@ -486,7 +486,7 @@ describe('Bug Fix: Preserving recursive tokens', () => {
 
     const results = await coralite.build()
 
-    const pageResult = results.find(r => r.path && r.path.filename === 'nested-dependencies-page.html')
+    const pageResult = results.find(r => r.path && (r.path.filename === 'nested-dependencies-page.html' || r.path.pathname.includes('nested-dependencies-page')))
     const htmlOutput = pageResult ? pageResult.content : ''
     assert.ok(htmlOutput.includes('i-am-preserved'), 'nested child token state should receive context state')
   })

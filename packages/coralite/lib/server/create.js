@@ -54,7 +54,8 @@ export async function createCoralite ({
   output,
   testing,
   incremental = true,
-  csp
+  csp,
+  cleanUrls = true
 }) {
   if (onError !== undefined && typeof onError !== 'function') {
     throw new CoraliteError('createCoralite requires "onError" option to be a function if provided')
@@ -88,6 +89,10 @@ export async function createCoralite ({
     pages: normalize(pages)
   }
 
+  const effectiveCleanUrls = process.env.CORALITE_CLEAN_URLS !== undefined
+    ? process.env.CORALITE_CLEAN_URLS === 'true'
+    : Boolean(cleanUrls)
+
   const normalizedOptions = {
     components,
     pages,
@@ -105,7 +110,8 @@ export async function createCoralite ({
     onComponentBuild,
     testing,
     incremental,
-    csp
+    csp,
+    cleanUrls: effectiveCleanUrls
   }
 
   const trackedOutputFiles = new Set()
