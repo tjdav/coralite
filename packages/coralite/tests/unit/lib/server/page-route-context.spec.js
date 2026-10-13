@@ -183,9 +183,8 @@ describe('Server-side Route Context in Page Blocks', () => {
           export default definePage({
             server: () => ({ themeColor: 'blue' }),
             style: {
-              '--theme': (state) => {
-                const isDirectState = state.state === undefined
-                return isDirectState ? state.themeColor : 'wrong'
+              '--theme': ({ state }) => {
+                return state.themeColor
               }
             }
           })

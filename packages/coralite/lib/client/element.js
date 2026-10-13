@@ -2879,10 +2879,16 @@ export class CoraliteElement extends BaseElement {
           continue
         }
 
+        const styleCtx = {
+          state: trackedRoState || roState,
+          isServer: false,
+          signal: this._abortController?.signal || new AbortController().signal
+        }
+
         let val
         if (typeof valOrFn === 'function') {
           try {
-            val = valOrFn(trackedRoState || roState)
+            val = valOrFn(styleCtx)
           } catch (err) {
             if (err instanceof CoraliteError) {
               throw err
@@ -4367,18 +4373,25 @@ export async function setupPageRuntime (pageConfig) {
     return stateProxy[key]
   }
 
+  const pageAbortController = new AbortController()
+
   const applyPageStyles = () => {
     if (!styleFns || Object.keys(styleFns).length === 0) {
       return
     }
     const roState = createReadOnlyProxy(stateProxy)
+    const pageStyleCtx = {
+      state: roState,
+      isServer: false,
+      signal: pageAbortController.signal
+    }
     for (const [key, valOrFn] of Object.entries(styleFns)) {
       const normKey = normalizeStyleKey(key)
       if (!normKey) {
         continue
       }
       const parsedFn = parseFn(valOrFn)
-      const val = typeof parsedFn === 'function' ? parsedFn(roState) : valOrFn
+      const val = typeof parsedFn === 'function' ? parsedFn(pageStyleCtx) : valOrFn
       if (val !== null && val !== undefined && val !== false && val !== '') {
         rootEl.style.setProperty(normKey, String(val))
       } else {

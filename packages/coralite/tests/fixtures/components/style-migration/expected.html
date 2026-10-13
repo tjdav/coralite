@@ -1,0 +1,16 @@
+<template id="style-migration">
+  <div>Style migration test</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      active: { type: Boolean, default: false }
+    },
+    style: {
+      '--accent': ({ state }) => state.active ? 'green' : 'gray'
+    }
+  })
+</script>

@@ -50,7 +50,7 @@ describe('Page Client Runtime Execution', () => {
         greeting: ({ state, route }) => `Hello ${state.name} at ${route.path}`
       },
       style: {
-        '--page-count': (state) => state.count
+        '--page-count': ({ state }) => state.count
       },
       client: async ({ state, observe, route }) => {
         clientExecuted = true

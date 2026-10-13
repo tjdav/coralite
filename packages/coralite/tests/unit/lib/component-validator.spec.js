@@ -775,7 +775,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
       ctxGetter: (context) => context.state.count * 2
     },
     style: {
-      color: (state) => state.count > 0 ? 'red' : 'blue'
+      color: ({ state }) => state.count > 0 ? 'red' : 'blue'
     },
     slots: {
       default (context) {

@@ -2,7 +2,8 @@
   <div>{{ val }}</div>
 </template>
 
-<script>
+<script type="module">
+import { defineComponent } from 'coralite'
 export default defineComponent({
   server() {
     console.log(headers)

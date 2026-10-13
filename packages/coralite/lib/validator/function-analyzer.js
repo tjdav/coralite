@@ -99,6 +99,20 @@ export function analyzeFunctionBlock (
     const targetParam = fnNode.params[paramIdx]
     if (targetParam.type === 'Identifier') {
       if (isStyleFn) {
+        diagnostics.push(createDiagnostic({
+          code: 'CORALITE-E105',
+          severity: 'error',
+          message: 'style functions must destructure the context.\nExpected: ({ state }) => ...\nFound:    (' + targetParam.name + ') => ...',
+          filePath,
+          line: targetParam.loc ? targetParam.loc.start.line + scriptStartLine : 1,
+          column: targetParam.loc ? targetParam.loc.start.column + 1 : 1,
+          sourceCode,
+          cause: 'Style functions in Coralite receive context ({ state, isServer, signal }) instead of state directly.',
+          fix: targetParam.name === 'state' ? {
+            action: 'style_context_migration',
+            description: 'Rewrite style parameter to destructured ({ state })'
+          } : null
+        }))
         stateVars.add(targetParam.name)
       } else if (isGetterFn) {
         if (targetParam.name === 'state') {

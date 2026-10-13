@@ -1,6 +1,6 @@
 import { transformNode } from '../parser/html.js'
 import { createCoraliteTextNode } from './dom.js'
-import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, formatInlineStyle, hasContextEntries, resolveComponentSlots } from '../../shared/core.js'
+import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, formatInlineStyle, hasContextEntries, resolveComponentSlots, NOOP_SIGNAL } from '../../shared/core.js'
 import { filterReservedAttributes } from '../renderer.js'
 import { CoraliteError } from '../../shared/errors.js'
 import { BOOLEAN_ATTRIBUTES, isAriaAttribute, isAriaBooleanState, resolveAriaBooleanState } from '../../shared/tags.js'
@@ -607,6 +607,11 @@ export async function emitFragment ({
       }
     }
     const roState = createReadOnlyProxy(componentState)
+    const styleCtx = {
+      state: roState,
+      isServer: true,
+      signal: NOOP_SIGNAL
+    }
     for (const [key, valOrFn] of Object.entries(componentStyleObj)) {
       const normKey = normalizeStyleKey(key)
       if (!normKey) {
@@ -615,7 +620,7 @@ export async function emitFragment ({
       let val
       if (typeof valOrFn === 'function') {
         try {
-          val = valOrFn(roState)
+          val = valOrFn(styleCtx)
         } catch (err) {
           if (err instanceof CoraliteError) {
             throw err

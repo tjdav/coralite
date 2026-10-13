@@ -496,8 +496,8 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
         ranges: true
       })
 
-      // 2.0 CORALITE-E105 (Rewrite getter (state) context to ({ state }))
-      const e105GetterDiagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E105' && d.fix?.action === 'rewrite_getter_context')
+      // 2.0 CORALITE-E105 (Rewrite getter/style (state) context to ({ state }))
+      const e105GetterDiagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E105' && (d.fix?.action === 'rewrite_getter_context' || d.fix?.action === 'style_context_migration'))
       if (e105GetterDiagnostics.length > 0) {
         const getterReplacements = []
 
@@ -505,46 +505,52 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
           CallExpression (node) {
             if (
               node.callee.type === 'Identifier' &&
-              node.callee.name === 'defineComponent' &&
+              (node.callee.name === 'defineComponent' || node.callee.name === 'definePage') &&
               node.arguments.length > 0 &&
               node.arguments[0].type === 'ObjectExpression'
             ) {
               const configObj = node.arguments[0]
-              const gettersProp = configObj.properties.find(p => getPropKeyName(p) === 'getters')
+              const targetBlocks = configObj.properties.filter(p => {
+                const name = getPropKeyName(p)
+                return name === 'getters' || name === 'style'
+              })
 
-              if (gettersProp && gettersProp.type === 'Property' && gettersProp.value.type === 'ObjectExpression') {
-                for (const prop of gettersProp.value.properties) {
-                  if (prop.type !== 'Property') {
-                    continue
-                  }
-                  const fnVal = prop.value
-                  if (fnVal && (fnVal.type === 'FunctionExpression' || fnVal.type === 'ArrowFunctionExpression')) {
-                    if (fnVal.params && fnVal.params.length > 0) {
-                      const p0 = fnVal.params[0]
-                      if (p0.type === 'Identifier' && p0.name === 'state' && p0.range) {
-                        const [pStart, pEnd] = p0.range
-                        let isBareArrow = false
-                        if (fnVal.type === 'ArrowFunctionExpression') {
-                          const prefix = scriptContent.slice(fnVal.range[0], pStart)
-                          if (!prefix.includes('(')) {
-                            isBareArrow = true
+              for (const targetProp of targetBlocks) {
+                if (targetProp && targetProp.type === 'Property' && targetProp.value.type === 'ObjectExpression') {
+                  const blockName = getPropKeyName(targetProp)
+                  for (const prop of targetProp.value.properties) {
+                    if (prop.type !== 'Property') {
+                      continue
+                    }
+                    const fnVal = prop.value
+                    if (fnVal && (fnVal.type === 'FunctionExpression' || fnVal.type === 'ArrowFunctionExpression')) {
+                      if (fnVal.params && fnVal.params.length > 0) {
+                        const p0 = fnVal.params[0]
+                        if (p0.type === 'Identifier' && p0.name === 'state' && p0.range) {
+                          const [pStart, pEnd] = p0.range
+                          let isBareArrow = false
+                          if (fnVal.type === 'ArrowFunctionExpression') {
+                            const prefix = scriptContent.slice(fnVal.range[0], pStart)
+                            if (!prefix.includes('(')) {
+                              isBareArrow = true
+                            }
                           }
-                        }
 
-                        if (isBareArrow) {
-                          getterReplacements.push({
-                            start: pStart,
-                            end: pEnd,
-                            replacement: '({ state })',
-                            description: "Rewrite getter parameter 'state' to destructured '({ state })'"
-                          })
-                        } else {
-                          getterReplacements.push({
-                            start: pStart,
-                            end: pEnd,
-                            replacement: '{ state }',
-                            description: "Rewrite getter parameter 'state' to destructured '{ state }'"
-                          })
+                          if (isBareArrow) {
+                            getterReplacements.push({
+                              start: pStart,
+                              end: pEnd,
+                              replacement: '({ state })',
+                              description: `Rewrite ${blockName} parameter 'state' to destructured '({ state })'`
+                            })
+                          } else {
+                            getterReplacements.push({
+                              start: pStart,
+                              end: pEnd,
+                              replacement: '{ state }',
+                              description: `Rewrite ${blockName} parameter 'state' to destructured '{ state }'`
+                            })
+                          }
                         }
                       }
                     }
