@@ -1,0 +1,15 @@
+<script>
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server() {
+      return {
+        __redirect: {
+          to: 123
+        }
+      }
+    }
+  })
+</script>
+
+<h1>Invalid To Page</h1>

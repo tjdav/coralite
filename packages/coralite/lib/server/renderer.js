@@ -61,6 +61,7 @@ import { createServerSlotsHelper } from './component/setup.js'
 import { validateLateBoundClientConfig } from '../shared/plugin-config-schema.js'
 import { buildRouteTable } from './routes/build-table.js'
 import { validateRouteTable, buildConcreteUrl } from './routes/validate.js'
+import { validateAndNormalizeRedirect, generateRedirectStub } from './page/redirect.js'
 
 /**
  * Computes route.path and output file path based on cleanUrls configuration.
@@ -1449,6 +1450,34 @@ export function createRenderer ({
           if (pageServerRes && typeof pageServerRes === 'object') {
             Object.assign(activePageState, pageServerRes)
           }
+        }
+
+        if (activePageState.__redirect !== undefined) {
+          const { to } = validateAndNormalizeRedirect(
+            activePageState.__redirect,
+            pageItem.path?.pathname || targetOutPath || 'unknown'
+          )
+          const redirectHtml = generateRedirectStub(to)
+          const outPathname = targetOutPath || mappedComponent.path.pathname
+          const outDirname = dirname(outPathname)
+          const outFilename = basename(outPathname)
+
+          /** @type {CoraliteBuildResult} */
+          const result = {
+            type: 'page',
+            path: {
+              ...mappedComponent.path,
+              pathname: outPathname,
+              dirname: outDirname,
+              filename: outFilename
+            },
+            content: redirectHtml,
+            duration: performance.now() - startTime,
+            session: mappedSessionObject,
+            route: routeObj,
+            runtimeChunk: null
+          }
+          return result
         }
 
         if (pageExports.getters && typeof pageExports.getters === 'object') {

@@ -1,0 +1,17 @@
+<script>
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server() {
+      return {
+        __redirect: {
+          to: '/new-path',
+          status: 301
+        },
+        ignoredData: 'hello'
+      }
+    }
+  })
+</script>
+
+<h1>This content should not be rendered</h1>

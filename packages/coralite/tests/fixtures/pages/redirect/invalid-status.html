@@ -1,0 +1,16 @@
+<script>
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server() {
+      return {
+        __redirect: {
+          to: '/valid-target',
+          status: 307
+        }
+      }
+    }
+  })
+</script>
+
+<h1>Invalid Status Page</h1>
