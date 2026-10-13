@@ -1,0 +1,16 @@
+<template id="token-resolves-getter">
+  <div>{{ title }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    state: {
+      count: 0
+    },
+    getters: {
+      title: ({ state }) => `Count is ${state.count}`
+    }
+  })
+</script>

@@ -276,6 +276,93 @@ export function parseScriptAST (context) {
                 cause: `Unknown block "${keyName}" in definePage.`
               }))
             }
+
+            if (keyName === 'state') {
+              context.hasStateBlock = true
+              if (prop.value && prop.value.type === 'ObjectExpression') {
+                for (const sProp of prop.value.properties) {
+                  if (sProp.type === 'Property') {
+                    if (sProp.computed) {
+                      context.hasUnresolvableState = true
+                    } else {
+                      const sName = getPropKeyName(sProp)
+                      if (sName) {
+                        context.definedStateProps.add(sName)
+                        context.definedStateProps.add(kebabToCamel(sName))
+                      } else {
+                        context.hasUnresolvableState = true
+                      }
+                    }
+                  } else {
+                    context.hasUnresolvableState = true
+                  }
+                }
+              } else {
+                context.hasUnresolvableState = true
+              }
+            }
+
+            if (keyName === 'server') {
+              context.hasServerBlock = true
+              if (
+                prop.value &&
+                (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression')
+              ) {
+                let hasReturn = false
+                walkJS(prop.value.body, {
+                  ReturnStatement (retNode) {
+                    hasReturn = true
+                    if (retNode.argument && retNode.argument.type === 'ObjectExpression') {
+                      for (const retProp of retNode.argument.properties) {
+                        if (retProp.type === 'Property') {
+                          if (retProp.computed) {
+                            context.hasUnresolvableServer = true
+                          } else {
+                            const propName = getPropKeyName(retProp)
+                            if (propName) {
+                              definedServerProps.add(propName)
+                              definedServerProps.add(kebabToCamel(propName))
+                              const targetNode = retProp.key || retProp
+                              serverPropLocations.set(propName, {
+                                line: targetNode.loc.start.line + scriptStartLine,
+                                column: targetNode.loc.start.column + 1
+                              })
+                            } else {
+                              context.hasUnresolvableServer = true
+                            }
+                          }
+                        } else {
+                          context.hasUnresolvableServer = true
+                        }
+                      }
+                    } else {
+                      context.hasUnresolvableServer = true
+                    }
+                  }
+                })
+                if (!hasReturn) {
+                  context.hasUnresolvableServer = true
+                }
+              } else {
+                context.hasUnresolvableServer = true
+              }
+            }
+
+            if (keyName === 'getters' && prop.value.type === 'ObjectExpression') {
+              for (const getterProp of prop.value.properties) {
+                if (getterProp.type === 'Property') {
+                  const gName = getPropKeyName(getterProp)
+                  if (gName) {
+                    definedGetters.add(gName)
+                    const targetNode = getterProp.key || getterProp
+                    getterLocations.set(gName, {
+                      line: targetNode.loc.start.line + scriptStartLine,
+                      column: targetNode.loc.start.column + 1
+                    })
+                  }
+                }
+              }
+            }
           }
         }
 
@@ -363,12 +450,38 @@ export function parseScriptAST (context) {
               collectTopLevelImportsOutsideClient(prop.value)
             }
 
+            if (keyName === 'state') {
+              context.hasStateBlock = true
+              if (prop.value && prop.value.type === 'ObjectExpression') {
+                for (const sProp of prop.value.properties) {
+                  if (sProp.type === 'Property') {
+                    if (sProp.computed) {
+                      context.hasUnresolvableState = true
+                    } else {
+                      const sName = getPropKeyName(sProp)
+                      if (sName) {
+                        context.definedStateProps.add(sName)
+                        context.definedStateProps.add(kebabToCamel(sName))
+                      } else {
+                        context.hasUnresolvableState = true
+                      }
+                    }
+                  } else {
+                    context.hasUnresolvableState = true
+                  }
+                }
+              } else {
+                context.hasUnresolvableState = true
+              }
+            }
+
             if (keyName === 'attributes' && prop.value.type === 'ObjectExpression') {
               for (const attrProp of prop.value.properties) {
                 if (attrProp.type === 'Property') {
                   const attrName = getPropKeyName(attrProp)
                   if (attrName) {
                     definedAttributes.add(attrName)
+                    definedAttributes.add(kebabToCamel(attrName))
                   }
                 }
               }
@@ -402,29 +515,50 @@ export function parseScriptAST (context) {
               }
             }
 
-            if (
-              keyName === 'server' &&
-              (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression')
-            ) {
-              walkJS(prop.value.body, {
-                ReturnStatement (retNode) {
-                  if (retNode.argument && retNode.argument.type === 'ObjectExpression') {
-                    for (const retProp of retNode.argument.properties) {
-                      if (retProp.type === 'Property') {
-                        const propName = getPropKeyName(retProp)
-                        if (propName) {
-                          definedServerProps.add(propName)
-                          const targetNode = retProp.key || retProp
-                          serverPropLocations.set(propName, {
-                            line: targetNode.loc.start.line + scriptStartLine,
-                            column: targetNode.loc.start.column + 1
-                          })
+            if (keyName === 'server') {
+              context.hasServerBlock = true
+              if (
+                prop.value &&
+                (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression')
+              ) {
+                let hasReturn = false
+                walkJS(prop.value.body, {
+                  ReturnStatement (retNode) {
+                    hasReturn = true
+                    if (retNode.argument && retNode.argument.type === 'ObjectExpression') {
+                      for (const retProp of retNode.argument.properties) {
+                        if (retProp.type === 'Property') {
+                          if (retProp.computed) {
+                            context.hasUnresolvableServer = true
+                          } else {
+                            const propName = getPropKeyName(retProp)
+                            if (propName) {
+                              definedServerProps.add(propName)
+                              definedServerProps.add(kebabToCamel(propName))
+                              const targetNode = retProp.key || retProp
+                              serverPropLocations.set(propName, {
+                                line: targetNode.loc.start.line + scriptStartLine,
+                                column: targetNode.loc.start.column + 1
+                              })
+                            } else {
+                              context.hasUnresolvableServer = true
+                            }
+                          }
+                        } else {
+                          context.hasUnresolvableServer = true
                         }
                       }
+                    } else {
+                      context.hasUnresolvableServer = true
                     }
                   }
+                })
+                if (!hasReturn) {
+                  context.hasUnresolvableServer = true
                 }
-              })
+              } else {
+                context.hasUnresolvableServer = true
+              }
             }
 
             if (keyName === 'getters' && prop.value.type === 'ObjectExpression') {

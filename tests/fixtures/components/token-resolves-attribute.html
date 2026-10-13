@@ -1,0 +1,16 @@
+<template id="token-resolves-attribute">
+  <div>{{ title }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      title: String
+    },
+    state: {
+      count: 0
+    }
+  })
+</script>
