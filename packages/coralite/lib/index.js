@@ -13,6 +13,7 @@ export * from './server/page/fixer.js'
 export * from './server/plugin/define.js'
 export * from './server/config.js'
 export * from './server/routes/build-table.js'
+export * from './server/routes/match.js'
 
 /** @typedef {import('../types/core.js').CoraliteInstance} Coralite */
 
