@@ -135,6 +135,7 @@ function createClientSlotsHelper (element) {
  * @property {string} componentId - The unique identifier for the component.
  * @property {boolean} [formAssociated] - Whether element is form-associated custom element.
  * @property {boolean} [useTemplateCloning] - Whether template cloning is enabled for this component.
+ * @property {Object.<string, Function>|null} [_updaters] - Compiled per-token updater functions.
  * @property {any} [templateElement] - The pre-parsed template element for cloneNode instantiation.
  * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
  * @property {Object} [defaultValues] - The initial state values extracted from the server data block.
@@ -1305,6 +1306,7 @@ export class CoraliteElement extends BaseElement {
     this._evaluatedTokens = {}
     this._cachedOwnSlots = null
     this._tokenBindings = null
+    this._updaters = null
 
     if (this._formResetCallbacks) {
       this._formResetCallbacks.clear()
@@ -2727,6 +2729,7 @@ export class CoraliteElement extends BaseElement {
     this._evaluatedTokens = {}
     this._cachedOwnSlots = null
     this._pendingBindingRetries = 0
+    this._updaters = this.componentOptions?._updaters || null
 
     const map = this.componentOptions.hydrationMap
     if (!map) {
@@ -3166,6 +3169,50 @@ export class CoraliteElement extends BaseElement {
    */
   _updateDOM () {
     if (!this._needsDOMUpdate) {
+      return
+    }
+
+    if (this._updaters && this.componentOptions?.compilerOptimizations !== 'none') {
+      const changedKeys = this._changedStateKeys
+      if (changedKeys && changedKeys.size > 0) {
+        const allDirtyKeys = new Set(changedKeys)
+        if (this._getterDeps) {
+          for (const [getterKey, deps] of this._getterDeps) {
+            for (const key of changedKeys) {
+              if (deps.has(key)) {
+                allDirtyKeys.add(getterKey)
+                break
+              }
+            }
+          }
+        }
+        if (this.componentOptions.getters) {
+          for (const getterKey of Object.keys(this.componentOptions.getters)) {
+            if (!this._getterDeps || !this._getterDeps.has(getterKey)) {
+              allDirtyKeys.add(getterKey)
+            }
+          }
+        }
+        for (const key of allDirtyKeys) {
+          const updater = this._updaters[key]
+          if (updater) {
+            updater.call(this)
+          }
+        }
+      }
+      this._applyStylesIfDirty()
+      if (this.componentOptions.slots && Object.keys(this.componentOptions.slots).length > 0) {
+        this._processSlots()
+      }
+      for (const hook of this._hooks.onAfterComponentRender) {
+        hook({
+          state: this._state,
+          instanceId: this._instanceId,
+          componentId: this.componentOptions.componentId,
+          element: this,
+          options: this.componentOptions
+        })
+      }
       return
     }
 
@@ -3634,7 +3681,7 @@ export class CoraliteElement extends BaseElement {
     }
 
     // Track changed keys before subscriber guard for style and binding checks
-    if (this._styleDeps || this._tokenBindings) {
+    if (this._styleDeps || this._tokenBindings || this._updaters) {
       if (!this._changedStateKeys) {
         this._changedStateKeys = new Set()
       }

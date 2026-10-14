@@ -1,0 +1,22 @@
+<template id="updater-getter">
+  <div>
+    <span class="doubled">{{ doubled }}</span>
+  </div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  attributes: {
+    count: {
+      default: 5
+    }
+  },
+  getters: {
+    doubled ({ state }) {
+      return state.count * 2
+    }
+  }
+})
+</script>

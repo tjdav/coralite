@@ -1,0 +1,17 @@
+<template id="updater-text">
+  <div>
+    <span class="count">{{ count }}</span>
+  </div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  attributes: {
+    count: {
+      default: 0
+    }
+  }
+})
+</script>

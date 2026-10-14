@@ -181,6 +181,132 @@ export function hasMultipleTagInSingleParent (nodes, tag) {
  * @param {string} [compilerOptimizations='all'] - Optimization setting.
  * @returns {boolean}
  */
+/**
+ * Generates JS code for updating a single binding given a token key.
+ * @param {Object} binding - The binding object from hydrationMap.
+ * @param {number} bindingIndex - Index of the binding in _bindings.
+ * @param {string} tokenKey - The token key being updated.
+ * @param {boolean} isGetter - Whether tokenKey corresponds to a getter.
+ * @returns {string} JS code snippet.
+ */
+export function generateTokenUpdaterCode (binding, bindingIndex, tokenKey, isGetter) {
+  const readState = isGetter
+    ? `const value = this._state[${JSON.stringify(tokenKey)}]`
+    : `const value = this._stateRaw[${JSON.stringify(tokenKey)}]`
+
+  const bindingRef = `const binding = this._bindings[${bindingIndex}]`
+  const nodeRef = 'const node = binding.node'
+
+  if (binding.type === 'text') {
+    if (binding.isSingleToken) {
+      return `    ${readState}\n    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const next = value == null ? '' : String(value)\n    if (node.textContent !== next) {\n      node.textContent = next\n    }`
+    } else if (binding.segments) {
+      const segExprs = binding.segments.map(seg => {
+        if (seg[0] === 0) {
+          return JSON.stringify(seg[1])
+        }
+        return `String(this._stateRaw[${JSON.stringify(seg[1])}] ?? '')`
+      })
+      return `    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const next = ${segExprs.join(' + ')}\n    if (node.textContent !== next) {\n      node.textContent = next\n    }`
+    } else {
+      return `    ${readState}\n    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const rawMap = this._stateRaw || {}\n    const next = binding.template.replace(/\\{\\{\\s*(.+?)\\s*\\}\\}/g, (_, k) => rawMap[k] ?? '')\n    if (node.textContent !== next) {\n      node.textContent = next\n    }`
+    }
+  }
+
+  if (binding.type === 'html') {
+    return `    ${readState}\n    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const next = value == null ? '' : String(value)\n    if (node.innerHTML !== next) {\n      node.innerHTML = next\n    }`
+  }
+
+  if (binding.type === 'attribute') {
+    const kind = binding.attrKind ?? 0
+    if (kind === 1) {
+      return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const strVal = String(value)\n    const isFalsy = strVal === '' || strVal === 'false' || strVal === 'null' || strVal === '0' || strVal === 'undefined'\n    if (isFalsy) {\n      element.removeAttribute(binding.name)\n    } else {\n      element.setAttribute(binding.name, '')\n    }`
+    } else if (kind === 2) {
+      return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const targetVal = value === true || value === 'true' ? 'true' : (value === false || value === 'false' ? 'false' : null)\n    if (targetVal === null) {\n      element.removeAttribute(binding.name)\n    } else if (element.getAttribute(binding.name) !== targetVal) {\n      element.setAttribute(binding.name, targetVal)\n    }`
+    } else if (kind === 3) {
+      return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const strVal = String(value)\n    const isFalsy = strVal === '' || strVal === 'false' || strVal === 'null' || strVal === 'undefined'\n    if (isFalsy) {\n      element.removeAttribute(binding.name)\n    } else if (element.getAttribute(binding.name) !== strVal) {\n      element.setAttribute(binding.name, strVal)\n    }`
+    } else {
+      if (binding.isSingleToken) {
+        return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    if (value == null) {\n      if (element.hasAttribute(binding.name)) element.removeAttribute(binding.name)\n    } else {\n      const strVal = String(value)\n      if (element.getAttribute(binding.name) !== strVal) element.setAttribute(binding.name, strVal)\n    }`
+      } else if (binding.segments) {
+        const segExprs = binding.segments.map(seg => {
+          if (seg[0] === 0) {
+            return JSON.stringify(seg[1])
+          }
+          return `String(this._stateRaw[${JSON.stringify(seg[1])}] ?? '')`
+        })
+        return `    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const strVal = ${segExprs.join(' + ')}\n    if (element.getAttribute(binding.name) !== strVal) element.setAttribute(binding.name, strVal)`
+      } else {
+        return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const rawMap = this._stateRaw || {}\n    const strVal = binding.template.replace(/\\{\\{\\s*(.+?)\\s*\\}\\}/g, (_, k) => rawMap[k] ?? '')\n    if (element.getAttribute(binding.name) !== strVal) element.setAttribute(binding.name, strVal)`
+      }
+    }
+  }
+
+  return ''
+}
+
+/**
+ * Generates the serialized `_updaters` object for a component definition.
+ * @param {Object} hydrationMap - Hydration map containing tokenBindings, texts, and attributes.
+ * @param {Set<string>} getterKeys - Set of getter keys defined on the component.
+ * @param {string} [compilerOptimizations='all'] - Optimization setting.
+ * @returns {string} Serialized code for `_updaters` object or `'null'`.
+ */
+export function generateCompiledUpdaters (hydrationMap, getterKeys = new Set(), compilerOptimizations = 'all') {
+  if (compilerOptimizations === 'none' || !hydrationMap || !hydrationMap.tokenBindings) {
+    return 'null'
+  }
+
+  const tokenBindings = hydrationMap.tokenBindings
+  const tokenKeys = Object.keys(tokenBindings)
+  if (tokenKeys.length === 0) {
+    return 'null'
+  }
+
+  const allBindings = []
+  if (hydrationMap.texts) {
+    allBindings.push(...hydrationMap.texts)
+  }
+  if (hydrationMap.attributes) {
+    allBindings.push(...hydrationMap.attributes)
+  }
+
+  const updaterEntries = []
+
+  for (const key of tokenKeys) {
+    const indices = tokenBindings[key] || []
+    if (indices.length === 0) {
+      continue
+    }
+
+    const isGetter = getterKeys.has(key)
+    const codeBlocks = []
+
+    for (const idx of indices) {
+      const binding = allBindings[idx]
+      if (binding) {
+        const snippet = generateTokenUpdaterCode(binding, idx, key, isGetter)
+        if (snippet) {
+          codeBlocks.push(snippet)
+        }
+      }
+    }
+
+    if (codeBlocks.length > 0) {
+      updaterEntries.push(`  ${JSON.stringify(key)}: function () {\n${codeBlocks.join('\n')}\n  }`)
+    }
+  }
+
+  if (updaterEntries.length === 0) {
+    return 'null'
+  }
+
+  return `{\n${updaterEntries.join(',\n')}\n}`
+}
+
+/**
+ *
+ */
 export function shouldUseTemplateCloning (sharedFn, allSharedFunctions = {}, compilerOptimizations = 'all') {
   if (compilerOptimizations === 'none') {
     return false
@@ -816,7 +942,8 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         normalizedAttributes = normalizeObjectFunctions(normalizedAttributes, astTransformer)
       }
       const attributes = serialize(normalizedAttributes)
-      const hydrationMap = serialize(generateHydrationMap(sharedFn.templateAST, sharedFn.templateValues))
+      const hydrationMapObj = generateHydrationMap(sharedFn.templateAST, sharedFn.templateValues)
+      const hydrationMap = serialize(hydrationMapObj)
 
       let normalizedGetters = sharedFn.getters || sharedFn.script?.getters || {}
 
@@ -824,6 +951,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         normalizedGetters = normalizeObjectFunctions(normalizedGetters, astTransformer)
       }
 
+      const getterKeysSet = new Set(Object.keys(normalizedGetters))
       const getters = serialize(normalizedGetters)
       const dependencies = JSON.stringify(sharedFn.components || [])
 
@@ -854,6 +982,8 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
       const compilerOptimizations = this.options?.compilerOptimizations ?? 'all'
       const useCloning = shouldUseTemplateCloning(sharedFn, this.sharedFunctions, compilerOptimizations)
 
+      const updaters = generateCompiledUpdaters(hydrationMapObj, getterKeysSet, compilerOptimizations)
+
       const templateElementExpr = useCloning
         ? `(typeof document !== 'undefined' ? (() => { const t = document.createElement('template'); t.innerHTML = ${templateHTML}; return t; })() : null)`
         : 'null'
@@ -863,6 +993,7 @@ export default {
   componentId: "${componentId}",
   compilerOptimizations: "${compilerOptimizations}",
   useTemplateCloning: ${useCloning},
+  _updaters: ${updaters},
   templateElement: ${templateElementExpr},
   templateHTML: ${templateHTML},
   templateValues: ${templateValues},
