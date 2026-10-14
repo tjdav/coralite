@@ -1,0 +1,18 @@
+<template id="x-load-component-client">
+  <button>{{ count }}</button>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    server ({ state }) {
+      return {
+        count: 10
+      }
+    },
+    client ({ state, refs }) {
+      state.count += 1
+    }
+  })
+</script>

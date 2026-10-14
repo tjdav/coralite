@@ -118,6 +118,11 @@
     "./utils/client": {
       "types": "./dist/lib/utils/client/index.d.ts",
       "default": "./dist/lib/utils/client/index.js"
+    },
+    "./testing": {
+      "types": "./dist/lib/testing.d.ts",
+      "development": "./lib/testing.js",
+      "default": "./dist/lib/testing.js"
     }
   },
   "devDependencies": {

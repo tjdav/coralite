@@ -24,7 +24,8 @@
   },
   "include": [
     "lib/index.js",
-    "lib/utils/client/index.js"
+    "lib/utils/client/index.js",
+    "lib/testing.js"
   ],
   "exclude": [
     "tests",
