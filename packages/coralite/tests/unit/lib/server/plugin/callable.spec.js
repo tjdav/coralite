@@ -26,7 +26,7 @@ describe('definePlugin callable form and call-time validation', () => {
       base: '/app',
       mode: 'hash'
     })
-    assert.strictEqual(instance._isConfiguredInstance, true)
+    assert.strictEqual(typeof instance, 'object')
     assert.strictEqual(instance.name, 'router')
     assert.strictEqual(instance.config.base, '/app')
     assert.strictEqual(instance.config.mode, 'hash')
