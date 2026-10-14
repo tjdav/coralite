@@ -46,6 +46,19 @@ describe('create-coralite template package declarations', () => {
       it('contains coralite.config.js configuration file', () => {
         assert.ok(existsSync(configPath), `coralite.config.js must exist in ${templateName}`)
       })
+
+      it('contains AGENTS.md and README.md with deploying guidance', () => {
+        const agentsPath = path.join(templatePath, 'AGENTS.md')
+        const readmePath = path.join(templatePath, 'README.md')
+
+        assert.ok(existsSync(agentsPath), `AGENTS.md must exist in ${templateName}`)
+        assert.ok(existsSync(readmePath), `README.md must exist in ${templateName}`)
+
+        const readme = readFileSync(readmePath, 'utf8')
+        assert.match(readme, /# \{\{\s*name\s*\}\}/, 'README.md must contain project name placeholder')
+        assert.match(readme, /## Deploying/, 'README.md must contain Deploying section')
+        assert.match(readme, /clean by default/, 'README.md must describe cleanUrls behavior')
+      })
     })
   }
 })

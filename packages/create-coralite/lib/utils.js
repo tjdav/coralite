@@ -131,3 +131,89 @@ export function extractPackageInfoFromUserAgent (userAgent) {
     version: pkgSpecArr[1]
   }
 }
+
+/**
+ * Parses a semver string (e.g., "22.22.2" or "v22.22.2-rc.1") into numeric [major, minor, patch].
+ * @param {string} versionStr - Semver version string to parse.
+ * @returns {[number, number, number]} Tuple of [major, minor, patch] numbers.
+ */
+export function parseSemver (versionStr) {
+  const clean = versionStr.replace(/^v/, '').split('-')[0]
+  const parts = clean.split('.').map((p) => parseInt(p, 10) || 0)
+  return [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0]
+}
+
+/**
+ * Compares two semver arrays [major, minor, patch].
+ * Returns -1 if v1 < v2, 1 if v1 > v2, 0 if v1 === v2.
+ * @param {[number, number, number]} v1 - First semver tuple.
+ * @param {[number, number, number]} v2 - Second semver tuple.
+ * @returns {number} -1, 0, or 1 based on comparison.
+ */
+export function compareSemver (v1, v2) {
+  for (let i = 0; i < 3; i++) {
+    if (v1[i] < v2[i]) {
+      return -1
+    }
+    if (v1[i] > v2[i]) {
+      return 1
+    }
+  }
+  return 0
+}
+
+/**
+ * Checks if a current version satisfies a simple engine range constraint like ">=22.22.2".
+ * @param {string} currentVersion - Running semver version string.
+ * @param {string} engineRange - Engine constraint range string.
+ * @returns {boolean} True if currentVersion satisfies engineRange.
+ */
+export function satisfiesEngine (currentVersion, engineRange) {
+  if (!engineRange) {
+    return true
+  }
+  const match = engineRange.match(/^(>=|>|<=|<|==|=)?\s*([vV]?\d+\.\d+\.\d+.*)$/)
+  if (!match) {
+    return true
+  }
+  const op = match[1] || '>='
+  const targetVersion = match[2]
+
+  const current = parseSemver(currentVersion)
+  const target = parseSemver(targetVersion)
+  const cmp = compareSemver(current, target)
+
+  switch (op) {
+    case '>=':
+      return cmp >= 0
+    case '>':
+      return cmp > 0
+    case '<=':
+      return cmp <= 0
+    case '<':
+      return cmp < 0
+    case '==':
+    case '=':
+      return cmp === 0
+    default:
+      return true
+  }
+}
+
+/**
+ * Checks running Node.js version against engine constraint.
+ * Prints error and exits with code 1 if constraint is not satisfied.
+ * @param {string} constraint - Range constraint e.g. ">=22.22.2"
+ * @param {string} [currentVersion] - Current Node version (defaults to process.version)
+ */
+export function checkNodeVersion (constraint, currentVersion = process.version) {
+  if (!constraint) {
+    return
+  }
+  if (!satisfiesEngine(currentVersion, constraint)) {
+    console.error(
+      `Error: this project requires Node.js ${constraint}. You are running ${currentVersion}.\nInstall a newer Node version: https://nodejs.org/`
+    )
+    process.exit(1)
+  }
+}
