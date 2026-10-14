@@ -1,0 +1,15 @@
+<template id="repeated-template-single">
+  <div class="single-card">
+    <p>{{ text }}</p>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      text: { type: String, default: 'Single Instance' }
+    }
+  })
+</script>

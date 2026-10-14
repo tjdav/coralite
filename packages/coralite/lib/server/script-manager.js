@@ -87,6 +87,144 @@ export const isEmptyFunction = (content) => {
 }
 
 /**
+ * Recursively checks if any AST node is a <script> element.
+ * @param {Array} nodes - AST nodes.
+ * @returns {boolean}
+ */
+export function hasExecutableScriptTag (nodes) {
+  if (!Array.isArray(nodes)) {
+    return false
+  }
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]
+    if (node && node.type === 'tag' && node.name === 'script') {
+      return true
+    }
+    if (node && node.children && hasExecutableScriptTag(node.children)) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Recursively checks if any AST node is a <slot> element.
+ * @param {Array} nodes - AST nodes.
+ * @returns {boolean}
+ */
+export function hasSlotTag (nodes) {
+  if (!Array.isArray(nodes)) {
+    return false
+  }
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]
+    if (node && node.type === 'tag' && node.name === 'slot') {
+      return true
+    }
+    if (node && node.children && hasSlotTag(node.children)) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Counts total occurrences of a tag name in an AST tree.
+ * @param {Array} nodes - AST nodes.
+ * @param {string} tag - Tag name to count.
+ * @returns {number}
+ */
+export function countTagOccurrencesInAST (nodes, tag) {
+  if (!Array.isArray(nodes)) {
+    return 0
+  }
+  let count = 0
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]
+    if (node && node.type === 'tag' && node.name === tag) {
+      count++
+    }
+    if (node && node.children) {
+      count += countTagOccurrencesInAST(node.children, tag)
+    }
+  }
+  return count
+}
+
+/**
+ * Checks if a single parent AST node contains multiple instances of tag.
+ * @param {Array} nodes - AST nodes.
+ * @param {string} tag - Tag name.
+ * @returns {boolean}
+ */
+export function hasMultipleTagInSingleParent (nodes, tag) {
+  if (!Array.isArray(nodes)) {
+    return false
+  }
+  let countInParent = 0
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i]
+    if (node && node.type === 'tag' && node.name === tag) {
+      countInParent++
+    }
+    if (node && node.children && hasMultipleTagInSingleParent(node.children, tag)) {
+      return true
+    }
+  }
+  return countInParent > 1
+}
+
+/**
+ * Determines whether template cloning should be emitted for a component.
+ * @param {Object} sharedFn - Component record.
+ * @param {Object} allSharedFunctions - Map of all component records.
+ * @param {string} [compilerOptimizations='all'] - Optimization setting.
+ * @returns {boolean}
+ */
+export function shouldUseTemplateCloning (sharedFn, allSharedFunctions = {}, compilerOptimizations = 'all') {
+  if (compilerOptimizations === 'none') {
+    return false
+  }
+
+  if (!sharedFn || !sharedFn.templateAST || !Array.isArray(sharedFn.templateAST) || sharedFn.templateAST.length === 0) {
+    return false
+  }
+
+  if (hasExecutableScriptTag(sharedFn.templateAST)) {
+    return false
+  }
+
+  if (hasSlotTag(sharedFn.templateAST)) {
+    return false
+  }
+
+  if (sharedFn.isRepeated || sharedFn.inSlotOrObserve) {
+    return true
+  }
+
+  const tag = sharedFn.id
+  let totalOccurrences = 0
+  let isMultipleInParent = false
+
+  for (const fn of Object.values(allSharedFunctions)) {
+    if (!fn || !fn.templateAST) {
+      continue
+    }
+    const occurrences = countTagOccurrencesInAST(fn.templateAST, tag)
+    totalOccurrences += occurrences
+    if (hasMultipleTagInSingleParent(fn.templateAST, tag)) {
+      isMultipleInParent = true
+    }
+  }
+
+  if (totalOccurrences > 1 || isMultipleInParent) {
+    return true
+  }
+
+  return false
+}
+
+/**
  * Script Manager for Coralite
  * @import { ScriptPlugin, InstanceContext, CoralitePlugin } from '../../types/index.js'
  * @import { ScriptContent } from '../../types/script.js'
@@ -213,6 +351,8 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
  * @param {boolean} [options.formAssociated=false] - Whether the element is a form-associated custom element.
  * @param {Function|null} [options.onError=null] - Error boundary hook callback.
  * @param {boolean} [options.override=false] - Whether to override existing component definition.
+ * @param {boolean} [options.isRepeated=false] - Whether component is instantiated multiple times.
+ * @param {boolean} [options.inSlotOrObserve=false] - Whether component is in slot or observe block.
  */
 ScriptManager.prototype.registerComponent = function ({
   id,
@@ -229,18 +369,25 @@ ScriptManager.prototype.registerComponent = function ({
   consume = null,
   formAssociated = false,
   onError = null,
-  override = false
+  override = false,
+  isRepeated = false,
+  inSlotOrObserve = false
 }) {
   // Initialize base object if it's the first time we are seeing this ID
   const isNew = !this.sharedFunctions[id]
   if (isNew) {
-    this.sharedFunctions[id] = {
+    /** @type {any} */
+    const initialObj = {
       id,
       components: [],
-      filePath: `/component-${id}.js`
+      filePath: `/component-${id}.js`,
+      isRepeated: false,
+      inSlotOrObserve: false
     }
+    this.sharedFunctions[id] = initialObj
   }
 
+  /** @type {any} */
   const target = this.sharedFunctions[id]
 
   if (hasObjectKeys(script)) {
@@ -320,6 +467,14 @@ ScriptManager.prototype.registerComponent = function ({
     if (isNew || override) {
       target.onError = onError
     }
+  }
+
+  if (isRepeated) {
+    target.isRepeated = true
+  }
+
+  if (inSlotOrObserve) {
+    target.inSlotOrObserve = true
   }
 
   if (script) {
@@ -696,9 +851,18 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
       }
       const consume = serialize(normalizedConsume)
 
+      const compilerOptimizations = this.options?.compilerOptimizations ?? 'all'
+      const useCloning = shouldUseTemplateCloning(sharedFn, this.sharedFunctions, compilerOptimizations)
+
+      const templateElementExpr = useCloning
+        ? `(typeof document !== 'undefined' ? (() => { const t = document.createElement('template'); t.innerHTML = ${templateHTML}; return t; })() : null)`
+        : 'null'
+
       componentEntryCode += `
 export default {
   componentId: "${componentId}",
+  useTemplateCloning: ${useCloning},
+  templateElement: ${templateElementExpr},
   templateHTML: ${templateHTML},
   templateValues: ${templateValues},
   styles: ${styles},

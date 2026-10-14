@@ -427,10 +427,20 @@ CoraliteElementPrototype.removeAttribute = function (name) {
 
 /**
  * Adds a node to the end of the list of children of a specified parent node.
+ * @this {any}
  * @param {any} node - The node to append
  * @returns {any}
  */
 CoraliteElementPrototype.appendChild = function (node) {
+  if (node && node.type === 'root') {
+    const kids = Array.from(node.children || [])
+    node.children = []
+    for (let i = 0; i < kids.length; i++) {
+      this.appendChild(kids[i])
+    }
+    return node
+  }
+
   if (node.parent) {
     node.remove()
   }
@@ -1224,6 +1234,27 @@ Object.defineProperties(CoraliteElementPrototype, {
       this.children = [textNode]
     }
   },
+  content: {
+    get () {
+      if (this.name === 'template') {
+        if (!this._templateContent) {
+          const fragment = createCoraliteComponent({
+            type: 'root',
+            children: this.children || []
+          })
+          relinkChildren(fragment)
+          Object.defineProperty(this, '_templateContent', {
+            value: fragment,
+            enumerable: false,
+            writable: true,
+            configurable: true
+          })
+        }
+        return this._templateContent
+      }
+      return undefined
+    }
+  },
   innerHTML: {
     get () {
       return render(this.children || [])
@@ -1239,6 +1270,14 @@ Object.defineProperties(CoraliteElementPrototype, {
       const parsed = parseHTML(String(value ?? ''))
       this.children = parsed.root.children || []
       relinkChildren(this)
+      if (this.name === 'template') {
+        const fragment = createCoraliteComponent({
+          type: 'root',
+          children: this.children || []
+        })
+        relinkChildren(fragment)
+        this._templateContent = fragment
+      }
     }
   },
   outerHTML: {
@@ -1665,6 +1704,11 @@ CoraliteComponentPrototype.querySelectorAll = CoraliteElementPrototype.querySele
 CoraliteComponentPrototype.getElementById = CoraliteElementPrototype.getElementById
 CoraliteComponentPrototype.getElementsByTagName = CoraliteElementPrototype.getElementsByTagName
 CoraliteComponentPrototype.getElementsByClassName = CoraliteElementPrototype.getElementsByClassName
+CoraliteComponentPrototype.appendChild = CoraliteElementPrototype.appendChild
+CoraliteComponentPrototype.append = CoraliteElementPrototype.append
+CoraliteComponentPrototype.prepend = CoraliteElementPrototype.prepend
+CoraliteComponentPrototype.replaceChildren = CoraliteElementPrototype.replaceChildren
+CoraliteComponentPrototype.cloneNode = CoraliteElementPrototype.cloneNode
 
 Object.defineProperties(CoraliteComponentPrototype, {
   nodeName: {

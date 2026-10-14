@@ -1,5 +1,5 @@
 import { bench, do_not_optimize } from 'mitata'
-import { createReadOnlyProxy } from '../../../lib/utils/core.js'
+import { createReadOnlyProxy } from '../../../lib/shared/core.js'
 
 /**
  *

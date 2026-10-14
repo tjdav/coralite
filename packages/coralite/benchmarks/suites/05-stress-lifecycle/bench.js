@@ -93,7 +93,7 @@ async function runIslandScaling (buildDir) {
 
       htmlContent = `<!DOCTYPE html><html><head></head><body><div id="app">${elements.join('\n')}</div></body></html>`
 
-      const coraliteElemPath = path.resolve(__dirname, '../../../lib/coralite-element.js')
+      const coraliteElemPath = path.resolve(__dirname, '../../../lib/client/element.js')
       entryCode = `
 import { createCoraliteClass } from ${JSON.stringify(coraliteElemPath)}
 const IslandWidget = createCoraliteClass({
@@ -299,7 +299,7 @@ async function runHighFrequencyStreaming (buildDir) {
   const streamingOutDir = path.join(buildDir, 'streaming')
   await fs.mkdir(streamingOutDir, { recursive: true })
 
-  const coraliteElemPath = path.resolve(__dirname, '../../../lib/coralite-element.js')
+  const coraliteElemPath = path.resolve(__dirname, '../../../lib/client/element.js')
   const entryCode = `
 import { createCoraliteClass } from ${JSON.stringify(coraliteElemPath)}
 
@@ -417,7 +417,7 @@ async function runMemoryLifecycle () {
   const browser = await launchBenchmarkBrowser()
   const page = await browser.newPage()
 
-  const coraliteElemPath = path.resolve(__dirname, '../../../lib/coralite-element.js')
+  const coraliteElemPath = path.resolve(__dirname, '../../../lib/client/element.js')
 
   const coraliteBuildDir = path.join(__dirname, '.bench-lifecycle-build')
   await fs.mkdir(coraliteBuildDir, { recursive: true })
