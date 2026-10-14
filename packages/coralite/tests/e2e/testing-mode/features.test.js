@@ -20,6 +20,23 @@ test.describe('Testing Mode Features', () => {
     await expect(btn).toHaveText('Click Me')
   })
 
+  test('should expose window.__coralite_test__ API in testing mode', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(() => window.__coralite_test__.ready)
+
+    const isTestApiDefined = await page.evaluate(() => typeof window.__coralite_test__ === 'object')
+    expect(isTestApiDefined).toBe(true)
+
+    const hydratedCount = await page.evaluate(() => window.__coralite_test__.getHydratedCount())
+    expect(typeof hydratedCount).toBe('number')
+    expect(hydratedCount).toBeGreaterThan(0)
+
+    const instances = await page.evaluate(() => window.__coralite_test__.getInstances().length)
+    expect(instances).toBeGreaterThan(0)
+
+    await page.evaluate(() => window.__coralite_test__.flush())
+  })
+
   test('should disable animations (Velocity Engine)', async ({ page }) => {
     await page.goto('/')
     const styles = await page.evaluate(() => {
