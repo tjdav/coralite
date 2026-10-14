@@ -241,39 +241,90 @@ export function defineConfig (options, { onError } = {}) {
       throw new CoraliteError('Config property "csp" must be an object')
     }
 
-    if (options.csp.enabled !== undefined && typeof options.csp.enabled !== 'boolean') {
-      throw new CoraliteError('Config property "csp.enabled" must be a boolean')
-    }
+    const VALID_CSP_KEYS = new Set([
+      'enabled',
+      'nonce',
+      'hashAlgorithm',
+      'injectMeta',
+      'reportOnly',
+      'externalScripts',
+      'externalStyles',
+      'directives'
+    ])
 
-    if (options.csp.nonce !== undefined && typeof options.csp.nonce !== 'string' && typeof options.csp.nonce !== 'function') {
-      throw new CoraliteError('Config property "csp.nonce" must be a string or function')
-    }
+    const VALID_CSP_MODES = new Set(['development', 'testing', 'production'])
 
-    if (options.csp.hashAlgorithm !== undefined) {
-      const validAlgorithms = ['sha256', 'sha384', 'sha512']
-      if (!validAlgorithms.includes(options.csp.hashAlgorithm)) {
-        throw new CoraliteError(`Invalid csp.hashAlgorithm: "${options.csp.hashAlgorithm}". Valid algorithms are: ${validAlgorithms.join(', ')}`)
+    const validateCspFields = (cspObj, prefix = 'csp') => {
+      if (cspObj.enabled !== undefined && typeof cspObj.enabled !== 'boolean') {
+        throw new CoraliteError(`Config property "${prefix}.enabled" must be a boolean`)
+      }
+
+      if (cspObj.nonce !== undefined && typeof cspObj.nonce !== 'string' && typeof cspObj.nonce !== 'function') {
+        throw new CoraliteError(`Config property "${prefix}.nonce" must be a string or function`)
+      }
+
+      if (cspObj.hashAlgorithm !== undefined) {
+        const validAlgorithms = ['sha256', 'sha384', 'sha512']
+        if (!validAlgorithms.includes(cspObj.hashAlgorithm)) {
+          throw new CoraliteError(`Invalid ${prefix}.hashAlgorithm: "${cspObj.hashAlgorithm}". Valid algorithms are: ${validAlgorithms.join(', ')}`)
+        }
+      }
+
+      if (cspObj.injectMeta !== undefined && typeof cspObj.injectMeta !== 'boolean') {
+        throw new CoraliteError(`Config property "${prefix}.injectMeta" must be a boolean`)
+      }
+
+      if (cspObj.reportOnly !== undefined && typeof cspObj.reportOnly !== 'boolean') {
+        throw new CoraliteError(`Config property "${prefix}.reportOnly" must be a boolean`)
+      }
+
+      if (cspObj.externalScripts !== undefined && typeof cspObj.externalScripts !== 'boolean') {
+        throw new CoraliteError(`Config property "${prefix}.externalScripts" must be a boolean`)
+      }
+
+      if (cspObj.externalStyles !== undefined && typeof cspObj.externalStyles !== 'boolean') {
+        throw new CoraliteError(`Config property "${prefix}.externalStyles" must be a boolean`)
+      }
+
+      if (cspObj.directives !== undefined && (typeof cspObj.directives !== 'object' || cspObj.directives === null)) {
+        throw new CoraliteError(`Config property "${prefix}.directives" must be an object`)
       }
     }
 
-    if (options.csp.injectMeta !== undefined && typeof options.csp.injectMeta !== 'boolean') {
-      throw new CoraliteError('Config property "csp.injectMeta" must be a boolean')
-    }
+    validateCspFields(options.csp, 'csp')
 
-    if (options.csp.reportOnly !== undefined && typeof options.csp.reportOnly !== 'boolean') {
-      throw new CoraliteError('Config property "csp.reportOnly" must be a boolean')
-    }
+    if (options.csp.modes !== undefined) {
+      if (typeof options.csp.modes !== 'object' || options.csp.modes === null) {
+        throw new CoraliteError('Config property "csp.modes" must be an object')
+      }
 
-    if (options.csp.externalScripts !== undefined && typeof options.csp.externalScripts !== 'boolean') {
-      throw new CoraliteError('Config property "csp.externalScripts" must be a boolean')
-    }
+      for (const [modeKey, modeObj] of Object.entries(options.csp.modes)) {
+        if (!VALID_CSP_MODES.has(modeKey)) {
+          throw new CoraliteError(`Unknown mode key "${modeKey}" in csp.modes. Valid modes are: development, testing, production`, {
+            code: 'CORALITE-CFG-001'
+          })
+        }
 
-    if (options.csp.externalStyles !== undefined && typeof options.csp.externalStyles !== 'boolean') {
-      throw new CoraliteError('Config property "csp.externalStyles" must be a boolean')
-    }
+        if (typeof modeObj !== 'object' || modeObj === null) {
+          throw new CoraliteError(`Config property "csp.modes.${modeKey}" must be an object`)
+        }
 
-    if (options.csp.directives !== undefined && (typeof options.csp.directives !== 'object' || options.csp.directives === null)) {
-      throw new CoraliteError('Config property "csp.directives" must be an object')
+        if ('modes' in modeObj) {
+          throw new CoraliteError(`Recursive "modes" key is not allowed in csp.modes.${modeKey}`, {
+            code: 'CORALITE-CFG-002'
+          })
+        }
+
+        for (const key of Object.keys(modeObj)) {
+          if (!VALID_CSP_KEYS.has(key)) {
+            throw new CoraliteError(`Unknown CSP config key "${key}" in csp.modes.${modeKey}`, {
+              code: 'CORALITE-CFG-003'
+            })
+          }
+        }
+
+        validateCspFields(modeObj, `csp.modes.${modeKey}`)
+      }
     }
   }
 

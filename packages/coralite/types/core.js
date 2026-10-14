@@ -128,6 +128,7 @@
  * @property {boolean} [externalScripts=false] - Whether to externalize inline scripts.
  * @property {boolean} [externalStyles=false] - Whether to externalize inline styles.
  * @property {Record<string, string | string[]>} [directives] - Custom CSP directives.
+ * @property {{ development?: CoraliteCSPConfig, testing?: CoraliteCSPConfig, production?: CoraliteCSPConfig }} [modes] - Per-mode CSP overrides.
  */
 
 /**
