@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue } from '../shared/core.js'
+import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue, isAsyncFunction, createCombinedSignal } from '../shared/core.js'
 import { processHTML } from './utils/inject.js'
 import { recordDevToolsEvent } from './utils/devtools.js'
 import { isDevRuntime } from '../shared/dev-mode.js'
@@ -395,6 +395,13 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._getterAbortControllers = null
+
+    /**
+     * Cache tracking async getters state, values, and abort controllers.
+     * @type {Map<string, { status: string, value: any, hasPreviousValue: boolean, controller: AbortController|null, deps: Set<string> }>|null}
+     * @protected
+     */
+    this._asyncGetterCache = null
 
     /**
      * Internal lifecycle hooks injected by registered Coralite plugins.
@@ -1192,6 +1199,16 @@ export class CoraliteElement extends BaseElement {
 
     this._contextCallbacks = []
 
+    if (this._asyncGetterCache) {
+      for (const entry of this._asyncGetterCache.values()) {
+        if (entry.controller) {
+          entry.controller.abort()
+        }
+      }
+      this._asyncGetterCache.clear()
+      this._asyncGetterCache = null
+    }
+
     if (this._getterAbortControllers) {
       for (const ctrl of Object.values(this._getterAbortControllers)) {
         ctrl?.abort()
@@ -1561,72 +1578,238 @@ export class CoraliteElement extends BaseElement {
 
     // Define derived state getters with isolation controllers
     this._getterAbortControllers = {}
+    if (!this._asyncGetterCache) {
+      this._asyncGetterCache = new Map()
+    }
     if (!this._getterDeps) {
       this._getterDeps = new Map()
     }
     for (const [key, getter] of Object.entries(options.getters || {})) {
-      Object.defineProperty(target, key, {
-        get: () => {
-          if (this._getterAbortControllers[key]) {
-            this._getterAbortControllers[key].abort()
-          }
-          this._getterAbortControllers[key] = new AbortController()
+      if (isAsyncFunction(getter)) {
+        Object.defineProperty(target, key, {
+          get: () => {
+            return this._evalAsyncGetter(key, getter, target, options, getRef)
+          },
+          enumerable: true,
+          configurable: true
+        })
+      } else {
+        Object.defineProperty(target, key, {
+          get: () => {
+            if (this._getterAbortControllers[key]) {
+              this._getterAbortControllers[key].abort()
+            }
+            this._getterAbortControllers[key] = new AbortController()
 
-          let directDeps = this._getterDeps.get(key)
-          if (!directDeps) {
-            directDeps = new Set()
-            this._getterDeps.set(key, directDeps)
-          }
+            let directDeps = this._getterDeps.get(key)
+            if (!directDeps) {
+              directDeps = new Set()
+              this._getterDeps.set(key, directDeps)
+            }
 
-          if (!this._getterContexts) {
-            this._getterContexts = new Map()
-          }
+            if (!this._getterContexts) {
+              this._getterContexts = new Map()
+            }
 
-          let context = this._getterContexts.get(key)
-          if (!context) {
-            const tracker = {
-              activeCollector: (p) => {
-                if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
-                  directDeps.add(p)
-                  if (this._collectingDependencies) {
-                    this._collectingDependencies.add(p)
-                  }
-                  if (this._getterDeps?.has(p)) {
-                    for (const subDep of this._getterDeps.get(p)) {
-                      directDeps.add(subDep)
-                      if (this._collectingDependencies) {
-                        this._collectingDependencies.add(subDep)
+            let context = this._getterContexts.get(key)
+            if (!context) {
+              const tracker = {
+                activeCollector: (p) => {
+                  if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
+                    directDeps.add(p)
+                    if (this._collectingDependencies) {
+                      this._collectingDependencies.add(p)
+                    }
+                    if (this._getterDeps?.has(p)) {
+                      for (const subDep of this._getterDeps.get(p)) {
+                        directDeps.add(subDep)
+                        if (this._collectingDependencies) {
+                          this._collectingDependencies.add(subDep)
+                        }
                       }
                     }
                   }
                 }
               }
+              const roState = this._getTrackedReadOnlyState(key, tracker)
+              context = {
+                state: roState,
+                route: _getClientRoute(),
+                root: this,
+                refs: getRef,
+                slots: this._getSlotsHelper(),
+                isServer: false,
+                signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal
+              }
+              this._getterContexts.set(key, context)
             }
-            const roState = this._getTrackedReadOnlyState(key, tracker)
-            context = {
-              state: roState,
-              route: _getClientRoute(),
-              root: this,
-              refs: getRef,
-              slots: this._getSlotsHelper(),
-              isServer: false,
-              signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal
-            }
-            this._getterContexts.set(key, context)
-          }
 
-          context.signal = this._getterAbortControllers[key].signal
-          return getter(context)
-        },
-        enumerable: true,
-        configurable: true
-      })
+            context.signal = this._getterAbortControllers[key].signal
+            return getter(context)
+          },
+          enumerable: true,
+          configurable: true
+        })
+      }
     }
 
     this._state = this._createReactiveProxy(target, getRef)
     this._registerSlotStateObserver()
     this._syncValidityFromErrors()
 
+  }
+
+  /**
+   * Evaluates an async getter with caching, dependency tracking during sync prologue, and signal management.
+   * @param {string} key - Getter property key.
+   * @param {Function} getter - Async getter function.
+   * @param {Object} target - Target state object.
+   * @param {Object} options - Component options.
+   * @param {Function} getRef - Ref resolver function.
+   * @returns {any} Cached value or undefined.
+   * @protected
+   */
+  _evalAsyncGetter (key, getter, target, options, getRef) {
+    if (!this._asyncGetterCache) {
+      this._asyncGetterCache = new Map()
+    }
+    let entry = this._asyncGetterCache.get(key)
+    if (!entry) {
+      entry = {
+        status: 'idle',
+        value: undefined,
+        hasPreviousValue: false,
+        controller: null,
+        deps: new Set()
+      }
+      this._asyncGetterCache.set(key, entry)
+    }
+
+    if (this._collectingDependencies) {
+      this._collectingDependencies.add(key)
+      if (entry.deps) {
+        for (const dep of entry.deps) {
+          this._collectingDependencies.add(dep)
+        }
+      }
+    }
+
+    if (entry.status === 'idle') {
+      this._runAsyncGetter(key, getter, target, options, getRef, entry)
+    }
+
+    return entry.hasPreviousValue ? entry.value : undefined
+  }
+
+  /**
+   * Runs or re-runs an async getter computation.
+   * @param {string} key - Getter key.
+   * @param {Function} getter - Async getter function.
+   * @param {Object} target - Target state object.
+   * @param {Object} options - Component options.
+   * @param {Function} getRef - Ref resolver function.
+   * @param {Object} entry - Cache entry object.
+   * @protected
+   */
+  _runAsyncGetter (key, getter, target, options, getRef, entry) {
+    if (entry.controller) {
+      entry.controller.abort()
+    }
+
+    const perComputeController = new AbortController()
+    entry.controller = perComputeController
+
+    const combinedSignal = createCombinedSignal(this._abortController?.signal, perComputeController.signal)
+
+    if (!this._getterDeps) {
+      this._getterDeps = new Map()
+    }
+    let directDeps = this._getterDeps.get(key)
+    if (!directDeps) {
+      directDeps = new Set()
+      this._getterDeps.set(key, directDeps)
+    }
+    directDeps.clear()
+
+    const parentCollector = this._collectingDependencies
+    this._collectingDependencies = directDeps
+
+    if (!this._getterContexts) {
+      this._getterContexts = new Map()
+    }
+
+    let context = this._getterContexts.get(key)
+    if (!context) {
+      const tracker = {
+        activeCollector: (p) => {
+          if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
+            directDeps.add(p)
+            if (this._collectingDependencies) {
+              this._collectingDependencies.add(p)
+            }
+            if (this._getterDeps?.has(p)) {
+              for (const subDep of this._getterDeps.get(p)) {
+                directDeps.add(subDep)
+                if (this._collectingDependencies) {
+                  this._collectingDependencies.add(subDep)
+                }
+              }
+            }
+          }
+        }
+      }
+      const roState = this._getTrackedReadOnlyState(key, tracker)
+      context = {
+        state: roState,
+        route: _getClientRoute(),
+        root: this,
+        refs: getRef,
+        slots: this._getSlotsHelper(),
+        isServer: false,
+        signal: combinedSignal
+      }
+      this._getterContexts.set(key, context)
+    } else {
+      context.signal = combinedSignal
+    }
+
+    entry.status = 'in_flight'
+
+    let promise
+    try {
+      promise = getter(context)
+    } catch (err) {
+      promise = Promise.reject(err)
+    } finally {
+      this._collectingDependencies = parentCollector
+    }
+
+    entry.deps = new Set(directDeps)
+
+    Promise.resolve(promise).then(res => {
+      if (perComputeController.signal.aborted || this._abortController?.signal?.aborted) {
+        return
+      }
+      entry.status = 'resolved'
+      entry.value = res
+      entry.hasPreviousValue = true
+      entry.controller = null
+
+      this._markKeysDirty(key)
+      this._scheduleUpdate()
+    }).catch(err => {
+      if (perComputeController.signal.aborted || err?.name === 'AbortError' || this._abortController?.signal?.aborted) {
+        return
+      }
+      entry.status = 'errored'
+      entry.controller = null
+
+      if (isDevRuntime()) {
+        console.error(`[Coralite] Async getter "${key}" failed:`, err)
+      } else {
+        console.warn(`[Coralite] Async getter "${key}" failed: ${err?.message || err}`)
+      }
+    })
   }
 
   /**
@@ -2243,6 +2426,17 @@ export class CoraliteElement extends BaseElement {
       },
 
       set (t, p, v) {
+        if (typeof p === 'string' && options.getters && p in options.getters) {
+          if (isDevRuntime()) {
+            throw new CoraliteError(`Cannot assign to getter property "${p}". Getter values are read-only.`, {
+              componentId: options.componentId,
+              instanceId: self._instanceId,
+              path: p
+            })
+          }
+          return true
+        }
+
         let nextValue = v
         if (!self._assertNotObservingStateMutation(p)) {
           return true
@@ -3398,6 +3592,21 @@ export class CoraliteElement extends BaseElement {
     // A state change gives unresolved binding paths another chance to resolve.
     this._pendingBindingRetries = 0
 
+    if (this._asyncGetterCache && this.componentOptions?.getters) {
+      for (const [getterKey, entry] of this._asyncGetterCache.entries()) {
+        for (let i = 0; i < names.length; i++) {
+          if (entry.deps && entry.deps.has(names[i])) {
+            const getter = this.componentOptions.getters[getterKey]
+            if (getter && isAsyncFunction(getter) && this._state) {
+              const getRef = (id) => this._resolveRef(id)
+              this._runAsyncGetter(getterKey, getter, this._state, this.componentOptions, getRef, entry)
+            }
+            break
+          }
+        }
+      }
+    }
+
     // Track changed keys before subscriber guard for style and binding checks
     if (this._styleDeps || this._tokenBindings) {
       if (!this._changedStateKeys) {
@@ -4488,28 +4697,114 @@ export async function setupPageRuntime (pageConfig) {
   }
 
   const getterAbortControllers = {}
+  const asyncGetterCache = new Map()
+  const pageGetterDeps = new Map()
+
+  const runAsyncPageGetter = (key, getterFn, entry) => {
+    if (entry.controller) {
+      entry.controller.abort()
+    }
+    const perComputeCtrl = new AbortController()
+    entry.controller = perComputeCtrl
+    const combinedSignal = createCombinedSignal(pageAbortController.signal, perComputeCtrl.signal)
+
+    const directDeps = new Set()
+    pageGetterDeps.set(key, directDeps)
+
+    const pageCtx = {
+      state: createReadOnlyProxy(stateProxy, new WeakMap(), {
+        activeCollector: (p) => {
+          if (typeof p === 'string') {
+            directDeps.add(p)
+          }
+        }
+      }),
+      route: routeObj,
+      root: rootEl,
+      refs: (id) => rootEl.querySelector(`[ref="${id}"]`),
+      isServer: false,
+      signal: combinedSignal
+    }
+
+    entry.status = 'in_flight'
+    let promise
+    try {
+      promise = getterFn(pageCtx)
+    } catch (err) {
+      promise = Promise.reject(err)
+    }
+
+    entry.deps = new Set(directDeps)
+
+    Promise.resolve(promise).then(res => {
+      if (perComputeCtrl.signal.aborted || pageAbortController.signal.aborted) {
+        return
+      }
+      entry.status = 'resolved'
+      entry.value = res
+      entry.hasPreviousValue = true
+      entry.controller = null
+      schedulePageFlush(key, undefined, res)
+    }).catch(err => {
+      if (perComputeCtrl.signal.aborted || err?.name === 'AbortError' || pageAbortController.signal.aborted) {
+        return
+      }
+      entry.status = 'errored'
+      entry.controller = null
+      if (isDevRuntime()) {
+        console.error(`[Coralite] Async page getter "${key}" failed:`, err)
+      } else {
+        console.warn(`[Coralite] Async page getter "${key}" failed: ${err?.message || err}`)
+      }
+    })
+  }
+
   for (const [key, rawGetterFn] of Object.entries(getterFns)) {
     const getterFn = parseFn(rawGetterFn)
     if (typeof getterFn === 'function') {
-      Object.defineProperty(stateTarget, key, {
-        get: () => {
-          if (getterAbortControllers[key]) {
-            getterAbortControllers[key].abort()
-          }
-          getterAbortControllers[key] = new AbortController()
-          const roState = createReadOnlyProxy(stateProxy)
-          return getterFn({
-            state: roState,
-            route: routeObj,
-            root: rootEl,
-            refs: (id) => rootEl.querySelector(`[ref="${id}"]`),
-            isServer: false,
-            signal: getterAbortControllers[key].signal
-          })
-        },
-        enumerable: true,
-        configurable: true
-      })
+      if (isAsyncFunction(getterFn)) {
+        Object.defineProperty(stateTarget, key, {
+          get: () => {
+            let entry = asyncGetterCache.get(key)
+            if (!entry) {
+              entry = {
+                status: 'idle',
+                value: undefined,
+                hasPreviousValue: false,
+                controller: null,
+                deps: new Set()
+              }
+              asyncGetterCache.set(key, entry)
+            }
+            if (entry.status === 'idle') {
+              runAsyncPageGetter(key, getterFn, entry)
+            }
+            return entry.hasPreviousValue ? entry.value : undefined
+          },
+          enumerable: true,
+          configurable: true
+        })
+      } else {
+        Object.defineProperty(stateTarget, key, {
+          get: () => {
+            if (getterAbortControllers[key]) {
+              getterAbortControllers[key].abort()
+            }
+            getterAbortControllers[key] = new AbortController()
+            const roState = createReadOnlyProxy(stateProxy)
+            return getterFn({
+              state: roState,
+              route: routeObj,
+              root: rootEl,
+              refs: (id) => rootEl.querySelector(`[ref="${id}"]`),
+              isServer: false,
+              signal: getterAbortControllers[key].signal
+            })
+          },
+          enumerable: true,
+          configurable: true
+        })
+      }
     }
   }
 
@@ -4518,6 +4813,14 @@ export async function setupPageRuntime (pageConfig) {
       return Reflect.get(target, prop, receiver)
     },
     set (target, prop, value) {
+      if (typeof prop === 'string' && prop in getterFns) {
+        if (isDevRuntime()) {
+          throw new CoraliteError(`Cannot assign to getter property "${prop}". Getter values are read-only.`, {
+            path: prop
+          })
+        }
+        return true
+      }
       const oldVal = target[prop]
       if (oldVal === value) {
         return true

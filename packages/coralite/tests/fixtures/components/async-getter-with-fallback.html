@@ -1,0 +1,24 @@
+<template id="async-getter-with-fallback">
+  <div data-testid="body">{{ bodyText }}</div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  server: () => ({
+    source: 'Hello Coralite Framework!'
+  }),
+  getters: {
+    renderedBody: async ({ state }) => {
+      const source = state.source
+      await new Promise(r => setTimeout(r, 10))
+      return source.toUpperCase()
+    },
+    bodyText: ({ state }) =>
+      state.renderedBody === undefined
+        ? state.source.slice(0, 5)
+        : state.renderedBody
+  }
+})
+</script>

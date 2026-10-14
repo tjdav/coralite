@@ -1,0 +1,27 @@
+<template id="async-getter-with-abort">
+  <div data-testid="abort-val">{{ abortResult }}</div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  server: () => ({
+    count: 0
+  }),
+  getters: {
+    abortResult: async ({ state, signal }) => {
+      const c = state.count
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => resolve(`Count: ${c}`), 50)
+        signal.addEventListener('abort', () => {
+          clearTimeout(timer)
+          const err = new Error('Aborted compute')
+          err.name = 'AbortError'
+          reject(err)
+        }, { once: true })
+      })
+    }
+  }
+})
+</script>

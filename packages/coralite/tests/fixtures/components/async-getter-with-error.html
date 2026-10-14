@@ -1,0 +1,16 @@
+<template id="async-getter-with-error">
+  <div data-testid="error-val">{{ failingGetter }}</div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  getters: {
+    failingGetter: async () => {
+      await new Promise(r => setTimeout(r, 10))
+      throw new Error('Async getter failed')
+    }
+  }
+})
+</script>
