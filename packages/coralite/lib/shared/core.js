@@ -15,6 +15,46 @@ export const NOOP_SIGNAL = new AbortController().signal
 export const isServer = typeof window === 'undefined'
 export const isClient = typeof window !== 'undefined'
 
+/**
+ * Checks if a function is declared with async (AsyncFunction).
+ * @param {any} fn - The function to check.
+ * @returns {boolean} True if fn is an AsyncFunction.
+ */
+export function isAsyncFunction (fn) {
+  return typeof fn === 'function' && Object.prototype.toString.call(fn) === '[object AsyncFunction]'
+}
+
+/**
+ * Combines two AbortSignals into a single signal that aborts when either signal aborts.
+ * Uses AbortSignal.any if available, otherwise falls back to a manual combined AbortController.
+ * @param {AbortSignal|null|undefined} signal1 - First signal.
+ * @param {AbortSignal|null|undefined} signal2 - Second signal.
+ * @returns {AbortSignal} Combined signal.
+ */
+export function createCombinedSignal (signal1, signal2) {
+  if (typeof AbortSignal.any === 'function' && signal1 && signal2) {
+    return AbortSignal.any([signal1, signal2])
+  }
+  if (!signal1) {
+    return signal2 || NOOP_SIGNAL
+  }
+  if (!signal2) {
+    return signal1 || NOOP_SIGNAL
+  }
+  if (signal1.aborted) {
+    return signal1
+  }
+  if (signal2.aborted) {
+    return signal2
+  }
+  const ctrl = new AbortController()
+  const onAbort1 = () => ctrl.abort(signal1.reason)
+  const onAbort2 = () => ctrl.abort(signal2.reason)
+  signal1.addEventListener('abort', onAbort1, { once: true })
+  signal2.addEventListener('abort', onAbort2, { once: true })
+  return ctrl.signal
+}
+
 const KEBAB_REGEX = /[-|:]([a-z])/g
 const CAMEL_REGEX = /([a-z0-9])([A-Z])/g
 const MAX_STRING_CACHE_SIZE = 1000

@@ -17,7 +17,8 @@ import {
   isContextMap,
   kebabToCamel,
   resolveComponentSlots,
-  NOOP_SIGNAL
+  NOOP_SIGNAL,
+  isAsyncFunction
 } from '../shared/core.js'
 import {
   replaceToken,
@@ -1510,11 +1511,15 @@ export function createRenderer ({
           }
           for (const [gKey, gFn] of Object.entries(pageExports.getters)) {
             if (typeof gFn === 'function') {
-              Object.defineProperty(activePageState, gKey, {
-                get: () => gFn(getterCtx),
-                enumerable: true,
-                configurable: true
-              })
+              if (isAsyncFunction(gFn)) {
+                activePageState[gKey] = undefined
+              } else {
+                Object.defineProperty(activePageState, gKey, {
+                  get: () => gFn(getterCtx),
+                  enumerable: true,
+                  configurable: true
+                })
+              }
             }
           }
         }

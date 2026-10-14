@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, cloneModuleInstance, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL } from '../../shared/core.js'
+import { createReadOnlyProxy, cloneModuleInstance, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL, isAsyncFunction } from '../../shared/core.js'
 import { processTokenValue } from '../parser/html.js'
 import { CoraliteError, handleError } from '../../shared/errors.js'
 import {
@@ -362,6 +362,13 @@ async function _executeServerGetters (getters, state, root, context) {
   const roState = createReadOnlyProxy(state)
   const serverSlots = createServerSlotsHelper(root)
   for (const [key, getter] of Object.entries(getters)) {
+    if (isAsyncFunction(getter)) {
+      state[key] = undefined
+      if (state.__script__ && state.__script__.state) {
+        state.__script__.state[key] = undefined
+      }
+      continue
+    }
     const serverContext = {
       state: roState,
       route,
