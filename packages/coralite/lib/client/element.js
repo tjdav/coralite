@@ -3401,8 +3401,20 @@ export class CoraliteElement extends BaseElement {
         }
 
         if (binding.type === 'text') {
-          if (node.textContent !== hydratedValue) {
-            node.textContent = hydratedValue
+          if (this.componentOptions?.compilerOptimizations === 'none') {
+            if (node.textContent !== hydratedValue) {
+              node.textContent = hydratedValue
+            }
+          } else {
+            if (node.nodeType === 3) {
+              if (node.nodeValue !== hydratedValue) {
+                node.nodeValue = hydratedValue
+              }
+            } else {
+              if (node.textContent !== hydratedValue) {
+                node.textContent = hydratedValue
+              }
+            }
           }
         } else if (binding.type === 'html') {
           /** @type {HTMLElement} */
