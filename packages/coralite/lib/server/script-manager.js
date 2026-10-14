@@ -1,6 +1,6 @@
 import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
-import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, hasContextEntries, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap, validateSerializable } from '../shared/core.js'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, hasContextEntries, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap, generateBindingTree, validateSerializable } from '../shared/core.js'
 import { findAndExtractImperativeComponents, astTransformer } from './utils/server.js'
 import { CoraliteError } from '../shared/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
@@ -983,6 +983,8 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
       const useCloning = shouldUseTemplateCloning(sharedFn, this.sharedFunctions, compilerOptimizations)
 
       const updaters = generateCompiledUpdaters(hydrationMapObj, getterKeysSet, compilerOptimizations)
+      const bindingTreeObj = compilerOptimizations !== 'none' ? generateBindingTree(hydrationMapObj) : null
+      const bindingTree = serialize(bindingTreeObj)
 
       const templateElementExpr = useCloning
         ? `(typeof document !== 'undefined' ? (() => { const t = document.createElement('template'); t.innerHTML = ${templateHTML}; return t; })() : null)`
@@ -994,6 +996,7 @@ export default {
   compilerOptimizations: "${compilerOptimizations}",
   useTemplateCloning: ${useCloning},
   _updaters: ${updaters},
+  _bindingTree: ${bindingTree},
   templateElement: ${templateElementExpr},
   templateHTML: ${templateHTML},
   templateValues: ${templateValues},

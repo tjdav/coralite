@@ -933,6 +933,106 @@ export function generateHydrationMap (templateNodes, templateValues) {
 }
 
 /**
+ * Generates a tree representation of binding paths for single-pass traversal.
+ *
+ * @param {Object} hydrationMap - Component hydration map containing texts, attributes, refs, slots.
+ * @returns {Object|null} Root binding tree node or null if no bindings exist.
+ */
+export function generateBindingTree (hydrationMap) {
+  if (!hydrationMap) {
+    return null
+  }
+
+  const root = {
+    match: null,
+    children: null
+  }
+
+  let totalBindings = 0
+
+  const addBinding = (path, bindingObj) => {
+    totalBindings++
+    let current = root
+    const safePath = path || []
+
+    for (let i = 0; i < safePath.length; i++) {
+      const childIdx = safePath[i]
+      if (!current.children) {
+        current.children = {}
+      }
+      if (!current.children[childIdx]) {
+        current.children[childIdx] = {
+          match: null,
+          children: null
+        }
+      }
+      current = current.children[childIdx]
+    }
+
+    if (!current.match) {
+      current.match = []
+    }
+    current.match.push(bindingObj)
+  }
+
+  let indexCounter = 0
+
+  if (hydrationMap.texts) {
+    for (let i = 0; i < hydrationMap.texts.length; i++) {
+      const item = hydrationMap.texts[i]
+      const parsed = item.tokens !== undefined ? item : parseTemplateSegments(item.template)
+      addBinding(item.path, {
+        index: indexCounter++,
+        type: item.type || 'text',
+        path: item.path,
+        template: item.template,
+        tokens: parsed.tokens,
+        isSingleToken: parsed.isSingleToken,
+        singleTokenKey: parsed.singleTokenKey,
+        segments: parsed.segments
+      })
+    }
+  }
+
+  if (hydrationMap.attributes) {
+    for (let i = 0; i < hydrationMap.attributes.length; i++) {
+      const item = hydrationMap.attributes[i]
+      const parsed = item.tokens !== undefined ? item : parseTemplateSegments(item.template)
+      const attrKind = item.attrKind !== undefined ? item.attrKind : classifyAttribute(item.name, parsed.isSingleToken)
+      addBinding(item.path, {
+        index: indexCounter++,
+        type: 'attribute',
+        path: item.path,
+        name: item.name,
+        template: item.template,
+        tokens: parsed.tokens,
+        isSingleToken: parsed.isSingleToken,
+        singleTokenKey: parsed.singleTokenKey,
+        segments: parsed.segments,
+        attrKind
+      })
+    }
+  }
+
+  if (hydrationMap.refs) {
+    for (let i = 0; i < hydrationMap.refs.length; i++) {
+      const item = hydrationMap.refs[i]
+      addBinding(item.path, {
+        type: 'ref',
+        path: item.path,
+        name: item.name
+      })
+    }
+  }
+
+  if (totalBindings === 0) {
+    return null
+  }
+
+  return root
+}
+
+/**
  * Recursively adds a component and its dependencies to a tracking object.
  *
  * @param {string} componentId - The ID of the component to add.

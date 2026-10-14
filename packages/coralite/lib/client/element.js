@@ -135,6 +135,8 @@ function createClientSlotsHelper (element) {
  * @property {string} componentId - The unique identifier for the component.
  * @property {boolean} [formAssociated] - Whether element is form-associated custom element.
  * @property {boolean} [useTemplateCloning] - Whether template cloning is enabled for this component.
+ * @property {string} [compilerOptimizations] - Compiler optimization mode ('all' | 'none').
+ * @property {Object|null} [_bindingTree] - Tree representation of binding paths for single-pass resolution.
  * @property {Object.<string, Function>|null} [_updaters] - Compiled per-token updater functions.
  * @property {any} [templateElement] - The pre-parsed template element for cloneNode instantiation.
  * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
@@ -2723,6 +2725,67 @@ export class CoraliteElement extends BaseElement {
    * Caches physical DOM references to text nodes and attributes that contain template tokens.
    * @private
    */
+  /**
+   * Resolves component bindings in a single traversal pass using the pre-computed _bindingTree.
+   * @param {Object} tree - The binding tree root node.
+   * @protected
+   */
+  _resolveBindings (tree) {
+    if (!tree) {
+      return
+    }
+    const bindings = []
+    const walk = (node, currentTree) => {
+      if (!node || !currentTree) {
+        return
+      }
+      if (currentTree.match && Array.isArray(currentTree.match)) {
+        for (let i = 0; i < currentTree.match.length; i++) {
+          const b = currentTree.match[i]
+          if (b.index !== undefined) {
+            bindings[b.index] = {
+              ...b,
+              node
+            }
+          }
+          if (b.type === 'ref') {
+            const uniqueRefValue = `${this._instanceId}__${b.name}`
+            if (node.setAttribute) {
+              if (!node.getAttribute('ref')) {
+                node.setAttribute('ref', uniqueRefValue)
+              }
+              if (!node.hasAttribute('data-coralite-owner')) {
+                node.setAttribute('data-coralite-owner', this._instanceId)
+              }
+            }
+          }
+        }
+      }
+      if (currentTree.children) {
+        const children = node.childNodes
+        if (!children) {
+          return
+        }
+        for (const childIdxStr in currentTree.children) {
+          const idx = parseInt(childIdxStr, 10)
+          const subTree = currentTree.children[childIdxStr]
+          const childNode = children[idx]
+          if (childNode && subTree) {
+            walk(childNode, subTree)
+          }
+        }
+      }
+    }
+
+    walk(this, tree)
+    this._bindings = bindings
+  }
+
+  /**
+   * Initializes DOM bindings based on the compiler's hydration map.
+   * Caches physical DOM references to text nodes and attributes that contain template tokens.
+   * @private
+   */
   _setupBindings () {
     this._bindings = []
     this._requiredTokens = []
@@ -2731,74 +2794,81 @@ export class CoraliteElement extends BaseElement {
     this._pendingBindingRetries = 0
     this._updaters = this.componentOptions?._updaters || null
 
-    const map = this.componentOptions.hydrationMap
+    const map = this.componentOptions?.hydrationMap
     if (!map) {
       return
     }
 
     this._tokenBindings = map.tokenBindings || null
 
-    const fallbackParse = (template) => {
-      if (!template || typeof template !== 'string') {
+    const bindingTree = this.componentOptions?._bindingTree
+    const compilerOpts = this.componentOptions?.compilerOptimizations ?? 'all'
+
+    if (bindingTree && compilerOpts !== 'none') {
+      this._resolveBindings(bindingTree)
+    } else {
+      const fallbackParse = (template) => {
+        if (!template || typeof template !== 'string') {
+          return {
+            tokens: [],
+            isSingleToken: false,
+            singleTokenKey: undefined,
+            segments: null
+          }
+        }
+        const tokens = []
+        template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
+          tokens.push(key)
+          return ''
+        })
+        const trimmed = template.trim()
+        const isSingleToken = tokens.length === 1 && (trimmed === `{{${tokens[0]}}}` || trimmed === `{{ ${tokens[0]} }}`)
         return {
-          tokens: [],
-          isSingleToken: false,
-          singleTokenKey: undefined,
+          tokens,
+          isSingleToken,
+          singleTokenKey: tokens[0],
           segments: null
         }
       }
-      const tokens = []
-      template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
-        tokens.push(key)
-        return ''
-      })
-      const trimmed = template.trim()
-      const isSingleToken = tokens.length === 1 && (trimmed === `{{${tokens[0]}}}` || trimmed === `{{ ${tokens[0]} }}`)
-      return {
-        tokens,
-        isSingleToken,
-        singleTokenKey: tokens[0],
-        segments: null
-      }
-    }
 
-    if (map.texts) {
-      for (let i = 0; i < map.texts.length; i++) {
-        const item = map.texts[i]
-        const node = this.getNodeByPath(item.path)
-        const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
-        this._bindings.push({
-          type: item.type || 'text',
-          node,
-          path: item.path,
-          template: item.template,
-          tokens: parsed.tokens,
-          isSingleToken: parsed.isSingleToken,
-          singleTokenKey: parsed.singleTokenKey,
-          segments: parsed.segments
-        })
+      if (map.texts) {
+        for (let i = 0; i < map.texts.length; i++) {
+          const item = map.texts[i]
+          const node = this.getNodeByPath(item.path)
+          const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
+          this._bindings.push({
+            type: item.type || 'text',
+            node,
+            path: item.path,
+            template: item.template,
+            tokens: parsed.tokens,
+            isSingleToken: parsed.isSingleToken,
+            singleTokenKey: parsed.singleTokenKey,
+            segments: parsed.segments
+          })
+        }
       }
-    }
 
-    if (map.attributes) {
-      for (let i = 0; i < map.attributes.length; i++) {
-        const item = map.attributes[i]
-        // See the note above: unresolved paths stay pending and are retried by _updateDOM().
-        const node = this.getNodeByPath(item.path)
-        const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
-        const attrKind = item.attrKind !== undefined ? item.attrKind : classifyAttribute(item.name, parsed.isSingleToken)
-        this._bindings.push({
-          type: 'attribute',
-          node,
-          path: item.path,
-          name: item.name,
-          template: item.template,
-          tokens: parsed.tokens,
-          isSingleToken: parsed.isSingleToken,
-          singleTokenKey: parsed.singleTokenKey,
-          segments: parsed.segments,
-          attrKind
-        })
+      if (map.attributes) {
+        for (let i = 0; i < map.attributes.length; i++) {
+          const item = map.attributes[i]
+          // See the note above: unresolved paths stay pending and are retried by _updateDOM().
+          const node = this.getNodeByPath(item.path)
+          const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
+          const attrKind = item.attrKind !== undefined ? item.attrKind : classifyAttribute(item.name, parsed.isSingleToken)
+          this._bindings.push({
+            type: 'attribute',
+            node,
+            path: item.path,
+            name: item.name,
+            template: item.template,
+            tokens: parsed.tokens,
+            isSingleToken: parsed.isSingleToken,
+            singleTokenKey: parsed.singleTokenKey,
+            segments: parsed.segments,
+            attrKind
+          })
+        }
       }
     }
 
@@ -2807,7 +2877,7 @@ export class CoraliteElement extends BaseElement {
     } else if (this._bindings.length > 0) {
       const seen = new Set()
       for (let i = 0; i < this._bindings.length; i++) {
-        const bindingTokens = this._bindings[i].tokens
+        const bindingTokens = this._bindings[i]?.tokens
         if (!bindingTokens) {
           continue
         }
