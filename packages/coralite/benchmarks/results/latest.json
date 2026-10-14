@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-14T16:09:34.157Z",
+  "timestamp": "2026-10-14T17:04:32.726Z",
   "environment": {
     "node": "v22.22.1",
     "platform": "linux",
@@ -8,43 +8,43 @@
   "suites": {
     "dom-reactivity": {
       "coralite": {
-        "create1k": 62.7,
-        "replace1k": 75.9,
-        "update10th": 18.2,
-        "swapRows": 8.4,
-        "clear": 6.4,
+        "create1k": 59.4,
+        "replace1k": 76.7,
+        "update10th": 18.5,
+        "swapRows": 8.1,
+        "clear": 6.3,
         "heapMB": 1.58
       },
       "svelte": {
-        "create1k": 76.7,
-        "replace1k": 85.1,
-        "update10th": 22,
-        "swapRows": 8.6,
-        "clear": 7.7,
+        "create1k": 71,
+        "replace1k": 81.8,
+        "update10th": 21.1,
+        "swapRows": 7.6,
+        "clear": 7,
         "heapMB": 3.72
       },
       "react": {
-        "create1k": 73.4,
-        "replace1k": 88.7,
-        "update10th": 28.2,
-        "swapRows": 75.1,
-        "clear": 12.6,
+        "create1k": 69.5,
+        "replace1k": 93.2,
+        "update10th": 28,
+        "swapRows": 72.9,
+        "clear": 13.3,
         "heapMB": 3.6
       },
       "vue": {
-        "create1k": 78.7,
-        "replace1k": 81.5,
-        "update10th": 24.1,
-        "swapRows": 10.3,
-        "clear": 8.5,
+        "create1k": 74.2,
+        "replace1k": 74.6,
+        "update10th": 22.4,
+        "swapRows": 9.7,
+        "clear": 7.6,
         "heapMB": 3.12
       },
       "vanilla": {
-        "create1k": 78.5,
-        "replace1k": 70.1,
-        "update10th": 17.9,
-        "swapRows": 5.1,
-        "clear": 6.1,
+        "create1k": 74.7,
+        "replace1k": 65.1,
+        "update10th": 17.4,
+        "swapRows": 4.7,
+        "clear": 5.9,
         "heapMB": 1.38
       }
     },
@@ -52,8 +52,8 @@
       "coraliteDynamic": {
         "rawKB": 72,
         "gzipKB": 19.1,
-        "hydrationMS": 4.7,
-        "ttiMS": 151.85
+        "hydrationMS": 4.6,
+        "ttiMS": 147.12
       },
       "coraliteStatic": {
         "rawKB": 0,
@@ -64,93 +64,93 @@
       "react": {
         "rawKB": 190.3,
         "gzipKB": 59.4,
-        "hydrationMS": 1.7,
-        "ttiMS": 174.35
+        "hydrationMS": 1.6,
+        "ttiMS": 172.28
       },
       "vue": {
         "rawKB": 76.7,
         "gzipKB": 30.7,
-        "hydrationMS": 7.4,
-        "ttiMS": 140.69
+        "hydrationMS": 7.9,
+        "ttiMS": 160.83
       },
       "svelte": {
         "rawKB": 48.1,
         "gzipKB": 18.2,
-        "hydrationMS": 3.6,
-        "ttiMS": 139.83
+        "hydrationMS": 3.7,
+        "ttiMS": 145.82
       }
     },
     "ssrThroughput": {
       "100_pages": {
         "totalPages": 100,
-        "totalDurationMS": 425.8,
-        "pagesPerSec": 234.9,
-        "avgLatencyMS": 4.26,
-        "heapUsedMB": 2.5
+        "totalDurationMS": 377.2,
+        "pagesPerSec": 265.1,
+        "avgLatencyMS": 3.77,
+        "heapUsedMB": 3.8
       },
       "1000_pages": {
         "totalPages": 1000,
-        "totalDurationMS": 2691.1,
-        "pagesPerSec": 371.6,
-        "avgLatencyMS": 2.69,
-        "heapUsedMB": 11.2
+        "totalDurationMS": 2938.6,
+        "pagesPerSec": 340.3,
+        "avgLatencyMS": 2.94,
+        "heapUsedMB": 19.3
       },
       "10000_pages": {
         "totalPages": 10000,
-        "totalDurationMS": 34541.1,
-        "pagesPerSec": 289.5,
-        "avgLatencyMS": 3.45,
-        "heapUsedMB": 186.8
+        "totalDurationMS": 33880,
+        "pagesPerSec": 295.2,
+        "avgLatencyMS": 3.39,
+        "heapUsedMB": 177.4
       }
     },
     "internal": [
       {
         "benchmark": "Coralite Token Replace (textNode)",
-        "opsPerSec": 2579481,
-        "avgLatencyNs": 387.7,
+        "opsPerSec": 2637012,
+        "avgLatencyNs": 379.2,
         "speedup": 1
       },
       {
         "benchmark": "Native String.prototype.replace (regex)",
-        "opsPerSec": 4919905,
-        "avgLatencyNs": 203.3,
-        "speedup": 1.91
+        "opsPerSec": 4850192,
+        "avgLatencyNs": 206.2,
+        "speedup": 1.84
       },
       {
         "benchmark": "Coralite Token Replace (attribute)",
-        "opsPerSec": 4460626,
-        "avgLatencyNs": 224.2,
-        "speedup": 1.73
+        "opsPerSec": 4349838,
+        "avgLatencyNs": 229.9,
+        "speedup": 1.65
       },
       {
         "benchmark": "Coralite Read-Only Proxy (Deep Read)",
-        "opsPerSec": 1539736,
-        "avgLatencyNs": 649.5,
+        "opsPerSec": 1534483,
+        "avgLatencyNs": 651.7,
         "speedup": 1
       },
       {
         "benchmark": "Standard Flat Object Read (Deep Read)",
-        "opsPerSec": 822275285,
-        "avgLatencyNs": 1.2,
-        "speedup": 534.04
+        "opsPerSec": 753841326,
+        "avgLatencyNs": 1.3,
+        "speedup": 491.27
       },
       {
         "benchmark": "Eager Recursive Proxy (Deep Read)",
-        "opsPerSec": 2334802,
-        "avgLatencyNs": 428.3,
-        "speedup": 1.52
+        "opsPerSec": 2363840,
+        "avgLatencyNs": 423,
+        "speedup": 1.54
       },
       {
         "benchmark": "Optimized Object.setPrototypeOf AST Element Creation",
-        "opsPerSec": 345612,
-        "avgLatencyNs": 2893.4,
+        "opsPerSec": 336534,
+        "avgLatencyNs": 2971.5,
         "speedup": 1
       },
       {
         "benchmark": "Legacy Object.defineProperties AST Element Creation",
-        "opsPerSec": 429402,
-        "avgLatencyNs": 2328.8,
-        "speedup": 1.24
+        "opsPerSec": 446657,
+        "avgLatencyNs": 2238.9,
+        "speedup": 1.33
       }
     ],
     "stress-lifecycle": {
@@ -158,34 +158,34 @@
         "coralite-selective": {
           "rawKB": 71.3,
           "gzipKB": 18.8,
-          "hydrationMS": 0.1
+          "hydrationMS": 0
         },
         "coralite-dynamic": {
           "rawKB": 71.3,
           "gzipKB": 18.8,
-          "hydrationMS": 0.1
+          "hydrationMS": 0
         },
         "react": {
           "rawKB": 189.5,
           "gzipKB": 59.1,
-          "hydrationMS": 2
+          "hydrationMS": 1.6
         },
         "vue": {
           "rawKB": 76,
           "gzipKB": 30.4,
-          "hydrationMS": 15.9
+          "hydrationMS": 9.2
         },
         "svelte": {
           "rawKB": 49.6,
           "gzipKB": 18.7,
-          "hydrationMS": 4.3
+          "hydrationMS": 4.1
         }
       },
       "streaming": {
         "totalUpdates": 300,
-        "avgBatchLatencyMS": 0.095,
-        "droppedFrames": 109,
-        "peakCpuTimeMS": 3106.8
+        "avgBatchLatencyMS": 0.07,
+        "droppedFrames": 113,
+        "peakCpuTimeMS": 3092.7
       },
       "lifecycle": {
         "cycles": 50,
