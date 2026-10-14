@@ -7,11 +7,15 @@ Read this file before starting any task in this project.
 - Components and pages are defined with `defineComponent` and `definePage`.
 - Templates use flat `{{ token }}` placeholders. No expressions, dot notation, or function calls.
 - No inline event handlers. Bind in `client()` with `refs()` + `{ signal }`.
-- Getter signature: `({ state }) => value`. Style signature: `({ state }) => value`.
+- Getter signature: `({ state }) => value`.
+- Style signature: `({ state }) => value`.
+- Slots signature: `({ nodes, state }) => nodes`.
 
 ## Import rule
 
-Top-level imports are for `define*` functions and isomorphic helpers used by `getters`, `style`, or `slots`. Modules used by `server()`, `client()`, or `paths()` are loaded with `await import()` inside the block.
+Top-level imports are for `define*` functions and isomorphic helpers used by
+`getters`, `style`, or `slots`. Modules used by `server()`, `client()`, or
+`paths()` are loaded with `await import()` inside the block.
 
 ## Serialization boundary
 

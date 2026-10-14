@@ -119,6 +119,11 @@ describe('CLI integration tests', () => {
     assert.equal(fs.existsSync(path.join(targetDir, 'AGENTS.md')), true)
     assert.equal(fs.existsSync(path.join(targetDir, 'README.md')), true)
 
+    const agentsMd = fs.readFileSync(path.join(targetDir, 'AGENTS.md'), 'utf-8')
+    assert.match(agentsMd, /defineComponent/)
+    assert.match(agentsMd, /definePage/)
+    assert.match(agentsMd, /Serialization boundary/)
+
     const readme = fs.readFileSync(path.join(targetDir, 'README.md'), 'utf-8')
     assert.match(readme, /# my-scaffold-app/)
     assert.match(readme, /## Deploying/)

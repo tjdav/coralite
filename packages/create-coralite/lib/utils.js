@@ -212,7 +212,7 @@ export function checkNodeVersion (constraint, currentVersion = process.version) 
   }
   if (!satisfiesEngine(currentVersion, constraint)) {
     console.error(
-      `Error: this project requires Node.js ${constraint}. You are running ${currentVersion}.\nInstall a newer Node version: https://nodejs.org/`
+      `Error: this project requires Node.js ${constraint}. You are running ${currentVersion}.\nInstall a newer version: https://nodejs.org/`
     )
     process.exit(1)
   }
