@@ -1,0 +1,18 @@
+<template id="provide-with-signal">
+  <div>Provided</div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export const testSignalContext = Symbol('testSignalContext')
+
+export default defineComponent({
+  provide: {
+    [testSignalContext]: ({ signal }) => ({
+      hasSignal: Boolean(signal),
+      isAborted: Boolean(signal?.aborted)
+    })
+  }
+})
+</script>

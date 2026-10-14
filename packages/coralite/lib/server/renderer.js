@@ -225,9 +225,10 @@ export function createRenderer ({
    * @param {string} [buildId] - Unique identifier for the build
    * @returns {CoraliteSession}
    */
-  const _createSession = (buildId) => {
+  const _createSession = (buildId, signal = NOOP_SIGNAL) => {
     const sessionObj = {
       buildId,
+      signal,
       state: {},
       styles: new Map(),
       componentTags: new Set(),
@@ -805,7 +806,8 @@ export function createRenderer ({
                 root: element || root,
                 refs: () => null,
                 slots: createServerSlotsHelper(element || root),
-                signal: NOOP_SIGNAL
+                isServer: true,
+                signal: currentSession?.signal || NOOP_SIGNAL
               }
               newFrame.set(key, valOrFn(context))
             } catch {
@@ -1271,6 +1273,7 @@ export function createRenderer ({
   const _renderSinglePage = async (pageItem, buildId, state = {}, buildOptions = {}, targetRoute = null, targetOutPath = null) => {
     const isProduction = normalizedOptions.mode === 'production'
     const startTime = performance.now()
+    const buildSignal = buildOptions?.buildSignal || buildOptions?.signal || NOOP_SIGNAL
     const originalDocument = pageItem.result
     let component
     let pageContext = originalDocument.page
@@ -1347,7 +1350,7 @@ export function createRenderer ({
       pageContext.route = targetRoute
     }
 
-    const session = _createSession(buildId)
+    const session = _createSession(buildId, buildSignal)
     session.mode = normalizedOptions.mode
 
     const mappedSession = await hooks.trigger('onBeforePageRender', {
@@ -1502,7 +1505,8 @@ export function createRenderer ({
             root: mappedComponent.root,
             refs: () => null,
             slots: createServerSlotsHelper(mappedComponent.root),
-            signal: NOOP_SIGNAL
+            isServer: true,
+            signal: buildSignal
           }
           for (const [gKey, gFn] of Object.entries(pageExports.getters)) {
             if (typeof gFn === 'function') {
@@ -1577,7 +1581,8 @@ export function createRenderer ({
             root: mappedComponent.root,
             refs: () => null,
             slots: createServerSlotsHelper(mappedComponent.root),
-            signal: NOOP_SIGNAL
+            isServer: true,
+            signal: buildSignal
           }
           const entries = isContextMap(pageExports.provide)
             ? Array.from(pageExports.provide.entries())
@@ -3169,7 +3174,17 @@ export function createRenderer ({
 
           let pageResult
           try {
-            pageResult = await _renderSinglePage(task.pageItem, buildId, variables, buildOptions, task.targetRoute, task.targetOutPath)
+            pageResult = await _renderSinglePage(
+              task.pageItem,
+              buildId,
+              variables,
+              {
+                ...buildOptions,
+                buildSignal: combinedSignal
+              },
+              task.targetRoute,
+              task.targetOutPath
+            )
           } catch (err) {
             if (combinedSignal.aborted) {
               throw combinedSignal.reason

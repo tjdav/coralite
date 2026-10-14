@@ -368,7 +368,8 @@ async function _executeServerGetters (getters, state, root, context) {
       root: root || null,
       refs: () => null,
       slots: serverSlots,
-      signal: NOOP_SIGNAL
+      isServer: true,
+      signal: context?.signal || NOOP_SIGNAL
     }
     const result = getter(serverContext)
     state[key] = (result && typeof result.then === 'function') ? await result : result
