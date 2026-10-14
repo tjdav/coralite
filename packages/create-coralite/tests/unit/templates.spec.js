@@ -54,6 +54,11 @@ describe('create-coralite template package declarations', () => {
         assert.ok(existsSync(agentsPath), `AGENTS.md must exist in ${templateName}`)
         assert.ok(existsSync(readmePath), `README.md must exist in ${templateName}`)
 
+        const agents = readFileSync(agentsPath, 'utf8')
+        assert.match(agents, /defineComponent/, 'AGENTS.md must mention defineComponent')
+        assert.match(agents, /definePage/, 'AGENTS.md must mention definePage')
+        assert.match(agents, /Serialization boundary/, 'AGENTS.md must mention Serialization boundary')
+
         const readme = readFileSync(readmePath, 'utf8')
         assert.match(readme, /# \{\{\s*name\s*\}\}/, 'README.md must contain project name placeholder')
         assert.match(readme, /## Deploying/, 'README.md must contain Deploying section')
