@@ -8,21 +8,31 @@ import { defineConfig } from '../../../lib/server/config.js'
 
 describe('config.js', () => {
   describe('defineConfig', () => {
-    it('should return valid config unchanged with and without plugins', () => {
+    it('should return valid config with populated defaults', () => {
       const withPlugins = {
         output: './dist',
         components: './components',
         pages: './pages',
         plugins: []
       }
-      assert.deepStrictEqual(defineConfig(withPlugins), withPlugins)
+      const resWithPlugins = defineConfig(withPlugins)
+      assert.strictEqual(resWithPlugins.output, './dist')
+      assert.strictEqual(resWithPlugins.components, './components')
+      assert.strictEqual(resWithPlugins.pages, './pages')
+      assert.strictEqual(resWithPlugins.public, 'public')
+      assert.deepStrictEqual(resWithPlugins.plugins, [])
 
       const withoutPlugins = {
         output: './dist',
         components: './components',
         pages: './pages'
       }
-      assert.deepStrictEqual(defineConfig(withoutPlugins), withoutPlugins)
+      const resWithoutPlugins = defineConfig(withoutPlugins)
+      assert.strictEqual(resWithoutPlugins.output, './dist')
+      assert.strictEqual(resWithoutPlugins.public, 'public')
+      assert.strictEqual(resWithoutPlugins.baseURL, '/')
+      assert.strictEqual(resWithoutPlugins.mode, 'production')
+      assert.strictEqual(resWithoutPlugins.cleanUrls, true)
     })
 
     it('should throw error when config is not an object', () => {
@@ -172,7 +182,11 @@ describe('config.js', () => {
       }
 
       const result = defineConfig(fullConfig)
-      assert.deepStrictEqual(result, fullConfig)
+      assert.strictEqual(result.output, fullConfig.output)
+      assert.strictEqual(result.components, fullConfig.components)
+      assert.strictEqual(result.pages, fullConfig.pages)
+      assert.deepStrictEqual(result.plugins, fullConfig.plugins)
+      assert.strictEqual(result.public, 'public')
     })
 
     describe('testing and mocks validation', () => {
@@ -203,7 +217,8 @@ describe('config.js', () => {
           }
         }
         const result = defineConfig(config)
-        assert.deepStrictEqual(result, config)
+        assert.strictEqual(result.mode, 'testing')
+        assert.deepStrictEqual(result.testing, config.testing)
       })
 
       it('should throw error when testing is not an object', () => {
