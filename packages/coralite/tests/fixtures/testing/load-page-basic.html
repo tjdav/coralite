@@ -1,0 +1,15 @@
+<div>
+  <h1>{{ title }}</h1>
+</div>
+
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server ({ route }) {
+      return {
+        title: 'Basic Page Title'
+      }
+    }
+  })
+</script>

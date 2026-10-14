@@ -8,6 +8,7 @@ import * as prompts from '@clack/prompts'
 import colours from 'kleur'
 import pkg from '../package.json' with { type: 'json' }
 import {
+  checkNodeVersion,
   copy,
   emptyDir,
   extractPackageInfoFromUserAgent,
@@ -44,6 +45,11 @@ program
 program
   .addOption(
     new Option('--agent', 'inject AI assistant rules into the current directory and exit')
+  )
+
+program
+  .addOption(
+    new Option('--no-agent', 'suppress AGENTS.md generation during project creation')
   )
 
 program
@@ -92,6 +98,8 @@ const renameFiles = {
 }
 
 async function createProject () {
+  checkNodeVersion(pkg.engines?.node, process.env.TEST_NODE_VERSION || process.version)
+
   const argTemplate = options.template
   let target = options.output
   let template = argTemplate
@@ -260,6 +268,15 @@ async function createProject () {
   const files = fs.readdirSync(templateDir)
 
   for (const file of files.filter((f) => f !== 'package.json')) {
+    if (file === 'AGENTS.md' && options.agent === false) {
+      continue
+    }
+    if (file === 'README.md') {
+      const readmeTemplate = fs.readFileSync(path.join(templateDir, 'README.md'), 'utf-8')
+      const readmeContent = readmeTemplate.replace(/\{\{\s*name\s*\}\}/g, packageName)
+      write('README.md', readmeContent)
+      continue
+    }
     write(file)
   }
 
@@ -271,9 +288,16 @@ async function createProject () {
   write('package.json', JSON.stringify(templatePkg, null, 2) + '\n')
 
   if (includeAi) {
+    let agentTargetOption = options.target
+    if (options.agent === false) {
+      const { normalizeTargets } = await import('../lib/agent-generator.js')
+      const targets = normalizeTargets(agentTargetOption)
+      agentTargetOption = targets.filter((t) => t !== 'agents-md')
+    }
+
     const { written } = generateAgentRules({
       cwd: root,
-      target: options.target,
+      target: agentTargetOption,
       force: true
     })
 

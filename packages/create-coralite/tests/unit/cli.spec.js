@@ -16,6 +16,7 @@ function runCLI (args, options = {}) {
       {
         cwd: options.cwd || process.cwd(),
         env: {
+          TEST_NODE_VERSION: 'v22.22.2',
           ...process.env,
           ...options.env
         }
@@ -108,5 +109,43 @@ describe('CLI integration tests', () => {
     assert.equal(res.code, 0)
     assert.equal(res.stdout.includes('is not empty. Please choose how to proceed:'), false)
     assert.equal(fs.existsSync(path.join(expectedDir, 'package.json')), true)
+  })
+
+  test('scaffolds AGENTS.md and README.md with project name substitution and Deploying section', async () => {
+    const targetDir = path.join(tmpDir, 'my-scaffold-app')
+    const res = await runCLI(['-o', targetDir, '-t', 'css', '--no-ai'])
+
+    assert.equal(res.code, 0)
+    assert.equal(fs.existsSync(path.join(targetDir, 'AGENTS.md')), true)
+    assert.equal(fs.existsSync(path.join(targetDir, 'README.md')), true)
+
+    const agentsMd = fs.readFileSync(path.join(targetDir, 'AGENTS.md'), 'utf-8')
+    assert.match(agentsMd, /defineComponent/)
+    assert.match(agentsMd, /definePage/)
+    assert.match(agentsMd, /Serialization boundary/)
+
+    const readme = fs.readFileSync(path.join(targetDir, 'README.md'), 'utf-8')
+    assert.match(readme, /# my-scaffold-app/)
+    assert.match(readme, /## Deploying/)
+  })
+
+  test('--no-agent flag suppresses AGENTS.md generation', async () => {
+    const targetDir = path.join(tmpDir, 'no-agent-app')
+    const res = await runCLI(['-o', targetDir, '-t', 'css', '--no-agent', '--no-ai'])
+
+    assert.equal(res.code, 0)
+    assert.equal(fs.existsSync(path.join(targetDir, 'AGENTS.md')), false)
+    assert.equal(fs.existsSync(path.join(targetDir, 'README.md')), true)
+  })
+
+  test('fails with exit code 1 when Node.js version is older than constraint', async () => {
+    const targetDir = path.join(tmpDir, 'old-node-app')
+    const res = await runCLI(['-o', targetDir, '-t', 'css'], {
+      env: { TEST_NODE_VERSION: 'v18.20.0' }
+    })
+
+    assert.equal(res.code, 1)
+    assert.match(res.stderr, /Error: this project requires Node\.js >=22\.22\.2\. You are running v18\.20\.0\./)
+    assert.equal(fs.existsSync(targetDir), false)
   })
 })

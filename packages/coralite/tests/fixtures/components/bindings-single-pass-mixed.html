@@ -1,0 +1,17 @@
+<template id="x-bindings-single-pass-mixed">
+  <div>
+    <h1 class="{{ activeClass }}" title="{{ tooltip }}">{{ title }}</h1>
+    <span ref="label">{{ labelText }}</span>
+  </div>
+</template>
+
+<script type="module">
+  export default defineComponent({
+    defaultValues: {
+      activeClass: 'active',
+      tooltip: 'Header tooltip',
+      title: 'Title',
+      labelText: 'Label'
+    }
+  })
+</script>
