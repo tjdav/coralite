@@ -119,6 +119,34 @@
       "types": "./dist/lib/utils/client/index.d.ts",
       "default": "./dist/lib/utils/client/index.js"
     },
+    "./type-checker": {
+      "types": "./dist/lib/server/type-checker.d.ts",
+      "default": "./dist/lib/server/type-checker.js"
+    }
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "@volar/language-core": "^2.4.28",
+    "@volar/typescript": "^2.4.28",
+    "acorn": "^8.17.0",
+    "acorn-walk": "^8.3.5",
+    "commander": "^13.1.0",
+    "dom-serializer": "^2.0.0",
+    "esbuild": "^0.25.12",
+    "esbuild-plugins-node-modules-polyfill": "^1.8.1",
+    "htmlparser2": "^10.1.0",
+    "isomorphic-dompurify": "^3.18.0",
+    "kleur": "^4.1.5",
+    "p-limit": "^7.3.0",
+    "picomatch": "^4.0.4",
+    "postcss": "^8.5.15",
+    "postcss-selector-parser": "^7.1.4",
+    "serialize-javascript": "^7.0.6",
+    "xxhash-wasm": "^1.1.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
     "./testing": {
       "types": "./dist/lib/testing.d.ts",
       "development": "./lib/testing.js",
@@ -143,23 +171,5 @@
   },
   "engines": {
     "node": ">=22.22.2"
-  },
-  "dependencies": {
-    "acorn": "^8.17.0",
-    "acorn-walk": "^8.3.5",
-    "commander": "^13.1.0",
-    "dom-serializer": "^2.0.0",
-    "esbuild": "^0.25.12",
-    "esbuild-plugins-node-modules-polyfill": "^1.8.1",
-    "htmlparser2": "^10.1.0",
-    "isomorphic-dompurify": "^3.18.0",
-    "kleur": "^4.1.5",
-    "p-limit": "^7.3.0",
-    "@clack/prompts": "^0.11.0",
-    "picomatch": "^4.0.4",
-    "postcss": "^8.5.15",
-    "postcss-selector-parser": "^7.1.4",
-    "serialize-javascript": "^7.0.6",
-    "xxhash-wasm": "^1.1.0"
   }
 }
