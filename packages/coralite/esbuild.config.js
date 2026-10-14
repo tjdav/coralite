@@ -28,6 +28,10 @@ export const buildOptions = {
       in: './lib/server/interactive.js',
       out: 'lib/interactive'
     },
+    {
+      in: './lib/testing.js',
+      out: 'lib/testing'
+    },
 
     // Validators & AST Fixers
     {

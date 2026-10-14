@@ -147,6 +147,10 @@
   "peerDependenciesMeta": {
     "typescript": {
       "optional": true
+    "./testing": {
+      "types": "./dist/lib/testing.d.ts",
+      "development": "./lib/testing.js",
+      "default": "./dist/lib/testing.js"
     }
   },
   "devDependencies": {

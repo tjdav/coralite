@@ -43,29 +43,195 @@ export function defineConfig (options, { onError } = {}) {
     }
   }
 
-  // Validate urlStyle deprecation
+  // Validate urlStyle migration error
   if ('urlStyle' in options) {
-    throw new CoraliteError('Config property "urlStyle" is deprecated and has been removed. Use "cleanUrls" (boolean) instead.')
+    throw new CoraliteError('Config property "urlStyle" has been replaced by "cleanUrls".\nUse cleanUrls: true for directory-style URLs, or cleanUrls: false for file-style.')
   }
 
-  // Validate cleanUrls
-  if (options.cleanUrls !== undefined && typeof options.cleanUrls !== 'boolean') {
-    throw new CoraliteError(`Config property "cleanUrls" must be a boolean, received ${typeof options.cleanUrls}`)
-  }
-
-  // Validate compilerOptimizations
-  if (options.compilerOptimizations !== undefined) {
-    const validOptimizations = ['all', 'none']
-    if (typeof options.compilerOptimizations !== 'string' || !validOptimizations.includes(options.compilerOptimizations)) {
-      throw new CoraliteError(`Config property "compilerOptimizations" must be "all" or "none", received ${JSON.stringify(options.compilerOptimizations)}`)
+  // Validate optional string properties
+  if (options.public !== undefined) {
+    if (typeof options.public !== 'string') {
+      throw new CoraliteError(`Config property "public" must be a string, received ${typeof options.public}`)
+    }
+    if (options.public.trim() === '') {
+      throw new CoraliteError('Config property "public" cannot be empty')
     }
   }
 
-  // Validate mode
+  if (options.baseURL !== undefined && typeof options.baseURL !== 'string') {
+    throw new CoraliteError(`Config property "baseURL" must be a string, received ${typeof options.baseURL}`)
+  }
+
+  if (options.projectRoot !== undefined && typeof options.projectRoot !== 'string') {
+    throw new CoraliteError(`Config property "projectRoot" must be a string, received ${typeof options.projectRoot}`)
+  }
+
+  // Validate path property
+  if (options.path !== undefined && (typeof options.path !== 'object' || options.path === null)) {
+    throw new CoraliteError('Config property "path" must be an object')
+  }
+
+  // Validate concurrency
+  if (options.concurrency !== undefined && (typeof options.concurrency !== 'number' || options.concurrency <= 0)) {
+    throw new CoraliteError('Config property "concurrency" must be a positive number')
+  }
+
+  // Validate callbacks
+  if (options.onError !== undefined && typeof options.onError !== 'function') {
+    throw new CoraliteError('Config property "onError" must be a function')
+  }
+
+  if (options.onComponentBuild !== undefined && typeof options.onComponentBuild !== 'function') {
+    throw new CoraliteError('Config property "onComponentBuild" must be a function')
+  }
+
+  // Validate boolean properties
+  const booleanProps = [
+    'cleanUrls',
+    'viewTransitions',
+    'incremental',
+    'preserveTestId',
+    'suppressValidationWarnings'
+  ]
+
+  for (const prop of booleanProps) {
+    if (options[prop] !== undefined && typeof options[prop] !== 'boolean') {
+      throw new CoraliteError(`Config property "${prop}" must be a boolean, received ${typeof options[prop]}`)
+    }
+  }
+
+  // Validate enum properties
   if (options.mode !== undefined) {
     const validModes = ['production', 'development', 'testing']
     if (!validModes.includes(options.mode)) {
       throw new CoraliteError(`Invalid mode: "${options.mode}". Valid modes are: ${validModes.join(', ')}`)
+    }
+  }
+
+  if (options.reactivity !== undefined) {
+    const validReactivity = ['signal', 'proxy']
+    if (!validReactivity.includes(options.reactivity)) {
+      throw new CoraliteError(`Invalid reactivity mode: "${options.reactivity}". Valid reactivity modes are: ${validReactivity.join(', ')}`)
+    }
+  }
+
+  if (options.reconcile !== undefined) {
+    const validReconcile = ['full', 'minimal']
+    if (!validReconcile.includes(options.reconcile)) {
+      throw new CoraliteError(`Invalid reconcile mode: "${options.reconcile}". Valid reconcile modes are: ${validReconcile.join(', ')}`)
+    }
+  }
+
+  // Validate compilerOptimizations
+  if (options.compilerOptimizations !== undefined) {
+    if (typeof options.compilerOptimizations === 'string') {
+      const validOptimizations = ['all', 'none']
+      if (!validOptimizations.includes(options.compilerOptimizations)) {
+        throw new CoraliteError(`Config property "compilerOptimizations" must be "all" or "none", received ${JSON.stringify(options.compilerOptimizations)}`)
+      }
+    } else if (Array.isArray(options.compilerOptimizations)) {
+      for (const item of options.compilerOptimizations) {
+        if (typeof item !== 'string') {
+          throw new CoraliteError('Config property "compilerOptimizations" array items must be strings')
+        }
+      }
+    } else {
+      throw new CoraliteError('Config property "compilerOptimizations" must be "all", "none", or an array of strings')
+    }
+  }
+
+  // Validate string array properties
+  const stringArrayProps = ['externalStyles', 'ignoreTags']
+  for (const prop of stringArrayProps) {
+    if (options[prop] !== undefined) {
+      if (!Array.isArray(options[prop])) {
+        throw new CoraliteError(`Config property "${prop}" must be an array of strings`)
+      }
+      for (const item of options[prop]) {
+        if (typeof item !== 'string') {
+          throw new CoraliteError(`Config property "${prop}" items must be strings`)
+        }
+      }
+    }
+  }
+
+  // Validate attribute filter array properties (ignoreByAttribute, skipRenderByAttribute)
+  const attributeFilterProps = ['ignoreByAttribute', 'skipRenderByAttribute']
+  for (const prop of attributeFilterProps) {
+    if (options[prop] !== undefined) {
+      if (!Array.isArray(options[prop])) {
+        throw new CoraliteError(`Config property "${prop}" must be an array`)
+      }
+      for (let i = 0; i < options[prop].length; i++) {
+        const item = options[prop][i]
+        if (typeof item === 'string') {
+          continue
+        }
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+          throw new CoraliteError(`Config property "${prop}" items must be strings or objects with string "name" and "value" properties`)
+        }
+        if (typeof item.name !== 'string' || typeof item.value !== 'string') {
+          throw new CoraliteError(`Config property "${prop}" items must be strings or objects with string "name" and "value" properties`)
+        }
+      }
+    }
+  }
+
+  // Validate script-specific keys (server, styles, build)
+  if (options.server !== undefined) {
+    if (typeof options.server !== 'object' || options.server === null) {
+      throw new CoraliteError('Config property "server" must be an object')
+    }
+    if (options.server.port !== undefined && (typeof options.server.port !== 'number' || options.server.port <= 0)) {
+      throw new CoraliteError('Config property "server.port" must be a positive number')
+    }
+    if (options.server.host !== undefined && typeof options.server.host !== 'string') {
+      throw new CoraliteError('Config property "server.host" must be a string')
+    }
+  }
+
+  if (options.styles !== undefined) {
+    if (typeof options.styles !== 'object' || options.styles === null) {
+      throw new CoraliteError('Config property "styles" must be an object')
+    }
+
+    // @ts-ignore
+    if (typeof options.styles.input === 'string' || options.styles.type !== undefined) {
+      throw new CoraliteError('Coralite Config Error: The "styles" configuration has been upgraded. "input" must now be an array, and "type" has been replaced by the "processors" object. Please update your coralite.config.js.')
+    }
+
+    if (options.styles.input !== undefined) {
+      if (!Array.isArray(options.styles.input)) {
+        throw new CoraliteError('Config property "styles.input" must be an array of strings')
+      }
+
+      const outputs = new Set()
+      for (const input of options.styles.input) {
+        if (typeof input !== 'string') {
+          throw new CoraliteError('Config property "styles.input" must be an array of strings')
+        }
+
+        const ext = input.split('.').pop()
+        const filename = input.split('/').pop().replace(`.${ext}`, '.css')
+
+        if (outputs.has(filename)) {
+          throw new CoraliteError(`Coralite Build Error: Filename collision detected in styles.input. Multiple inputs will output to "${filename}". Please rename one of the files.`)
+        }
+        outputs.add(filename)
+      }
+    }
+
+    if (options.styles.processors !== undefined && (typeof options.styles.processors !== 'object' || options.styles.processors === null)) {
+      throw new CoraliteError('Config property "styles.processors" must be an object')
+    }
+  }
+
+  if (options.build !== undefined) {
+    if (typeof options.build !== 'object' || options.build === null) {
+      throw new CoraliteError('Config property "build" must be an object')
+    }
+    if (options.build.concurrency !== undefined && (typeof options.build.concurrency !== 'number' || options.build.concurrency <= 0)) {
+      throw new CoraliteError('Config property "build.concurrency" must be a positive number')
     }
   }
 
@@ -75,39 +241,90 @@ export function defineConfig (options, { onError } = {}) {
       throw new CoraliteError('Config property "csp" must be an object')
     }
 
-    if (options.csp.enabled !== undefined && typeof options.csp.enabled !== 'boolean') {
-      throw new CoraliteError('Config property "csp.enabled" must be a boolean')
-    }
+    const VALID_CSP_KEYS = new Set([
+      'enabled',
+      'nonce',
+      'hashAlgorithm',
+      'injectMeta',
+      'reportOnly',
+      'externalScripts',
+      'externalStyles',
+      'directives'
+    ])
 
-    if (options.csp.nonce !== undefined && typeof options.csp.nonce !== 'string' && typeof options.csp.nonce !== 'function') {
-      throw new CoraliteError('Config property "csp.nonce" must be a string or function')
-    }
+    const VALID_CSP_MODES = new Set(['development', 'testing', 'production'])
 
-    if (options.csp.hashAlgorithm !== undefined) {
-      const validAlgorithms = ['sha256', 'sha384', 'sha512']
-      if (!validAlgorithms.includes(options.csp.hashAlgorithm)) {
-        throw new CoraliteError(`Invalid csp.hashAlgorithm: "${options.csp.hashAlgorithm}". Valid algorithms are: ${validAlgorithms.join(', ')}`)
+    const validateCspFields = (cspObj, prefix = 'csp') => {
+      if (cspObj.enabled !== undefined && typeof cspObj.enabled !== 'boolean') {
+        throw new CoraliteError(`Config property "${prefix}.enabled" must be a boolean`)
+      }
+
+      if (cspObj.nonce !== undefined && typeof cspObj.nonce !== 'string' && typeof cspObj.nonce !== 'function') {
+        throw new CoraliteError(`Config property "${prefix}.nonce" must be a string or function`)
+      }
+
+      if (cspObj.hashAlgorithm !== undefined) {
+        const validAlgorithms = ['sha256', 'sha384', 'sha512']
+        if (!validAlgorithms.includes(cspObj.hashAlgorithm)) {
+          throw new CoraliteError(`Invalid ${prefix}.hashAlgorithm: "${cspObj.hashAlgorithm}". Valid algorithms are: ${validAlgorithms.join(', ')}`)
+        }
+      }
+
+      if (cspObj.injectMeta !== undefined && typeof cspObj.injectMeta !== 'boolean') {
+        throw new CoraliteError(`Config property "${prefix}.injectMeta" must be a boolean`)
+      }
+
+      if (cspObj.reportOnly !== undefined && typeof cspObj.reportOnly !== 'boolean') {
+        throw new CoraliteError(`Config property "${prefix}.reportOnly" must be a boolean`)
+      }
+
+      if (cspObj.externalScripts !== undefined && typeof cspObj.externalScripts !== 'boolean') {
+        throw new CoraliteError(`Config property "${prefix}.externalScripts" must be a boolean`)
+      }
+
+      if (cspObj.externalStyles !== undefined && typeof cspObj.externalStyles !== 'boolean') {
+        throw new CoraliteError(`Config property "${prefix}.externalStyles" must be a boolean`)
+      }
+
+      if (cspObj.directives !== undefined && (typeof cspObj.directives !== 'object' || cspObj.directives === null)) {
+        throw new CoraliteError(`Config property "${prefix}.directives" must be an object`)
       }
     }
 
-    if (options.csp.injectMeta !== undefined && typeof options.csp.injectMeta !== 'boolean') {
-      throw new CoraliteError('Config property "csp.injectMeta" must be a boolean')
-    }
+    validateCspFields(options.csp, 'csp')
 
-    if (options.csp.reportOnly !== undefined && typeof options.csp.reportOnly !== 'boolean') {
-      throw new CoraliteError('Config property "csp.reportOnly" must be a boolean')
-    }
+    if (options.csp.modes !== undefined) {
+      if (typeof options.csp.modes !== 'object' || options.csp.modes === null) {
+        throw new CoraliteError('Config property "csp.modes" must be an object')
+      }
 
-    if (options.csp.externalScripts !== undefined && typeof options.csp.externalScripts !== 'boolean') {
-      throw new CoraliteError('Config property "csp.externalScripts" must be a boolean')
-    }
+      for (const [modeKey, modeObj] of Object.entries(options.csp.modes)) {
+        if (!VALID_CSP_MODES.has(modeKey)) {
+          throw new CoraliteError(`Unknown mode key "${modeKey}" in csp.modes. Valid modes are: development, testing, production`, {
+            code: 'CORALITE-CFG-001'
+          })
+        }
 
-    if (options.csp.externalStyles !== undefined && typeof options.csp.externalStyles !== 'boolean') {
-      throw new CoraliteError('Config property "csp.externalStyles" must be a boolean')
-    }
+        if (typeof modeObj !== 'object' || modeObj === null) {
+          throw new CoraliteError(`Config property "csp.modes.${modeKey}" must be an object`)
+        }
 
-    if (options.csp.directives !== undefined && (typeof options.csp.directives !== 'object' || options.csp.directives === null)) {
-      throw new CoraliteError('Config property "csp.directives" must be an object')
+        if ('modes' in modeObj) {
+          throw new CoraliteError(`Recursive "modes" key is not allowed in csp.modes.${modeKey}`, {
+            code: 'CORALITE-CFG-002'
+          })
+        }
+
+        for (const key of Object.keys(modeObj)) {
+          if (!VALID_CSP_KEYS.has(key)) {
+            throw new CoraliteError(`Unknown CSP config key "${key}" in csp.modes.${modeKey}`, {
+              code: 'CORALITE-CFG-003'
+            })
+          }
+        }
+
+        validateCspFields(modeObj, `csp.modes.${modeKey}`)
+      }
     }
   }
 
@@ -282,5 +499,27 @@ export function defineConfig (options, { onError } = {}) {
     })
   }
 
-  return options
+  // Return full config populated with defaults
+  return {
+    ...options,
+    public: options.public ?? 'public',
+    baseURL: options.baseURL ?? '/',
+    mode: options.mode ?? 'production',
+    cleanUrls: options.cleanUrls ?? true,
+    viewTransitions: options.viewTransitions ?? true,
+    incremental: options.incremental ?? true,
+    reactivity: options.reactivity ?? 'signal',
+    compilerOptimizations: options.compilerOptimizations ?? 'all',
+    reconcile: options.reconcile ?? 'full',
+    plugins: options.plugins ?? [],
+    assets: options.assets ?? [],
+    csp: options.csp ?? { enabled: false },
+    testing: options.testing ?? {},
+    externalStyles: options.externalStyles ?? [],
+    ignoreByAttribute: options.ignoreByAttribute ?? [],
+    skipRenderByAttribute: options.skipRenderByAttribute ?? [],
+    ignoreTags: options.ignoreTags ?? [],
+    preserveTestId: options.preserveTestId ?? false,
+    suppressValidationWarnings: options.suppressValidationWarnings ?? false
+  }
 }

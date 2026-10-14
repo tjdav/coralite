@@ -36,6 +36,21 @@ describe('Dev Server Live-Reload CSP', () => {
     assert.equal(noncedTag.trim(), '<script src="/__coralite/rebuild.js" nonce="dev-nonce-123"></script>\n</body>')
   })
 
+  it('handles dev server live reload script with modes.development.enabled = false without nonce', () => {
+    const disabledTag = buildLiveReloadScript({
+      csp: {
+        enabled: true,
+        nonce: 'dev-nonce',
+        modes: {
+          development: {
+            enabled: false
+          }
+        }
+      }
+    })
+    assert.equal(disabledTag.trim(), '<script src="/__coralite/rebuild.js"></script>\n</body>')
+  })
+
   it('serves /__coralite/rebuild.js route via attachDevRoutes', async () => {
     const app = express()
     attachDevRoutes(app)

@@ -75,6 +75,37 @@ export function resolveNonce (context = {}) {
 }
 
 /**
+ * Resolves base CSP configuration and active mode overrides.
+ * @param {object} [baseCsp={}] - Base CSP configuration object
+ * @param {string} [mode='production'] - Active build mode ('development' | 'testing' | 'production')
+ * @returns {object} - Resolved CSP object
+ */
+export function resolveCspConfig (baseCsp = {}, mode = 'production') {
+  if (!baseCsp || typeof baseCsp !== 'object') {
+    return { enabled: false }
+  }
+  const override = baseCsp.modes?.[mode] ?? {}
+  const base = { ...baseCsp }
+  delete base.modes
+
+  const mergedDirectives = {
+    ...base.directives,
+    ...override.directives
+  }
+
+  const res = {
+    ...base,
+    ...override
+  }
+
+  if (base.directives !== undefined || override.directives !== undefined) {
+    res.directives = mergedDirectives
+  }
+
+  return res
+}
+
+/**
  * Formats CSP directives into a single header / meta content string
  * @param {Record<string, string|string[]>} [directives={}] - Map of directive names to source lists
  * @param {object} [options={}] - Options object

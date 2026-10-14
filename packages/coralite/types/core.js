@@ -128,6 +128,7 @@
  * @property {boolean} [externalScripts=false] - Whether to externalize inline scripts.
  * @property {boolean} [externalStyles=false] - Whether to externalize inline styles.
  * @property {Record<string, string | string[]>} [directives] - Custom CSP directives.
+ * @property {{ development?: CoraliteCSPConfig, testing?: CoraliteCSPConfig, production?: CoraliteCSPConfig }} [modes] - Per-mode CSP overrides.
  */
 
 /**
@@ -145,6 +146,7 @@
  * @property {string} [output='.coralite'] - The path to the output directory where built files will be placed.
  * @property {string} components - The path to the directory containing Coralite components.
  * @property {string} pages - The path to the directory containing pages that will be rendered using the provided templates.
+ * @property {string} [public='public'] - The path to the public assets directory.
  * @property {CoralitePluginInstance[]} [plugins] - Optional array of plugin instances to extend Coralite functionality.
  * @property {number} [concurrency] - The maximum number of concurrent page render operations.
  * @property {string} [baseURL] - Optional base URL for asset paths. Defaults to '/'.
@@ -159,12 +161,18 @@
  * @property {boolean} [preserveTestId] - Whether to preserve data-testid in production.
  * @property {CoraliteTestingConfig} [testing] - Configuration for testing mode.
  * @property {CoraliteCSPConfig} [csp] - Configuration for Content Security Policy.
- * @property {'all' | 'none'} [compilerOptimizations='all'] - Compiler optimizations flag ("all" or "none").
+ * @property {'all' | 'none' | string[]} [compilerOptimizations='all'] - Compiler optimizations flag ("all", "none", or array of strings).
  * @property {boolean} [cleanUrls=true] - Whether output URLs and route paths are directory-style (clean) or file-style.
+ * @property {boolean} [viewTransitions=true] - View transitions flag.
  * @property {boolean} [suppressValidationWarnings] - Whether to suppress attribute validation warning messages.
  * @property {boolean} [incremental=true] - Whether to skip rebuilding unchanged pages and components.
+ * @property {'signal' | 'proxy'} [reactivity='signal'] - Reactivity mode.
+ * @property {'full' | 'minimal'} [reconcile='full'] - Reconcile mode.
  * @property {string} [projectRoot] - The root directory of the project.
  * @property {CoralitePath} [path] - Internal path mapping.
+ * @property {{ port?: number, host?: string }} [server] - Script-specific server options.
+ * @property {{ input?: string[], processors?: Object }} [styles] - Script-specific styles options.
+ * @property {{ concurrency?: number }} [build] - Script-specific build options.
  */
 
 /**
