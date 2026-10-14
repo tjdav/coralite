@@ -41,7 +41,26 @@ export function createPageHandlers ({
     const relPath = relative(rootPath, data.path.pathname).replace(/\\/g, '/')
     const urlPathname = pathToFileURL(join('/', relPath)).pathname
 
-    const { pattern: routePattern, params: routeParams, segments: routeSegments } = parsePagePattern(data.path.pathname, rootPath)
+    let routePattern = ''
+    /** @type {string[]} */
+    let routeParams = []
+    let routeSegments = []
+    try {
+      const parsedPattern = parsePagePattern(data.path.pathname, rootPath)
+      routePattern = parsedPattern.pattern
+      routeParams = parsedPattern.params
+      routeSegments = parsedPattern.segments
+    } catch (err) {
+      if (typeof handleError === 'function') {
+        handleError({
+          level: 'ERR',
+          code: err.code,
+          message: err.message,
+          error: err,
+          filePath: data.path.pathname
+        })
+      }
+    }
 
     let parsedScript = {
       hasDefinePage: false,
@@ -49,7 +68,19 @@ export function createPageHandlers ({
       script: null
     }
     if (data.content !== undefined) {
-      parsedScript = extractPageScript(data.content, { filePath: data.path.pathname })
+      try {
+        parsedScript = extractPageScript(data.content, { filePath: data.path.pathname })
+      } catch (err) {
+        if (typeof handleError === 'function') {
+          handleError({
+            level: 'ERR',
+            code: err.code,
+            message: err.message,
+            error: err,
+            filePath: data.path.pathname
+          })
+        }
+      }
     }
 
     const page = {

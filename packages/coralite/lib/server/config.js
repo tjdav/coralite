@@ -53,6 +53,14 @@ export function defineConfig (options, { onError } = {}) {
     throw new CoraliteError(`Config property "cleanUrls" must be a boolean, received ${typeof options.cleanUrls}`)
   }
 
+  // Validate compilerOptimizations
+  if (options.compilerOptimizations !== undefined) {
+    const validOptimizations = ['all', 'none']
+    if (typeof options.compilerOptimizations !== 'string' || !validOptimizations.includes(options.compilerOptimizations)) {
+      throw new CoraliteError(`Config property "compilerOptimizations" must be "all" or "none", received ${JSON.stringify(options.compilerOptimizations)}`)
+    }
+  }
+
   // Validate mode
   if (options.mode !== undefined) {
     const validModes = ['production', 'development', 'testing']

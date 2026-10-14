@@ -1,5 +1,5 @@
 import { bench, do_not_optimize } from 'mitata'
-import { createCoraliteElement, createCoraliteTextNode } from '../../../lib/utils/server/dom.js'
+import { createCoraliteElement, createCoraliteTextNode } from '../../../lib/server/utils/dom.js'
 
 /**
  *

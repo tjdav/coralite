@@ -333,6 +333,18 @@ export function createVirtualWindow (context = {}) {
     }
   }
 
+  const customElementsRegistry = new Map()
+  win.customElements = {
+    define (name, constructor) {
+      customElementsRegistry.set(name, constructor)
+    },
+    get (name) {
+      return customElementsRegistry.get(name)
+    },
+    upgrade () {
+    }
+  }
+
   win.window = win
   win.self = win
   return win

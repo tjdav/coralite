@@ -1,5 +1,5 @@
 import { bench, do_not_optimize } from 'mitata'
-import { replaceToken } from '../../../lib/utils/server/server.js'
+import { replaceToken } from '../../../lib/server/utils/server.js'
 
 /**
  *

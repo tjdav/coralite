@@ -134,6 +134,8 @@ function createClientSlotsHelper (element) {
  * @typedef {Object} CoraliteComponentOptions
  * @property {string} componentId - The unique identifier for the component.
  * @property {boolean} [formAssociated] - Whether element is form-associated custom element.
+ * @property {boolean} [useTemplateCloning] - Whether template cloning is enabled for this component.
+ * @property {any} [templateElement] - The pre-parsed template element for cloneNode instantiation.
  * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
  * @property {Object} [defaultValues] - The initial state values extracted from the server data block.
  * @property {Object} [attributes] - Schema for coercing HTML attributes into typed primitives.
@@ -1052,15 +1054,27 @@ export class CoraliteElement extends BaseElement {
     }
 
     // Manually stamp the template and project the Light DOM.
-    if (isImperative && this.componentOptions.templateHTML) {
+    if (isImperative && (this.componentOptions.templateElement || this.componentOptions.templateHTML)) {
       const originalLightDOM = Array.from(this.childNodes)
-      const stamped = processHTML(this.componentOptions.templateHTML, this._instanceId)
+      let stampedNode = null
 
-      this.innerHTML = this._tagOwnSlots(stamped, this._instanceId)
+      if (this.componentOptions.templateElement && typeof this.componentOptions.templateElement.content?.cloneNode === 'function') {
+        stampedNode = this.componentOptions.templateElement.content.cloneNode(true)
+      }
+
+      if (stampedNode) {
+        this.replaceChildren(stampedNode)
+      } else if (this.componentOptions.templateHTML) {
+        const stamped = processHTML(this.componentOptions.templateHTML, this._instanceId)
+        this.innerHTML = this._tagOwnSlots(stamped, this._instanceId)
+      }
+
       this._templateRoots = new Set(this.childNodes)
 
       if (originalLightDOM.length > 0) {
-        originalLightDOM.forEach(node => this.appendChild(node))
+        const fragment = document.createDocumentFragment()
+        originalLightDOM.forEach(node => fragment.appendChild(node))
+        this.appendChild(fragment)
       }
     } else if (isImperative && !this._templateRoots) {
       this._templateRoots = new Set(this.childNodes)

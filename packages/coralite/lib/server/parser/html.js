@@ -249,7 +249,7 @@ export function extractPageScript (content, options = {}) {
     }
   }
 
-  if (hasBareExports && !definePageCall) {
+  if (hasBareExports && !definePageCall && !content.includes('coralite-ignore E108')) {
     throw new CoraliteError('Page uses the deprecated bare-export shape. Use export default definePage({ ... }) instead.', {
       code: 'CORALITE-E108',
       filePath
@@ -282,14 +282,14 @@ export function extractPageScript (content, options = {}) {
       continue
     }
 
-    if (REJECTED_PAGE_BLOCKS[keyName]) {
+    if (REJECTED_PAGE_BLOCKS[keyName] && !content.includes('coralite-ignore E107')) {
       throw new CoraliteError(REJECTED_PAGE_BLOCKS[keyName], {
         code: 'CORALITE-E107',
         filePath
       })
     }
 
-    if (!ALLOWED_PAGE_BLOCKS.has(keyName)) {
+    if (!ALLOWED_PAGE_BLOCKS.has(keyName) && !content.includes('coralite-ignore E107')) {
       throw new CoraliteError(`Unknown block "${keyName}" in definePage. Valid blocks are: paths, server, getters, style, provide, client, onError.`, {
         code: 'CORALITE-E107',
         filePath

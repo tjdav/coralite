@@ -1,4 +1,4 @@
-import { createCoraliteClass } from '../../../../../lib/coralite-element.js'
+import { createCoraliteClass } from '../../../../../lib/client/element.js'
 
 performance.mark('hydration:start')
 

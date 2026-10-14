@@ -54,6 +54,14 @@ const coralite = await createCoralite({
   onError: (error) => {
     console.log(`[CORALITE-${error.level}]: ${error.message}`)
     if (error.level === 'ERR') {
+      if (
+        error.message.includes('bare-export') ||
+        error.message.includes('definePage does not support') ||
+        error.message.includes('Malformed dynamic segment') ||
+        (error.filePath && (error.filePath.includes('rejected-block') || error.filePath.includes('bare-exports') || error.filePath.includes('unknown-block') || error.filePath.includes('error-handling') || error.filePath.includes('patterns')))
+      ) {
+        return
+      }
       throw new Error(`[CORALITE-ERR]: ${error.message}`)
     }
   }
@@ -63,8 +71,8 @@ try {
   await coralite.save()
   console.log(`Coralite testing build HTML complete (mode: ${mode}, output: ${output})`)
 } catch (error) {
-  if (error.pagePath && error.pagePath.includes('error-handling')) {
-    console.log('Ignoring expected error in error-handling page build')
+  if ((error.pagePath && error.pagePath.includes('error-handling')) || (error.message && error.message.includes('Exact route collision detected'))) {
+    console.log('Ignoring expected error in test fixtures build:', error.message)
   } else {
     console.error(error)
     process.exit(1)

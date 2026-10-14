@@ -1,4 +1,4 @@
-import { createCoraliteClass } from '../../../../../lib/coralite-element.js'
+import { createCoraliteClass } from '../../../../../lib/client/element.js'
 import { buildData, updateData, swapRows } from '../../../../utils/data-generator.js'
 
 // Pre-compiled row template for high-speed cloneNode allocation
