@@ -1,0 +1,42 @@
+{
+  "taskId": "p3-04",
+  "phase": "after",
+  "commit": "092d592",
+  "runAt": "2026-10-14T17:04:32.726Z",
+  "machine": {
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.30GHz",
+    "cores": 4,
+    "os": "Linux 6.8.0",
+    "nodeVersion": "v22.22.1"
+  },
+  "results": {
+    "dom-reactivity": {
+      "create1k": 59.4,
+      "replace1k": 76.7,
+      "update10th": 18.5,
+      "swapRows": 8.1,
+      "clear": 6.3,
+      "heapMB": 1.58
+    },
+    "bundle-hydration": {
+      "rawJsKb": 72,
+      "gzipJsKb": 19.1,
+      "hydrationMs": 4.6,
+      "ttiMs": 147.12
+    },
+    "ssrThroughput": {
+      "100": {
+        "durationMs": 377.2,
+        "throughputPagesPerSec": 265.1
+      },
+      "1000": {
+        "durationMs": 2938.6,
+        "throughputPagesPerSec": 340.3
+      },
+      "10000": {
+        "durationMs": 33880,
+        "throughputPagesPerSec": 295.2
+      }
+    }
+  }
+}
