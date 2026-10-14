@@ -1,0 +1,18 @@
+<template id="x-load-component-basic">
+  <p>{{ message }}</p>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      title: { type: String, default: 'Hello' }
+    },
+    server ({ route }) {
+      return {
+        message: 'Loaded basic component'
+      }
+    }
+  })
+</script>

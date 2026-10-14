@@ -1,0 +1,21 @@
+<div>
+  <h1>Post {{ id }}</h1>
+</div>
+
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths () {
+      return [
+        { id: '1' },
+        { id: '2' }
+      ]
+    },
+    server ({ route }) {
+      return {
+        id: route?.params?.id || 'unknown'
+      }
+    }
+  })
+</script>
