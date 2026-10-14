@@ -34,3 +34,7 @@ Reserved diagnostic and error code ranges for Coralite core:
 - CLI commands, runner scripts, and dev server orchestration belong in `packages/coralite-scripts/`.
 - Project scaffolding templates and template generation logic belong in `packages/create-coralite/`.
 - Release tooling and version bump scripts belong in `packages/coralite-release/`.
+
+## 6. Benchmark results
+
+Benchmark result files are stored at `benchmarks/results/` at the repository root. Performance tasks must run `pnpm bench --task-id <task-id> --phase <phase> --save` and commit the generated result files.

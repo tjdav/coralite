@@ -90,3 +90,12 @@ All must exit clean for per-task verification (`pnpm test:unit` runs on merge to
 ## 10. Execution mode
 
 Autonomous. Do not pause mid-task. Do not emit progress updates. Do not ask clarifying questions. Do not discard work. Stop conditions are the acceptance criteria passing or a hard blocker.
+
+## 11. Benchmark results
+
+Performance tasks (Phase 3 tasks) must record and commit benchmark results.
+
+- Run benchmarks using `pnpm bench --task-id <task-id> --phase <before|after> --save`.
+- Results are saved to `benchmarks/results/<task-id>.json`.
+- Performance task PRs must commit their `before` and `after` benchmark result files to `benchmarks/results/`.
+- The reference baseline is maintained at `benchmarks/results/baseline.json` and updated only when explicitly instructed by maintainers.

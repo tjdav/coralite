@@ -1,4 +1,9 @@
 import process from 'node:process'
+import fs from 'node:fs'
+import path from 'node:path'
+import os from 'node:os'
+import { execSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { printTerminalResults, writeJSONResults, writeMarkdownResults } from './utils/reporter.js'
 import { triggerGC } from './utils/memory.js'
 import { compareAgainstBaseline, DEFAULT_BASELINE_PATH } from './utils/regression.js'
@@ -8,6 +13,14 @@ import { runSSRThroughputSuite } from './suites/03-ssr-throughput/bench.js'
 import { runInternalSuite } from './suites/04-internal/bench.js'
 import { runStressLifecycleSuite } from './suites/05-stress-lifecycle/bench.js'
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+/**
+ * Parses command line arguments.
+ *
+ * @returns {Object} Parsed CLI options.
+ */
 function parseArgs () {
   const args = process.argv.slice(2)
   const flags = {
@@ -18,7 +31,10 @@ function parseArgs () {
     rows: 1000,
     checkRegression: false,
     warnOnly: false,
-    saveBaseline: false
+    saveBaseline: false,
+    taskId: 'adhoc',
+    phase: 'after',
+    save: false
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -29,6 +45,16 @@ function parseArgs () {
       flags.suite = arg.split('=')[1]
     } else if (arg === '-s' && i + 1 < args.length) {
       flags.suite = args[++i]
+    } else if (arg.startsWith('--task-id=')) {
+      flags.taskId = arg.split('=')[1]
+    } else if (arg === '--task-id' && i + 1 < args.length) {
+      flags.taskId = args[++i]
+    } else if (arg.startsWith('--phase=')) {
+      flags.phase = arg.split('=')[1]
+    } else if (arg === '--phase' && i + 1 < args.length) {
+      flags.phase = args[++i]
+    } else if (arg === '--save') {
+      flags.save = true
     } else if (arg === '--json') {
       flags.json = true
     } else if (arg === '--check-regression') {
@@ -51,6 +77,9 @@ function parseArgs () {
   return flags
 }
 
+/**
+ * Prints usage CLI help text.
+ */
 function printHelp () {
   console.log(`
 Coralite Benchmark Runner CLI
@@ -61,6 +90,9 @@ Usage:
 Options:
   --help, -h          Display formatted CLI usage and exit
   --suite=<name>, -s  Run a specific benchmark suite (dom-reactivity, bundle-hydration, ssr-throughput, internal, stress, or all [default: all])
+  --task-id=<id>      Identifier for the result file (default: adhoc)
+  --phase=<phase>     Phase of run: before, after, baseline (default: after)
+  --save              Write results to benchmarks/results/<task-id>.json
   --json              Write benchmark results to packages/coralite/benchmarks/results/latest.json
   --check-regression  Compare run against baseline.json and exit with code 1 on regression
   --warn-only         Print regression warnings without exiting with code 1
@@ -70,6 +102,116 @@ Options:
 `)
 }
 
+/**
+ * Captures host machine metadata.
+ *
+ * @returns {Object} Machine metadata object.
+ */
+function getMachineInfo () {
+  let cpu = null
+  let cores = null
+  let osName = null
+
+  try {
+    const cpus = os.cpus()
+    if (cpus && cpus.length > 0) {
+      cpu = cpus[0].model || null
+      cores = cpus.length
+    }
+  } catch {}
+
+  try {
+    osName = `${os.type()} ${os.release()}`
+  } catch {}
+
+  return {
+    cpu,
+    cores,
+    os: osName,
+    nodeVersion: process.version || null
+  }
+}
+
+/**
+ * Resolves the current short git commit hash.
+ *
+ * @returns {string} Short commit hash or 'unknown'.
+ */
+function getCommitHash () {
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+  } catch {
+    return 'unknown'
+  }
+}
+
+/**
+ * Formats raw benchmark metrics into the standard task result schema.
+ *
+ * @param {Object} resultsData - Raw benchmark execution metrics.
+ * @param {string} taskId - Identifier for the performance task.
+ * @param {string} phase - Benchmark phase (before, after, baseline).
+ * @returns {Object} Schema-compliant result object.
+ */
+function formatTaskResults (resultsData, taskId, phase) {
+  const domRaw = resultsData.suites?.['dom-reactivity']?.coralite
+  const bundleRaw = resultsData.suites?.['bundle-hydration']?.coraliteDynamic
+  const ssrRaw = resultsData.suites?.ssrThroughput
+
+  const results = {}
+
+  if (domRaw) {
+    results['dom-reactivity'] = {
+      create1k: domRaw.create1k,
+      replace1k: domRaw.replace1k,
+      update10th: domRaw.update10th,
+      swapRows: domRaw.swapRows,
+      clear: domRaw.clear,
+      heapMB: domRaw.heapMB
+    }
+  }
+
+  if (bundleRaw) {
+    results['bundle-hydration'] = {
+      rawJsKb: bundleRaw.rawKB,
+      gzipJsKb: bundleRaw.gzipKB,
+      hydrationMs: bundleRaw.hydrationMS,
+      ttiMs: bundleRaw.ttiMS
+    }
+  }
+
+  if (ssrRaw) {
+    results.ssrThroughput = {
+      100: {
+        durationMs: ssrRaw['100_pages']?.totalDurationMS,
+        throughputPagesPerSec: ssrRaw['100_pages']?.pagesPerSec
+      },
+      1000: {
+        durationMs: ssrRaw['1000_pages']?.totalDurationMS,
+        throughputPagesPerSec: ssrRaw['1000_pages']?.pagesPerSec
+      },
+      10000: {
+        durationMs: ssrRaw['10000_pages']?.totalDurationMS,
+        throughputPagesPerSec: ssrRaw['10000_pages']?.pagesPerSec
+      }
+    }
+  }
+
+  return {
+    taskId,
+    phase,
+    commit: getCommitHash(),
+    runAt: resultsData.timestamp,
+    machine: getMachineInfo(),
+    results
+  }
+}
+
+/**
+ * Main benchmark execution entry point.
+ *
+ * @returns {Promise<void>}
+ */
 async function main () {
   const flags = parseArgs()
 
@@ -138,6 +280,21 @@ async function main () {
 
   printTerminalResults(resultsData)
   writeMarkdownResults(resultsData)
+
+  const taskResult = formatTaskResults(resultsData, flags.taskId, flags.phase)
+
+  if (flags.save) {
+    const resultsDir = path.resolve(__dirname, '../../../benchmarks/results')
+    if (!fs.existsSync(resultsDir)) {
+      fs.mkdirSync(resultsDir, { recursive: true })
+    }
+    const targetFile = path.join(resultsDir, `${flags.taskId}.json`)
+    fs.writeFileSync(targetFile, JSON.stringify(taskResult, null, 2), 'utf-8')
+    console.log(`\n✅ Benchmark results successfully saved to ${targetFile}`)
+  } else {
+    console.log('\n--- Task Result JSON (stdout) ---')
+    console.log(JSON.stringify(taskResult, null, 2))
+  }
 
   if (flags.saveBaseline) {
     writeJSONResults(resultsData, DEFAULT_BASELINE_PATH)
