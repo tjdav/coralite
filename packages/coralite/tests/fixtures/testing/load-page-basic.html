@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Basic Page</title>
+</head>
+<body>
+  <h1>{{ pageTitle }}</h1>
+</body>
+</html>
+
+<script type="module">
+import { definePage } from 'coralite'
+
+export default definePage({
+  server({ route }) {
+    return {
+      pageTitle: `Title for ${route?.path || '/'}`
+    }
+  }
+})
+</script>

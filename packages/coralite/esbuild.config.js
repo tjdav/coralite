@@ -8,6 +8,7 @@ export const buildOptions = {
     './lib/coralite-element.js',
     './lib/plugin.js',
     './lib/interactive.js',
+    './lib/testing.js',
 
     // Validators & AST Fixers
     './lib/component-validator.js',

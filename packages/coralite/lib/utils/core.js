@@ -1130,6 +1130,17 @@ export function defineComponent (options) {
 }
 
 /**
+ * Defines a Coralite page with full IDE autocomplete and type inference.
+ *
+ * @template {Record<string, any>} [TState=Record<string, any>]
+ * @param {any} options - Page options
+ * @returns {any} The page options
+ */
+export function definePage (options) {
+  return options
+}
+
+/**
  * An event fired by a context requester to signal it desires a named context.
  * Conforms to the W3C Web Components Context Protocol.
  * Dynamically wires its prototype to the active environment's Event class.

@@ -1,0 +1,18 @@
+<template id="load-component-client">
+  <button ref="btn">Click {{ count }}</button>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  server() {
+    return { count: 10 }
+  },
+  client({ state, refs, signal }) {
+    state.clientInitialized = true
+    state.refFound = Boolean(refs && refs('btn'))
+    state.hasSignal = Boolean(signal)
+  }
+})
+</script>

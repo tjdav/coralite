@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Posts Page</title>
+</head>
+<body>
+  <h1>Post {{ title }}</h1>
+</body>
+</html>
+
+<script type="module">
+import { definePage } from 'coralite'
+
+export default definePage({
+  async paths({ app }) {
+    if (app?.shouldThrowInPaths) {
+      throw new Error('Paths evaluation failed intentionally')
+    }
+    return [{ id: '1' }, { id: '2' }]
+  },
+  async server({ route }) {
+    return {
+      title: `Post ${route?.params?.id || 'unknown'}`
+    }
+  }
+})
+</script>

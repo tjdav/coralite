@@ -1,0 +1,18 @@
+<template id="load-component-basic">
+  <div>Count: {{ count }}</div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  attributes: {
+    initialCount: Number
+  },
+  server({ route, initialCount }) {
+    return {
+      count: (initialCount || 0) + (route?.params?.inc || 0)
+    }
+  }
+})
+</script>

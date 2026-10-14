@@ -81,6 +81,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       }
 
       coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
+      coraliteExports += 'export const definePage = globalThis.__coralite_define_page__ || ((opts) => opts);\n'
       coraliteExports += 'export const createCoraliteElement = globalThis.__coralite_create_coralite_element__;\n'
       coraliteExports += 'export const processHTML = globalThis.__coralite_process_html__;\n'
       coraliteExports += 'export const createContext = globalThis.__coralite_create_context__;\n'
@@ -230,6 +231,7 @@ export async function evaluateDevelopment ({
     __coralite_utils__: source.utils,
     __coralite_server_utils__: serverUtils,
     __coralite_define_component__: boundDefineComponent,
+    __coralite_define_page__: (opts) => opts,
     __coralite_create_context__: createContextUtil,
     __coralite_context_request_event__: ContextRequestEvent,
     __coralite_create_coralite_element__: (tag, options) => {
@@ -416,6 +418,7 @@ export async function evaluateProduction ({
         return {
           ...symmetricalContext,
           defineComponent: (options) => defineComponent(options, symmetricalContext),
+          definePage: (options) => options,
           createCoraliteElement,
           processHTML,
           createContext: createContextUtil,
@@ -423,6 +426,7 @@ export async function evaluateProduction ({
           default: {
             ...symmetricalContext,
             defineComponent: (options) => defineComponent(options, symmetricalContext),
+            definePage: (options) => options,
             createCoraliteElement,
             processHTML,
             createContext: createContextUtil,
