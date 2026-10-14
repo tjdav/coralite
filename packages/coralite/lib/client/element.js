@@ -242,6 +242,13 @@ export class CoraliteElement extends BaseElement {
     this._instanceId = null
 
     /**
+     * The raw target object behind `_state`.
+     * @type {Object|null}
+     * @protected
+     */
+    this._stateRaw = null
+
+    /**
      * The unified, deeply reactive proxy holding attributes, data, and getters.
      * @type {Object|null}
      * @protected
@@ -1288,6 +1295,7 @@ export class CoraliteElement extends BaseElement {
       this._roStateTracked = null
     }
     this._roState = null
+    this._stateRaw = null
     this._styleTracker = null
     this._roStateStyle = null
     this._styleDeps = null
@@ -1667,6 +1675,7 @@ export class CoraliteElement extends BaseElement {
       }
     }
 
+    this._stateRaw = target
     this._state = this._createReactiveProxy(target, getRef)
     this._registerSlotStateObserver()
     this._syncValidityFromErrors()
@@ -3171,9 +3180,12 @@ export class CoraliteElement extends BaseElement {
     }
     let hasPromise = false
 
+    const useRaw = this.componentOptions?.compilerOptimizations !== 'none'
+    const stateTarget = (useRaw && this._stateRaw) ? this._stateRaw : this._state
+
     for (let i = 0; i < requiredTokens.length; i++) {
       const key = requiredTokens[i]
-      let val = this._state[key]
+      let val = stateTarget ? stateTarget[key] : undefined
       if (typeof val === 'function') {
         val = val(this._state)
       }

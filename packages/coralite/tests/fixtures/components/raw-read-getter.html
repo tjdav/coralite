@@ -1,0 +1,21 @@
+<template id="raw-read-getter">
+  <div id="double">Double: {{ doubleCount }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      count: {
+        type: Number,
+        default: 5
+      }
+    },
+    getters: {
+      doubleCount ({ state }) {
+        return state.count * 2
+      }
+    }
+  })
+</script>

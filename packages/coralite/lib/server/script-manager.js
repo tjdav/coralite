@@ -861,6 +861,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
       componentEntryCode += `
 export default {
   componentId: "${componentId}",
+  compilerOptimizations: "${compilerOptimizations}",
   useTemplateCloning: ${useCloning},
   templateElement: ${templateElementExpr},
   templateHTML: ${templateHTML},

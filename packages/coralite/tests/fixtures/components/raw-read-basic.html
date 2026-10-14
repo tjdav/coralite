@@ -1,0 +1,16 @@
+<template id="raw-read-basic">
+  <div id="counter">Count: {{ count }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      count: {
+        type: Number,
+        default: 0
+      }
+    }
+  })
+</script>
