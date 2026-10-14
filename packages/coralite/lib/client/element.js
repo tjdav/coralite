@@ -1609,7 +1609,8 @@ export class CoraliteElement extends BaseElement {
               root: this,
               refs: getRef,
               slots: this._getSlotsHelper(),
-              signal: null
+              isServer: false,
+              signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal
             }
             this._getterContexts.set(key, context)
           }
@@ -1706,6 +1707,7 @@ export class CoraliteElement extends BaseElement {
                 root: this,
                 refs: (id) => this._resolveRef(id),
                 slots: this._getSlotsHelper(),
+                isServer: false,
                 signal: this._abortController?.signal || new AbortController().signal
               }
               const value = valOrFn(context)
@@ -4501,6 +4503,7 @@ export async function setupPageRuntime (pageConfig) {
             route: routeObj,
             root: rootEl,
             refs: (id) => rootEl.querySelector(`[ref="${id}"]`),
+            isServer: false,
             signal: getterAbortControllers[key].signal
           })
         },

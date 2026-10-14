@@ -231,6 +231,7 @@
 /**
  * @typedef {Object} CoraliteSession
  * @property {string} [buildId] - The unique identifier for the build process.
+ * @property {AbortSignal} [signal] - Per-build cancellation signal.
  * @property {Object.<string, any>} state - Global state for the session.
  * @property {Map<string, string>} styles - Collected styles during rendering.
  * @property {Set<string>} componentTags - Set of component tags used in the page.

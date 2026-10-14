@@ -1,0 +1,13 @@
+<template id="getter-with-signal">
+  <div>{{ signalStatus }}</div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  getters: {
+    signalStatus: ({ signal }) => (signal && typeof signal.aborted === 'boolean' ? (signal.aborted ? 'aborted' : 'active') : 'missing')
+  }
+})
+</script>

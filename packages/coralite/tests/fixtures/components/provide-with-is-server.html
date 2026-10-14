@@ -1,0 +1,17 @@
+<template id="provide-with-is-server">
+  <div>Provided</div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export const testContext = Symbol('testContext')
+
+export default defineComponent({
+  provide: {
+    [testContext]: ({ isServer }) => ({
+      env: isServer ? 'server' : 'client'
+    })
+  }
+})
+</script>
