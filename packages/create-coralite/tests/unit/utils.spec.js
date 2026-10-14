@@ -9,7 +9,11 @@ import {
   toValidPackageName,
   isEmpty,
   emptyDir,
-  extractPackageInfoFromUserAgent
+  extractPackageInfoFromUserAgent,
+  parseSemver,
+  compareSemver,
+  satisfiesEngine,
+  checkNodeVersion
 } from '../../lib/utils.js'
 
 describe('utils unit tests', () => {
@@ -128,6 +132,57 @@ describe('utils unit tests', () => {
     test('returns undefined for empty or missing user agent', () => {
       assert.equal(extractPackageInfoFromUserAgent(''), undefined)
       assert.equal(extractPackageInfoFromUserAgent(undefined), undefined)
+    })
+  })
+
+  describe('semver engine utilities', () => {
+    test('parseSemver parses versions accurately', () => {
+      assert.deepEqual(parseSemver('22.22.2'), [22, 22, 2])
+      assert.deepEqual(parseSemver('v22.22.2-rc.1'), [22, 22, 2])
+      assert.deepEqual(parseSemver('18.0.0'), [18, 0, 0])
+    })
+
+    test('compareSemver compares version tuples correctly', () => {
+      assert.equal(compareSemver([22, 22, 2], [22, 22, 2]), 0)
+      assert.equal(compareSemver([22, 22, 1], [22, 22, 2]), -1)
+      assert.equal(compareSemver([22, 22, 3], [22, 22, 2]), 1)
+      assert.equal(compareSemver([20, 0, 0], [22, 22, 2]), -1)
+    })
+
+    test('satisfiesEngine evaluates semver engine ranges', () => {
+      assert.equal(satisfiesEngine('v22.22.2', '>=22.22.2'), true)
+      assert.equal(satisfiesEngine('v22.22.3', '>=22.22.2'), true)
+      assert.equal(satisfiesEngine('v22.22.1', '>=22.22.2'), false)
+      assert.equal(satisfiesEngine('v18.20.0', '>=22.22.2'), false)
+    })
+
+    test('checkNodeVersion passes on satisfied versions and exits on unsatisfied ones', () => {
+      assert.doesNotThrow(() => checkNodeVersion('>=22.22.2', 'v22.22.2'))
+
+      let exitCode = null
+      const originalExit = process.exit
+      const originalConsoleError = console.error
+      let errorOutput = ''
+
+      process.exit = (code) => {
+        exitCode = code
+        throw new Error(`EXIT_${code}`)
+      }
+      console.error = (msg) => {
+        errorOutput += msg
+      }
+
+      try {
+        assert.throws(
+          () => checkNodeVersion('>=22.22.2', 'v18.20.0'),
+          /EXIT_1/
+        )
+        assert.equal(exitCode, 1)
+        assert.match(errorOutput, /Error: this project requires Node\.js >=22\.22\.2\. You are running v18\.20\.0\./)
+      } finally {
+        process.exit = originalExit
+        console.error = originalConsoleError
+      }
     })
   })
 })
