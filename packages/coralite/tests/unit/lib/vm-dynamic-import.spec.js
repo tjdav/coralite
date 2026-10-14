@@ -45,7 +45,8 @@ describe('VM Dynamic Import', () => {
 
     const results = await coralite.build()
     assert.ok(results.length > 0)
-    assert.match(results[0].content, /Success/)
+    // Under v1.0 (P1.11), async getters are skipped during SSR, resolving to <c-token></c-token> placeholder for client hydration
+    assert.match(results[0].content, /<c-token><\/c-token>/)
   })
 
   it('should handle dynamic import within an external package', async () => {
@@ -88,7 +89,8 @@ describe('VM Dynamic Import', () => {
 
     const results = await coralite.build()
     assert.ok(results.length > 0)
-    assert.match(results[0].content, /Success/)
+    // Under v1.0 (P1.11), async getters are skipped during SSR, resolving to <c-token></c-token> placeholder for client hydration
+    assert.match(results[0].content, /<c-token><\/c-token>/)
   })
 
   it('should support top-level import with attributes in component script (development mode)', async () => {
@@ -147,7 +149,8 @@ describe('VM Dynamic Import', () => {
 
     const results = await coralite.build()
     assert.ok(results.length > 0)
-    assert.match(results[0].content, /Dynamic import with variable options/)
+    // Under v1.0 (P1.11), async getters are skipped during SSR, resolving to <c-token></c-token> placeholder for client hydration
+    assert.match(results[0].content, /<c-token><\/c-token>/)
   })
 })
 
