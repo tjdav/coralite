@@ -6,7 +6,7 @@ import buildStyles from './build-styles.js'
 import { displayError, displayInfo, displayWarning, displaySuccess, toCode, toMS, toTime, deleteDirectoryRecursive } from './build-utils.js'
 import { dirname, extname, join, normalize, relative, sep } from 'path'
 import { access, constants, mkdir, readFile, writeFile } from 'fs/promises'
-import { createCoralite } from 'coralite'
+import { createCoralite, resolveCspConfig } from 'coralite'
 import portfinder from 'portfinder'
 
 /**
@@ -20,7 +20,8 @@ import portfinder from 'portfinder'
  * @returns {string} The script tag HTML string.
  */
 export function buildLiveReloadScript (config) {
-  const devNonce = typeof config.csp?.nonce === 'string' ? config.csp.nonce : null
+  const resolvedDevCsp = resolveCspConfig(config.csp || {}, 'development')
+  const devNonce = (resolvedDevCsp.enabled !== false && typeof resolvedDevCsp.nonce === 'string') ? resolvedDevCsp.nonce : null
   const nonceAttr = devNonce ? ` nonce="${devNonce}"` : ''
   return `\n<script src="/__coralite/rebuild.js"${nonceAttr}></script>\n</body>\n`
 }

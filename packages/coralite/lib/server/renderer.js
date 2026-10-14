@@ -41,6 +41,7 @@ import {
   calculateHash,
   calculateSRIDigest,
   resolveNonce,
+  resolveCspConfig,
   formatCSPDirectives,
   injectCSPMeta
 } from './utils/csp.js'
@@ -1719,7 +1720,27 @@ export function createRenderer ({
     const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
     const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
 
-    const cspConfig = normalizedOptions.csp || {}
+    const rawCspConfig = normalizedOptions.csp || {}
+    const activeCspConfig = resolveCspConfig(rawCspConfig, normalizedOptions.mode)
+
+    if (normalizedOptions.mode === 'development' && activeCspConfig.enabled !== false) {
+      const devConnect = ["'self'", 'ws:', 'http:']
+      const existingConnect = activeCspConfig.directives?.['connect-src']
+      let initialConnect = []
+      if (Array.isArray(existingConnect)) {
+        initialConnect = existingConnect
+      } else if (typeof existingConnect === 'string') {
+        initialConnect = [existingConnect]
+      }
+      const mergedConnect = Array.from(new Set([...initialConnect, ...devConnect]))
+
+      activeCspConfig.directives = {
+        ...activeCspConfig.directives,
+        'connect-src': mergedConnect
+      }
+    }
+
+    const cspConfig = activeCspConfig
     const pageCspMeta = Boolean(pageContext?.meta?.csp === true || pageContext?.meta?.csp === 'true')
     let pageCspDirectives = pageContext?.meta?.['csp-directives']
     if (typeof pageCspDirectives === 'string') {
