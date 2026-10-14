@@ -774,8 +774,55 @@ export function generateHydrationMap (templateNodes, templateValues) {
     tokenBindings: {}
   }
 
-  if (!templateNodes || !templateValues) {
+  if (!templateNodes) {
     return map
+  }
+
+  let values = templateValues
+  if (!values && Array.isArray(templateNodes)) {
+    const textNodes = []
+    const attributes = []
+    const refs = []
+    const walk = (nodes) => {
+      if (!nodes || !Array.isArray(nodes)) {
+        return
+      }
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i]
+        if (node.type === 'text' && node.data && node.data.includes('{{')) {
+          textNodes.push({
+            textNode: node,
+            type: 'text'
+          })
+        } else if (node.type === 'tag') {
+          if (node.attribs) {
+            for (const name of Object.keys(node.attribs)) {
+              const val = node.attribs[name]
+              if (name === 'ref') {
+                refs.push({
+                  element: node,
+                  name: val
+                })
+              } else if (typeof val === 'string' && val.includes('{{')) {
+                attributes.push({
+                  element: node,
+                  name
+                })
+              }
+            }
+          }
+          if (node.children) {
+            walk(node.children)
+          }
+        }
+      }
+    }
+    walk(templateNodes)
+    values = {
+      textNodes,
+      attributes,
+      refs
+    }
   }
 
   const root = templateNodes.length > 0 ? templateNodes[0].parent : { children: templateNodes }
@@ -794,8 +841,8 @@ export function generateHydrationMap (templateNodes, templateValues) {
 
   let bindingCounter = 0
 
-  if (templateValues.textNodes) {
-    for (const item of templateValues.textNodes) {
+  if (values && values.textNodes) {
+    for (const item of values.textNodes) {
       if (item.textNode) {
         const isHtml = item.type === 'html'
         const targetNode = isHtml ? item.textNode.parent : item.textNode
@@ -820,8 +867,8 @@ export function generateHydrationMap (templateNodes, templateValues) {
     }
   }
 
-  if (templateValues.attributes) {
-    for (const item of templateValues.attributes) {
+  if (values && values.attributes) {
+    for (const item of values.attributes) {
       if (item.element && item.element.attribs) {
         const originalValue = item.element.attribs[item.name]
         const parsed = parseTemplateSegments(originalValue)
@@ -846,8 +893,8 @@ export function generateHydrationMap (templateNodes, templateValues) {
     }
   }
 
-  if (templateValues.refs) {
-    for (const item of templateValues.refs) {
+  if (values && values.refs) {
+    for (const item of values.refs) {
       if (item.element) {
         map.refs.push({
           path: getNodePath(item.element, root),

@@ -1,0 +1,23 @@
+<template id="updater-attribute">
+  <div>
+    <button type="button" class="btn" title="{{ title }}" disabled="{{ disabled }}">{{ label }}</button>
+  </div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  attributes: {
+    title: {
+      default: 'Initial Title'
+    },
+    disabled: {
+      default: false
+    },
+    label: {
+      default: 'Click me'
+    }
+  }
+})
+</script>
