@@ -331,7 +331,6 @@ export async function createCLIProject () {
       output: './dist',
       components: './src/components',
       pages: './src/pages',
-      plugins: './src/plugins',
       public: './public'
     })
   `)

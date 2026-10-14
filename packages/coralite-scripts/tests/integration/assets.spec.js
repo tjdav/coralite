@@ -246,4 +246,36 @@ describe('Coralite Assets Integration', () => {
     assert.strictEqual(exitCode, 1)
     assert.ok(stderr.includes('dest'), 'Should show error about missing dest')
   })
+
+  it('should verify defineConfig re-export behavior', async () => {
+    const { defineConfig } = await import(coraliteScriptsLib)
+
+    assert.strictEqual(typeof defineConfig, 'function')
+
+    const valid = defineConfig({
+      output: './dist',
+      components: './src/components',
+      pages: './src/pages'
+    })
+    assert.strictEqual(valid.output, './dist')
+    assert.strictEqual(valid.public, 'public')
+
+    assert.throws(
+      () => defineConfig({
+        components: './components',
+        pages: './pages'
+      }),
+      /Missing required config property: "output"/
+    )
+
+    assert.throws(
+      () => defineConfig({
+        output: './dist',
+        components: './components',
+        pages: './pages',
+        urlStyle: 'directory'
+      }),
+      /Config property "urlStyle" has been replaced by "cleanUrls"/
+    )
+  })
 })
