@@ -1796,6 +1796,7 @@ export class CoraliteElement extends BaseElement {
       entry.controller = null
 
       this._markKeysDirty(key)
+      this._scheduleUpdate()
     }).catch(err => {
       if (perComputeController.signal.aborted || err?.name === 'AbortError' || this._abortController?.signal?.aborted) {
         return

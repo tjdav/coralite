@@ -1,0 +1,22 @@
+<template id="async-getter-with-dep">
+  <div data-testid="dep-val">{{ computedWithDeps }}</div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  server: () => ({
+    depBefore: 'a',
+    depAfter: 'x'
+  }),
+  getters: {
+    computedWithDeps: async ({ state }) => {
+      const before = state.depBefore
+      await new Promise(r => setTimeout(r, 10))
+      const after = state.depAfter
+      return `${before}-${after}`
+    }
+  }
+})
+</script>

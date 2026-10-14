@@ -1,0 +1,16 @@
+<template id="async-getter-resolves">
+  <div data-testid="title">{{ asyncTitle }}</div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  getters: {
+    asyncTitle: async () => {
+      await new Promise(r => setTimeout(r, 10))
+      return 'Resolved Title'
+    }
+  }
+})
+</script>
