@@ -1,0 +1,14 @@
+<template id="element-binding-textcontent">
+  <p class="{{ className }}"><span ref="content">{{ text }}</span></p>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      className: { type: String, default: 'greeting' },
+      text: { type: String, default: 'Hello Element' }
+    }
+  })
+</script>

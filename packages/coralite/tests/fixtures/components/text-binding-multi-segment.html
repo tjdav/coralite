@@ -1,0 +1,14 @@
+<template id="text-binding-multi-segment">
+  <p>Welcome, {{ firstName }} {{ lastName }}!</p>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      firstName: { type: String, default: 'Jane' },
+      lastName: { type: String, default: 'Doe' }
+    }
+  })
+</script>
