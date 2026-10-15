@@ -15,6 +15,7 @@
   ],
   "files": [
     "bin",
+    "libs",
     "types",
     "dist"
   ],
@@ -38,13 +39,13 @@
   },
   "imports": {
     "#lib": {
-      "default": "coralite/lib/cli/index.js"
+      "default": "./libs/index.js"
     }
   },
   "exports": {
     ".": {
-      "types": "./dist/lib/cli/index.d.ts",
-      "default": "coralite/lib/cli/index.js"
+      "types": "./dist/libs/index.d.ts",
+      "default": "./libs/index.js"
     },
     "./types": {
       "default": "./types/index.js"

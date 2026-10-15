@@ -1,0 +1,238 @@
+import colours from 'kleur'
+import fs from 'node:fs'
+import path from 'node:path'
+import { cp } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
+
+/**
+ * Creates current time in format [HH:MM:SS].mmm (milliseconds), colored with ANSI colors, and formatted as bold white string for better readability of logs or console output
+ * @returns {string} - Formatted timestamp to be used within a log message.
+ */
+export function toTime () {
+  const now = new Date()
+  const hours = now.getHours().toString().padStart(2, '0')
+  const minutes = now.getMinutes().toString().padStart(2, '0')
+  const seconds = now.getSeconds().toString().padStart(2, '0')
+  const milliseconds = now.getMilliseconds().toString().padStart(3, '0')
+
+  return '[' + colours.magenta(`${hours}:${minutes}:${seconds}.${milliseconds}`) + '] '
+}
+
+/**
+ * Creates a formatted timestamp in milliseconds with ANSI colors and bold white string for better readability of logs or console output.
+ * @param {[number, number] | number } hrtime - High Resolution Time in microseconds since epoch, used to calculate time difference between two points of execution or the start/stopwatch function call respectively.
+ */
+export function toMS (hrtime) {
+  let number
+
+  if (Array.isArray(hrtime)) {
+    number = (hrtime[1] / 1e6).toFixed(2) + 'ms'
+  } else {
+    number = hrtime.toFixed(2) + 'ms'
+  }
+
+  return colours.white().bold(number)
+}
+
+/**
+ * Converts HTTP status code into a colourised text.
+ * @param {number} code - HTTP status code to convert into a colourised text.
+ */
+export function toCode (code) {
+  let fn = 'green'
+
+  if (code >= 400) {
+    fn = 'red'
+  } else if (code > 300) {
+    fn = 'yellow'
+  }
+
+  return colours[fn](code)
+}
+
+/**
+ * Recursively copies a directory and all its contents from source to destination
+ * @param {string} src - The source directory path to copy from
+ * @param {string} dest - The destination directory path to copy to
+ */
+export async function copyDirectory (src, dest) {
+  await cp(src, dest, { recursive: true })
+}
+
+/**
+ * Recursively deletes a directory and all its contents
+ * @param {string} dirPath - The path to the directory to delete
+ */
+export function deleteDirectoryRecursive (dirPath) {
+  // Check if directory exists before attempting deletion
+  if (!fs.existsSync(dirPath)) {
+    console.log(`Directory ${dirPath} does not exist`)
+    return
+  }
+
+  // Read all files in the directory
+  const files = fs.readdirSync(dirPath)
+
+  // Iterate through each file/directory in the target directory
+  for (const file of files) {
+    const filePath = path.join(dirPath, file)
+    const stat = fs.statSync(filePath)
+
+    // If current item is a directory, recursively delete it
+    if (stat.isDirectory()) {
+      deleteDirectoryRecursive(filePath)
+    } else {
+      // If current item is a file, delete it directly
+      fs.unlinkSync(filePath)
+    }
+  }
+
+  // Remove the now-empty directory
+  fs.rmdirSync(dirPath)
+}
+
+
+/**
+ * Prettified error display using kleur
+ * @param {string} message - Error message
+ * @param {object} [error] - Optional error object
+ */
+export function displayError (message, error) {
+  const dash = colours.gray(' ─ ')
+  process.stdout.write(toTime() + colours.bgRed().white(' ERROR ') + dash + colours.red(message) + '\n')
+  if (error) {
+    const indent = '    '
+    const isCoraliteError = error.isCoraliteError || Boolean(error.cause?.isCoraliteError)
+
+    let targetError = error
+
+    // Override the targetError only if the cause is the actual CoraliteError
+    if (!error.isCoraliteError && error.cause?.isCoraliteError) {
+      targetError = error.cause
+    }
+
+    if (isCoraliteError) {
+      const displayFile = targetError.stackFile || targetError.filePath
+      if (displayFile) {
+        let absolutePath = displayFile
+        if (absolutePath.startsWith('file://')) {
+          try {
+            absolutePath = fileURLToPath(absolutePath)
+          } catch {
+          }
+        }
+
+        const relativePath = path.relative(process.cwd(), absolutePath)
+        let location = relativePath
+        if (targetError.line) {
+          location += `:${targetError.line}`
+          if (targetError.column) {
+            location += `:${targetError.column}`
+          }
+        }
+
+        process.stdout.write(colours.bold(`> ${location}: `) + colours.red('error: ') + targetError.message + '\n')
+
+        if (fs.existsSync(absolutePath) && targetError.line) {
+          try {
+            const content = fs.readFileSync(absolutePath, 'utf8')
+            const lines = content.split('\n')
+            const errorLine = lines[targetError.line - 1]
+            if (errorLine !== undefined) {
+              const gutter = ` ${targetError.line} | `
+              process.stdout.write(colours.grey(gutter) + errorLine + '\n')
+              if (targetError.column) {
+                // To handle tabs correctly, we take the prefix of the line up to the error column
+                // and replace all non-whitespace characters with spaces.
+                const prefix = errorLine.substring(0, targetError.column - 1)
+                const padding = ' '.repeat(gutter.length) + prefix.replace(/\S/g, ' ')
+                process.stdout.write(padding + colours.cyan('~') + '\n')
+              }
+            }
+          } catch {
+          }
+        }
+        process.stdout.write('\n')
+      }
+
+      process.stdout.write(indent + colours.magenta('Component context:') + '\n')
+      if (targetError.componentId) {
+        process.stdout.write(indent + '  ' + colours.cyan('ID:        ') + targetError.componentId + '\n')
+      }
+      if (targetError.filePath) {
+        process.stdout.write(indent + '  ' + colours.cyan('File:      ') + targetError.filePath + '\n')
+      }
+      if (targetError.pagePath) {
+        process.stdout.write(indent + '  ' + colours.cyan('Page:      ') + targetError.pagePath + '\n')
+      }
+      if (targetError.instanceId) {
+        process.stdout.write(indent + '  ' + colours.cyan('Instance:  ') + targetError.instanceId + '\n')
+      }
+      process.stdout.write('\n')
+    }
+
+    let errorDetails = ''
+
+    const errorToStack = error.cause && error.cause.stack ? error.cause : error
+
+    if (errorToStack instanceof Error ||
+      (errorToStack !== null
+        && typeof errorToStack === 'object'
+        && 'message' in errorToStack
+        && 'stack' in errorToStack
+      )
+    ) {
+      // @ts-ignore
+      errorDetails = errorToStack.stack || errorToStack.message
+    } else if (typeof error === 'string') {
+      errorDetails = error
+    } else if (typeof error === 'object' && error !== null) {
+      errorDetails = JSON.stringify(error, null, 2)
+    } else {
+      errorDetails = String(error)
+    }
+
+    const errorLines = errorDetails.split('\n')
+    let firstLine = true
+
+    const errorResult = errorLines.reduce((acc, currentValue) => {
+      let lineOutput = acc
+      if (firstLine) {
+        lineOutput += colours.red(indent + currentValue + '\n')
+        firstLine = false
+      } else {
+        lineOutput += colours.grey(indent + currentValue + '\n')
+      }
+
+      return lineOutput
+    }, '')
+    process.stdout.write(errorResult + '\n')
+  }
+}
+
+/**
+ * Prettified warning display using kleur
+ * @param {string} message - Warning message
+ */
+export function displayWarning (message) {
+  const dash = colours.gray(' ─ ')
+  process.stdout.write(toTime() + colours.bgYellow().black(' WARNING ') + dash + colours.yellow(message) + '\n')
+}
+
+/**
+ * Prettified success display using kleur
+ * @param {string} message - Success message
+ */
+export function displaySuccess (message) {
+  const dash = colours.gray(' ─ ')
+  process.stdout.write(toTime() + colours.bgGreen().white(' SUCCESS ') + dash + colours.green(message) + '\n')
+}
+
+/**
+ * Prettified info display using kleur
+ * @param {string} message - Info message
+ */
+export function displayInfo (message) {
+  const dash = colours.gray(' ─ ')
+  process.stdout.write(toTime() + colours.bgBlue().white(' INFO ') + dash + colours.blue(message) + '\n')
+}
