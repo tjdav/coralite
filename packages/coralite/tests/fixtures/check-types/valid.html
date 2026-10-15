@@ -1,0 +1,17 @@
+<template id="x-valid">
+  <div>
+    <h1>{{ greeting }}</h1>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    getters: {
+      greeting () {
+        return 'Hello Valid Component'
+      }
+    }
+  })
+</script>

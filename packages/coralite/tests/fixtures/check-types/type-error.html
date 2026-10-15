@@ -1,0 +1,18 @@
+<template id="x-type-error">
+  <div>
+    <h1>{{ count }}</h1>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    getters: {
+      count () {
+        const x: number = 'not a number'
+        return x
+      }
+    }
+  })
+</script>
