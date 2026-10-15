@@ -1,0 +1,19 @@
+<template id="state-signals-batch">
+  <div>
+    <span class="a">{{ a }}</span>
+    <span class="b">{{ b }}</span>
+    <span class="c">{{ c }}</span>
+  </div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  attributes: {
+    a: { default: 1 },
+    b: { default: 2 },
+    c: { default: 3 }
+  }
+})
+</script>
