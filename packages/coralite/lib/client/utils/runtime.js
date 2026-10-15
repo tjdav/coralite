@@ -63,14 +63,156 @@ export function generateClientRuntime ({
     };
   }
 
+  const declarativeTags = ${JSON.stringify(declarativeTags)};
+  window.__coralite_styles_loaded__ = window.__coralite_styles_loaded__ || new Set(${inlinedStyles});
+
+  const loadCache = {};
+
+  const loadComponent = (componentId) => {
+    if (typeof customElements !== 'undefined' && customElements.get && customElements.get(componentId)) {
+      return Promise.resolve();
+    }
+    const entry = componentManifest[componentId];
+    if (!entry) return Promise.resolve();
+    if (loadCache[componentId]) return loadCache[componentId];
+
+    loadCache[componentId] = (async () => {
+      const isDev = typeof entry === 'string' && entry.includes('-runtime');
+      const jsPath = typeof entry === 'string' ? entry : entry.js;
+      const cssPath = typeof entry === 'object' ? entry.css : null;
+
+      if (cssPath) {
+        const fullCssPath = '${base}assets/css/' + cssPath;
+        const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(componentId);
+
+        if (!document.querySelector('link[href="' + fullCssPath + '"]') && !isLoaded) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = fullCssPath;
+          if (document.head) document.head.appendChild(link);
+          if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(componentId);
+        }
+      }
+
+      const module = await import('${base}assets/js/' + jsPath);
+      if (module.default && module.default.componentId) {
+        const id = module.default.componentId;
+        if (!customElements.get(id)) {
+          if (module.default.styles && !cssPath) {
+            const styleId = 'coralite-style-' + id;
+            const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(id);
+
+            if (!document.getElementById(styleId) && !isLoaded) {
+              const style = document.createElement('style');
+              style.id = styleId;
+              const cssContent = module.default.styles;
+              const isAtRule = /^\\s*@(scope|layer|media|supports|keyframes|font-face|container)\\b/i.test(cssContent);
+              style.textContent = isAtRule ? cssContent : id + ' {\\n' + cssContent + '\\n}';
+              if (document.head) document.head.appendChild(style);
+              if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(id);
+            }
+          }
+          customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks));
+          if (typeof registerDevToolsComponent === 'function') {
+            registerDevToolsComponent(id);
+          }
+          if (window.__coralite__ && window.__coralite__.lifecycle) window.__coralite__.lifecycle._markDefined(id);
+        }
+      }
+    })();
+    return loadCache[componentId];
+  };
+
+  const upgrade = async (root) => {
+    if (!root || (root.nodeType !== 1 && !root.tagName && !root.tag)) return;
+
+    const tagsToLoad = new Set();
+    const collectTag = (el) => {
+      if (!el) return;
+      const rawTag = el.tagName || el.tag || el.nodeName || el.localName;
+      if (typeof rawTag === 'string') {
+        const tag = rawTag.toLowerCase();
+        if (tag.includes('-') && (typeof customElements === 'undefined' || !customElements.get || !customElements.get(tag)) && componentManifest[tag]) {
+          tagsToLoad.add(tag);
+        }
+      }
+    };
+
+    collectTag(root);
+    if (typeof root.querySelectorAll === 'function') {
+      const descendants = root.querySelectorAll('*');
+      for (let i = 0; i < descendants.length; i++) {
+        collectTag(descendants[i]);
+      }
+    }
+
+    const upgradeElement = (el) => {
+      if (typeof customElements !== 'undefined' && typeof customElements.upgrade === 'function') {
+        customElements.upgrade(el);
+      }
+    };
+
+    if (tagsToLoad.size > 0) {
+      const uniqueTags = Array.from(tagsToLoad);
+      const results = await Promise.allSettled(uniqueTags.map(tag => loadComponent(tag)));
+
+      upgradeElement(root);
+      if (typeof root.querySelectorAll === 'function') {
+        const all = root.querySelectorAll('*');
+        for (let i = 0; i < all.length; i++) {
+          const el = all[i];
+          const rawTag = el.tagName || el.tag || el.nodeName || el.localName;
+          if (typeof rawTag === 'string' && rawTag.includes('-')) {
+            upgradeElement(el);
+          }
+        }
+      }
+
+      const upgradedElements = [];
+      const checkElement = (el) => {
+        if (el && typeof el.updateComplete !== 'undefined') {
+          upgradedElements.push(el);
+        }
+      };
+      checkElement(root);
+      if (typeof root.querySelectorAll === 'function') {
+        const all = root.querySelectorAll('*');
+        for (let i = 0; i < all.length; i++) {
+          checkElement(all[i]);
+        }
+      }
+      if (upgradedElements.length > 0) {
+        await Promise.all(upgradedElements.map(el => Promise.resolve(el.updateComplete)));
+      }
+
+      const errors = results.filter(r => r.status === 'rejected').map(r => r.reason);
+      if (errors.length > 0) {
+        throw errors[0];
+      }
+    } else {
+      upgradeElement(root);
+      if (typeof root.querySelectorAll === 'function') {
+        const all = root.querySelectorAll('*');
+        for (let i = 0; i < all.length; i++) {
+          const el = all[i];
+          const rawTag = el.tagName || el.tag || el.nodeName || el.localName;
+          if (typeof rawTag === 'string' && rawTag.includes('-')) {
+            upgradeElement(el);
+          }
+        }
+      }
+    }
+  };
+
+  window.__coralite__.loadComponent = loadComponent;
+  window.__coralite__.upgrade = upgrade;
+
   if (typeof initPlugins === 'function') {
     await initPlugins();
   }
   if (typeof setupPageRuntime === 'function' && window.__coralite_page_config__) {
     await setupPageRuntime(window.__coralite_page_config__);
   }
-  const declarativeTags = ${JSON.stringify(declarativeTags)};
-  window.__coralite_styles_loaded__ = window.__coralite_styles_loaded__ || new Set(${inlinedStyles});
 
   if (typeof setupDevTools === 'function') {
     setupDevTools();
@@ -134,60 +276,6 @@ export function generateClientRuntime ({
   globalThis.executableScripts = [];
   globalThis.globalAbortController = new AbortController();
 
-  const loadCache = {};
-
-  const loadComponent = (componentId) => {
-    const entry = componentManifest[componentId];
-    if (!entry) return Promise.resolve();
-    if (loadCache[componentId]) return loadCache[componentId];
-
-    loadCache[componentId] = (async () => {
-      const isDev = typeof entry === 'string' && entry.includes('-runtime');
-      const jsPath = typeof entry === 'string' ? entry : entry.js;
-      const cssPath = typeof entry === 'object' ? entry.css : null;
-
-      if (cssPath) {
-        const fullCssPath = '${base}assets/css/' + cssPath;
-        const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(componentId);
-
-        if (!document.querySelector('link[href="' + fullCssPath + '"]') && !isLoaded) {
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = fullCssPath;
-          document.head.appendChild(link);
-          if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(componentId);
-        }
-      }
-
-      const module = await import('${base}assets/js/' + jsPath);
-      if (module.default && module.default.componentId) {
-        const id = module.default.componentId;
-        if (!customElements.get(id)) {
-          if (module.default.styles && !cssPath) {
-            const styleId = 'coralite-style-' + id;
-            const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(id);
-
-            if (!document.getElementById(styleId) && !isLoaded) {
-              const style = document.createElement('style');
-              style.id = styleId;
-              const cssContent = module.default.styles;
-              const isAtRule = /^\\s*@(scope|layer|media|supports|keyframes|font-face|container)\\b/i.test(cssContent);
-              style.textContent = isAtRule ? cssContent : id + ' {\\n' + cssContent + '\\n}';
-              document.head.appendChild(style);
-              if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(id);
-            }
-          }
-          customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks));
-          if (typeof registerDevToolsComponent === 'function') {
-            registerDevToolsComponent(id);
-          }
-          if (window.__coralite__ && window.__coralite__.lifecycle) window.__coralite__.lifecycle._markDefined(id);
-        }
-      }
-    })();
-    return loadCache[componentId];
-  };
-
   const loadPromises = declarativeTags.map(tagName => loadComponent(tagName));
   await Promise.all(loadPromises);
   document.documentElement.setAttribute('data-coralite-ready', 'true');
@@ -195,11 +283,7 @@ export function generateClientRuntime ({
   window.createCoraliteElement = (tag, options) => {
     const el = document.createElement(tag, options);
     if (componentManifest[tag]) {
-      loadComponent(tag).then(() => {
-        if (typeof customElements !== 'undefined' && typeof customElements.upgrade === 'function') {
-          customElements.upgrade(el);
-        }
-      });
+      upgrade(el);
     }
     return el;
   };
@@ -239,21 +323,7 @@ ${mode !== 'production' ? `
 
   const upgradeMatchingElements = (container, tags) => {
     if (!container || !tags || tags.length === 0) return;
-    const loadPromises = tags.map(tag => loadComponent(tag));
-    Promise.all(loadPromises).then(() => {
-      if (typeof customElements === 'undefined' || typeof customElements.upgrade !== 'function') return;
-      for (const tag of tags) {
-        if (typeof container.matches === 'function' && container.matches(tag)) {
-          customElements.upgrade(container);
-        }
-        if (typeof container.querySelectorAll === 'function') {
-          const matchingEls = container.querySelectorAll(tag);
-          for (let i = 0; i < matchingEls.length; i++) {
-            customElements.upgrade(matchingEls[i]);
-          }
-        }
-      }
-    });
+    upgrade(container);
   };
 
   const nativeInnerHTMLDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
@@ -268,11 +338,7 @@ ${mode !== 'production' ? `
     const tagName = (typeof tag === 'string') ? tag.toLowerCase() : tag;
     const element = originalCreateElement.call(document, tag, options);
     if (componentManifest[tagName]) {
-      loadComponent(tagName).then(() => {
-        if (typeof customElements !== 'undefined' && typeof customElements.upgrade === 'function') {
-          customElements.upgrade(element);
-        }
-      });
+      upgrade(element);
     }
     return element;
   };
