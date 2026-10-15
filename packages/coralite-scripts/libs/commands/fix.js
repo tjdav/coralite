@@ -1,0 +1,278 @@
+import colours from 'kleur'
+import { join } from 'node:path'
+import { existsSync, statSync, readdirSync } from 'node:fs'
+import { readFile, writeFile } from 'node:fs/promises'
+import {
+  validateComponentsDir,
+  applyComponentFixes,
+  validatePluginSource,
+  applyPluginFixes,
+  validatePagesDir,
+  applyPageFixes,
+  normalizeErrorCodes,
+  matchesErrorCode
+} from 'coralite'
+import { checkCommand } from './check.js'
+
+/**
+ * Resolves directory or file path from CLI options, config, or default candidates.
+ *
+ * @param {string|undefined} explicitPath - Explicit path passed via CLI option.
+ * @param {string} configProp - Config property name in configuration object.
+ * @param {string[]} defaultCandidates - Array of candidate paths to check in cwd.
+ * @param {import('../../types/index.js').CoraliteScriptConfig|null} [config=null] - Configuration object.
+ * @param {string} [cwd=process.cwd()] - Current working directory.
+ * @returns {string|null} Resolved path or null.
+ */
+function resolvePath (explicitPath, configProp, defaultCandidates, config = null, cwd = process.cwd()) {
+  if (typeof explicitPath === 'boolean' && !explicitPath) {
+    return null
+  }
+
+  if (typeof explicitPath === 'string') {
+    return explicitPath
+  }
+
+  if (config && typeof config[configProp] === 'string') {
+    return config[configProp]
+  }
+
+  for (const cand of defaultCandidates) {
+    if (existsSync(join(cwd, cand))) {
+      return cand
+    }
+  }
+
+  return null
+}
+
+/**
+ * Resolves target directory or file relative to cwd.
+ *
+ * @param {string|null} targetPath - Relative or absolute target path.
+ * @param {string} cwd - Current working directory.
+ * @returns {string|null} Existing target path or null.
+ */
+function resolveTargetDir (targetPath, cwd) {
+  if (!targetPath || typeof targetPath !== 'string') {
+    return null
+  }
+  const relativePath = join(cwd, targetPath)
+  if (existsSync(relativePath)) {
+    return relativePath
+  }
+  if (existsSync(targetPath)) {
+    return targetPath
+  }
+  return null
+}
+
+/**
+ * Executes AST auto-fixers across components and plugins.
+ *
+ * @param {import('../../types/index.js').CoraliteScriptConfig|null} config - The configuration object.
+ * @param {any} [options={}] - The CLI and command options.
+ * @param {any} [logger=null] - Optional custom logger output stream.
+ * @returns {Promise<{ totalFixesCount: number, modifiedFiles: string[], diffs: string[], checkResult: any, hasFailures: boolean }>} Fix execution result.
+ */
+export async function fixCommand (config, options = {}, logger = null) {
+  const cwd = options.cwd || process.cwd()
+  const log = (msg) => {
+    if (logger && typeof logger.write === 'function') {
+      logger.write(msg)
+    } else if (logger && typeof logger.log === 'function') {
+      logger.log(msg)
+    } else {
+      process.stdout.write(msg)
+    }
+  }
+
+  const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
+
+  let compOpt = options.components
+  let pluginOpt = options.plugins
+  let pageOpt = options.pages
+
+  if (Array.isArray(options.domains)) {
+    if (!options.domains.includes('components') && !options.components) {
+      compOpt = false
+    }
+    if (!options.domains.includes('plugins') && !options.plugins) {
+      pluginOpt = false
+    }
+    if (!options.domains.includes('pages') && !options.pages) {
+      pageOpt = false
+    }
+  }
+
+  const compDir = resolvePath(compOpt, 'components', ['src/components', 'tests/fixtures/components', 'components'], config, cwd)
+  const pluginTarget = resolvePath(pluginOpt, 'plugins', ['src/plugins', 'tests/fixtures/plugins', 'plugins'], config, cwd)
+  const pageDir = resolvePath(pageOpt, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'], config, cwd)
+
+  let totalFixesCount = 0
+  const modifiedFiles = []
+  const diffs = []
+
+  const fullCompDir = resolveTargetDir(compDir, cwd)
+
+  if (fullCompDir) {
+    const compReport = await validateComponentsDir(fullCompDir)
+
+    await Promise.all(
+      compReport.components.map(async (compRes) => {
+        if (!compRes.filePath) {
+          return
+        }
+
+        const rawDiagnostics = compRes.diagnostics || []
+        const diagnostics = targetCodesSet ? rawDiagnostics.filter(d => matchesErrorCode(d.code, targetCodesSet)) : rawDiagnostics
+
+        const rawCode = await readFile(compRes.filePath, 'utf8')
+        const fixResult = applyComponentFixes(rawCode, diagnostics, {
+          filePath: compRes.filePath,
+          dryRun: Boolean(options.dryRun)
+        })
+
+        if (fixResult.modified) {
+          totalFixesCount += fixResult.fixesApplied.length
+          modifiedFiles.push(compRes.filePath)
+
+          if (fixResult.diff) {
+            diffs.push(fixResult.diff)
+          }
+
+          if (options.dryRun) {
+            log(fixResult.diff + '\n')
+          } else {
+            await writeFile(compRes.filePath, fixResult.outputCode, 'utf8')
+          }
+        }
+      })
+    )
+  }
+
+  const fullPageDir = resolveTargetDir(pageDir, cwd)
+
+  if (fullPageDir) {
+    const pageReport = await validatePagesDir(fullPageDir, {
+      ignoreAttributes: config?.ignoreByAttribute,
+      skipRenderByAttribute: config?.skipRenderByAttribute,
+      ignoreTags: config?.ignoreTags
+    })
+
+    await Promise.all(
+      pageReport.pages.map(async (pageRes) => {
+        if (!pageRes.filePath) {
+          return
+        }
+
+        const rawDiagnostics = pageRes.diagnostics || []
+        const diagnostics = targetCodesSet ? rawDiagnostics.filter(d => matchesErrorCode(d.code, targetCodesSet)) : rawDiagnostics
+
+        const rawCode = await readFile(pageRes.filePath, 'utf8')
+        const fixResult = applyPageFixes(rawCode, diagnostics, {
+          filePath: pageRes.filePath,
+          dryRun: Boolean(options.dryRun)
+        })
+
+        if (fixResult.modified) {
+          totalFixesCount += fixResult.fixesApplied.length
+          modifiedFiles.push(pageRes.filePath)
+
+          if (fixResult.diff) {
+            diffs.push(fixResult.diff)
+          }
+
+          if (options.dryRun) {
+            log(fixResult.diff + '\n')
+          } else {
+            await writeFile(pageRes.filePath, fixResult.outputCode, 'utf8')
+          }
+        }
+      })
+    )
+  }
+
+  const fullPluginTarget = resolveTargetDir(pluginTarget, cwd)
+
+  if (fullPluginTarget) {
+    const pluginFiles = []
+    if (statSync(fullPluginTarget).isFile()) {
+      pluginFiles.push(fullPluginTarget)
+    } else {
+      const scan = (d) => {
+        for (const entry of readdirSync(d)) {
+          const full = join(d, entry)
+          if (statSync(full).isDirectory()) {
+            scan(full)
+          } else if (entry.endsWith('.js') || entry.endsWith('.mjs')) {
+            pluginFiles.push(full)
+          }
+        }
+      }
+      scan(fullPluginTarget)
+    }
+
+    await Promise.all(
+      pluginFiles.map(async (pFile) => {
+        const rawCode = await readFile(pFile, 'utf8')
+        const pResult = validatePluginSource(rawCode, pFile)
+        const rawDiagnostics = pResult.diagnostics || []
+        const diagnostics = targetCodesSet ? rawDiagnostics.filter(d => matchesErrorCode(d.code, targetCodesSet)) : rawDiagnostics
+
+        const fixResult = applyPluginFixes(rawCode, diagnostics, {
+          filePath: pFile,
+          dryRun: Boolean(options.dryRun)
+        })
+
+        if (fixResult.modified) {
+          totalFixesCount += fixResult.fixesApplied.length
+          modifiedFiles.push(pFile)
+          if (fixResult.diff) {
+            diffs.push(fixResult.diff)
+          }
+
+          if (options.dryRun) {
+            log(fixResult.diff + '\n')
+          } else {
+            await writeFile(pFile, fixResult.outputCode, 'utf8')
+          }
+        }
+      })
+    )
+  }
+
+  if (options.dryRun) {
+    log(
+      colours.bold().cyan(
+        `Dry-run complete: ${totalFixesCount} fix(es) would be applied across ${modifiedFiles.length} file(s). No files modified on disk.\n\n`
+      )
+    )
+    return {
+      totalFixesCount,
+      modifiedFiles,
+      diffs,
+      checkResult: null,
+      hasFailures: false
+    }
+  } else {
+    if (modifiedFiles.length > 0) {
+      log(
+        colours.bold().green(
+          `✔ Auto-fixed ${totalFixesCount} issue(s) across ${modifiedFiles.length} file(s).\n\n`
+        )
+      )
+    } else {
+      log(colours.bold().cyan('No fixable issues found.\n\n'))
+    }
+
+    const checkResult = await checkCommand(config, options, logger)
+    return {
+      totalFixesCount,
+      modifiedFiles,
+      diffs,
+      checkResult,
+      hasFailures: checkResult.hasFailures
+    }
+  }
+}

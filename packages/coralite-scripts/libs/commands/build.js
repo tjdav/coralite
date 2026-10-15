@@ -1,0 +1,330 @@
+import colours from 'kleur'
+import buildStyles from '../build-styles.js'
+import { join, relative, dirname } from 'node:path'
+import { existsSync, readdirSync, rmdirSync, statSync, unlinkSync } from 'node:fs'
+import { deleteDirectoryRecursive, copyDirectory, toMS, toTime, displayError, displayWarning, displayInfo } from '../build-utils.js'
+import { createCoralite } from 'coralite'
+import { mkdir, writeFile } from 'node:fs/promises'
+import ora from 'ora'
+
+/**
+ * @param {import('../../types/index.js').CoraliteScriptConfig} config - The configuration object.
+ * @param {any} options - The CLI options.
+ * @param {any} logger - The logger object.
+ */
+export async function buildCommand (config, options, logger = null) {
+  const mode = 'build'
+  const PAD = '  '
+  const border = '─'.repeat(Math.min(process.stdout.columns || 36, 36) / 2)
+  const dash = colours.gray(' ─ ')
+
+  const log = (msg) => {
+    if (logger && logger.write) {
+      logger.write(msg)
+    } else {
+      process.stdout.write(msg)
+    }
+  }
+
+  const createSpinner = (text) => {
+    if (logger && logger.spinner) {
+      return logger.spinner(text)
+    }
+    return ora(text)
+  }
+
+  const internalLogger = {
+    info: (msg) => {
+      return logger && logger.info ? logger.info(msg) : displayInfo(msg)
+    },
+    warn: (msg) => {
+      return logger && logger.warn ? logger.warn(msg) : displayWarning(msg)
+    },
+    error: (msg, err) => {
+      return logger && logger.error ? logger.error(msg, err) : displayError(msg, err)
+    }
+  }
+
+  if (options.verbose) {
+    log('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
+    log(border + colours.inverse(` LOGS `) + border + '\n\n')
+  } else {
+    log('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
+  }
+
+  if (options.clean) {
+    deleteDirectoryRecursive(config.output)
+  }
+
+  const validFiles = new Set()
+  let componentSpinner
+  let incremental = options.incremental ?? true
+
+  if (options.incrementalSource === 'cli') {
+    incremental = options.incremental
+  } else if (config.incremental !== undefined) {
+    incremental = config.incremental
+  }
+
+  const coralite = await createCoralite({
+    components: config.components,
+    pages: config.pages,
+    plugins: Array.isArray(config.plugins) ? config.plugins : [],
+    concurrency: config.build?.concurrency ?? config.concurrency,
+    assets: config.assets,
+    csp: config.csp,
+    incremental,
+    externalStyles: config.styles?.input?.map(input => {
+      const ext = input.split('.').pop()
+      return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')
+    }),
+    baseURL: config.baseURL,
+    cleanUrls: config.cleanUrls,
+    output: config.output,
+    mode: 'production',
+    onError: ({ level, message, error }) => {
+      if (level === 'ERR') {
+        internalLogger.error(message, error)
+      } else if (level === 'WARN') {
+        internalLogger.warn(message)
+      } else {
+        internalLogger.info(message)
+      }
+    }
+  })
+
+  /** @type {any} */
+  let spinner = null
+  let pageCount = 0
+  let skippedCount = 0
+
+  try {
+    if (!options.verbose) {
+      componentSpinner = createSpinner('Building components...').start()
+    }
+
+    const onComponentBuild = async (info) => {
+      if (options.verbose) {
+        for (const detail of info.details) {
+          const status = detail.status === 'built' ? colours.green('[+] built:  ') : colours.gray('[-] skipped: ')
+          const reason = detail.reason ? colours.gray(` (${detail.reason})`) : ''
+          log(toTime() + status + detail.id + reason + '\n')
+        }
+      } else if (componentSpinner) {
+        if (info.skipped > 0) {
+          componentSpinner.succeed(`Components built (${info.completed} completed, ${info.skipped} skipped)`)
+        } else {
+          componentSpinner.succeed(`Components built (${info.completed} completed)`)
+        }
+      }
+
+      if (!options.verbose) {
+        spinner = createSpinner('Building pages...').start()
+      }
+    }
+
+    const buildOptions = {
+      onComponentBuild
+    }
+
+    const updateSpinnerText = () => {
+      if (skippedCount > 0) {
+        spinner.text = `Building pages... (${pageCount} completed, ${skippedCount} skipped)`
+      } else {
+        spinner.text = `Building pages... (${pageCount} completed)`
+      }
+    }
+
+    await coralite.build(null, buildOptions, async (result) => {
+      const relativeDir = relative(config.pages, result.path.dirname)
+      const outDir = join(config.output, relativeDir)
+      const outFile = join(outDir, result.path.filename)
+
+      validFiles.add(outFile)
+
+      if (result.status === 'skipped') {
+        skippedCount++
+        if (!options.verbose) {
+          updateSpinnerText()
+        }
+        return
+      }
+
+      await mkdir(outDir, { recursive: true })
+      await writeFile(outFile, result.content)
+
+      if (options.verbose) {
+        log(toTime() + toMS(result.duration) + dash + result.path.pathname + '\n')
+      } else {
+        pageCount++
+        updateSpinnerText()
+      }
+    })
+
+    if (coralite.outputFiles) {
+      const assetsJsDir = join(config.output, 'assets', 'js')
+      const assetsCssDir = join(config.output, 'assets', 'css')
+
+      const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
+        const isCSS = (file.path || file.hashedPath)?.endsWith('.css')
+        const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
+        const outFile = join(baseAssetsDir, file.hashedPath)
+
+        validFiles.add(outFile)
+
+        await mkdir(dirname(outFile), { recursive: true })
+        await writeFile(outFile, file.text)
+        if (options.verbose) {
+          log(toTime() + toMS(0) + dash + outFile + '\n')
+        }
+      })
+
+      await Promise.all(assetWrites)
+    }
+
+    // Track assets from config to prevent them from being deleted as stale files
+    if (config.assets) {
+      for (const asset of config.assets) {
+        const fullDestPath = join(config.output, asset.dest)
+        if (existsSync(fullDestPath)) {
+          const stat = statSync(fullDestPath)
+          if (stat.isDirectory()) {
+            const trackFiles = (dir) => {
+              const files = readdirSync(dir)
+              for (const file of files) {
+                const fullPath = join(dir, file)
+                if (statSync(fullPath).isDirectory()) {
+                  trackFiles(fullPath)
+                } else {
+                  validFiles.add(fullPath)
+                }
+              }
+            }
+            trackFiles(fullDestPath)
+          } else {
+            validFiles.add(fullDestPath)
+          }
+        }
+      }
+    }
+
+    if (!options.verbose && spinner) {
+      if (skippedCount > 0) {
+        spinner.succeed(`Pages built (${pageCount} completed, ${skippedCount} skipped)`)
+      } else {
+        spinner.succeed(`Pages built (${pageCount} completed)`)
+      }
+    }
+
+    const trackedFiles = coralite.getTrackedOutputFiles()
+    for (const file of trackedFiles) {
+      validFiles.add(file)
+    }
+
+    const publicDir = config.public
+
+    if (publicDir) {
+      if (!options.verbose) {
+        spinner = createSpinner('Copying public directory...').start()
+      }
+      await copyDirectory(publicDir, config.output)
+
+      const trackPublicFiles = (dir, baseDir) => {
+        const files = readdirSync(dir)
+        for (const file of files) {
+          const fullPath = join(dir, file)
+          const stat = statSync(fullPath)
+
+          if (stat.isDirectory()) {
+            trackPublicFiles(fullPath, baseDir)
+          } else {
+            const relativePath = relative(baseDir, fullPath)
+            validFiles.add(join(config.output, relativePath))
+          }
+        }
+      }
+      trackPublicFiles(publicDir, publicDir)
+
+      if (!options.verbose) {
+        spinner.succeed('Public directory copied')
+      }
+    }
+
+    if (config.styles && config.styles.input) {
+      if (!options.verbose) {
+        spinner = createSpinner('Building styles...').start()
+      }
+
+      const results = await buildStyles({
+        input: config.styles.input,
+        output: join(config.output, 'assets', 'css'),
+        processors: config.styles.processors,
+        minify: mode === 'build',
+        sourcemap: mode !== 'build'
+      })
+
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i]
+
+        if (Array.isArray(result.output)) {
+          for (const output of result.output) {
+            validFiles.add(output)
+          }
+        } else {
+          validFiles.add(result.output)
+        }
+
+        if (options.verbose) {
+          const displayPath = Array.isArray(result.output) ? result.output[0] : result.output
+          log(toTime() + toMS(result.duration) + dash + displayPath + '\n')
+        }
+      }
+
+      if (!options.verbose) {
+        spinner.succeed('Styles built')
+      }
+    }
+
+    if (!options.clean) {
+      if (!options.verbose) {
+        spinner = createSpinner('Cleaning up stale files...').start()
+      }
+
+      const cleanupStaleFiles = (dir) => {
+        if (!existsSync(dir)) {
+          return
+        }
+
+        const files = readdirSync(dir)
+        for (const file of files) {
+          const fullPath = join(dir, file)
+          const stat = statSync(fullPath)
+
+          if (stat.isDirectory()) {
+            cleanupStaleFiles(fullPath)
+            if (readdirSync(fullPath).length === 0) {
+              rmdirSync(fullPath)
+            }
+          } else if (!validFiles.has(fullPath)) {
+            unlinkSync(fullPath)
+
+            if (options.verbose) {
+              log(toTime() + colours.gray('Deleted stale file: ') + fullPath + '\n')
+            }
+          }
+        }
+      }
+      cleanupStaleFiles(config.output)
+
+      if (!options.verbose) {
+        spinner.succeed('Cleanup complete')
+      }
+    }
+  } catch (error) {
+    if (spinner) {
+      spinner.fail('Build failed')
+    }
+    internalLogger.error('Build failed', error)
+    throw error
+  }
+}
