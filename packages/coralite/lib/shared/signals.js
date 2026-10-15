@@ -52,7 +52,9 @@ export function createSignal (initialValue) {
       return value
     },
     set value (nextValue) {
-      if (Object.is(value, nextValue)) return
+      if (Object.is(value, nextValue)) {
+        return
+      }
       const oldValue = value
       value = nextValue
       const subs = Array.from(subscribers)
@@ -67,7 +69,9 @@ export function createSignal (initialValue) {
         running: false,
         disposed: false,
         notify (nextVal, oldVal) {
-          if (subCtx.disposed || subCtx.running) return
+          if (subCtx.disposed || subCtx.running) {
+            return
+          }
           subCtx.running = true
           for (const cleanup of subCtx.deps) {
             cleanup()
@@ -125,7 +129,9 @@ export function createComputed (fn) {
     running: false,
     disposed: false,
     notify () {
-      if (computedCtx.disposed) return
+      if (computedCtx.disposed) {
+        return
+      }
       isStale = true
 
       if (computedSubscribers.size > 0) {
@@ -214,7 +220,9 @@ export function createEffect (fn) {
     running: false,
     disposed: false,
     notify () {
-      if (effectCtx.disposed || effectCtx.running) return
+      if (effectCtx.disposed || effectCtx.running) {
+        return
+      }
       effectCtx.running = true
       for (const cleanup of effectCtx.deps) {
         cleanup()
