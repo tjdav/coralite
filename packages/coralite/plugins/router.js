@@ -1,6 +1,7 @@
 import { definePlugin } from '../lib/server/plugin/define.js'
 import { createCoraliteElement, relinkChildren } from '../lib/server/utils/dom.js'
 import { findHeadAndBody } from '../lib/server/utils/render.js'
+import { isDevRuntime } from '../lib/shared/dev-mode.js'
 import { fileURLToPath } from 'node:url'
 
 /**
@@ -116,6 +117,21 @@ export const routerPlugin = definePlugin({
       const outletSelector = `[${outletAttr}], router-outlet`
 
       let currentAbort = null
+      const guards = []
+
+      function beforeEach (guard) {
+        if (typeof guard !== 'function') {
+          return () => {
+          }
+        }
+        guards.push(guard)
+        return () => {
+          const index = guards.indexOf(guard)
+          if (index !== -1) {
+            guards.splice(index, 1)
+          }
+        }
+      }
 
       function updateHead (doc) {
         const newTitle = doc.querySelector('title')
@@ -156,7 +172,14 @@ export const routerPlugin = definePlugin({
         }
       }
 
-      async function navigate (path, { replace = false } = {}) {
+      async function navigate (path, { replace = false, depth = 0 } = {}) {
+        if (depth > 10) {
+          if (isDevRuntime()) {
+            console.error('Redirect loop detected')
+          }
+          return
+        }
+
         if (currentAbort) {
           currentAbort.abort()
         }
@@ -164,14 +187,63 @@ export const routerPlugin = definePlugin({
         currentAbort = abort
         const { signal } = abort
 
+        const from = (typeof window !== 'undefined' && window.location) ? (window.location.pathname + window.location.search + window.location.hash) : '/'
+        const to = path
+
+        for (const guard of guards) {
+          let result
+          try {
+            result = await guard({
+              to: { path: to },
+              from: { path: from },
+              signal
+            })
+          } catch (error) {
+            if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
+              return
+            }
+            if (isDevRuntime()) {
+              console.error('Guard error:', error)
+            }
+            return
+          }
+
+          if (signal.aborted) {
+            return
+          }
+
+          if (result === false) {
+            return
+          }
+
+          if (typeof result === 'string' && result.length > 0) {
+            if (result.startsWith('http://') || result.startsWith('https://')) {
+              if (typeof window !== 'undefined' && window.location && typeof window.location.replace === 'function') {
+                window.location.replace(result)
+              }
+              return
+            }
+            let redirectTarget = result
+            if (!result.startsWith('/')) {
+              const origin = (typeof window !== 'undefined' && window.location) ? window.location.origin : 'http://localhost'
+              const resolved = new URL(result, origin + from)
+              redirectTarget = resolved.pathname + resolved.search + resolved.hash
+            }
+            return navigate(redirectTarget, {
+              replace: true,
+              depth: depth + 1
+            })
+          }
+        }
+
         if (replace) {
-          history.replaceState({ coralite: true }, '', path)
+          history.replaceState({ coralite: true }, '', to)
         } else {
-          history.pushState({ coralite: true }, '', path)
+          history.pushState({ coralite: true }, '', to)
         }
 
         try {
-          const response = await fetch(path, {
+          const response = await fetch(to, {
             signal,
             headers: {
               'X-Coralite-Router': 'true'
@@ -231,7 +303,8 @@ export const routerPlugin = definePlugin({
       const win = window
       win.__coralite_router__ = {
         navigate,
-        current: () => ({ path: window.location ? window.location.pathname : '/' })
+        current: () => ({ path: window.location ? window.location.pathname : '/' }),
+        beforeEach
       }
 
       const outlet = document.querySelector(outletSelector)
@@ -297,6 +370,16 @@ export const routerPlugin = definePlugin({
           const win = typeof window !== 'undefined' ? window : {}
           const router = win.__coralite_router__
           return router ? router.current() : { path: typeof window !== 'undefined' && window.location ? window.location.pathname : '/' }
+        },
+        beforeEach: (guard) => {
+          /** @type {any} */
+          const win = typeof window !== 'undefined' ? window : {}
+          const router = win.__coralite_router__
+          if (router && typeof router.beforeEach === 'function') {
+            return router.beforeEach(guard)
+          }
+          return () => {
+          }
         }
       }
     })
