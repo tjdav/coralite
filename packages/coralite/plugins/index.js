@@ -1,3 +1,5 @@
 export * from './metadata.js'
 export * from './static-assets.js'
 export * from './testing.js'
+export * from './router.js'
+export { default as routerPlugin } from './router.js'
