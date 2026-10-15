@@ -25,6 +25,56 @@ describe('CLI Integration Tests (coralite.js)', () => {
     })
   })
 
+  describe('no subcommand', () => {
+    test('prints help and exits with code 1 when invoked without subcommands', () => {
+      assert.throws(() => {
+        runCli('', {
+          cwd: tmpDir,
+          stdio: 'pipe'
+        })
+      }, (err) => {
+        assert.strictEqual(err.status, 1)
+        const stdout = err.stdout.toString()
+        assert.match(stdout, /Usage: coralite/)
+        assert.match(stdout, /Commands:/)
+        return true
+      })
+    })
+  })
+
+  describe('coralite --help', () => {
+    test('displays merged command list', () => {
+      const output = runCli('--help', { cwd: tmpDir }).toString()
+      assert.match(output, /dev/)
+      assert.match(output, /test/)
+      assert.match(output, /build/)
+      assert.match(output, /check/)
+      assert.match(output, /fix/)
+      assert.match(output, /init-agent/)
+      assert.match(output, /validate-components/)
+      assert.match(output, /validate-pages/)
+      assert.match(output, /validate-plugins/)
+    })
+  })
+
+  describe('coralite dev --help and coralite test --help', () => {
+    test('coralite dev --help displays dev options', () => {
+      const output = runCli('dev --help', { cwd: tmpDir }).toString()
+      assert.match(output, /Run development server/)
+      assert.match(output, /-v, --verbose/)
+      assert.match(output, /-c, --clean/)
+      assert.match(output, /-a, --assets/)
+    })
+
+    test('coralite test --help displays test options', () => {
+      const output = runCli('test --help', { cwd: tmpDir }).toString()
+      assert.match(output, /Run testing server/)
+      assert.match(output, /-v, --verbose/)
+      assert.match(output, /-c, --clean/)
+      assert.match(output, /-a, --assets/)
+    })
+  })
+
   describe('coralite init-agent', () => {
     test('scaffolds AGENTS.md in project root', () => {
       runCli('init-agent', { cwd: tmpDir })
@@ -64,7 +114,7 @@ describe('CLI Integration Tests (coralite.js)', () => {
 </script>
 `)
 
-      const output = runCli('check -c components --format json', { cwd: tmpDir }).toString()
+      const output = runCli('check -c components --format json --no-types --no-interactive', { cwd: tmpDir }).toString()
       const json = JSON.parse(output)
       assert.ok(json.components)
       assert.ok(json.summary)
@@ -86,12 +136,12 @@ describe('CLI Integration Tests (coralite.js)', () => {
 `)
 
       // Standard mode: exits with code 0 even with warnings
-      const output = runCli('check --pages pages', { cwd: tmpDir }).toString()
+      const output = runCli('check --pages pages --no-types --no-interactive', { cwd: tmpDir }).toString()
       assert.match(output, /1 warning\(s\)/)
 
       // Strict mode: exits with code 1 when warnings exist
       assert.throws(() => {
-        runCli('check --pages pages --strict', {
+        runCli('check --pages pages --strict --no-types --no-interactive', {
           cwd: tmpDir,
           stdio: 'pipe'
         })
@@ -108,7 +158,7 @@ describe('CLI Integration Tests (coralite.js)', () => {
 `)
 
       assert.throws(() => {
-        runCli('check -c components', {
+        runCli('check -c components --no-types --no-interactive', {
           cwd: tmpDir,
           stdio: 'pipe'
         })
@@ -128,7 +178,7 @@ describe('CLI Integration Tests (coralite.js)', () => {
 `
       writeFileSync(compPath, initialCode)
 
-      const output = runCli('fix -c components --dry-run', { cwd: tmpDir }).toString()
+      const output = runCli('fix -c components --dry-run --no-interactive', { cwd: tmpDir }).toString()
       assert.match(output, /Dry-run complete/)
       const codeAfter = readFileSync(compPath, 'utf8')
       assert.strictEqual(codeAfter, initialCode)
@@ -148,7 +198,7 @@ export default {
 `
       writeFileSync(plugPath, initialCode)
 
-      runCli('fix -p plugins', {
+      runCli('fix -p plugins --no-interactive', {
         cwd: tmpDir,
         stdio: 'pipe'
       })
@@ -171,7 +221,7 @@ export default {
 </html>
 `)
 
-      const output = runCli('validate-pages --pages pages', { cwd: tmpDir }).toString()
+      const output = runCli('validate-pages --pages pages --no-interactive', { cwd: tmpDir }).toString()
       assert.match(output, /📄 Coralite Page Validation Report/)
       assert.match(output, /✔ VALID/)
       assert.match(output, /Summary: 1 page\(s\) validated/)
@@ -189,7 +239,7 @@ export default {
 </html>
 `)
 
-      const output = runCli('validate-pages --pages pages --format json', { cwd: tmpDir }).toString()
+      const output = runCli('validate-pages --pages pages --format json --no-interactive', { cwd: tmpDir }).toString()
       const json = JSON.parse(output)
       assert.ok(json.pages)
       assert.ok(json.summary)
@@ -212,7 +262,7 @@ export default {
 }
 `)
 
-      runCli('validate-plugins -p plugins --fix', {
+      runCli('validate-plugins -p plugins --fix --no-interactive', {
         cwd: tmpDir,
         stdio: 'pipe'
       })
@@ -221,12 +271,23 @@ export default {
     })
   })
 
-  describe('coralite build', () => {
-    test('builds pages into the output directory and exits cleanly', () => {
+  describe('coralite build (high-level)', () => {
+    test('runs high-level build reading coralite.config.js', () => {
       const compDir = join(tmpDir, 'components')
       const pageDir = join(tmpDir, 'pages')
+      const publicDir = join(tmpDir, 'public')
+      const distDir = join(tmpDir, 'dist')
       mkdirSync(compDir, { recursive: true })
       mkdirSync(pageDir, { recursive: true })
+      mkdirSync(publicDir, { recursive: true })
+      writeFileSync(join(tmpDir, 'coralite.config.js'), `
+export default {
+  components: 'components',
+  pages: 'pages',
+  output: 'dist',
+  public: 'public'
+}
+`)
       writeFileSync(join(compDir, 'hello-card.html'), `
 <template id="hello-card">
   <div>Hello {{ title }}</div>
@@ -242,15 +303,24 @@ export default {
 `)
       writeFileSync(join(pageDir, 'index.html'), '<!DOCTYPE html><html><body><hello-card></hello-card></body></html>')
 
-      runCli('build -c components -p pages -o dist', {
+      runCli('build', {
         cwd: tmpDir,
         stdio: 'pipe'
       })
 
-      const outFile = join(tmpDir, 'dist', 'index.html')
+      const outFile = join(distDir, 'index.html')
       assert.strictEqual(existsSync(outFile), true)
       const content = readFileSync(outFile, 'utf8')
       assert.ok(content.includes('>Hello <c-token>World</c-token><'))
+    })
+
+    test('errors when invoked with retired low-level flags -p or -o', () => {
+      assert.throws(() => {
+        runCli('build -c components -p pages -o dist', {
+          cwd: tmpDir,
+          stdio: 'pipe'
+        })
+      })
     })
   })
 
@@ -272,7 +342,7 @@ export default {
 </script>
 `)
 
-      const output = runCli('validate-components -c components', { cwd: tmpDir }).toString()
+      const output = runCli('validate-components -c components --no-interactive', { cwd: tmpDir }).toString()
       assert.match(output, /ok-card/)
       assert.match(output, /VALID|valid/i)
     })
