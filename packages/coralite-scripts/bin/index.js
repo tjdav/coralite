@@ -1,21 +1,21 @@
 #!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
 
-import loadConfig from '../libs/load-config.js'
+import loadConfig from 'coralite/lib/cli/load-config.js'
 import { Command } from 'commander'
 import kleur from 'kleur'
-import server from '../libs/server.js'
+import server from 'coralite/lib/cli/server.js'
 import pkg from '../package.json' with { type: 'json' }
 import { join } from 'node:path'
 import { mkdir } from 'node:fs/promises'
-import { buildCommand } from '../libs/commands/build.js'
-import { checkCommand } from '../libs/commands/check.js'
-import { fixCommand } from '../libs/commands/fix.js'
-import { parseAssetMapping, mergeAssets } from '../libs/assets.js'
+import { buildCommand } from 'coralite/lib/cli/commands/build.js'
+import { checkCommand } from 'coralite/lib/cli/commands/check.js'
+import { fixCommand } from 'coralite/lib/cli/commands/fix.js'
+import { parseAssetMapping, mergeAssets } from 'coralite/lib/cli/assets.js'
 import {
   promptCheckOptions,
   promptFixOptions,
   confirmApplyFixes
-} from '../libs/interactive.js'
+} from 'coralite/lib/cli/interactive.js'
 import { existsSync } from 'node:fs'
 
 // remove all Node warnings before doing anything else

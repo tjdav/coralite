@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert'
-import { resolveSource } from '../libs/server.js'
+import { resolveSource } from 'coralite/lib/cli/server.js'
 import { join } from 'node:path'
 import { writeFile, mkdir, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
