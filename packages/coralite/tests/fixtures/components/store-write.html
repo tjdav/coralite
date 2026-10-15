@@ -1,0 +1,18 @@
+<template id="store-write">
+  <button id="update-user">Update User</button>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  client ({ store, root }) {
+    const btn = root.querySelector('#update-user')
+    if (btn && store) {
+      btn.addEventListener('click', () => {
+        store.user = 'Bob'
+      })
+    }
+  }
+})
+</script>

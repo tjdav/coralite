@@ -18,16 +18,21 @@ export function createStore (defaults = {}) {
   let isBatching = false
   const pendingCallbacks = new Map()
 
-  function wrapSubscriber (cb) {
+  function wrapSubscriber (cb, sigKey) {
     return (nextVal, oldVal) => {
       if (isBatching) {
-        if (!pendingCallbacks.has(cb)) {
-          pendingCallbacks.set(cb, {
+        let cbMap = pendingCallbacks.get(cb)
+        if (!cbMap) {
+          cbMap = new Map()
+          pendingCallbacks.set(cb, cbMap)
+        }
+        if (!cbMap.has(sigKey)) {
+          cbMap.set(sigKey, {
             nextVal,
             oldVal
           })
         } else {
-          pendingCallbacks.get(cb).nextVal = nextVal
+          cbMap.get(sigKey).nextVal = nextVal
         }
       } else {
         cb(nextVal, oldVal)
@@ -38,17 +43,19 @@ export function createStore (defaults = {}) {
   function flushBatch () {
     const pending = Array.from(pendingCallbacks.entries())
     pendingCallbacks.clear()
-    for (const [cb, { nextVal, oldVal }] of pending) {
-      cb(nextVal, oldVal)
+    for (const [cb, cbMap] of pending) {
+      for (const { nextVal, oldVal } of cbMap.values()) {
+        cb(nextVal, oldVal)
+      }
     }
   }
 
   const methods = {
     subscribe (keyOrCallback, callback) {
       if (typeof keyOrCallback === 'function') {
-        const wrapped = wrapSubscriber(keyOrCallback)
         const disposes = []
-        for (const sig of signals.values()) {
+        for (const [key, sig] of signals.entries()) {
+          const wrapped = wrapSubscriber(keyOrCallback, key)
           disposes.push(sig.subscribe(wrapped))
         }
         return () => {
@@ -61,7 +68,7 @@ export function createStore (defaults = {}) {
         throw new CoraliteError(`store.subscribe: unknown key "${keyOrCallback}"`)
       }
 
-      const wrapped = wrapSubscriber(callback)
+      const wrapped = wrapSubscriber(callback, keyOrCallback)
       return sig.subscribe(wrapped)
     },
 

@@ -1,0 +1,13 @@
+<template id="store-read">
+  <p>{{ currentTheme }}</p>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  getters: {
+    currentTheme: ({ store }) => (store ? store.theme : 'none')
+  }
+})
+</script>
