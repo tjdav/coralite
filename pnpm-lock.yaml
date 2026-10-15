@@ -221,6 +221,9 @@ importers:
       acorn-walk:
         specifier: ^8.3.5
         version: 8.3.5
+      chokidar:
+        specifier: ^4.0.3
+        version: 4.0.3
       commander:
         specifier: ^13.1.0
         version: 13.1.0
@@ -233,6 +236,9 @@ importers:
       esbuild-plugins-node-modules-polyfill:
         specifier: ^1.8.1
         version: 1.8.3(esbuild@0.25.12)
+      express:
+        specifier: ^5.2.1
+        version: 5.2.1(supports-color@7.2.0)
       htmlparser2:
         specifier: ^10.1.0
         version: 10.1.0
@@ -242,18 +248,30 @@ importers:
       kleur:
         specifier: ^4.1.5
         version: 4.1.5
+      local-access:
+        specifier: ^1.1.0
+        version: 1.1.0
+      ora:
+        specifier: ^9.4.0
+        version: 9.4.1
       p-limit:
         specifier: ^7.3.0
         version: 7.3.1
       picomatch:
         specifier: ^4.0.4
         version: 4.0.5
+      portfinder:
+        specifier: ^1.0.38
+        version: 1.0.38(supports-color@7.2.0)
       postcss:
         specifier: ^8.5.15
         version: 8.5.26
       postcss-selector-parser:
         specifier: ^7.1.4
         version: 7.1.5
+      sass:
+        specifier: ^1.101.0
+        version: 1.103.1
       serialize-javascript:
         specifier: ^7.0.6
         version: 7.1.0

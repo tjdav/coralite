@@ -57,6 +57,7 @@
   },
   "files": [
     "dist",
+    "lib",
     "bin",
     "llms.txt"
   ],
@@ -82,6 +83,11 @@
     },
     "./types": {
       "types": "./dist/types/index.d.ts"
+    },
+    "./testing": {
+      "types": "./dist/lib/testing.d.ts",
+      "development": "./lib/testing.js",
+      "default": "./dist/lib/testing.js"
     },
     "./component-validator": {
       "types": "./dist/lib/component-validator.d.ts",
@@ -123,6 +129,7 @@
       "types": "./dist/lib/server/type-checker.d.ts",
       "default": "./dist/lib/server/type-checker.js"
     },
+    "./lib/cli/*": "./lib/cli/*"
     "./testing": {
       "types": "./dist/lib/testing.d.ts",
       "development": "./lib/testing.js",
@@ -135,17 +142,23 @@
     "@volar/typescript": "^2.4.28",
     "acorn": "^8.17.0",
     "acorn-walk": "^8.3.5",
+    "chokidar": "^4.0.3",
     "commander": "^13.1.0",
     "dom-serializer": "^2.0.0",
     "esbuild": "^0.25.12",
     "esbuild-plugins-node-modules-polyfill": "^1.8.1",
+    "express": "^5.2.1",
     "htmlparser2": "^10.1.0",
     "isomorphic-dompurify": "^3.18.0",
     "kleur": "^4.1.5",
+    "local-access": "^1.1.0",
+    "ora": "^9.4.0",
     "p-limit": "^7.3.0",
     "picomatch": "^4.0.4",
+    "portfinder": "^1.0.38",
     "postcss": "^8.5.15",
     "postcss-selector-parser": "^7.1.4",
+    "sass": "^1.101.0",
     "serialize-javascript": "^7.0.6",
     "xxhash-wasm": "^1.1.0"
   },

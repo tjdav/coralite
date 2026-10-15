@@ -11,6 +11,6 @@
     "moduleResolution": "nodenext",
     "esModuleInterop": true,
   },
-  "include": ["./libs/index.js"],
+  "include": ["../coralite/lib/cli/index.js"],
   "exclude": ["node_modules"]
 }

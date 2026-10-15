@@ -2,15 +2,15 @@ import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { buildCommand } from '../../libs/commands/build.js'
-import { checkCommand } from '../../libs/commands/check.js'
-import { fixCommand } from '../../libs/commands/fix.js'
-import loadConfig from '../../libs/load-config.js'
-import { parseAssetMapping, mergeAssets } from '../../libs/assets.js'
+import { buildCommand } from 'coralite/lib/cli/commands/build.js'
+import { checkCommand } from 'coralite/lib/cli/commands/check.js'
+import { fixCommand } from 'coralite/lib/cli/commands/fix.js'
+import loadConfig from 'coralite/lib/cli/load-config.js'
+import { parseAssetMapping, mergeAssets } from 'coralite/lib/cli/assets.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const coraliteScriptsLib = path.resolve(__dirname, '../../libs/config.js')
+const coraliteScriptsLib = path.resolve(__dirname, '../../../coralite/lib/cli/config.js')
 
 /**
  * Creates a temporary project directory with pages, components and public folders.
@@ -331,7 +331,8 @@ export async function createCLIProject () {
       output: './dist',
       components: './src/components',
       pages: './src/pages',
-      public: './public'
+      public: './public',
+      cleanUrls: false
     })
   `)
 
