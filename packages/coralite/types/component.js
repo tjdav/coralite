@@ -205,6 +205,8 @@
  * @property {Record<string, CoraliteComputedSlotFunction<TState> | CoraliteModuleSlotFunction>} [slots] - Reactive slot builders or slot transform functions.
  * @property {Record<string, ((state: TState) => any) | string | number>} [style] - Reactive style definitions and CSS custom properties.
  * @property {boolean} [formAssociated] - Enables Form-Associated Custom Element (FACE) behavior.
+ * @property {'full' | 'minimal'} [reconcile] - Reconcile mode ('full' | 'minimal').
+ * @property {(item: any) => any} [key] - Optional item key extractor function for list reconciliation.
  * @property {CoraliteComponentErrorBoundary<TState>} [onError] - Error boundary hook for rendering fallback UI during SSR in production.
  */
 

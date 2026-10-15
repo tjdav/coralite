@@ -17,6 +17,8 @@ export const ALLOWED_COMPONENT_CONFIG_KEYS = new Set([
   'consume',
   'client',
   'formAssociated',
+  'reconcile',
+  'key',
   'onError'
 ])
 export const TOP_LEVEL_CONFIG_KEYS = new Set([
@@ -28,6 +30,8 @@ export const TOP_LEVEL_CONFIG_KEYS = new Set([
   'provide',
   'consume',
   'formAssociated',
+  'reconcile',
+  'key',
   'onError'
 ])
 export const INTERACTIVE_TAGS = new Set(['button', 'input', 'form', 'a', 'select', 'textarea'])
