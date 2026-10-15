@@ -124,7 +124,16 @@ describe('compilerOptimizations and reconcile Flag Combination Audit Matrix', ()
         componentId: tagName,
         reconcile: reconcileMode,
         defaultValues: {
-          items: [{ id: 1, text: 'A' }, { id: 2, text: 'B' }]
+          items: [
+            {
+              id: 1,
+              text: 'A'
+            },
+            {
+              id: 2,
+              text: 'B'
+            }
+          ]
         },
         templateHTML: '<div ref="list"><div class="row" data-id="1">A</div><div class="row" data-id="2">B</div></div>',
         hydrationMap: {
@@ -176,7 +185,12 @@ describe('compilerOptimizations and reconcile Flag Combination Audit Matrix', ()
     const sm = new ScriptManager({ compilerOptimizations: config.compilerOptimizations })
     sm.registerComponent({
       id: 'test-both-flags',
-      templateAST: [{ type: 'tag', name: 'div', attribs: {}, children: [] }]
+      templateAST: [{
+        type: 'tag',
+        name: 'div',
+        attribs: {},
+        children: []
+      }]
     })
 
     const { outputFiles } = await sm.compileComponents('development')

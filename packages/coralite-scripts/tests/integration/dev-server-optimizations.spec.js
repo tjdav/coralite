@@ -40,7 +40,11 @@ describe('Dev Server Optimizations', () => {
       name: 'test-capture-plugin',
       server: Object.defineProperty((app, coralite) => {
         capturedCoralite = coralite
-      }, 'name', { value: 'test-capture-plugin', writable: true, configurable: true })
+      }, 'name', {
+        value: 'test-capture-plugin',
+        writable: true,
+        configurable: true
+      })
     }
 
     const testPort = 3890 + Math.floor(Math.random() * 1000)
@@ -139,7 +143,11 @@ describe('Dev Server Optimizations', () => {
             testBuildCount++
             return origBuild(...args)
           }
-        }, 'name', { value: 'test-plugin', writable: true, configurable: true })
+        }, 'name', {
+          value: 'test-plugin',
+          writable: true,
+          configurable: true
+        })
       }]
 
       const devServerTest = await server(config, { verbose: false }, 'test')

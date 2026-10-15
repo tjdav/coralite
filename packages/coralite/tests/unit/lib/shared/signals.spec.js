@@ -153,8 +153,7 @@ describe('signal primitive', () => {
     })
 
     it('createComputed cycle detection throws CoraliteError', () => {
-      let comp
-      comp = createComputed(() => {
+      const comp = createComputed(() => {
         return comp.value + 1
       })
 
