@@ -75,6 +75,7 @@
     },
     "#plugins": "./plugins/index.js",
     "#plugins/router": "./plugins/router.js",
+    "#plugins/lists": "./plugins/lists.js",
     "#plugins/*": "./plugins/*"
   },
   "exports": {
@@ -134,6 +135,11 @@
       "types": "./dist/plugins/router.d.ts",
       "development": "./plugins/router.js",
       "default": "./dist/plugins/router.js"
+    },
+    "./plugins/lists": {
+      "types": "./dist/plugins/lists.d.ts",
+      "development": "./plugins/lists.js",
+      "default": "./dist/plugins/lists.js"
     },
     "./lib/cli/*": "./lib/cli/*"
   },
