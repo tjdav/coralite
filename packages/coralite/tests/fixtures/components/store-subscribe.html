@@ -1,0 +1,18 @@
+<template id="store-subscribe">
+  <div id="status">Subscribed</div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  client ({ store, root }) {
+    if (store) {
+      store.subscribe('theme', (next) => {
+        const el = root.querySelector('#status')
+        if (el) el.textContent = next
+      })
+    }
+  }
+})
+</script>

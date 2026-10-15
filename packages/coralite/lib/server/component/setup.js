@@ -10,6 +10,7 @@ import { findAndExtractScript, extractComponentProperty } from '../utils/server.
 import { formatComponentCss } from '../utils/style.js'
 import { inferTypeFromValues, validateAttributeValue } from '../../shared/attributes.js'
 import { prepareAllComponentOps } from '../utils/fragment.js'
+import { createStore, createServerStore } from '../../shared/store.js'
 
 export { prepareAllComponentOps, createServerSlotsHelper }
 
@@ -332,10 +333,14 @@ async function _executeServerFunction (server, state, context, initialState, app
   }
 
   const route = _getRouteFromContext(context)
+  const appOpts = context && context.app ? context.app.options : null
+  const storeConfig = appOpts ? appOpts.store : undefined
+  const serverStore = context?.store || (storeConfig ? createServerStore(storeConfig) : undefined)
   const serverResult = await serverToExecute({
     ...context,
     ...initialState,
-    route
+    route,
+    store: serverStore
   })
 
   if (serverResult) {
@@ -361,6 +366,9 @@ async function _executeServerGetters (getters, state, root, context) {
   const route = _getRouteFromContext(context)
   const roState = createReadOnlyProxy(state)
   const serverSlots = createServerSlotsHelper(root)
+  const appOpts = context && context.app ? context.app.options : null
+  const storeConfig = appOpts ? appOpts.store : undefined
+  const reactiveStore = context?.reactiveStore || (storeConfig ? createStore(storeConfig) : undefined)
   for (const [key, getter] of Object.entries(getters)) {
     if (isAsyncFunction(getter)) {
       state[key] = undefined
@@ -376,7 +384,8 @@ async function _executeServerGetters (getters, state, root, context) {
       refs: () => null,
       slots: serverSlots,
       isServer: true,
-      signal: context?.signal || NOOP_SIGNAL
+      signal: context?.signal || NOOP_SIGNAL,
+      store: reactiveStore
     }
     const result = getter(serverContext)
     state[key] = (result && typeof result.then === 'function') ? await result : result

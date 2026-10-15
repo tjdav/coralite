@@ -173,6 +173,7 @@
  * @property {{ port?: number, host?: string }} [server] - Script-specific server options.
  * @property {{ input?: string[], processors?: Object }} [styles] - Script-specific styles options.
  * @property {{ concurrency?: number }} [build] - Script-specific build options.
+ * @property {Record<string, any>} [store] - Global store config shape and initial values.
  */
 
 /**

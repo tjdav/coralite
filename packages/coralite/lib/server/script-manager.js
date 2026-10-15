@@ -665,6 +665,17 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
 
   entryCodeParts.push(`const clientPluginConfigs = ${serialize(clientPluginConfigs)};\n`)
 
+  // Setup store runtime
+  const hasStore = this.options.store && typeof this.options.store === 'object'
+  if (hasStore) {
+    const storeModulePath = fileURLToPath(import.meta.resolve('../shared/store.js'))
+    entryCodeParts.push(`import { createStore } from ${JSON.stringify(storeModulePath)};\n`)
+    entryCodeParts.push(`const storeDefaults = ${serialize(this.options.store)};\n`)
+    entryCodeParts.push('const store = createStore(storeDefaults);\n')
+  } else {
+    entryCodeParts.push('const store = undefined;\n')
+  }
+
   // Setup client context state
   const contextParts = [
     ...this.scriptModules.map((_, i) => `...clientContextProps_${i}`),
@@ -679,6 +690,9 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
   entryCodeParts.push(`if (typeof window !== 'undefined') {
   window.__coralite__ = window.__coralite__ || {};
   window.__coralite_hydration__ = window.__coralite_hydration__ || {};
+  if (store !== undefined) {
+    window.__coralite__.store = store;
+  }
   if (!window.__coralite__.hydrationStore) {
     window.__coralite__.hydrationStore = {
       get() {
@@ -695,7 +709,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
     };
   }
 }\n`)
-  entryCodeParts.push('const globalContext = typeof window !== "undefined" && window.__coralite__ ? window.__coralite__ : {};\n')
+  entryCodeParts.push('const globalContext = typeof window !== "undefined" && window.__coralite__ ? { ...window.__coralite__, store } : { store };\n')
 
   entryCodeParts.push(`const resolvedContextFactoriesPromise = (async () => {
     const factories = {};
@@ -812,7 +826,8 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
             runtime,
             app,
             route,
-            onCleanup
+            onCleanup,
+            store
           });
         } catch (error) {
           console.error('Coralite Plugin Error: Plugin "' + p.name + '" init failed:', error);

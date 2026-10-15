@@ -1,0 +1,13 @@
+<template id="store-absent">
+  <p>{{ storeStatus }}</p>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  getters: {
+    storeStatus: ({ store }) => (store === undefined ? 'absent' : 'present')
+  }
+})
+</script>

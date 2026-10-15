@@ -1670,7 +1670,9 @@ export class CoraliteElement extends BaseElement {
               refs: getRef,
               slots: this._getSlotsHelper(),
               isServer: false,
-              signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal
+              signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal,
+              // @ts-ignore
+              store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
             }
             this._getterContexts.set(key, context)
           }
@@ -4519,6 +4521,8 @@ export class CoraliteElement extends BaseElement {
       root: this,
       slots: this._getSlotsHelper(),
       signal: this._abortController.signal,
+      // @ts-ignore
+      store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined,
       refs (id) {
         const refId = self._state[`ref_${id}`]
         if (!refId && typeof refId !== 'string') {
@@ -5048,7 +5052,9 @@ export async function setupPageRuntime (pageConfig) {
               root: rootEl,
               refs: (id) => rootEl.querySelector(`[ref="${id}"]`),
               isServer: false,
-              signal: getterAbortControllers[key].signal
+              signal: getterAbortControllers[key].signal,
+              // @ts-ignore
+              store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
             })
           },
           enumerable: true,
@@ -5097,6 +5103,8 @@ export async function setupPageRuntime (pageConfig) {
         return rootEl.querySelector(`[ref="${id}"]`)
       },
       signal: new AbortController().signal,
+      // @ts-ignore
+      store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined,
       emit (name, detail, options = {}) {
         const CustomEventCtor = typeof window !== 'undefined' && window.CustomEvent ? window.CustomEvent : CustomEvent
         const event = new CustomEventCtor(name, {

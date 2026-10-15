@@ -157,6 +157,79 @@ describe('config.js', () => {
       assert.strictEqual(result.plugins[1].name, 'plugin2')
     })
 
+    describe('store validation', () => {
+      it('should accept valid store config', () => {
+        const config = defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          store: {
+            user: null,
+            theme: 'light',
+            notifications: [],
+            unreadCount: 0
+          }
+        })
+        assert.deepStrictEqual(config.store, {
+          user: null,
+          theme: 'light',
+          notifications: [],
+          unreadCount: 0
+        })
+      })
+
+      it('should throw error when store is not a plain object', () => {
+        assert.throws(
+          () => defineConfig({
+            output: './dist',
+            components: './components',
+            pages: './pages',
+            store: 'invalid'
+          }),
+          /Config property "store" must be a plain object/
+        )
+
+        assert.throws(
+          () => defineConfig({
+            output: './dist',
+            components: './components',
+            pages: './pages',
+            store: ['array']
+          }),
+          /Config property "store" must be a plain object/
+        )
+      })
+
+      it('should throw error when store key is not a valid identifier', () => {
+        assert.throws(
+          () => defineConfig({
+            output: './dist',
+            components: './components',
+            pages: './pages',
+            store: {
+              'user-name': 'Alice'
+            }
+          }),
+          /Invalid key "user-name" in store config/
+        )
+      })
+
+      it('should throw error when store value is not serializable', () => {
+        assert.throws(
+          () => defineConfig({
+            output: './dist',
+            components: './components',
+            pages: './pages',
+            store: {
+              fn () {
+              }
+            }
+          }),
+          /Non-serializable value in store config/
+        )
+      })
+    })
+
     it('should throw error for invalid plugin at specific index', () => {
       assert.throws(() => defineConfig({
         output: './dist',
