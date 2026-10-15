@@ -1,0 +1,23 @@
+<template id="state-signals-observe">
+  <div>
+    <span class="count">{{ count }}</span>
+  </div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  attributes: {
+    count: {
+      default: 0
+    }
+  },
+  client ({ observe }) {
+    window.__observeCountCalls = 0
+    observe('count', () => {
+      window.__observeCountCalls++
+    })
+  }
+})
+</script>

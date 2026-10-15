@@ -3,6 +3,7 @@ import { processHTML } from './utils/inject.js'
 import { recordDevToolsEvent } from './utils/devtools.js'
 import { isDevRuntime } from '../shared/dev-mode.js'
 import { ObserverRecord } from '../shared/observer-record.js'
+import { createSignal, createComputed } from '../shared/signals.js'
 import { CoraliteError } from '../shared/errors.js'
 import { classifyAttribute, resolveAriaBooleanState } from '../shared/tags.js'
 import {
@@ -1602,6 +1603,13 @@ export class CoraliteElement extends BaseElement {
 
     const getRef = (id) => this._resolveRef(id, target)
 
+    this._signals = new Map()
+    for (const [key, value] of Object.entries(target)) {
+      if (key !== 'errors') {
+        this._signals.set(key, createSignal(value))
+      }
+    }
+
     // Define derived state getters with isolation controllers
     this._getterAbortControllers = {}
     if (!this._asyncGetterCache) {
@@ -1620,59 +1628,66 @@ export class CoraliteElement extends BaseElement {
           configurable: true
         })
       } else {
-        Object.defineProperty(target, key, {
-          get: () => {
-            if (this._getterAbortControllers[key]) {
-              this._getterAbortControllers[key].abort()
-            }
-            this._getterAbortControllers[key] = new AbortController()
+        const computedSignal = createComputed(() => {
+          if (this._getterAbortControllers[key]) {
+            this._getterAbortControllers[key].abort()
+          }
+          this._getterAbortControllers[key] = new AbortController()
 
-            let directDeps = this._getterDeps.get(key)
-            if (!directDeps) {
-              directDeps = new Set()
-              this._getterDeps.set(key, directDeps)
-            }
+          let directDeps = this._getterDeps.get(key)
+          if (!directDeps) {
+            directDeps = new Set()
+            this._getterDeps.set(key, directDeps)
+          }
 
-            if (!this._getterContexts) {
-              this._getterContexts = new Map()
-            }
+          if (!this._getterContexts) {
+            this._getterContexts = new Map()
+          }
 
-            let context = this._getterContexts.get(key)
-            if (!context) {
-              const tracker = {
-                activeCollector: (p) => {
-                  if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
-                    directDeps.add(p)
-                    if (this._collectingDependencies) {
-                      this._collectingDependencies.add(p)
-                    }
-                    if (this._getterDeps?.has(p)) {
-                      for (const subDep of this._getterDeps.get(p)) {
-                        directDeps.add(subDep)
-                        if (this._collectingDependencies) {
-                          this._collectingDependencies.add(subDep)
-                        }
+          let context = this._getterContexts.get(key)
+          if (!context) {
+            const tracker = {
+              activeCollector: (p) => {
+                if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
+                  directDeps.add(p)
+                  if (this._collectingDependencies) {
+                    this._collectingDependencies.add(p)
+                  }
+                  if (this._getterDeps?.has(p)) {
+                    for (const subDep of this._getterDeps.get(p)) {
+                      directDeps.add(subDep)
+                      if (this._collectingDependencies) {
+                        this._collectingDependencies.add(subDep)
                       }
                     }
                   }
                 }
               }
-              const roState = this._getTrackedReadOnlyState(key, tracker)
-              context = {
-                state: roState,
-                route: _getClientRoute(),
-                root: this,
-                refs: getRef,
-                slots: this._getSlotsHelper(),
-                isServer: false,
-                signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal
-              }
-              this._getterContexts.set(key, context)
             }
+            const roState = this._getTrackedReadOnlyState(key, tracker)
+            context = {
+              state: roState,
+              route: _getClientRoute(),
+              root: this,
+              refs: getRef,
+              slots: this._getSlotsHelper(),
+              isServer: false,
+              signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal
+            }
+            this._getterContexts.set(key, context)
+          }
 
-            context.signal = this._getterAbortControllers[key].signal
-            return getter(context)
-          },
+          context.signal = this._getterAbortControllers[key].signal
+          return getter(context)
+        })
+
+        if (!this._computedGetters) {
+          this._computedGetters = new Map()
+        }
+        this._computedGetters.set(key, computedSignal)
+
+        Object.defineProperty(target, key, {
+          get: () => computedSignal.value,
           enumerable: true,
           configurable: true
         })
@@ -2559,6 +2574,28 @@ export class CoraliteElement extends BaseElement {
         }
 
         t[p] = nextValue
+
+        if (typeof p === 'string' && self._signals) {
+          const sigKeys = [p]
+          if (camelName && camelName !== p) {
+            sigKeys.push(camelName)
+          }
+          if (kebabName && kebabName !== p) {
+            sigKeys.push(kebabName)
+          }
+
+          for (const k of sigKeys) {
+            let sig = self._signals.get(k)
+            if (!sig) {
+              if (k === p) {
+                sig = createSignal(nextValue)
+                self._signals.set(k, sig)
+              }
+            } else {
+              sig.value = nextValue
+            }
+          }
+        }
 
         if (isStrProp) {
           if (!kebabName) {
@@ -3557,12 +3594,48 @@ export class CoraliteElement extends BaseElement {
     this._observerRecords.add(record)
     record.init()
 
+    let signalDispose = null
+    if (this._signals && this._signals.has(key)) {
+      const sig = this._signals.get(key)
+      signalDispose = sig.subscribe((newVal, oldVal) => {
+        /** @type {any} */
+        const win = typeof window !== 'undefined' ? window : null
+        /** @type {any} */
+        const proc = typeof process !== 'undefined' ? process : null
+        /** @type {any} */
+        const compOpts = this?.componentOptions
+        const reconcileMode = compOpts?.reconcile ||
+          win?.__coralite__?.reconcile ||
+          proc?.env?.CORALITE_RECONCILE ||
+          'full'
+
+        if (reconcileMode === 'minimal' && Array.isArray(oldVal) && Array.isArray(newVal)) {
+          const keyFn = compOpts?.key
+          const pattern = detectListPattern(oldVal, newVal, keyFn)
+          if (pattern) {
+            const applied = applyListPattern(this, key, pattern)
+            if (applied) {
+              record.lastValue = newVal
+              return
+            }
+          }
+        }
+        record.lastValue = newVal
+        /** @type {any} */
+        const rec = record
+        rec._invokeCallback(newVal, oldVal)
+      })
+    }
+
     if (record.dependencies.size === 0 && typeof key === 'string') {
       this._updateObserverSubscriptions(record, new Set([key]))
     }
 
     if (this._abortController && this._abortController.signal) {
       this._abortController.signal.addEventListener('abort', () => {
+        if (signalDispose) {
+          signalDispose()
+        }
         if (this._observerRecords && this._observerRecords.has(record)) {
           record.cleanup()
           this._observerRecords.delete(record)
@@ -3571,6 +3644,9 @@ export class CoraliteElement extends BaseElement {
     }
 
     return () => {
+      if (signalDispose) {
+        signalDispose()
+      }
       record.cleanup()
       if (this._observerRecords) {
         this._observerRecords.delete(record)

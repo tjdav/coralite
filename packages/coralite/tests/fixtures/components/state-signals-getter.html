@@ -1,0 +1,25 @@
+<template id="state-signals-getter">
+  <div>
+    <span class="greeting">{{ greeting }}</span>
+  </div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  attributes: {
+    firstName: {
+      default: 'Alice'
+    },
+    lastName: {
+      default: 'Smith'
+    }
+  },
+  getters: {
+    greeting ({ state }) {
+      return `Hello, ${state.firstName} ${state.lastName}`
+    }
+  }
+})
+</script>
