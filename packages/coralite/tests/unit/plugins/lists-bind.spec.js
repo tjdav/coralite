@@ -367,7 +367,7 @@ describe('lists plugin - bind', () => {
         ...opts,
         virtual: 'window'
       }),
-      /Virtualization is not yet supported/
+      /virtual: "window" is not yet implemented/
     )
 
     assert.throws(
