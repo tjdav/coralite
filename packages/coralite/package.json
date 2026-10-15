@@ -74,6 +74,7 @@
       "default": "./dist/lib/*"
     },
     "#plugins": "./plugins/index.js",
+    "#plugins/router": "./plugins/router.js",
     "#plugins/*": "./plugins/*"
   },
   "exports": {
@@ -128,6 +129,11 @@
     "./type-checker": {
       "types": "./dist/lib/server/type-checker.d.ts",
       "default": "./dist/lib/server/type-checker.js"
+    },
+    "./plugins/router": {
+      "types": "./dist/plugins/router.d.ts",
+      "development": "./plugins/router.js",
+      "default": "./dist/plugins/router.js"
     },
     "./lib/cli/*": "./lib/cli/*"
   },
