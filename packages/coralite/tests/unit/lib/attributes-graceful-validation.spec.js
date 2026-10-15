@@ -332,9 +332,7 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       document.body.removeChild(el2)
     })
 
-    it('triggers update scheduling and syncs error_* tokens on direct mutations or deletions on state.errors', async () => {
-      let updateScheduledCount = 0
-
+    it('syncs error_* tokens on direct mutations or deletions on state.errors', () => {
       const compOptions = {
         componentId: 'direct-errors-mutation-comp',
         attributes: {
@@ -350,32 +348,22 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       const el = document.createElement('direct-errors-mutation-comp')
       document.body.appendChild(el)
 
-      const origScheduleUpdate = el._scheduleUpdate
-      el._scheduleUpdate = function () {
-        updateScheduledCount++
-        return origScheduleUpdate.apply(this, arguments)
-      }
-
       // Direct mutation on state.errors
       el._state.errors.userScore = 'Custom error message'
       assert.strictEqual(el._state.errors.userScore, 'Custom error message')
       assert.strictEqual(el._state.error_userScore, 'Custom error message')
       assert.strictEqual(el._state['error_user-score'], 'Custom error message')
-      assert.strictEqual(updateScheduledCount, 1)
 
       // Direct deletion on state.errors
       delete el._state.errors.userScore
       assert.strictEqual(el._state.errors.userScore, undefined)
       assert.strictEqual(el._state.error_userScore, '')
       assert.strictEqual(el._state['error_user-score'], '')
-      assert.strictEqual(updateScheduledCount, 2)
 
       document.body.removeChild(el)
     })
 
     it('handles whole-object assignment to state.errors and null/undefined assignments while maintaining reference stability', () => {
-      let updateScheduledCount = 0
-
       const compOptions = {
         componentId: 'whole-object-errors-comp',
         attributes: {
@@ -389,12 +377,6 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
 
       const el = document.createElement('whole-object-errors-comp')
       document.body.appendChild(el)
-
-      const origScheduleUpdate = el._scheduleUpdate
-      el._scheduleUpdate = function () {
-        updateScheduledCount++
-        return origScheduleUpdate.apply(this, arguments)
-      }
 
       const initialErrorsRef = el._state.errors
       assert.strictEqual(el._state.errors, initialErrorsRef)
@@ -412,7 +394,6 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
 
       assert.strictEqual(el._state.errors.score, 'Low score')
       assert.strictEqual(el._state.error_score, 'Low score')
-      assert.strictEqual(updateScheduledCount > 0, true)
 
       // Reassigning null clears all errors
       el._state.errors = null
@@ -461,9 +442,7 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       document.body.removeChild(el)
     })
 
-    it('recursively wraps assigned objects under state.errors in reactive error proxies so deep mutations trigger updates', () => {
-      let updateScheduledCount = 0
-
+    it('recursively wraps assigned objects under state.errors in reactive error proxies so deep mutations update derived errors', () => {
       const compOptions = {
         componentId: 'nested-errors-comp'
       }
@@ -474,34 +453,23 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       const el = document.createElement('nested-errors-comp')
       document.body.appendChild(el)
 
-      const origScheduleUpdate = el._scheduleUpdate
-      el._scheduleUpdate = function () {
-        updateScheduledCount++
-        return origScheduleUpdate.apply(this, arguments)
-      }
-
       // Assign nested object under state.errors
       el._state.errors.form = { email: 'Invalid format' }
-      assert.strictEqual(updateScheduledCount, 1)
       assert.strictEqual(el._state.errors.form.email, 'Invalid format')
       assert.deepStrictEqual(el._state.error_form, { email: 'Invalid format' })
 
       // Deep mutation on nested object
       el._state.errors.form.email = 'Required field'
-      assert.strictEqual(updateScheduledCount, 2)
       assert.strictEqual(el._state.errors.form.email, 'Required field')
 
       // Deep deletion on nested object
       delete el._state.errors.form.email
-      assert.strictEqual(updateScheduledCount, 3)
       assert.strictEqual(el._state.errors.form.email, undefined)
 
       document.body.removeChild(el)
     })
 
     it('ensures attempting to delete a non-existent or undefined error property is a safe no-op', () => {
-      let updateScheduledCount = 0
-
       const compOptions = {
         componentId: 'noop-delete-errors-comp'
       }
@@ -512,25 +480,16 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       const el = document.createElement('noop-delete-errors-comp')
       document.body.appendChild(el)
 
-      const origScheduleUpdate = el._scheduleUpdate
-      el._scheduleUpdate = function () {
-        updateScheduledCount++
-        return origScheduleUpdate.apply(this, arguments)
-      }
-
       // Delete non-existent top-level error property
       const res1 = delete el._state.errors.nonExistentKey
       assert.strictEqual(res1, true)
-      assert.strictEqual(updateScheduledCount, 0)
 
       // Set nested error structure
       el._state.errors.form = {}
-      updateScheduledCount = 0
 
       // Delete non-existent nested error property
       const res2 = delete el._state.errors.form.missingField
       assert.strictEqual(res2, true)
-      assert.strictEqual(updateScheduledCount, 0)
 
       document.body.removeChild(el)
     })

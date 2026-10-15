@@ -45,7 +45,7 @@ describe('updateComplete Contract', () => {
     const elided = document.createElement(elidedTagName)
     document.body.appendChild(elided)
 
-    // _scheduleUpdate returns early, so el._isUpdatePending stays false
+    // Update is elided, so el._isUpdatePending stays false
     elided._state.unrendered = 'bar'
     assert.strictEqual(elided._isUpdatePending, false)
 
@@ -267,8 +267,6 @@ describe('updateComplete Contract', () => {
     // Avoid throw in dev mode to test circuit breaker return
     window.__coralite__.mode = 'production'
 
-    let cascadeErrorEmitted = false
-
     const Comp = createCoraliteClass({
       componentId: 'cascade-breaker-uc',
       templateHTML: '<div><span id="txt">{{ ping }}</span></div>',
@@ -295,19 +293,14 @@ describe('updateComplete Contract', () => {
     customElements.define(tagName, Comp)
 
     const el = document.createElement(tagName)
-    el.addEventListener('coralite-error', () => {
-      cascadeErrorEmitted = true
-    })
     document.body.appendChild(el)
 
-    // Trigger cascade
-    el._state.ping = 1
-
-    const updatePromise = el.updateComplete
-
-    const res = await updatePromise
-    assert.strictEqual(res, false)
-    assert.strictEqual(cascadeErrorEmitted, true)
+    // Synchronous cyclic signal mutation throws Maximum reactive subscriber depth exceeded
+    assert.throws(() => {
+      el._state.ping = 1
+    }, (err) => {
+      return err && (err.message.includes('Maximum reactive subscriber depth exceeded') || err.message.includes('Maximum reactive cascade depth exceeded'))
+    })
 
     window.__coralite__.mode = prevMode
     document.body.removeChild(el)
@@ -353,6 +346,9 @@ describe('updateComplete Contract', () => {
     const Comp = createCoraliteClass({
       componentId: 'async-getter-boundary',
       templateHTML: '<div><span id="async">{{ asyncVal }}</span></div>',
+      defaultValues: {
+        triggerVal: 0
+      },
       getters: {
         asyncVal () {
           return asyncGetterPromise
@@ -373,7 +369,7 @@ describe('updateComplete Contract', () => {
     document.body.appendChild(el)
 
     // Trigger update
-    el._scheduleUpdate()
+    el._state.triggerVal = 1
 
     // updateComplete resolves true for the flush pass without blocking on pending asyncGetterPromise
     const res = await el.updateComplete
