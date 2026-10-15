@@ -260,4 +260,139 @@ describe('signal primitive', () => {
       assert.equal(val, 'isomorphic')
     })
   })
+
+  describe('re-entrant notifications', () => {
+    it('a subscriber that writes to a different signal', () => {
+      const sig1 = createSignal(1)
+      const sig2 = createSignal(10)
+      const log = []
+
+      sig1.subscribe((val) => {
+        log.push(`sig1:${val}`)
+        sig2.value = val * 10
+      })
+
+      sig2.subscribe((val) => {
+        log.push(`sig2:${val}`)
+      })
+
+      sig1.value = 2
+      assert.deepEqual(log, ['sig1:2', 'sig2:20'])
+    })
+
+    it('a subscriber that writes to its own signal', () => {
+      const sig = createSignal(1)
+      const log = []
+
+      sig.subscribe((val) => {
+        log.push(`sig:${val}`)
+        if (val < 3) {
+          sig.value = val + 1
+        }
+      })
+
+      sig.value = 2
+      assert.deepEqual(log, ['sig:2', 'sig:3'])
+    })
+
+    it('nested signal writes three levels deep', () => {
+      const a = createSignal(1)
+      const b = createSignal(10)
+      const c = createSignal(100)
+      const log = []
+
+      a.subscribe((val) => {
+        log.push(`a:${val}`)
+        b.value = val + 1
+      })
+
+      b.subscribe((val) => {
+        log.push(`b:${val}`)
+        c.value = val + 1
+      })
+
+      c.subscribe((val) => {
+        log.push(`c:${val}`)
+      })
+
+      a.value = 2
+      assert.deepEqual(log, ['a:2', 'b:3', 'c:4'])
+    })
+
+    it('a subscriber that throws restores tracking scope', () => {
+      const sig = createSignal(1)
+      sig.subscribe((val) => {
+        if (val === 2) {
+          throw new Error('Subscriber error')
+        }
+      })
+
+      let effectRuns = 0
+      const dummy = createSignal(0)
+      createEffect(() => {
+        dummy.value
+        effectRuns++
+      })
+
+      assert.equal(effectRuns, 1)
+
+      assert.throws(
+        () => {
+          sig.value = 2
+        },
+        (err) => err.message === 'Subscriber error'
+      )
+
+      dummy.value = 10
+      assert.equal(effectRuns, 2)
+    })
+
+    it('a subscriber that disposes its own subscription during notification', () => {
+      const sig = createSignal(1)
+      const log = []
+
+      const dispose = sig.subscribe((val) => {
+        log.push(`val:${val}`)
+        dispose()
+      })
+
+      sig.value = 2
+      sig.value = 3
+      assert.deepEqual(log, ['val:2'])
+    })
+
+    it('a subscriber that adds a new subscriber during notification', () => {
+      const sig = createSignal(1)
+      const log = []
+
+      sig.subscribe((val) => {
+        log.push(`first:${val}`)
+        if (val === 2) {
+          sig.subscribe((v) => {
+            log.push(`added:${v}`)
+          })
+        }
+      })
+
+      sig.value = 2
+      sig.value = 3
+      assert.deepEqual(log, ['first:2', 'first:3', 'added:3'])
+    })
+
+    it('a computed read from inside a subscriber that also writes to a dependency', () => {
+      const a = createSignal(1)
+      const comp = createComputed(() => a.value * 2)
+      const log = []
+
+      a.subscribe((val) => {
+        log.push(`sub:${val} comp:${comp.value}`)
+        if (val === 2) {
+          a.value = 3
+        }
+      })
+
+      a.value = 2
+      assert.deepEqual(log, ['sub:2 comp:4', 'sub:3 comp:6'])
+    })
+  })
 })

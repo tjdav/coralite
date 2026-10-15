@@ -8,7 +8,7 @@ const contextStack = []
 /**
  * Pushes a tracking context onto the stack.
  *
- * @param {object} ctx - The tracking context to activate.
+ * @param {object|null} ctx - The tracking context to activate.
  */
 function pushContext (ctx) {
   contextStack.push(activeContext)
@@ -64,26 +64,50 @@ export function createSignal (initialValue) {
     },
     subscribe (fn) {
       const subCtx = {
-        deps: new Set(),
-        seenSignals: new Set(),
         running: false,
         disposed: false,
+        hasQueued: false,
+        queuedNextVal: undefined,
+        queuedOldVal: undefined,
         notify (nextVal, oldVal) {
-          if (subCtx.disposed || subCtx.running) {
+          if (subCtx.disposed) {
+            return
+          }
+          if (subCtx.running) {
+            subCtx.queuedNextVal = nextVal
+            subCtx.hasQueued = true
             return
           }
           subCtx.running = true
-          for (const cleanup of subCtx.deps) {
-            cleanup()
-          }
-          subCtx.deps.clear()
-          subCtx.seenSignals.clear()
+          let currentNext = nextVal
+          let currentOld = oldVal
+          let iterations = 0
 
-          pushContext(subCtx)
           try {
-            fn(nextVal, oldVal)
+            while (true) {
+              subCtx.hasQueued = false
+
+              pushContext(null)
+              try {
+                fn(currentNext, currentOld)
+              } finally {
+                popContext()
+              }
+
+              if (subCtx.hasQueued && !subCtx.disposed) {
+                iterations++
+                if (iterations > 1000) {
+                  const err = new Error('Maximum reactive subscriber depth exceeded')
+                  err.name = 'CoraliteError'
+                  throw err
+                }
+                currentOld = currentNext
+                currentNext = subCtx.queuedNextVal
+              } else {
+                break
+              }
+            }
           } finally {
-            popContext()
             subCtx.running = false
           }
         }
@@ -98,11 +122,6 @@ export function createSignal (initialValue) {
       return function dispose () {
         subCtx.disposed = true
         subscribers.delete(handle)
-        for (const cleanup of subCtx.deps) {
-          cleanup()
-        }
-        subCtx.deps.clear()
-        subCtx.seenSignals.clear()
       }
     }
   }
@@ -156,11 +175,12 @@ export function createComputed (fn) {
 
     isEvaluating = true
 
-    for (const cleanup of computedCtx.deps) {
-      cleanup()
-    }
+    const cleanups = Array.from(computedCtx.deps)
     computedCtx.deps.clear()
     computedCtx.seenSignals.clear()
+    for (const cleanup of cleanups) {
+      cleanup()
+    }
 
     pushContext(computedCtx)
     try {
@@ -219,22 +239,41 @@ export function createEffect (fn) {
     seenSignals: new Set(),
     running: false,
     disposed: false,
+    dirty: false,
     notify () {
-      if (effectCtx.disposed || effectCtx.running) {
+      if (effectCtx.disposed) {
+        return
+      }
+      if (effectCtx.running) {
+        effectCtx.dirty = true
         return
       }
       effectCtx.running = true
-      for (const cleanup of effectCtx.deps) {
-        cleanup()
-      }
-      effectCtx.deps.clear()
-      effectCtx.seenSignals.clear()
-
-      pushContext(effectCtx)
+      let iterations = 0
       try {
-        fn()
+        do {
+          effectCtx.dirty = false
+          iterations++
+          if (iterations > 1000) {
+            const err = new Error('Maximum reactive effect depth exceeded')
+            err.name = 'CoraliteError'
+            throw err
+          }
+          const cleanups = Array.from(effectCtx.deps)
+          effectCtx.deps.clear()
+          effectCtx.seenSignals.clear()
+          for (const cleanup of cleanups) {
+            cleanup()
+          }
+
+          pushContext(effectCtx)
+          try {
+            fn()
+          } finally {
+            popContext()
+          }
+        } while (effectCtx.dirty && !effectCtx.disposed)
       } finally {
-        popContext()
         effectCtx.running = false
       }
     }
@@ -244,10 +283,11 @@ export function createEffect (fn) {
 
   return function dispose () {
     effectCtx.disposed = true
-    for (const cleanup of effectCtx.deps) {
-      cleanup()
-    }
+    const cleanups = Array.from(effectCtx.deps)
     effectCtx.deps.clear()
     effectCtx.seenSignals.clear()
+    for (const cleanup of cleanups) {
+      cleanup()
+    }
   }
 }
