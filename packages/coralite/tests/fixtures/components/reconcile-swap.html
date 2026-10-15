@@ -1,0 +1,31 @@
+<template id="reconcile-swap">
+  <div ref="container">
+    <ul ref="list">
+      <li data-id="1">Item 1</li>
+      <li data-id="2">Item 2</li>
+      <li data-id="3">Item 3</li>
+    </ul>
+  </div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  reconcile: 'minimal',
+  attributes: {},
+  server ({ state }) {
+    state.items = [
+      { id: 1, name: 'Item 1' },
+      { id: 2, name: 'Item 2' },
+      { id: 3, name: 'Item 3' }
+    ]
+  },
+  client ({ state, observe, refs }) {
+    state.observerFired = false
+    observe('items', (newVal, oldVal) => {
+      state.observerFired = true
+    })
+  }
+})
+</script>

@@ -602,6 +602,8 @@ export function createComponentDefinition ({ app }) {
         'provide',
         'consume',
         'formAssociated',
+        'reconcile',
+        'key',
         'onError'
       ])
       for (const key of Object.keys(options)) {

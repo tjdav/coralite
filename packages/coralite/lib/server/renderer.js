@@ -2222,6 +2222,7 @@ export function createRenderer ({
         hydrationData: serialize(hydrationData),
         pageConfig: pageConfigObj ? serialize(pageConfigObj) : 'null',
         mode: normalizedOptions.mode,
+        reconcile: normalizedOptions.reconcile,
         instanceCounters: serialize(mappedSessionObject.instanceCounters || {}),
         inlinedStyles: serialize(inlinedStyles),
         preserveTestId: Boolean(normalizedOptions.preserveTestId || process.env.CORALITE_PRESERVE_TESTID === 'true')

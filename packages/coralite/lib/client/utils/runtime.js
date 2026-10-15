@@ -12,6 +12,7 @@
  * @param {string} [options.hydrationData='{}'] - Serialized hydration data.
  * @param {string} [options.pageConfig='null'] - Serialized page configuration object.
  * @param {string} [options.mode='production'] - Build mode.
+ * @param {'full' | 'minimal'} [options.reconcile='full'] - Reconcile mode.
  * @param {string} [options.instanceCounters='{}'] - Serialized instance counters map.
  * @param {string} [options.inlinedStyles='[]'] - Serialized inlined styles array.
  * @param {boolean} [options.preserveTestId=false] - Whether to preserve data-testid in production.
@@ -24,6 +25,7 @@ export function generateClientRuntime ({
   hydrationData = '{}',
   pageConfig = 'null',
   mode = 'production',
+  reconcile = 'full',
   instanceCounters = '{}',
   inlinedStyles = '[]',
   preserveTestId = false
@@ -44,6 +46,7 @@ export function generateClientRuntime ({
   window.__coralite_hydration__ = window.__coralite_hydration__ || ${hydrationData};
   window.__coralite_page_config__ = window.__coralite_page_config__ || ${pageConfig};
   window.__coralite__ = window.__coralite__ || {};
+  window.__coralite__.reconcile = window.__coralite__.reconcile || ${JSON.stringify(reconcile)};
   if (!window.__coralite__.hydrationStore) {
     window.__coralite__.hydrationStore = {
       get() {

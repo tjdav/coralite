@@ -510,7 +510,7 @@ export function defineConfig (options, { onError } = {}) {
     incremental: options.incremental ?? true,
     reactivity: options.reactivity ?? 'signal',
     compilerOptimizations: options.compilerOptimizations ?? 'all',
-    reconcile: options.reconcile ?? 'full',
+    reconcile: options.reconcile ?? (process.env.CORALITE_RECONCILE === 'minimal' ? 'minimal' : 'full'),
     plugins: options.plugins ?? [],
     assets: options.assets ?? [],
     csp: options.csp ?? { enabled: false },
