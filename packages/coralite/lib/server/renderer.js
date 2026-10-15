@@ -60,6 +60,7 @@ import {
 import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './utils/dom.js'
 import { emitFragment, prepareAllComponentOps } from './utils/fragment.js'
 import { createServerSlotsHelper } from './component/setup.js'
+import { createStore, createServerStore } from '../shared/store.js'
 import { validateLateBoundClientConfig } from '../shared/plugin-config-schema.js'
 import { buildRouteTable } from './routes/build-table.js'
 import { validateRouteTable, buildConcreteUrl } from './routes/validate.js'
@@ -1460,11 +1461,13 @@ export function createRenderer ({
     try {
       if (pageExports) {
         if (typeof pageExports.server === 'function') {
+          const serverStore = app?.options?.store ? createServerStore(app.options.store) : undefined
           const pageServerRes = await pageExports.server({
             route: routeObj,
             app,
             session: mappedSessionObject,
-            signal: NOOP_SIGNAL
+            signal: NOOP_SIGNAL,
+            store: serverStore
           })
           if (pageServerRes && typeof pageServerRes === 'object') {
             Object.assign(activePageState, pageServerRes)
@@ -1500,6 +1503,7 @@ export function createRenderer ({
         }
 
         if (pageExports.getters && typeof pageExports.getters === 'object') {
+          const reactiveStore = app?.options?.store ? createStore(app.options.store) : undefined
           const roState = createReadOnlyProxy(activePageState)
           const getterCtx = {
             state: roState,
@@ -1508,7 +1512,8 @@ export function createRenderer ({
             refs: () => null,
             slots: createServerSlotsHelper(mappedComponent.root),
             isServer: true,
-            signal: buildSignal
+            signal: buildSignal,
+            store: reactiveStore
           }
           for (const [gKey, gFn] of Object.entries(pageExports.getters)) {
             if (typeof gFn === 'function') {

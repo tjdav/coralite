@@ -2,6 +2,7 @@
  * @import {CoraliteConfig} from '../../types/index.js'
  */
 import { CoraliteError, handleError } from '../shared/errors.js'
+import { validateSerializable } from '../shared/core.js'
 
 /**
  * Validates and defines a Coralite configuration object
@@ -497,6 +498,27 @@ export function defineConfig (options, { onError } = {}) {
         )
       }
     })
+  }
+
+  // Validate store config
+  if (options.store !== undefined) {
+    if (typeof options.store !== 'object' || options.store === null || Array.isArray(options.store)) {
+      throw new CoraliteError('Config property "store" must be a plain object')
+    }
+
+    const IDENTIFIER_REGEX = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
+    for (const [key, val] of Object.entries(options.store)) {
+      if (!IDENTIFIER_REGEX.test(key)) {
+        throw new CoraliteError(`Invalid key "${key}" in store config. Store keys must be valid JavaScript identifiers.`)
+      }
+      try {
+        validateSerializable(val, `store.${key}`)
+      } catch (err) {
+        throw new CoraliteError(`Non-serializable value in store config at "store.${key}": ${err.message}`, {
+          cause: err
+        })
+      }
+    }
   }
 
   // Return full config populated with defaults

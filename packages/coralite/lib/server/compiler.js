@@ -8,6 +8,7 @@ import * as serverUtilsBase from './utils/index.js'
 import { CoraliteError } from '../shared/errors.js'
 import { createContext as createContextUtil, ContextRequestEvent } from '../shared/core.js'
 import { definePage } from '../shared/page.js'
+import { createStore, createServerStore } from '../shared/store.js'
 
 /**
  * @import { CoraliteModule, CoraliteModuleDefinitions, CoralitePage, CoraliteSession, CoraliteFilePath, CoralitePluginContext } from '../../types/index.js'
@@ -190,6 +191,9 @@ export async function evaluateDevelopment ({
     throw new CoraliteError('SourceTextModule is not available. Please run Node.js with --experimental-vm-modules to use Development mode.')
   }
 
+  const serverStore = app?.options?.store ? createServerStore(app.options.store) : undefined
+  const reactiveStore = app?.options?.store ? createStore(app.options.store) : undefined
+
   const context = {
     state: state || {},
     page,
@@ -202,7 +206,10 @@ export async function evaluateDevelopment ({
     noHydration,
     contextFrames,
     isServer: true,
-    isClient: false
+    isClient: false,
+    store: serverStore,
+    serverStore,
+    reactiveStore
   }
 
   const serverUtils = {
@@ -366,6 +373,9 @@ export async function evaluateProduction ({
   getComponent,
   contextFrames = []
 }) {
+  const serverStore = app?.options?.store ? createServerStore(app.options.store) : undefined
+  const reactiveStore = app?.options?.store ? createStore(app.options.store) : undefined
+
   const context = {
     state: state || {},
     page,
@@ -378,7 +388,10 @@ export async function evaluateProduction ({
     noHydration,
     contextFrames,
     isServer: true,
-    isClient: false
+    isClient: false,
+    store: serverStore,
+    serverStore,
+    reactiveStore
   }
 
   if (session && session.source) {
