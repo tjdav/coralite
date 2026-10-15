@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const coraliteScriptsLib = path.resolve(__dirname, '../../../coralite/lib/cli/config.js')
+const coraliteScriptsLib = path.resolve(__dirname, '../../libs/config.js')
 
 describe('Coralite Assets Integration', () => {
   let project

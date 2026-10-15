@@ -1,3 +1,10 @@
+> **Deprecated.** `coralite-scripts` is frozen. New projects should install
+> `coralite` and use the CLI commands it provides directly. Existing projects
+> that use `coralite-scripts` continue to work; the package will remain
+> installable but will not receive new features.
+>
+> See the migration guide for details: https://coralite.dev/migration/coralite-scripts
+
 # Coralite Scripts
 
 Welcome to **Coralite Scripts**, a lightweight script toolset for building, validating, auto-fixing, and serving Coralite applications. This guide walks you through setting up your local development environment using the provided `coralite-scripts` package and configuration files.

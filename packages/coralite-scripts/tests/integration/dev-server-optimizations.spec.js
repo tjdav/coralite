@@ -1,14 +1,14 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import server from 'coralite/lib/cli/server.js'
+import server from '../../libs/server.js'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createCLIProject } from '../utils/project.js'
-import loadConfig from 'coralite/lib/cli/load-config.js'
+import loadConfig from '../../libs/load-config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const coraliteScriptsLib = path.resolve(__dirname, '../../../coralite/lib/cli/config.js')
+const coraliteScriptsLib = path.resolve(__dirname, '../../libs/config.js')
 const libUrl = pathToFileURL(coraliteScriptsLib).href
 
 describe('Dev Server Optimizations', () => {

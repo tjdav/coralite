@@ -5,13 +5,9 @@ import kleur from 'kleur'
 import { pathToFileURL } from 'node:url'
 import { join, resolve, relative } from 'node:path'
 import { existsSync, mkdirSync, statSync, readdirSync } from 'node:fs'
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import pkg from '../package.json' with { type: 'json' }
-import { normalizeErrorCodes, matchesErrorCode } from '#lib'
-import loadConfig from '#lib/cli/load-config.js'
-import server from '#lib/cli/server.js'
-import { buildCommand } from '#lib/cli/commands/build.js'
-import { parseAssetMapping, mergeAssets } from '#lib/cli/assets.js'
+import { createCoralite, normalizeErrorCodes, matchesErrorCode } from '#lib'
 import { validateComponentsDir, formatComponentValidationReport } from '#lib/server/component/validator.js'
 import { applyComponentFixes } from '#lib/server/component/fixer.js'
 import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/server/plugin/validator.js'
@@ -100,103 +96,6 @@ function aggregateReportSummaries (reports) {
 
   return totals
 }
-
-// dev command
-program
-  .command('dev')
-  .description('Run development server')
-  .option('-v, --verbose', 'Enable verbose logging output')
-  .option('-c, --clean', 'Clear the output directory before building')
-  .option('-a, --assets <mapping...>', 'Static assets to copy during build. Format: pkg:path:dest or src:dest')
-  .option('--no-incremental', 'Disable change detection optimization and rebuild all pages and components')
-  .action(async (options, cmd) => {
-    const loadedConfig = await loadConfig(process.cwd())
-    if (!loadedConfig) {
-      process.exit(1)
-    }
-
-    options.incrementalSource = cmd.getOptionValueSource('incremental')
-
-    if (options.assets) {
-      try {
-        const cliAssets = options.assets.map(parseAssetMapping)
-        loadedConfig.assets = mergeAssets(loadedConfig.assets, cliAssets)
-      } catch (err) {
-        console.error(`\n  Error: ${err.message}\n`)
-        process.exit(1)
-      }
-    }
-
-    loadedConfig.output = join(process.cwd(), '.coralite')
-    await mkdir(loadedConfig.output, { recursive: true })
-
-    await server(loadedConfig, options, 'dev')
-  })
-
-// test command
-program
-  .command('test')
-  .description('Run testing server')
-  .option('-v, --verbose', 'Enable verbose logging output')
-  .option('-c, --clean', 'Clear the output directory before building')
-  .option('-a, --assets <mapping...>', 'Static assets to copy during build. Format: pkg:path:dest or src:dest')
-  .option('--no-incremental', 'Disable change detection optimization and rebuild all pages and components')
-  .action(async (options, cmd) => {
-    const loadedConfig = await loadConfig(process.cwd())
-    if (!loadedConfig) {
-      process.exit(1)
-    }
-
-    options.incrementalSource = cmd.getOptionValueSource('incremental')
-
-    if (options.assets) {
-      try {
-        const cliAssets = options.assets.map(parseAssetMapping)
-        loadedConfig.assets = mergeAssets(loadedConfig.assets, cliAssets)
-      } catch (err) {
-        console.error(`\n  Error: ${err.message}\n`)
-        process.exit(1)
-      }
-    }
-
-    loadedConfig.output = join(process.cwd(), '.coralite')
-    await mkdir(loadedConfig.output, { recursive: true })
-
-    await server(loadedConfig, options, 'test')
-  })
-
-// build command (high-level)
-program
-  .command('build')
-  .description('Build site for production')
-  .option('-v, --verbose', 'Enable verbose logging output')
-  .option('-c, --clean', 'Clear the output directory before building')
-  .option('-a, --assets <mapping...>', 'Static assets to copy during build. Format: pkg:path:dest or src:dest')
-  .option('--no-incremental', 'Disable change detection optimization and rebuild all pages and components')
-  .action(async (options, cmd) => {
-    const loadedConfig = await loadConfig(process.cwd())
-    if (!loadedConfig) {
-      process.exit(1)
-    }
-
-    options.incrementalSource = cmd.getOptionValueSource('incremental')
-
-    if (options.assets) {
-      try {
-        const cliAssets = options.assets.map(parseAssetMapping)
-        loadedConfig.assets = mergeAssets(loadedConfig.assets, cliAssets)
-      } catch (err) {
-        console.error(`\n  Error: ${err.message}\n`)
-        process.exit(1)
-      }
-    }
-
-    try {
-      await buildCommand(loadedConfig, options)
-    } catch {
-      process.exit(1)
-    }
-  })
 
 program
   .command('check')
@@ -1478,9 +1377,116 @@ program
     }
   })
 
-if (process.argv.length <= 2) {
-  program.outputHelp()
-  process.exit(1)
-}
+program
+  .command('build', { isDefault: true })
+  .description('Build site from HTML modules and components')
+  .requiredOption('-c, --components <path>', 'Path to component file or directory')
+  .requiredOption('-p, --pages <path>', 'Path to pages directory')
+  .requiredOption('-o, --output <path>', 'Output directory for the generated site')
+  .option('-m, --mode <mode>', 'Build mode: "development" or "production"', 'production')
+  .option('-i, --ignore-attribute <key=value...>', 'Ignore elements by attribute name value pair', [])
+  .option('-s, --skip-render-attribute <key...>', 'Parse elements but exclude them from final render output', [])
+  .option('-d, --dry-run', 'Run in dry-run mode')
+  .option('-a, --assets <mapping...>', 'Static assets to copy. Format: pkg:path:dest (or pkg:path)')
+  .option('--concurrency <number>', 'Concurrency limit for page rendering', (val) => parseInt(val, 10))
+  .action(async (options) => {
+    const pages = options.pages
+    const output = options.output
+    const ignoreByAttribute = []
+    let assets
 
-await program.parseAsync(process.argv)
+    if (options.assets) {
+      assets = []
+      for (const assetStr of options.assets) {
+        const parts = assetStr.split(':')
+        if (parts.length < 2) {
+          console.error('Failed to parse asset:', assetStr)
+          console.error('Invalid format. Expected pkg:path:dest or pkg:path')
+          process.exit(1)
+        }
+        const [assetPkg, path, dest] = parts
+        assets.push({
+          pkg: assetPkg,
+          path,
+          dest: dest || path
+        })
+      }
+    }
+
+    /** @type {import('../types/index.js').CoraliteConfig} */
+    const coraliteOptions = {
+      components: options.components,
+      pages,
+      ignoreByAttribute,
+      skipRenderByAttribute: options.skipRenderAttribute,
+      mode: options.mode,
+      output,
+      assets,
+      plugins: []
+    }
+
+    if (options.concurrency !== undefined && !isNaN(options.concurrency)) {
+      coraliteOptions.concurrency = options.concurrency
+    } else if (config && config.concurrency !== undefined) {
+      coraliteOptions.concurrency = config.concurrency
+    }
+
+    for (let i = 0; i < options.ignoreAttribute.length; i++) {
+      const pair = options.ignoreAttribute[i].split('=')
+
+      if (pair.length !== 2) {
+        throw new Error('Ignore attribute "' + pair[0] + '" expected a value but found none')
+      }
+
+      ignoreByAttribute.push({
+        name: pair[0],
+        value: pair[1]
+      })
+    }
+
+    if (config && config.plugins) {
+      coraliteOptions.plugins = coraliteOptions.plugins.concat(config.plugins)
+    }
+
+    // @ts-ignore
+    const coralite = await createCoralite({
+      ...coraliteOptions,
+      onError: ({ level, message, error }) => {
+        if (level === 'ERR') {
+          process.stderr.write(kleur.red().bold('ERROR: ') + message + '\n')
+          if (error) {
+            process.stderr.write(kleur.gray(error.stack || error.message) + '\n')
+          }
+        } else if (level === 'WARN') {
+          process.stdout.write(kleur.yellow().bold('WARNING: ') + message + '\n')
+        } else {
+          process.stdout.write(message + '\n')
+        }
+      }
+    })
+
+    if (options.dryRun) {
+      const documents = await coralite.build()
+
+      const PAD = '  '
+      const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
+
+      for (let i = 0; i < documents.length; i++) {
+        const document = documents[i]
+
+        process.stdout.write('\n' + PAD + kleur.green('Document is ready!\n\n'))
+        process.stdout.write(PAD + `${kleur.bold('- Path:')}      ${document.path.pathname}\n`)
+        process.stdout.write(PAD + `${kleur.bold('- Built in:')}  ${Math.floor(document.duration)}ms\n\n`)
+        process.stdout.write(border + kleur.inverse(' Content start ') + border + '\n\n')
+        // @ts-ignore
+        process.stdout.write(document.html)
+        process.stdout.write('\n\n' + border + kleur.inverse(' Content end ') + border + '\n')
+      }
+    } else {
+      await coralite.save()
+    }
+
+    await coralite.clearCache(true)
+  })
+
+program.parse(process.argv)

@@ -10,7 +10,7 @@ import { createCoralite, resolveCspConfig } from 'coralite'
 import portfinder from 'portfinder'
 
 /**
- * @import {CoraliteScriptConfig, CoraliteScriptOptions} from 'coralite-scripts/types'
+ * @import {CoraliteScriptConfig, CoraliteScriptOptions} from '../types/index.js'
  */
 
 /**

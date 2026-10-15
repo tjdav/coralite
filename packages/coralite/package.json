@@ -134,8 +134,7 @@
       "types": "./dist/plugins/router.d.ts",
       "development": "./plugins/router.js",
       "default": "./dist/plugins/router.js"
-    },
-    "./lib/cli/*": "./lib/cli/*"
+    }
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",

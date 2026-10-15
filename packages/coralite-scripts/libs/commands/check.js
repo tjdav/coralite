@@ -18,7 +18,7 @@ import {
  * @param {string|undefined} explicitPath - Explicit path passed via CLI option.
  * @param {string} configProp - Config property name in configuration object.
  * @param {string[]} defaultCandidates - Array of candidate paths to check in cwd.
- * @param {import('coralite-scripts/types').CoraliteScriptConfig|null} [config=null] - Configuration object.
+ * @param {import('../../types/index.js').CoraliteScriptConfig|null} [config=null] - Configuration object.
  * @param {string} [cwd=process.cwd()] - Current working directory.
  * @returns {string|null} Resolved path or null.
  */
@@ -91,7 +91,7 @@ function calculatePluginFixableCount (pluginReport) {
 /**
  * Executes a unified validation check across components, plugins, and pages.
  *
- * @param {import('coralite-scripts/types').CoraliteScriptConfig|null} config - The configuration object.
+ * @param {import('../../types/index.js').CoraliteScriptConfig|null} config - The configuration object.
  * @param {any} [options={}] - The CLI and command options.
  * @param {any} [logger=null] - Optional custom logger output stream.
  * @returns {Promise<{ hasFailures: boolean, summary: object, reports: object, output: string }>} Validation result.

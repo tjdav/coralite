@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import server, { buildLiveReloadScript, attachDevRoutes } from 'coralite/lib/cli/server.js'
+import server, { buildLiveReloadScript, attachDevRoutes } from '../../libs/server.js'
 import express from 'express'
 import http from 'node:http'
 import path from 'node:path'
@@ -8,11 +8,11 @@ import { readdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createCLIProject } from '../utils/project.js'
-import loadConfig from 'coralite/lib/cli/load-config.js'
+import loadConfig from '../../libs/load-config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const coraliteScriptsLib = path.resolve(__dirname, '../../../coralite/lib/cli/config.js')
+const coraliteScriptsLib = path.resolve(__dirname, '../../libs/config.js')
 const libUrl = pathToFileURL(coraliteScriptsLib).href
 
 describe('Dev Server Live-Reload CSP', () => {
