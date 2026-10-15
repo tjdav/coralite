@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Search Engine Optimization (SEO) — Coralite"
+    description="Learn how to handle search engine optimization in Coralite including built-in metadata extraction, plugin-driven sitemaps and RSS feeds, robots.txt, and framework boundaries."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Search Engine Optimization (SEO)</h1>
+
+    <p>Coralite provides lightweight building blocks and plugin hooks to ensure your static and server-rendered pages are fully optimized for search engines and social sharing platforms. By combining built-in metadata extraction with standard Web Platform practices, you can build search-friendly websites without heavy runtime overhead.</p>
+
+    <coralite-heading level="2" text="1. Built-in Metadata Extraction"></coralite-heading>
+
+    <p>Coralite ships with a built-in <code>metadataPlugin</code> that runs on the server during page compilation. It scans the <code>&lt;head&gt;</code> of your page and populates the global <code>page.meta</code> object with extracted tags.</p>
+
+    <ul>
+      <li><strong>Title Tag:</strong> The content of <code>&lt;title&gt;</code> is stored as <code>page.meta.title</code>.</li>
+      <li><strong>Meta Tags:</strong> Standard <code>&lt;meta name="X" content="Y"&gt;</code> tags are stored as <code>page.meta.X</code>.</li>
+      <li><strong>HTML Language:</strong> The <code>lang</code> attribute on <code>&lt;html&gt;</code> is stored as <code>page.meta.lang</code>.</li>
+    </ul>
+
+    <p>Components on the page can consume this metadata in their <code>server()</code> or <code>data()</code> blocks:</p>
+
+    <coralite-code-html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Getting Started with Coralite</title>
+  <meta name="description" content="A comprehensive guide to building fast websites with Coralite.">
+  <meta name="author" content="Coralite Team">
+</head>
+<body>
+  <page-header></page-header>
+</body>
+</html>
+    </coralite-code-html>
+
+    <coralite-code-highlight language="javascript" title="src/components/page-header.html">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  server: ({ page }) => ({
+    title: page.meta.title,
+    author: page.meta.author
+  })
+})
+    </coralite-code-highlight>
+
+    <p>The metadata plugin also evaluates custom components located inside the <code>&lt;head&gt;</code> tag (for example, reusable <code>&lt;seo-bundle&gt;</code> elements), extracting any generated title or meta tags into <code>page.meta</code>.</p>
+
+    <coralite-heading level="2" text="2. Canonical URLs (Planned)"></coralite-heading>
+
+    <coralite-alert type="warning">
+      <strong>Planned Feature</strong>
+      <p>Automatic canonical URL derivation from <code>baseURL</code> and <code>route.path</code> is planned for a future release. Currently, canonical link tags must be declared explicitly in your page or head components.</p>
+    </coralite-alert>
+
+    <p>To declare a canonical URL manually, add a standard <code>&lt;link rel="canonical"&gt;</code> element to your page's <code>&lt;head&gt;</code> or generate it dynamically in a <code>server()</code> block using <code>route.path</code>:</p>
+
+    <coralite-code-highlight language="javascript" title="pages/about.html">
+import { definePage } from 'coralite'
+
+export default definePage({
+  server: ({ route }) => ({
+    canonicalUrl: `https://example.com${route.path}`
+  })
+})
+    </coralite-code-highlight>
+
+    <coralite-code-html>
+<link rel="canonical" href="{{ canonicalUrl }}">
+    </coralite-code-html>
+
+    <coralite-heading level="2" text="3. Open Graph and Twitter Cards (Planned Extraction)"></coralite-heading>
+
+    <coralite-alert type="warning">
+      <strong>Planned Extraction</strong>
+      <p>Automatic extraction of <code>property="og:*"</code> and <code>name="twitter:*"</code> meta tags into <code>page.meta</code> is planned for a future release. Standard Open Graph and Twitter Card tags defined in <code>&lt;head&gt;</code> pass through directly to the rendered HTML output without modification.</p>
+    </coralite-alert>
+
+    <p>You can author standard Open Graph and Twitter Card tags directly in your HTML page head:</p>
+
+    <coralite-code-html>
+<head>
+  <meta property="og:title" content="My Page Title">
+  <meta property="og:description" content="Page description for social sharing.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="My Page Title">
+</head>
+    </coralite-code-html>
+
+    <coralite-heading level="2" text="4. Sitemap Generation (Plugin Pattern)"></coralite-heading>
+
+    <p>Sitemaps are generated using a custom build plugin. During the <code>onAfterBuild</code> hook, the plugin accesses <code>app.pages.list</code> to iterate over all rendered pages and outputs an XML file via <code>app.writeFile</code>.</p>
+
+    <coralite-code-highlight language="javascript" title="plugins/sitemap-plugin.js">
+import { definePlugin } from 'coralite'
+
+export function sitemapPlugin (options = {}) {
+  const siteUrl = options.siteUrl || 'https://example.com'
+
+  return definePlugin({
+    name: 'sitemap-plugin',
+    server: {
+      async onAfterBuild ({ app }) {
+        const pages = app.pages.list || []
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+
+        for (const page of pages) {
+          const loc = `${siteUrl}${page.routePath}`
+          xml += '  <url>\n'
+          xml += `    <loc>${loc}</loc>\n`
+          xml += '  </url>\n'
+        }
+
+        xml += '</urlset>\n'
+        await app.writeFile('sitemap.xml', xml)
+      }
+    }
+  })
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="5. RSS and Atom Feeds (Plugin Pattern)"></coralite-heading>
+
+    <p>Similarly, RSS and Atom feeds can be generated by querying collections during build hooks and writing the XML feed file to the output directory.</p>
+
+    <coralite-code-highlight language="javascript" title="plugins/rss-plugin.js">
+import { definePlugin } from 'coralite'
+
+export function rssPlugin (options = {}) {
+  const siteUrl = options.siteUrl || 'https://example.com'
+
+  return definePlugin({
+    name: 'rss-plugin',
+    server: {
+      async onAfterBuild ({ app }) {
+        const posts = app.collections?.posts || []
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        xml += '<rss version="2.0">\n  <channel>\n'
+        xml += `    <title>${options.title || 'My Blog'}</title>\n`
+        xml += `    <link>${siteUrl}</link>\n`
+
+        for (const post of posts) {
+          xml += '    <item>\n'
+          xml += `      <title>${post.title}</title>\n`
+          xml += `      <link>${siteUrl}${post.path}</link>\n`
+          xml += '    </item>\n'
+        }
+
+        xml += '  </channel>\n</rss>\n'
+        await app.writeFile('feed.xml', xml)
+      }
+    }
+  })
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="6. robots.txt"></coralite-heading>
+
+    <p>To serve a <code>robots.txt</code> file, place it in your project's <code>public/</code> directory. Coralite copies all assets in <code>public/</code> verbatim to the build output root during compilation.</p>
+
+    <coralite-code-highlight language="text" title="public/robots.txt">
+User-agent: *
+Allow: /
+
+Sitemap: https://example.com/sitemap.xml
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="7. JSON-LD Structured Data (Planned)"></coralite-heading>
+
+    <coralite-alert type="warning">
+      <strong>Planned Feature</strong>
+      <p>Raw unescaped template interpolations (such as <code>{{{ raw }}}</code>) are planned for a future release. Raw JSON-LD script block interpolation should not be attempted with standard double-brace <code>{{ token }}</code> tags.</p>
+    </coralite-alert>
+
+    <p>Until raw token interpolation is available, JSON-LD structured data can be included by writing static <code>&lt;script type="application/ld+json"&gt;</code> blocks directly inside your page templates or component HTML.</p>
+
+    <coralite-heading level="2" text="8. What Coralite Does Not Provide"></coralite-heading>
+
+    <p>To remain lightweight, predictable, and standards-compliant, Coralite intentionally does not ship built-in abstractions for several SEO concerns:</p>
+
+    <ul>
+      <li><strong>No built-in sitemap generator in core:</strong> Use the plugin hook pattern with <code>onAfterBuild</code> and <code>app.writeFile</code>.</li>
+      <li><strong>No built-in feed generator in core:</strong> Use custom plugin hooks to build RSS/Atom XML feeds from site collections.</li>
+      <li><strong>No schema.org type definitions:</strong> Author standard JSON-LD script tags or external schema helper libraries directly.</li>
+    </ul>
+
+    <hr>
+
+    <p>Next: Explore <a href="./plugins.html">Authoring Plugins</a> to learn more about extending build tasks with plugins.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
