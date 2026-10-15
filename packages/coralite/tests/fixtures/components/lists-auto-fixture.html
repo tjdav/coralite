@@ -1,0 +1,50 @@
+<template id="lists-auto-fixture">
+  <ul ref="list"></ul>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ refs, signal, lists }) {
+      const items = Array.from({ length: 100 }, (_, i) => ({
+        id: String(i + 1),
+        label: `Item ${i + 1}`
+      }))
+
+      const store = lists.createStore({
+        key: (item) => item.id,
+        initial: items
+      })
+
+      lists.bind({
+        container: refs('list'),
+        store,
+        signal,
+        key: (item) => item.id,
+        virtual: 'auto',
+        size: 40,
+        create (item) {
+          const li = document.createElement('li')
+          li.textContent = item.label
+          return li
+        },
+        update (el, item) {
+          el.textContent = item.label
+        }
+      })
+    }
+  })
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+  ul {
+    height: 300px;
+    overflow-y: auto;
+    padding: 0;
+    list-style: none;
+  }
+</style>

@@ -8,8 +8,17 @@ import { CoraliteError } from '../../lib/shared/errors.js'
  */
 export function bind (options = {}) {
   const opts = options || {}
-  if (opts.virtual) {
-    throw new CoraliteError('Virtualization is not yet supported in this version of the lists plugin.')
+  const { virtual = false, size = 64 } = opts
+
+  if (virtual === 'window') {
+    throw new CoraliteError(
+      'lists.bind: virtual: "window" is not yet implemented. Use "auto" for lists up to ~50,000 items, or omit virtual for full DOM rendering.'
+    )
+  }
+  if (virtual !== false && virtual !== 'auto') {
+    throw new CoraliteError(
+      `lists.bind: invalid virtual option "${virtual}". Expected false, "auto", or "window".`
+    )
   }
   if (opts.direction) {
     throw new CoraliteError('Direction configuration is not yet supported in this version of the lists plugin.')
@@ -38,10 +47,47 @@ export function bind (options = {}) {
 
   const elementMap = new Map()
 
+  let intrinsicSize = 64
+  if (typeof size === 'number' && !Number.isNaN(size) && size > 0) {
+    intrinsicSize = size
+  } else if (size === 'measure') {
+    intrinsicSize = 64
+  }
+
+  const isAutoVirtual = virtual === 'auto'
+
+  if (isAutoVirtual) {
+    if (container.style) {
+      container.style.contain = 'layout style'
+    }
+
+    if (
+      typeof window !== 'undefined' &&
+      typeof window.getComputedStyle === 'function' &&
+      process.env.NODE_ENV !== 'production'
+    ) {
+      try {
+        const computed = window.getComputedStyle(container)
+        const overflow = computed.overflowY || computed.overflow
+        if (overflow === 'visible') {
+          console.warn(
+            '[Coralite lists] Container does not have scrollable overflow. content-visibility: auto may have no effect.'
+          )
+        }
+      } catch {
+        // ignore computed style evaluation errors in non-browser/mock envs
+      }
+    }
+  }
+
   function createElementForItem (item) {
     const k = key(item)
     const el = create(item)
     if (el) {
+      if (isAutoVirtual && el.style) {
+        el.style.contentVisibility = 'auto'
+        el.style.containIntrinsicSize = `auto ${intrinsicSize}px`
+      }
       elementMap.set(k, el)
     }
     return el
@@ -142,6 +188,19 @@ export function bind (options = {}) {
     }
     destroyed = true
     unsubscribe()
+
+    if (isAutoVirtual) {
+      if (container.style) {
+        container.style.contain = ''
+      }
+      for (const el of elementMap.values()) {
+        if (el && el.style) {
+          el.style.contentVisibility = ''
+          el.style.containIntrinsicSize = ''
+        }
+      }
+    }
+
     elementMap.clear()
   }
 
