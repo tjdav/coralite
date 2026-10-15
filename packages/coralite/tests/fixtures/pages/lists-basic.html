@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lists Basic Fixture</title>
+</head>
+<body>
+  <h1>Lists Basic Test Page</h1>
+  <ul id="item-list"></ul>
+
+  <script type="coralite/page">
+    export default definePage({
+      client ({ refs, plugins }) {
+        const lists = plugins?.lists
+        if (!lists) return
+
+        const store = lists.createStore({
+          key: (item) => item.id,
+          initial: [
+            { id: '1', label: 'Item 1' },
+            { id: '2', label: 'Item 2' }
+          ]
+        })
+
+        lists.bind({
+          container: refs('item-list') || document.getElementById('item-list'),
+          store,
+          key: (item) => item.id,
+          create (item) {
+            const li = document.createElement('li')
+            li.textContent = item.label
+            return li
+          },
+          update (el, item) {
+            el.textContent = item.label
+          }
+        })
+      }
+    })
+  </script>
+</body>
+</html>
