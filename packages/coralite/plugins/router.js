@@ -241,10 +241,15 @@ export const routerPlugin = definePlugin({
             bubbles: true,
             composed: true,
             cancelable: true,
-            detail: { from, to }
+            detail: {
+              from,
+              to
+            }
           })
           const proceed = window.dispatchEvent(navEvent)
-          if (!proceed) return
+          if (!proceed) {
+            return
+          }
         }
 
         signal.throwIfAborted()
@@ -311,7 +316,10 @@ export const routerPlugin = definePlugin({
             window.dispatchEvent(new CustomEvent('coralite:navigated', {
               bubbles: true,
               composed: true,
-              detail: { from, to }
+              detail: {
+                from,
+                to
+              }
             }))
           }
         } catch (error) {

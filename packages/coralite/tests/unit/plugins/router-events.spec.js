@@ -31,10 +31,18 @@ describe('Router Plugin Events Unit Tests', () => {
       pushed: [],
       replaced: [],
       pushState (state, title, url) {
-        this.pushed.push({ state, title, url })
+        this.pushed.push({
+          state,
+          title,
+          url
+        })
       },
       replaceState (state, title, url) {
-        this.replaced.push({ state, title, url })
+        this.replaced.push({
+          state,
+          title,
+          url
+        })
       }
     }
 
@@ -116,15 +124,18 @@ describe('Router Plugin Events Unit Tests', () => {
     globalThis.CustomEvent = class CustomEvent {
       constructor (type, options = {}) {
         this.type = type
-        this.bubbles = !!options.bubbles
-        this.composed = !!options.composed
-        this.cancelable = !!options.cancelable
+        this.bubbles = Boolean(options.bubbles)
+        this.composed = Boolean(options.composed)
+        this.cancelable = Boolean(options.cancelable)
         this.detail = options.detail
         this.defaultPrevented = false
       }
     }
     globalThis.fetch = async (url, opts) => {
-      fetchCalls.push({ url, opts })
+      fetchCalls.push({
+        url,
+        opts
+      })
       return {
         ok: true,
         status: 200,
@@ -275,7 +286,10 @@ describe('Router Plugin Events Unit Tests', () => {
     })
 
     globalThis.fetch = async (url, opts) => {
-      fetchCalls.push({ url, opts })
+      fetchCalls.push({
+        url,
+        opts
+      })
       if (url === '/slow') {
         await new Promise(resolve => setTimeout(resolve, 50))
       }
