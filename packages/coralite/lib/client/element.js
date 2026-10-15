@@ -2,7 +2,7 @@ import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, Con
 import { processHTML } from './utils/inject.js'
 import { recordDevToolsEvent } from './utils/devtools.js'
 import { isDevRuntime } from '../shared/dev-mode.js'
-import { ObserverRecord } from '../shared/observer-record.js'
+import { ObserverRecord, detectListPattern, applyListPattern } from '../shared/observer-record.js'
 import { createSignal, createComputed } from '../shared/signals.js'
 import { CoraliteError } from '../shared/errors.js'
 import { classifyAttribute, resolveAriaBooleanState } from '../shared/tags.js'
@@ -1605,9 +1605,7 @@ export class CoraliteElement extends BaseElement {
 
     this._signals = new Map()
     for (const [key, value] of Object.entries(target)) {
-      if (key !== 'errors') {
-        this._signals.set(key, createSignal(value))
-      }
+      this._signals.set(key, createSignal(value))
     }
 
     // Define derived state getters with isolation controllers
@@ -2232,6 +2230,12 @@ export class CoraliteElement extends BaseElement {
 
           const currentTopKey = topKey || p
 
+          if (self._signals) {
+            self._signals.get('errors')?.value
+            const camelTop = kebabToCamel(currentTopKey)
+            self._signals.get('error_' + camelTop)?.value
+          }
+
           if (self._collectingDependencies) {
             self._collectingDependencies.add('errors')
             const camelTop = kebabToCamel(currentTopKey)
@@ -2459,6 +2463,10 @@ export class CoraliteElement extends BaseElement {
         }
 
         const value = Reflect.get(t, p, receiver)
+
+        if (self._signals && typeof p === 'string' && self._signals.has(p)) {
+          self._signals.get(p).value
+        }
 
         if (self._collectingDependencies && typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
           self._collectingDependencies.add(p)
@@ -3845,6 +3853,17 @@ export class CoraliteElement extends BaseElement {
       }
       for (let i = 0; i < names.length; i++) {
         this._changedStateKeys.add(names[i])
+      }
+    }
+
+    if (this._signals) {
+      for (let i = 0; i < names.length; i++) {
+        const key = names[i]
+        const sig = this._signals.get(key)
+        if (sig) {
+          const rawVal = this._stateRaw ? this._stateRaw[key] : undefined
+          sig.value = (key === 'errors' && rawVal && typeof rawVal === 'object') ? { ...rawVal } : rawVal
+        }
       }
     }
 
