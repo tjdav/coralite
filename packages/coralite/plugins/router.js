@@ -236,6 +236,19 @@ export const routerPlugin = definePlugin({
           }
         }
 
+        if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+          const navEvent = new CustomEvent('coralite:navigating', {
+            bubbles: true,
+            composed: true,
+            cancelable: true,
+            detail: { from, to }
+          })
+          const proceed = window.dispatchEvent(navEvent)
+          if (!proceed) return
+        }
+
+        signal.throwIfAborted()
+
         if (replace) {
           history.replaceState({ coralite: true }, '', to)
         } else {
@@ -290,6 +303,16 @@ export const routerPlugin = definePlugin({
 
           if (!path.includes('#')) {
             window.scrollTo(0, 0)
+          }
+
+          signal.throwIfAborted()
+
+          if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('coralite:navigated', {
+              bubbles: true,
+              composed: true,
+              detail: { from, to }
+            }))
           }
         } catch (error) {
           if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
