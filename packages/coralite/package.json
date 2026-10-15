@@ -122,6 +122,11 @@
     "./type-checker": {
       "types": "./dist/lib/server/type-checker.d.ts",
       "default": "./dist/lib/server/type-checker.js"
+    },
+    "./testing": {
+      "types": "./dist/lib/testing.d.ts",
+      "development": "./lib/testing.js",
+      "default": "./dist/lib/testing.js"
     }
   },
   "dependencies": {
@@ -147,10 +152,6 @@
   "peerDependenciesMeta": {
     "typescript": {
       "optional": true
-    "./testing": {
-      "types": "./dist/lib/testing.d.ts",
-      "development": "./lib/testing.js",
-      "default": "./dist/lib/testing.js"
     }
   },
   "devDependencies": {
