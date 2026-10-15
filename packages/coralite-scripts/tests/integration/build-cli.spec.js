@@ -121,7 +121,7 @@ describe('Coralite CLI Build Integration', () => {
     const { fileURLToPath, pathToFileURL } = await import('node:url')
     const __filename = fileURLToPath(import.meta.url)
     const __dirname = path.dirname(__filename)
-    const coraliteScriptsLib = path.resolve(__dirname, '../../libs/config.js')
+    const coraliteScriptsLib = path.resolve(__dirname, '../../../coralite/lib/cli/config.js')
     const libUrl = pathToFileURL(coraliteScriptsLib).href
 
     // Write config ONCE before any runBuild to avoid ESM caching issues in the same process
@@ -183,7 +183,7 @@ describe('Coralite CLI Build Integration', () => {
     const { fileURLToPath, pathToFileURL } = await import('node:url')
     const __filename = fileURLToPath(import.meta.url)
     const __dirname = path.dirname(__filename)
-    const coraliteScriptsLib = path.resolve(__dirname, '../../libs/config.js')
+    const coraliteScriptsLib = path.resolve(__dirname, '../../../coralite/lib/cli/config.js')
     const libUrl = pathToFileURL(coraliteScriptsLib).href
 
     await project.writePage('index.html', '<h1>Home</h1>')

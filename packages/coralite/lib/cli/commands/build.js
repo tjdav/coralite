@@ -8,7 +8,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import ora from 'ora'
 
 /**
- * @param {import('../../types/index.js').CoraliteScriptConfig} config - The configuration object.
+ * @param {import('coralite-scripts/types').CoraliteScriptConfig} config - The configuration object.
  * @param {any} options - The CLI options.
  * @param {any} logger - The logger object.
  */
@@ -79,6 +79,7 @@ export async function buildCommand (config, options, logger = null) {
       return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')
     }),
     baseURL: config.baseURL,
+    cleanUrls: config.cleanUrls,
     output: config.output,
     mode: 'production',
     onError: ({ level, message, error }) => {

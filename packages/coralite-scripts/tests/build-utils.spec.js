@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { toTime, toMS, toCode, displayError, displaySuccess, displayInfo, displayWarning, deleteDirectoryRecursive, copyDirectory } from '../libs/build-utils.js'
+import { toTime, toMS, toCode, displayError, displaySuccess, displayInfo, displayWarning, deleteDirectoryRecursive, copyDirectory } from 'coralite/lib/cli/build-utils.js'
 
 describe('build-utils', () => {
   it('toTime should return formatted string', () => {

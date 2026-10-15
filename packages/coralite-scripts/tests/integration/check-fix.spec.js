@@ -1,7 +1,12 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
 import { readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 import { createCLIProject } from '../utils/project.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 describe('check and fix commands', () => {
   let project
@@ -216,7 +221,7 @@ describe('check and fix commands', () => {
     const path = await import('node:path')
     const execFileAsync = promisify(execFile)
 
-    const binPath = path.resolve(process.cwd(), 'bin/index.js')
+    const binPath = path.resolve(__dirname, '../../bin/index.js')
 
     await project.writeConfig(`
       export default {

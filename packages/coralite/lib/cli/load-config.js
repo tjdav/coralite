@@ -5,7 +5,7 @@ import { displayError } from './build-utils.js'
 import { defineConfig } from './config.js'
 
 /**
- * @import {CoraliteScriptConfig} from '../types/index.js'
+ * @import {CoraliteScriptConfig} from 'coralite-scripts/types'
  */
 
 /**
