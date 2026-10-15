@@ -3,7 +3,7 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
 import { pathToFileURL } from 'node:url'
-import { join } from 'node:path'
+import { join, resolve, relative } from 'node:path'
 import { existsSync, mkdirSync, statSync, readdirSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import pkg from '../package.json' with { type: 'json' }
@@ -14,6 +14,8 @@ import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPlu
 import { applyPluginFixes } from '#lib/server/plugin/fixer.js'
 import { applyPageFixes } from '#lib/server/page/fixer.js'
 import { validatePagesDir, formatPageValidationReport } from '#lib/server/page/validator.js'
+import { typeCheck } from '#lib/server/type-checker.js'
+import { discoverHtmlFiles } from '#lib/server/utils/html.js'
 import {
   promptCheckOptions,
   promptFixOptions,
@@ -109,9 +111,17 @@ program
   .option('--only-failed', 'Only display files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if warnings or unused code exist', false)
   .option('--coverage', 'Include component test execution coverage metrics', false)
+  .option('--types', 'Run TypeScript checks alongside AST validators', true)
+  .option('--no-types', 'Skip TypeScript type-checker')
+  .option('--types-only', 'Run only TypeScript type-checker', false)
   .option('-i, --interactive', 'Run in interactive prompt mode', false)
   .option('--no-interactive', 'Force non-interactive execution')
   .action(async (options, cmd) => {
+    if (options.types === false && options.typesOnly) {
+      process.stderr.write(kleur.red().bold('ERROR: ') + 'Flags --no-types and --types-only are mutually exclusive.\n')
+      process.exit(1)
+    }
+
     const isTTY = Boolean(process.stdout.isTTY)
     const isCI = Boolean(process.env.CI)
 
@@ -125,7 +135,9 @@ program
       cmd.getOptionValueSource('onlyFailed') === 'cli' ||
       cmd.getOptionValueSource('strict') === 'cli' ||
       cmd.getOptionValueSource('coverage') === 'cli' ||
-      cmd.getOptionValueSource('format') === 'cli'
+      cmd.getOptionValueSource('format') === 'cli' ||
+      cmd.getOptionValueSource('types') === 'cli' ||
+      cmd.getOptionValueSource('typesOnly') === 'cli'
 
     const shouldPrompt =
       (options.interactive || (isTTY && !isCI && !hasExplicitTargetFlags)) &&
@@ -178,114 +190,296 @@ program
     const pluginTarget = resolvePath(pluginOpt, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
     const pageDir = resolvePath(pageOpt, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'])
 
-    if (!compDir && !pluginTarget && !pageDir && !options.components && !options.plugins && !options.pages) {
+    if (!compDir && !pluginTarget && !pageDir && !runOpts.components && !runOpts.plugins && !runOpts.pages) {
       compDir = '.'
     }
 
     try {
+      const runAst = !runOpts.typesOnly
+      const runTypes = runOpts.types !== false
+
       let compReport = null
-      if (compDir && existsSync(compDir)) {
-        compReport = await validateComponentsDir(compDir, { coverage: options.coverage })
-      }
-
       let pluginReport = null
-      if (pluginTarget && existsSync(pluginTarget)) {
-        if (statSync(pluginTarget).isFile()) {
-          const result = await validatePluginFile(pluginTarget)
-          pluginReport = {
-            plugins: [result],
-            summary: {
-              totalPlugins: 1,
-              validPlugins: result.valid ? 1 : 0,
-              errorCount: result.metrics.errors,
-              warningCount: result.metrics.warnings,
-              fixableCount: (result.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length
-            },
-            metrics: {
-              totalPlugins: 1,
-              validPlugins: result.valid ? 1 : 0,
-              totalErrors: result.metrics.errors,
-              totalWarnings: result.metrics.warnings
-            }
-          }
-        } else {
-          pluginReport = await validatePluginsDir(pluginTarget)
-        }
-      }
-
       let pageReport = null
-      if (pageDir && existsSync(pageDir)) {
-        const knownComponents = new Map()
-        if (compReport && compReport.components) {
-          for (const c of compReport.components) {
-            const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
-            if (name) {
-              knownComponents.set(name, {
-                attributes: c.defined?.attributes ? c.defined.attributes.reduce((acc, curr) => ({
-                  ...acc,
-                  [curr]: {}
-                }), {}) : {},
-                slots: c.defined?.slots || []
-              })
+
+      if (runAst) {
+        if (compDir && existsSync(compDir)) {
+          compReport = await validateComponentsDir(compDir, { coverage: runOpts.coverage })
+        }
+
+        if (pluginTarget && existsSync(pluginTarget)) {
+          if (statSync(pluginTarget).isFile()) {
+            const result = await validatePluginFile(pluginTarget)
+            pluginReport = {
+              plugins: [result],
+              summary: {
+                totalPlugins: 1,
+                validPlugins: result.valid ? 1 : 0,
+                errorCount: result.metrics.errors,
+                warningCount: result.metrics.warnings,
+                fixableCount: (result.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length
+              },
+              metrics: {
+                totalPlugins: 1,
+                validPlugins: result.valid ? 1 : 0,
+                totalErrors: result.metrics.errors,
+                totalWarnings: result.metrics.warnings
+              }
             }
+          } else {
+            pluginReport = await validatePluginsDir(pluginTarget)
           }
         }
 
-        if (config?.plugins && Array.isArray(config.plugins)) {
-          for (const plugin of config.plugins) {
-            if (plugin?.components) {
-              const pComps = Array.isArray(plugin.components) ? plugin.components : [plugin.components]
-              for (const pComp of pComps) {
-                if (typeof pComp === 'string') {
-                  knownComponents.set(pComp.toLowerCase(), {
-                    attributes: {},
-                    slots: []
-                  })
-                } else if (pComp && typeof pComp === 'object' && pComp.tag) {
-                  knownComponents.set(pComp.tag.toLowerCase(), {
-                    attributes: {},
-                    slots: []
-                  })
+        if (pageDir && existsSync(pageDir)) {
+          const knownComponents = new Map()
+          if (compReport && compReport.components) {
+            for (const c of compReport.components) {
+              const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
+              if (name) {
+                knownComponents.set(name, {
+                  attributes: c.defined?.attributes ? c.defined.attributes.reduce((acc, curr) => ({
+                    ...acc,
+                    [curr]: {}
+                  }), {}) : {},
+                  slots: c.defined?.slots || []
+                })
+              }
+            }
+          }
+
+          if (config?.plugins && Array.isArray(config.plugins)) {
+            for (const plugin of config.plugins) {
+              if (plugin?.components) {
+                const pComps = Array.isArray(plugin.components) ? plugin.components : [plugin.components]
+                for (const pComp of pComps) {
+                  if (typeof pComp === 'string') {
+                    knownComponents.set(pComp.toLowerCase(), {
+                      attributes: {},
+                      slots: []
+                    })
+                  } else if (pComp && typeof pComp === 'object' && pComp.tag) {
+                    knownComponents.set(pComp.tag.toLowerCase(), {
+                      attributes: {},
+                      slots: []
+                    })
+                  }
                 }
               }
             }
           }
+          pageReport = await validatePagesDir(pageDir, {
+            knownComponents,
+            ignoreAttributes: config?.ignoreByAttribute,
+            skipRenderByAttribute: config?.skipRenderByAttribute,
+            ignoreTags: config?.ignoreTags
+          })
         }
-        pageReport = await validatePagesDir(pageDir, {
-          knownComponents,
-          ignoreAttributes: config?.ignoreByAttribute,
-          skipRenderByAttribute: config?.skipRenderByAttribute,
-          ignoreTags: config?.ignoreTags
-        })
       }
+
+      // Add source: 'ast' to AST diagnostics
+      if (compReport?.components) {
+        for (const comp of compReport.components) {
+          comp.diagnostics = (comp.diagnostics || []).map(d => ({
+            ...d,
+            source: 'ast'
+          }))
+        }
+      }
+      if (pluginReport?.plugins) {
+        for (const plugin of pluginReport.plugins) {
+          plugin.diagnostics = (plugin.diagnostics || []).map(d => ({
+            ...d,
+            source: 'ast'
+          }))
+        }
+      }
+      if (pageReport?.pages) {
+        for (const page of pageReport.pages) {
+          page.diagnostics = (page.diagnostics || []).map(d => ({
+            ...d,
+            source: 'ast'
+          }))
+        }
+      }
+
+      // Collect HTML files and execute typeCheck
+      let typeCheckResult = null
+      const htmlFiles = []
+
+      if (runTypes) {
+        if (compDir && existsSync(compDir)) {
+          const compStat = statSync(compDir)
+          if (compStat.isFile()) {
+            if (compDir.endsWith('.html')) {
+              htmlFiles.push(resolve(compDir))
+            }
+          } else {
+            for await (const file of discoverHtmlFiles({
+              path: resolve(compDir),
+              recursive: true,
+              type: 'component'
+            })) {
+              htmlFiles.push(file.path.pathname)
+            }
+          }
+        }
+
+        if (pageDir && existsSync(pageDir)) {
+          const pageStat = statSync(pageDir)
+          if (pageStat.isFile()) {
+            if (pageDir.endsWith('.html')) {
+              htmlFiles.push(resolve(pageDir))
+            }
+          } else {
+            for await (const file of discoverHtmlFiles({
+              path: resolve(pageDir),
+              recursive: true,
+              type: 'page'
+            })) {
+              htmlFiles.push(file.path.pathname)
+            }
+          }
+        }
+
+        typeCheckResult = await typeCheck(htmlFiles)
+      }
+
+      // Handle typeCheck skipped
+      if (typeCheckResult?.skipped) {
+        if (options.format !== 'json') {
+          process.stdout.write('TypeScript check skipped: install "typescript" to enable.\n\n')
+        }
+      }
+
+      // Convert and merge type-checker diagnostics into reports
+      const typeDiagsMap = new Map()
+      if (typeCheckResult && !typeCheckResult.skipped && Array.isArray(typeCheckResult.diagnostics)) {
+        for (const diag of typeCheckResult.diagnostics) {
+          const relPath = relative(process.cwd(), diag.file)
+          const formattedDiag = {
+            code: 'TS' + diag.code,
+            severity: diag.severity,
+            message: diag.message,
+            filePath: relPath,
+            line: diag.line,
+            column: diag.column,
+            source: 'type-checker'
+          }
+          if (!typeDiagsMap.has(relPath)) {
+            typeDiagsMap.set(relPath, [])
+          }
+          typeDiagsMap.get(relPath).push(formattedDiag)
+        }
+      }
+
+      // Ensure compReport and pageReport entries exist when typesOnly or merging
+      if (compDir && existsSync(compDir) && (!compReport || runOpts.typesOnly)) {
+        const compFiles = htmlFiles.filter(f => f.startsWith(resolve(compDir)))
+        const compItems = compFiles.map(f => {
+          const rel = relative(process.cwd(), f)
+          return {
+            filePath: rel,
+            valid: true,
+            diagnostics: []
+          }
+        })
+        compReport = {
+          components: compItems,
+          summary: {
+            totalComponents: compItems.length,
+            validComponents: compItems.length,
+            errorCount: 0,
+            warningCount: 0,
+            fixableCount: 0
+          },
+          metrics: {
+            totalComponents: compItems.length,
+            validComponents: compItems.length,
+            totalDefined: 0,
+            totalUnused: 0,
+            totalErrors: 0,
+            overallCoveragePercentage: 100
+          }
+        }
+      }
+
+      if (pageDir && existsSync(pageDir) && (!pageReport || runOpts.typesOnly)) {
+        const pageFiles = htmlFiles.filter(f => f.startsWith(resolve(pageDir)))
+        const pageItems = pageFiles.map(f => {
+          const rel = relative(process.cwd(), f)
+          return {
+            filePath: rel,
+            valid: true,
+            diagnostics: []
+          }
+        })
+        pageReport = {
+          pages: pageItems,
+          summary: {
+            totalPages: pageItems.length,
+            validPages: pageItems.length,
+            errorCount: 0,
+            warningCount: 0,
+            fixableCount: 0
+          }
+        }
+      }
+
+      // Merge type diagnostics into compReport and pageReport
+      const mergeTypeDiagnosticsIntoReport = (report, itemsKey, countKey, validKey) => {
+        if (!report || !report[itemsKey]) {
+          return
+        }
+        for (const item of report[itemsKey]) {
+          const rel = item.filePath
+          const extraDiags = typeDiagsMap.get(rel) || []
+          if (extraDiags.length > 0) {
+            item.diagnostics = [...(item.diagnostics || []), ...extraDiags]
+          }
+          const errs = item.diagnostics.filter(d => d.severity === 'error').length
+          const warns = item.diagnostics.filter(d => d.severity === 'warning').length
+          item.valid = errs === 0 && (options.strict ? warns === 0 : true)
+        }
+
+        const items = report[itemsKey]
+        const errCount = items.reduce((sum, item) => sum + item.diagnostics.filter(d => d.severity === 'error').length, 0)
+        const warnCount = items.reduce((sum, item) => sum + item.diagnostics.filter(d => d.severity === 'warning').length, 0)
+        const validCount = items.filter(item => item.valid).length
+
+        if (report.summary) {
+          report.summary.errorCount = errCount
+          report.summary.warningCount = warnCount
+          report.summary[validKey] = validCount
+        }
+        if (report.metrics) {
+          report.metrics.totalErrors = errCount
+          report.metrics.totalWarnings = warnCount
+          report.metrics[validKey] = validCount
+        }
+      }
+
+      mergeTypeDiagnosticsIntoReport(compReport, 'components', 'totalComponents', 'validComponents')
+      mergeTypeDiagnosticsIntoReport(pageReport, 'pages', 'totalPages', 'validPages')
 
       // Filter reports if filter options are active
-      let filteredCompReport = compReport
-      if (compReport && isFilterActive) {
-        filteredCompReport = JSON.parse(formatComponentValidationReport(compReport, {
-          format: 'json',
-          errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
-          status: effectiveStatus
-        }))
-      }
+      const filteredCompReport = compReport ? JSON.parse(formatComponentValidationReport(compReport, {
+        format: 'json',
+        errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+        status: isFilterActive ? effectiveStatus : undefined
+      })) : null
 
-      let filteredPluginReport = pluginReport
-      if (pluginReport && isFilterActive) {
-        filteredPluginReport = JSON.parse(formatPluginValidationReport(pluginReport, {
-          format: 'json',
-          errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
-          status: effectiveStatus
-        }))
-      }
+      const filteredPluginReport = pluginReport ? JSON.parse(formatPluginValidationReport(pluginReport, {
+        format: 'json',
+        errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+        status: isFilterActive ? effectiveStatus : undefined
+      })) : null
 
-      let filteredPageReport = pageReport
-      if (pageReport && isFilterActive) {
-        filteredPageReport = JSON.parse(formatPageValidationReport(pageReport, {
-          format: 'json',
-          errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
-          status: effectiveStatus
-        }))
-      }
+      const filteredPageReport = pageReport ? JSON.parse(formatPageValidationReport(pageReport, {
+        format: 'json',
+        errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+        status: isFilterActive ? effectiveStatus : undefined
+      })) : null
 
       const {
         totalFiles,
@@ -315,6 +509,7 @@ program
               status: effectiveStatus
             }
           } : {}),
+          ...(typeCheckResult?.skipped ? { skipped: true } : {}),
           components: filteredCompReport,
           plugins: filteredPluginReport,
           pages: filteredPageReport,
@@ -336,9 +531,9 @@ program
 
         if (compReport) {
           validatedDomainsCount++
-          process.stdout.write(formatComponentValidationReport(compReport, {
+          process.stdout.write(formatComponentValidationReport(filteredCompReport, {
             format: 'console',
-            coverage: options.coverage,
+            coverage: runOpts.coverage,
             errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
             status: effectiveStatus
           }))
@@ -346,7 +541,7 @@ program
 
         if (pluginReport) {
           validatedDomainsCount++
-          process.stdout.write(formatPluginValidationReport(pluginReport, {
+          process.stdout.write(formatPluginValidationReport(filteredPluginReport, {
             format: 'console',
             errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
             status: effectiveStatus
@@ -355,12 +550,13 @@ program
 
         if (pageReport) {
           validatedDomainsCount++
-          process.stdout.write(formatPageValidationReport(pageReport, {
+          process.stdout.write(formatPageValidationReport(filteredPageReport, {
             format: 'console',
             errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
             status: effectiveStatus
           }))
         }
+
 
         process.stdout.write(kleur.gray('─'.repeat(60)) + '\n')
         const summaryColor = errorCount === 0 ? kleur.green().bold : kleur.red().bold

@@ -98,12 +98,20 @@ export function matchesErrorCode (diagCode, targetCodesSet) {
   if (!targetCodesSet || targetCodesSet.size === 0) {
     return true
   }
-  if (!diagCode || typeof diagCode !== 'string') {
+  if (!diagCode) {
     return false
   }
-  const normDiag = diagCode.toUpperCase().trim()
-  const altDiag = normDiag.startsWith('CORALITE-') ? normDiag.slice(9) : `CORALITE-${normDiag}`
-  return targetCodesSet.has(normDiag) || targetCodesSet.has(altDiag)
+  const strCode = String(diagCode).toUpperCase().trim()
+  const altDiag = strCode.startsWith('CORALITE-') ? strCode.slice(9) : `CORALITE-${strCode}`
+
+  for (const target of targetCodesSet) {
+    const targetNorm = String(target).toUpperCase().trim()
+    if (strCode === targetNorm || altDiag === targetNorm || strCode.includes(targetNorm) || targetNorm.includes(strCode)) {
+      return true
+    }
+  }
+
+  return false
 }
 
 /**

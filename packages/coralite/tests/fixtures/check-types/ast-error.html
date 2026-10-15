@@ -1,0 +1,18 @@
+<template id="x-ast-error">
+  <div>
+    <button onclick="alert(1)">Click</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    getters: {
+      count () {
+        const num = 123
+        return num.toUpperCase()
+      }
+    }
+  })
+</script>

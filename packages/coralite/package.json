@@ -130,6 +130,11 @@
       "default": "./dist/lib/server/type-checker.js"
     },
     "./lib/cli/*": "./lib/cli/*"
+    "./testing": {
+      "types": "./dist/lib/testing.d.ts",
+      "development": "./lib/testing.js",
+      "default": "./dist/lib/testing.js"
+    }
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",

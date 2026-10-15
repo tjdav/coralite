@@ -1,0 +1,13 @@
+<template id="text-binding-nodevalue">
+  <p>Hello, {{ name }}</p>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      name: { type: String, default: 'World' }
+    }
+  })
+</script>

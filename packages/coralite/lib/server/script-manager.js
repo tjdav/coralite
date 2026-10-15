@@ -199,7 +199,7 @@ export function generateTokenUpdaterCode (binding, bindingIndex, tokenKey, isGet
 
   if (binding.type === 'text') {
     if (binding.isSingleToken) {
-      return `    ${readState}\n    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const next = value == null ? '' : String(value)\n    if (node.textContent !== next) {\n      node.textContent = next\n    }`
+      return `    ${readState}\n    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const next = value == null ? '' : String(value)\n    if (node.nodeType === 3) {\n      if (node.nodeValue !== next) node.nodeValue = next\n    } else {\n      if (node.textContent !== next) node.textContent = next\n    }`
     } else if (binding.segments) {
       const segExprs = binding.segments.map(seg => {
         if (seg[0] === 0) {
@@ -207,9 +207,9 @@ export function generateTokenUpdaterCode (binding, bindingIndex, tokenKey, isGet
         }
         return `String(this._stateRaw[${JSON.stringify(seg[1])}] ?? '')`
       })
-      return `    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const next = ${segExprs.join(' + ')}\n    if (node.textContent !== next) {\n      node.textContent = next\n    }`
+      return `    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const next = ${segExprs.join(' + ')}\n    if (node.nodeType === 3) {\n      if (node.nodeValue !== next) node.nodeValue = next\n    } else {\n      if (node.textContent !== next) node.textContent = next\n    }`
     } else {
-      return `    ${readState}\n    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const rawMap = this._stateRaw || {}\n    const next = binding.template.replace(/\\{\\{\\s*(.+?)\\s*\\}\\}/g, (_, k) => rawMap[k] ?? '')\n    if (node.textContent !== next) {\n      node.textContent = next\n    }`
+      return `    ${readState}\n    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const rawMap = this._stateRaw || {}\n    const next = binding.template.replace(/\\{\\{\\s*(.+?)\\s*\\}\\}/g, (_, k) => rawMap[k] ?? '')\n    if (node.nodeType === 3) {\n      if (node.nodeValue !== next) node.nodeValue = next\n    } else {\n      if (node.textContent !== next) node.textContent = next\n    }`
     }
   }
 
