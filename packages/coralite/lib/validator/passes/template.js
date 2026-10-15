@@ -247,6 +247,7 @@ export function validateTemplate (context) {
                 hasRef: Boolean(attribs && (attribs.ref !== undefined || Object.keys(attribs).some(a => a.toLowerCase() === 'ref')))
               })
 
+              /** @type {Record<string, string>} */
               const normAttribs = {}
               if (attribs) {
                 for (const [k, v] of Object.entries(attribs)) {
