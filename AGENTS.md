@@ -14,6 +14,42 @@ All source is `.js` (ESM). No `.ts`, `.tsx`, `.jsx`, or `.mjs` in the source tre
 - Getter signature: `({ state, route, ... })`. Must destructure.
 - Style function signature: `(state) => ...`. Direct, not destructured.
 
+### Style and script placement
+
+`<style>` and `<script type="module">` are canonically siblings of `<template>`:
+
+```html
+<template id="my-component">
+  <div>...</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+
+<style>
+  :host { display: block }
+</style>
+```
+
+The native Web Components form — `<style>` and `<script>` inside `<template>` —
+is also accepted and normalized to the canonical form by the parser:
+
+```html
+<template id="my-component">
+  <style>:host { display: block }</style>
+  <div>...</div>
+  <script type="module">
+    import { defineComponent } from 'coralite'
+    export default defineComponent({})
+  </script>
+</template>
+```
+
+Both produce identical output. Prefer the sibling form in hand-written code;
+use whichever form you prefer in generated code.
+
 ## 3. Import rule
 
 Top-level imports reserved for `define*` functions and modules used by isomorphic code (getters, style, slots). Modules used by `server()`, `client()`, or `paths()` are loaded with `await import()` inside the block.

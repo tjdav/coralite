@@ -1,0 +1,11 @@
+<template id="script-in-template">
+  <div>Script in template</div>
+  <script type="module">
+    import { defineComponent } from 'coralite'
+    export default defineComponent({
+      getters: {
+        title: () => 'Hello'
+      }
+    })
+  </script>
+</template>
