@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Non-Features Reference — Coralite"
+    description="Comprehensive reference of intentionally omitted features in Coralite, their alternatives, and core design rationale."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Non-Features Reference</h1>
+
+    <p>Coralite deliberately does not do certain things. Each omitted feature has a standard Web Platform alternative or architectural rationale. The list of non-features is finite and stable.</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Not provided</th>
+        <th>Alternative</th>
+        <th>Why</th>
+      </tr>
+      <tr slot="body">
+        <td>Shadow DOM</td>
+        <td>Light DOM with <code>@layer</code> scoping</td>
+        <td>Slot transparency and find-in-page work without encapsulation overhead</td>
+      </tr>
+      <tr slot="body">
+        <td>Virtual DOM</td>
+        <td>Signal reactivity and direct DOM</td>
+        <td>The framework updates only what changed, without a diff</td>
+      </tr>
+      <tr slot="body">
+        <td>Client-side router in core</td>
+        <td><code>&lt;a href&gt;</code> and View Transitions, or opt-in router plugin</td>
+        <td>MPA navigation is faster and works without JavaScript</td>
+      </tr>
+      <tr slot="body">
+        <td>Route guards in core</td>
+        <td>Router plugin's <code>beforeEach</code></td>
+        <td>Only opt-in SPA routing needs guards</td>
+      </tr>
+      <tr slot="body">
+        <td>Server-side middleware</td>
+        <td>Plugin <code>onBeforePageRender</code></td>
+        <td>There is no runtime server, so there is no middleware chain</td>
+      </tr>
+      <tr slot="body">
+        <td>Sessions and authentication</td>
+        <td>Client-side fetch from APIs</td>
+        <td>The build output is the same for every visitor</td>
+      </tr>
+      <tr slot="body">
+        <td>SSR at request time</td>
+        <td>Build-time SSG only</td>
+        <td>Pages are files, not functions</td>
+      </tr>
+      <tr slot="body">
+        <td>Deno / Bun / edge adapters</td>
+        <td>Node-only build</td>
+        <td>The build pipeline uses Node-specific APIs</td>
+      </tr>
+      <tr slot="body">
+        <td>Hash routing</td>
+        <td>Not supported</td>
+        <td>The router is opt-in and history-based</td>
+      </tr>
+      <tr slot="body">
+        <td>Nested layouts (automatic)</td>
+        <td>Explicit composition via slots</td>
+        <td>Automatic layouts require route hierarchy the framework does not track</td>
+      </tr>
+      <tr slot="body">
+        <td>Prefetch API</td>
+        <td>Browser prefetch on hover</td>
+        <td>Browsers already do this</td>
+      </tr>
+      <tr slot="body">
+        <td>Shells for unknown params</td>
+        <td>404</td>
+        <td>Unenumerated dynamic params are not pages</td>
+      </tr>
+      <tr slot="body">
+        <td>Redirects in config</td>
+        <td>Host config or <code>__redirect</code> marker</td>
+        <td>Redirects are a deployment concern, not a build concern</td>
+      </tr>
+      <tr slot="body">
+        <td>Plural rule engines</td>
+        <td><code>Intl.PluralRules</code></td>
+        <td>The platform ships this</td>
+      </tr>
+      <tr slot="body">
+        <td>Locale detection</td>
+        <td>Client-side or host routing</td>
+        <td>There is no request to inspect</td>
+      </tr>
+      <tr slot="body">
+        <td>Sitemap generation in core</td>
+        <td>Plugin pattern</td>
+        <td>The list of pages is available to any plugin</td>
+      </tr>
+      <tr slot="body">
+        <td>Feed generation in core</td>
+        <td>Plugin pattern</td>
+        <td>Same reason as sitemap</td>
+      </tr>
+      <tr slot="body">
+        <td>Full a11y test suite</td>
+        <td>Validator warnings plus author responsibility</td>
+        <td>False positives in a11y tooling are worse than missed warnings</td>
+      </tr>
+      <tr slot="body">
+        <td>Template type checking via <code>tsc</code></td>
+        <td>AST validator plus Volar bridge</td>
+        <td><code>tsc</code> cannot parse <code>.html</code> natively</td>
+      </tr>
+      <tr slot="body">
+        <td>Proxy reactivity (removed in v1.0)</td>
+        <td>Signals</td>
+        <td>One reactivity model</td>
+      </tr>
+    </coralite-table>
+
+    <p>If a feature appears in neither this table nor the documentation, it may be planned—check the roadmap.</p>
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
