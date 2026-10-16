@@ -89,9 +89,11 @@ export function computeVisibleRange (positions, virtualScrollTop, viewportHeight
  *
  * @param {{ key: string, offset: number }|null} anchor - Current anchor
  * @param {Array<{ key: string, y: number, height: number }>} positions - Position array
+ * @param {'start'|'end'} [anchorTo='start'] - Anchoring mode
+ * @param {number} [viewportHeight=0] - Viewport container height in px
  * @returns {number} Virtual scrollTop in px
  */
-export function computeScrollTopFromAnchor (anchor, positions) {
+export function computeScrollTopFromAnchor (anchor, positions, anchorTo = 'start', viewportHeight = 0) {
   if (!anchor || !positions || positions.length === 0) {
     return 0
   }
@@ -99,6 +101,10 @@ export function computeScrollTopFromAnchor (anchor, positions) {
   const item = positions.find((p) => p.key === anchor.key)
   if (!item) {
     return 0
+  }
+
+  if (anchorTo === 'end') {
+    return ((item.y + item.height) - viewportHeight) + (anchor.offset || 0)
   }
 
   return item.y + (anchor.offset || 0)
@@ -110,9 +116,10 @@ export function computeScrollTopFromAnchor (anchor, positions) {
  * @param {string} removedKey - Key of the removed item
  * @param {{ key: string, offset: number }|null} anchor - Current anchor
  * @param {Array<{ key: string, y: number, height: number }>} positions - Position array before/after removal lookup
+ * @param {'start'|'end'} [anchorTo='start'] - Anchoring mode
  * @returns {{ key: string, offset: number }|null} New anchor or null
  */
-export function reanchorOnRemove (removedKey, anchor, positions) {
+export function reanchorOnRemove (removedKey, anchor, positions, anchorTo = 'start') {
   if (!anchor || anchor.key !== removedKey) {
     return anchor
   }
@@ -124,6 +131,17 @@ export function reanchorOnRemove (removedKey, anchor, positions) {
   const index = positions.findIndex((p) => p.key === removedKey)
   if (index === -1) {
     return null
+  }
+
+  if (anchorTo === 'end') {
+    const fallbackItem = positions[index - 1] ?? positions[index + 1] ?? positions[0]
+    if (!fallbackItem) {
+      return null
+    }
+    return {
+      key: fallbackItem.key,
+      offset: 0
+    }
   }
 
   const nextItem = positions[index + 1] ?? positions[0]

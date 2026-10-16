@@ -1,0 +1,73 @@
+<template id="lists-chat">
+  <style>
+    :host {
+      display: block;
+      padding: 1rem;
+    }
+    .chat-container {
+      height: 300px;
+      overflow: auto;
+      border: 1px solid #ccc;
+    }
+    .chat-message {
+      height: 50px;
+      box-sizing: border-box;
+      padding: 8px 12px;
+      border-bottom: 1px solid #eee;
+    }
+  </style>
+
+  <div class="chat-container" ref="container"></div>
+  <button ref="addBtn">Add Message</button>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ refs, lists }) {
+      const { createStore, bind } = lists
+
+      const initialMessages = Array.from({ length: 50 }, (_, i) => ({
+        id: `msg-${i}`,
+        text: `Message #${i}`
+      }))
+
+      const store = createStore({ initial: initialMessages })
+
+      const handle = bind({
+        container: refs.container,
+        store,
+        key: (item) => item.id,
+        create: (item) => {
+          const div = document.createElement('div')
+          div.className = 'chat-message'
+          div.textContent = item.text
+          return div
+        },
+        virtual: 'window',
+        size: 50,
+        anchorTo: 'end',
+        followOnAppend: true,
+        scrollEndThreshold: 80
+      })
+
+      let count = 50
+      function onAdd () {
+        store.append({ id: `msg-${count}`, text: `Message #${count}` })
+        count++
+      }
+
+      if (refs.addBtn) {
+        refs.addBtn.addEventListener('click', onAdd)
+      }
+
+      return () => {
+        if (refs.addBtn) {
+          refs.addBtn.removeEventListener('click', onAdd)
+        }
+        handle.destroy()
+      }
+    }
+  })
+</script>

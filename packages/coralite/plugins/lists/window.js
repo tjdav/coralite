@@ -6,6 +6,7 @@ import {
   reanchorOnRemove
 } from './anchor.js'
 import { createMeasurementCache } from './measurements.js'
+import { setupInfiniteScroll } from './infinite.js'
 
 const MAX_SAFE_HEIGHT = 33_000_000
 
@@ -13,7 +14,7 @@ const MAX_SAFE_HEIGHT = 33_000_000
  * Binds a store to a container using windowed virtualization (`virtual: 'window'`).
  *
  * @param {Object} options - Bind options
- * @returns {{ destroy: () => void }} Handle with destroy method
+ * @returns {{ destroy: () => void, scrollToKey: (key: string, options?: { align?: 'start'|'center'|'end'|'auto' }) => void, getAnchor: () => { key: string, offset: number }|null }} Handle with destroy and anchor methods
  */
 export function bindWindow (options = {}) {
   const {
@@ -24,8 +25,18 @@ export function bindWindow (options = {}) {
     update,
     signal,
     size = 64,
-    overscan = 5
+    overscan = 5,
+    anchorTo = 'start',
+    followOnAppend = false,
+    scrollEndThreshold = 80,
+    reachThreshold = 200,
+    onReachStart,
+    onReachEnd
   } = options
+
+  if (followOnAppend && anchorTo === 'start' && process.env.NODE_ENV !== 'production') {
+    console.warn('[Coralite lists] followOnAppend is only meaningful when anchorTo is "end".')
+  }
 
   if (!container || typeof container !== 'object' || typeof container.replaceChildren !== 'function') {
     throw new CoraliteError('lists.bind: container must be a valid DOM element')
@@ -78,6 +89,13 @@ export function bindWindow (options = {}) {
     bottomSpacer.className = 'lists-spacer-bottom'
     bottomSpacer.style.height = '0px'
   }
+
+  const { topSentinel, bottomSentinel, disconnect: disconnectInfinite } = setupInfiniteScroll({
+    container,
+    onReachStart,
+    onReachEnd,
+    reachThreshold
+  })
 
   const measurements = createMeasurementCache(defaultSize)
 
@@ -142,20 +160,35 @@ export function bindWindow (options = {}) {
     const oldPositions = positions
     positions = computePositions(items, key, measurements, defaultSize)
 
-    // Check if resized item was above current anchor
+    // Check if resized item affects current anchor
     if (anchor) {
       const resizedIdx = oldPositions.findIndex((p) => p.key === resizedKey)
       const anchorIdx = oldPositions.findIndex((p) => p.key === anchor.key)
 
-      if (resizedIdx !== -1 && anchorIdx !== -1 && resizedIdx < anchorIdx) {
+      const affectsAnchor = anchorTo === 'end'
+        ? (resizedIdx !== -1 && anchorIdx !== -1 && resizedIdx > anchorIdx)
+        : (resizedIdx !== -1 && anchorIdx !== -1 && resizedIdx < anchorIdx)
+
+      if (affectsAnchor) {
         // Programmatically adjust container.scrollTop from anchor so visible content stays in place
-        const derivedVirtualScrollTop = computeScrollTopFromAnchor(anchor, positions)
+        const viewportHeight = getViewportHeight()
+        const derivedVirtualScrollTop = computeScrollTopFromAnchor(anchor, positions, anchorTo, viewportHeight)
         const scale = getScale()
         container.scrollTop = derivedVirtualScrollTop * scale
       }
     }
 
     renderVisibleWindow()
+  }
+
+  function shouldFollow () {
+    const totalHeight = positions.length > 0
+      ? positions[positions.length - 1].y + positions[positions.length - 1].height
+      : 0
+    const scale = getScale()
+    const viewportHeight = getViewportHeight()
+    const distanceFromEnd = (totalHeight * scale) - container.scrollTop - viewportHeight
+    return distanceFromEnd <= scrollEndThreshold
   }
 
   function renderVisibleWindow () {
@@ -212,6 +245,9 @@ export function bindWindow (options = {}) {
     const visibleKeys = new Set()
     const newRenderedNodes = []
 
+    if (topSentinel) {
+      newRenderedNodes.push(topSentinel)
+    }
     if (topSpacer) {
       newRenderedNodes.push(topSpacer)
     }
@@ -233,6 +269,9 @@ export function bindWindow (options = {}) {
     if (bottomSpacer) {
       newRenderedNodes.push(bottomSpacer)
     }
+    if (bottomSentinel) {
+      newRenderedNodes.push(bottomSentinel)
+    }
 
     // Clean up out-of-range elements from elementMap and measurements
     for (const [k, el] of elementMap.entries()) {
@@ -247,11 +286,33 @@ export function bindWindow (options = {}) {
     // Update DOM container
     container.replaceChildren(...newRenderedNodes)
 
-    // Update anchor based on first rendered item in viewport
-    if (positions[startIndex]) {
-      anchor = {
-        key: positions[startIndex].key,
-        offset: virtualScrollTop - positions[startIndex].y
+    // Update anchor based on viewport edge
+    if (anchorTo === 'end') {
+      const scrollBottom = virtualScrollTop + viewportHeight
+      let anchorIdx = endIndex
+      for (let i = startIndex; i <= endIndex; i++) {
+        if (positions[i]) {
+          const itemBottom = positions[i].y + positions[i].height
+          if (itemBottom >= scrollBottom) {
+            anchorIdx = i
+            break
+          }
+        }
+      }
+      if (positions[anchorIdx]) {
+        const anchorItem = positions[anchorIdx]
+        const itemBottom = anchorItem.y + anchorItem.height
+        anchor = {
+          key: anchorItem.key,
+          offset: scrollBottom - itemBottom
+        }
+      }
+    } else {
+      if (positions[startIndex]) {
+        anchor = {
+          key: positions[startIndex].key,
+          offset: virtualScrollTop - positions[startIndex].y
+        }
       }
     }
   }
@@ -278,6 +339,16 @@ export function bindWindow (options = {}) {
 
   container.addEventListener('scroll', onScroll, { passive: true })
 
+  // Initial scroll position for anchorTo: 'end'
+  if (anchorTo === 'end') {
+    const totalHeight = positions.length > 0
+      ? positions[positions.length - 1].y + positions[positions.length - 1].height
+      : 0
+    const scale = getScale()
+    const viewportHeight = getViewportHeight()
+    container.scrollTop = Math.max(container.scrollHeight || 0, (totalHeight * scale) - viewportHeight)
+  }
+
   // Initial calculation and render
   renderVisibleWindow()
 
@@ -285,6 +356,11 @@ export function bindWindow (options = {}) {
   function handleStoreChange (change) {
     if (destroyed) {
       return
+    }
+
+    let mustFollow = false
+    if ((change.type === 'append' || change.type === 'appendMany') && anchorTo === 'end' && followOnAppend) {
+      mustFollow = shouldFollow()
     }
 
     const oldPositions = positions
@@ -315,9 +391,10 @@ export function bindWindow (options = {}) {
         }
 
         if (anchor && anchor.key === removedKey) {
-          anchor = reanchorOnRemove(removedKey, anchor, oldPositions)
+          anchor = reanchorOnRemove(removedKey, anchor, oldPositions, anchorTo)
           if (anchor) {
-            const derivedVirtualScrollTop = computeScrollTopFromAnchor(anchor, positions)
+            const viewportHeight = getViewportHeight()
+            const derivedVirtualScrollTop = computeScrollTopFromAnchor(anchor, positions, anchorTo, viewportHeight)
             const scale = getScale()
             container.scrollTop = derivedVirtualScrollTop * scale
           } else {
@@ -335,9 +412,82 @@ export function bindWindow (options = {}) {
     }
 
     renderVisibleWindow()
+
+    if (mustFollow) {
+      const newTotalHeight = positions.length > 0
+        ? positions[positions.length - 1].y + positions[positions.length - 1].height
+        : 0
+      const scale = getScale()
+      const viewportHeight = getViewportHeight()
+      const targetScrollTop = Math.max(0, (newTotalHeight * scale) - viewportHeight)
+
+      if (followOnAppend === 'smooth' && typeof container.scrollTo === 'function') {
+        container.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        })
+      } else {
+        container.scrollTop = targetScrollTop
+      }
+    }
   }
 
   const unsubscribe = store.subscribe(handleStoreChange)
+
+  function scrollToKey (keyToScroll, { align = 'auto' } = {}) {
+    if (destroyed) {
+      return
+    }
+
+    const viewportHeight = getViewportHeight()
+
+    for (let i = 0; i < 2; i++) {
+      const pos = positions.find((p) => p.key === keyToScroll)
+      if (!pos) {
+        return
+      }
+
+      const scale = getScale()
+      const currentVirtualScrollTop = (container.scrollTop || 0) / scale
+
+      let effectiveAlign = align
+      if (align === 'auto') {
+        const itemTop = pos.y
+        const itemBottom = pos.y + pos.height
+        const vTop = currentVirtualScrollTop
+        const vBottom = vTop + viewportHeight
+
+        if (itemTop >= vTop && itemBottom <= vBottom) {
+          return
+        }
+        if (itemTop < vTop) {
+          effectiveAlign = 'start'
+        } else {
+          effectiveAlign = 'end'
+        }
+      }
+
+      let targetVirtual = 0
+      if (effectiveAlign === 'start') {
+        targetVirtual = pos.y
+      } else if (effectiveAlign === 'center') {
+        targetVirtual = (pos.y + (pos.height / 2)) - (viewportHeight / 2)
+      } else if (effectiveAlign === 'end') {
+        targetVirtual = (pos.y + pos.height) - viewportHeight
+      }
+
+      const targetScrollTop = Math.max(0, targetVirtual * scale)
+      container.scrollTop = targetScrollTop
+      renderVisibleWindow()
+    }
+  }
+
+  function getAnchor () {
+    return anchor ? {
+      key: anchor.key,
+      offset: anchor.offset
+    } : null
+  }
 
   function destroy () {
     if (destroyed) {
@@ -347,6 +497,7 @@ export function bindWindow (options = {}) {
 
     container.removeEventListener('scroll', onScroll)
     measurements.disconnect()
+    disconnectInfinite()
 
     if (container.style) {
       container.style.overflowAnchor = ''
@@ -370,5 +521,9 @@ export function bindWindow (options = {}) {
     }
   }
 
-  return { destroy }
+  return {
+    destroy,
+    scrollToKey,
+    getAnchor
+  }
 }
