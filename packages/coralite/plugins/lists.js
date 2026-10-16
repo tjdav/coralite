@@ -9,6 +9,21 @@ export const listsPlugin = definePlugin({
     overscan: {
       type: Number,
       default: 5
+    },
+    anchorTo: {
+      type: String,
+      default: 'start'
+    },
+    followOnAppend: {
+      default: false
+    },
+    scrollEndThreshold: {
+      type: Number,
+      default: 80
+    },
+    reachThreshold: {
+      type: Number,
+      default: 200
     }
   },
 
