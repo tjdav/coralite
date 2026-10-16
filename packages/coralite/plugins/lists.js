@@ -25,6 +25,10 @@ export const listsPlugin = definePlugin({
     reachThreshold: {
       type: Number,
       default: 200
+    },
+    headerHeight: {
+      type: Number,
+      default: 40
     }
   },
 

@@ -1,6 +1,7 @@
 import { CoraliteError } from '../../lib/shared/errors.js'
 import { computePositions } from './anchor.js'
 import { bindWindow } from './window.js'
+import { groupItems } from './groups.js'
 
 /**
  * Binds a keyed store to a DOM container element.
@@ -19,7 +20,11 @@ export function bind (options = {}) {
     minLaneWidth = 200,
     maxLanes = 6,
     gap = 0,
-    columns = []
+    columns = [],
+    groupBy = null,
+    createHeader = null,
+    stickyGroups = false,
+    headerHeight = 40
   } = opts
 
   if (!['linear', 'grid', 'masonry', 'table'].includes(layout)) {
@@ -41,8 +46,11 @@ export function bind (options = {}) {
   if (opts.direction) {
     throw new CoraliteError('Direction configuration is not yet supported in this version of the lists plugin.')
   }
-  if (opts.groupBy) {
-    throw new CoraliteError('Grouping (groupBy) is not yet supported in this version of the lists plugin.')
+  if (groupBy && typeof groupBy !== 'function') {
+    throw new CoraliteError('lists.bind: groupBy option must be a function (item) => string | null | undefined')
+  }
+  if (groupBy && typeof createHeader !== 'function') {
+    throw new CoraliteError('lists.bind: createHeader must be a function (groupKey, items) => HTMLElement when groupBy is set.')
   }
   if (opts.onReachStart || opts.onReachEnd) {
     throw new CoraliteError('Infinite scroll callbacks (onReachStart / onReachEnd) are not yet supported in this version of the lists plugin.')
@@ -104,6 +112,7 @@ export function bind (options = {}) {
       maxLanes,
       gap,
       columns,
+      headerHeight,
       containerWidth: getContainerWidth()
     }
   }
@@ -150,8 +159,16 @@ export function bind (options = {}) {
     }
   }
 
-  let items = store.all()
-  let positions = isNonLinear ? computePositions(items, key, null, intrinsicSize, getLayoutOptions()) : []
+  const effectiveKey = (item) => {
+    if (item && item.__header) {
+      return item.key
+    }
+    return key(item)
+  }
+
+  let rawItems = store.all()
+  let { flatItems: items } = groupItems(rawItems, groupBy)
+  let positions = isNonLinear ? computePositions(items, effectiveKey, null, intrinsicSize, getLayoutOptions()) : []
 
   function updateContainerHeight () {
     if (isNonLinear && container.style) {
@@ -179,13 +196,29 @@ export function bind (options = {}) {
   }
 
   function createElementForItem (item) {
-    const k = key(item)
-    const el = create.length > 1 ? create(item, { columns }) : create(item)
-    if (el) {
-      if (isAutoVirtual && el.style) {
+    const k = effectiveKey(item)
+    let el
+    if (item && item.__header) {
+      el = createHeader(item.groupKey, item.items)
+      if (el) {
+        el.setAttribute('data-lists-header', '')
+        if (stickyGroups && (virtual === false || virtual === 'auto')) {
+          if (el.style) {
+            el.style.position = 'sticky'
+            el.style.top = '0px'
+            el.style.zIndex = '1'
+          }
+        }
+      }
+    } else {
+      el = create.length > 1 ? create(item, { columns }) : create(item)
+      if (el && isAutoVirtual && el.style) {
         el.style.contentVisibility = 'auto'
         el.style.containIntrinsicSize = `auto ${intrinsicSize}px`
       }
+    }
+
+    if (el) {
       applyPositioning(el, k)
       elementMap.set(k, el)
     }
@@ -207,7 +240,7 @@ export function bind (options = {}) {
 
   function recomputeNonLinear () {
     if (isNonLinear) {
-      positions = computePositions(items, key, null, intrinsicSize, getLayoutOptions())
+      positions = computePositions(items, effectiveKey, null, intrinsicSize, getLayoutOptions())
       updateContainerHeight()
       for (const [k, el] of elementMap.entries()) {
         applyPositioning(el, k)
@@ -230,84 +263,102 @@ export function bind (options = {}) {
   }
 
   function handleStoreChange (change) {
-    items = store.all()
+    rawItems = store.all()
+    const { flatItems: nextItems } = groupItems(rawItems, groupBy)
+    items = nextItems
+
     if (isNonLinear) {
-      positions = computePositions(items, key, null, intrinsicSize, getLayoutOptions())
+      positions = computePositions(items, effectiveKey, null, intrinsicSize, getLayoutOptions())
       updateContainerHeight()
     }
 
-    switch (change.type) {
-      case 'append': {
-        for (const item of change.items) {
+    if (groupBy) {
+      elementMap.clear()
+      if (typeof document !== 'undefined') {
+        const fragment = document.createDocumentFragment()
+        for (const item of items) {
           const el = createElementForItem(item)
           if (el) {
-            container.appendChild(el)
+            fragment.appendChild(el)
           }
         }
-        recomputeNonLinear()
-        break
+        container.replaceChildren(fragment)
+        updateContainerHeight()
       }
-
-      case 'prepend': {
-        for (let i = change.items.length - 1; i >= 0; i--) {
-          const item = change.items[i]
-          const el = createElementForItem(item)
-          if (el) {
-            container.insertBefore(el, container.firstChild)
-          }
-        }
-        recomputeNonLinear()
-        break
-      }
-
-      case 'update': {
-        const k = change.id
-        const el = elementMap.get(k)
-        if (el && typeof update === 'function') {
-          const newItem = store.get(k)
-          if (newItem) {
-            update(el, newItem)
-          }
-        }
-        break
-      }
-
-      case 'remove': {
-        const k = change.id
-        const el = elementMap.get(k)
-        if (el) {
-          elementMap.delete(k)
-          if (typeof el.remove === 'function') {
-            el.remove()
-          } else if (el.parentNode) {
-            el.parentNode.removeChild(el)
-          }
-        }
-        recomputeNonLinear()
-        break
-      }
-
-      case 'set': {
-        elementMap.clear()
-        if (typeof document !== 'undefined') {
-          const fragment = document.createDocumentFragment()
+    } else {
+      switch (change.type) {
+        case 'append': {
           for (const item of change.items) {
             const el = createElementForItem(item)
             if (el) {
-              fragment.appendChild(el)
+              container.appendChild(el)
             }
           }
-          container.replaceChildren(fragment)
-          updateContainerHeight()
+          recomputeNonLinear()
+          break
         }
-        break
-      }
 
-      case 'clear': {
-        elementMap.clear()
-        container.replaceChildren()
-        updateContainerHeight()
-        break
+        case 'prepend': {
+          for (let i = change.items.length - 1; i >= 0; i--) {
+            const item = change.items[i]
+            const el = createElementForItem(item)
+            if (el) {
+              container.insertBefore(el, container.firstChild)
+            }
+          }
+          recomputeNonLinear()
+          break
+        }
+
+        case 'update': {
+          const k = change.id
+          const el = elementMap.get(k)
+          if (el && typeof update === 'function') {
+            const newItem = store.get(k)
+            if (newItem) {
+              update(el, newItem)
+            }
+          }
+          break
+        }
+
+        case 'remove': {
+          const k = change.id
+          const el = elementMap.get(k)
+          if (el) {
+            elementMap.delete(k)
+            if (typeof el.remove === 'function') {
+              el.remove()
+            } else if (el.parentNode) {
+              el.parentNode.removeChild(el)
+            }
+          }
+          recomputeNonLinear()
+          break
+        }
+
+        case 'set': {
+          elementMap.clear()
+          if (typeof document !== 'undefined') {
+            const fragment = document.createDocumentFragment()
+            for (const item of change.items) {
+              const el = createElementForItem(item)
+              if (el) {
+                fragment.appendChild(el)
+              }
+            }
+            container.replaceChildren(fragment)
+            updateContainerHeight()
+          }
+          break
+        }
+
+        case 'clear': {
+          elementMap.clear()
+          container.replaceChildren()
+          updateContainerHeight()
+          break
+        }
       }
     }
   }

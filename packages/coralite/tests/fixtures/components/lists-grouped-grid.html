@@ -1,0 +1,56 @@
+<template id="lists-grouped-grid">
+  <div ref="container" class="grid-container"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ refs, signal, lists }) {
+      const items = [
+        { id: '1', name: 'Apple', category: 'Fruits' },
+        { id: '2', name: 'Banana', category: 'Fruits' },
+        { id: '3', name: 'Carrot', category: 'Vegetables' },
+        { id: '4', name: 'Broccoli', category: 'Vegetables' }
+      ]
+
+      const store = lists.createStore({
+        key: (item) => item.id,
+        initial: items
+      })
+
+      lists.bind({
+        container: refs('container'),
+        store,
+        signal,
+        key: (item) => item.id,
+        layout: 'grid',
+        lanes: 2,
+        size: 60,
+        groupBy: (item) => item.category,
+        createHeader (groupKey) {
+          const header = document.createElement('div')
+          header.className = 'group-header'
+          header.textContent = groupKey
+          return header
+        },
+        create (item) {
+          const div = document.createElement('div')
+          div.className = 'grid-item'
+          div.textContent = item.name
+          return div
+        }
+      })
+    }
+  })
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+  .grid-container {
+    width: 600px;
+    position: relative;
+  }
+</style>

@@ -8,6 +8,7 @@ import {
 import { computeLaneCount } from './layouts.js'
 import { createMeasurementCache } from './measurements.js'
 import { setupInfiniteScroll } from './infinite.js'
+import { groupItems, findTopVisibleGroup } from './groups.js'
 
 const MAX_SAFE_HEIGHT = 33_000_000
 
@@ -39,7 +40,11 @@ export function bindWindow (options = {}) {
     minLaneWidth = 200,
     maxLanes = 6,
     gap = 0,
-    columns = []
+    columns = [],
+    groupBy = null,
+    createHeader = null,
+    stickyGroups = false,
+    headerHeight = 40
   } = options
 
   if (!['linear', 'grid', 'masonry', 'table'].includes(layout)) {
@@ -65,6 +70,13 @@ export function bindWindow (options = {}) {
   }
   if (typeof create !== 'function') {
     throw new CoraliteError('lists.bind: create must be a function (item) => HTMLElement')
+  }
+
+  if (groupBy && typeof groupBy !== 'function') {
+    throw new CoraliteError('lists.bind: groupBy option must be a function (item) => string | null | undefined')
+  }
+  if (groupBy && typeof createHeader !== 'function') {
+    throw new CoraliteError('lists.bind: createHeader must be a function (groupKey, items) => HTMLElement when groupBy is set.')
   }
 
   if (
@@ -117,8 +129,16 @@ export function bindWindow (options = {}) {
       maxLanes,
       gap,
       columns,
+      headerHeight,
       containerWidth: getContainerWidth()
     }
+  }
+
+  const effectiveKey = (item) => {
+    if (item && item.__header) {
+      return item.key
+    }
+    return key(item)
   }
 
   function getCurrentSignature () {
@@ -180,8 +200,25 @@ export function bindWindow (options = {}) {
   // Map of item key to HTMLElement
   const elementMap = new Map()
 
-  let items = store.all()
-  let positions = computePositions(items, key, measurements, defaultSize, getLayoutOptions())
+  let rawItems = store.all()
+  let { flatItems: items, groups } = groupItems(rawItems, groupBy)
+  let positions = computePositions(items, effectiveKey, measurements, defaultSize, getLayoutOptions())
+
+  // Windowed Sticky Header state
+  let stickyHeaderEl = null
+  let stickyGroupKey = null
+
+  if (stickyGroups && groupBy && typeof document !== 'undefined') {
+    stickyHeaderEl = document.createElement('div')
+    stickyHeaderEl.setAttribute('data-lists-header', '')
+    stickyHeaderEl.className = 'lists-sticky-header'
+    stickyHeaderEl.setAttribute('class', 'lists-sticky-header')
+    stickyHeaderEl.style.position = 'absolute'
+    stickyHeaderEl.style.top = '0px'
+    stickyHeaderEl.style.left = '0px'
+    stickyHeaderEl.style.right = '0px'
+    stickyHeaderEl.style.zIndex = '1'
+  }
 
   // Position anchor { key, offset }
   let anchor = null
@@ -227,10 +264,17 @@ export function bindWindow (options = {}) {
   }
 
   function createElementForItem (item) {
-    const k = key(item)
+    const k = effectiveKey(item)
     let el = elementMap.get(k)
     if (!el) {
-      el = create.length > 1 ? create(item, { columns }) : create(item)
+      if (item && item.__header) {
+        el = createHeader(item.groupKey, item.items)
+        if (el) {
+          el.setAttribute('data-lists-header', '')
+        }
+      } else {
+        el = create.length > 1 ? create(item, { columns }) : create(item)
+      }
       if (el) {
         elementMap.set(k, el)
       }
@@ -247,7 +291,7 @@ export function bindWindow (options = {}) {
     }
 
     const oldPositions = positions
-    positions = computePositions(items, key, measurements, defaultSize, getLayoutOptions())
+    positions = computePositions(items, effectiveKey, measurements, defaultSize, getLayoutOptions())
 
     if (anchor) {
       const resizedIdx = oldPositions.findIndex((p) => p.key === resizedKey)
@@ -370,6 +414,10 @@ export function bindWindow (options = {}) {
       newRenderedNodes.push(bottomSentinel)
     }
 
+    if (stickyHeaderEl) {
+      newRenderedNodes.push(stickyHeaderEl)
+    }
+
     for (const [k, el] of elementMap.entries()) {
       if (!visibleKeys.has(k)) {
         if (isDynamicMeasure) {
@@ -380,6 +428,8 @@ export function bindWindow (options = {}) {
     }
 
     container.replaceChildren(...newRenderedNodes)
+
+    updateStickyHeader(virtualScrollTop, scale)
 
     if (anchorTo === 'end') {
       const scrollBottom = virtualScrollTop + viewportHeight
@@ -409,6 +459,40 @@ export function bindWindow (options = {}) {
         }
       }
     }
+  }
+
+  function updateStickyHeader (virtualScrollTop, scale) {
+    if (!stickyHeaderEl || groups.length === 0) {
+      return
+    }
+
+    const topVisible = findTopVisibleGroup(groups, positions, virtualScrollTop)
+    if (!topVisible) {
+      stickyHeaderEl.style.display = 'none'
+      return
+    }
+
+    stickyHeaderEl.style.display = ''
+
+    if (topVisible.groupKey !== stickyGroupKey) {
+      stickyGroupKey = topVisible.groupKey
+      stickyHeaderEl.replaceChildren(createHeader(stickyGroupKey, topVisible.items))
+    }
+
+    let measuredHeaderH = headerHeight
+    if (topVisible.headerPos && topVisible.headerPos.height > 0) {
+      measuredHeaderH = topVisible.headerPos.height
+    } else if (stickyHeaderEl.clientHeight && stickyHeaderEl.clientHeight > 0) {
+      measuredHeaderH = stickyHeaderEl.clientHeight
+    }
+
+    const nextGroupTopScaled = topVisible.nextGroupTop !== Infinity ? topVisible.nextGroupTop * scale : Infinity
+    const currentScrollTop = container.scrollTop || 0
+
+    const diff = nextGroupTopScaled - currentScrollTop - measuredHeaderH
+    const stickyTop = Math.min(0, diff)
+
+    stickyHeaderEl.style.transform = `translateY(${stickyTop}px)`
   }
 
   // Scroll listener throttled with requestAnimationFrame
@@ -445,7 +529,7 @@ export function bindWindow (options = {}) {
       const newWidth = getContainerWidth()
       if (Math.abs(newWidth - lastContainerWidth) >= 1) {
         lastContainerWidth = newWidth
-        positions = computePositions(items, key, measurements, defaultSize, getLayoutOptions())
+        positions = computePositions(items, effectiveKey, measurements, defaultSize, getLayoutOptions())
         if (anchor) {
           const viewportHeight = getViewportHeight()
           const derivedVirtualScrollTop = computeScrollTopFromAnchor(anchor, positions, anchorTo, viewportHeight)
@@ -480,8 +564,11 @@ export function bindWindow (options = {}) {
     }
 
     const oldPositions = positions
-    items = store.all()
-    positions = computePositions(items, key, measurements, defaultSize, getLayoutOptions())
+    rawItems = store.all()
+    const { flatItems: nextItems, groups: nextGroups } = groupItems(rawItems, groupBy)
+    items = nextItems
+    groups = nextGroups
+    positions = computePositions(items, effectiveKey, measurements, defaultSize, getLayoutOptions())
 
     switch (change.type) {
       case 'update': {
@@ -623,6 +710,11 @@ export function bindWindow (options = {}) {
         container.style.position = ''
       }
     }
+
+    if (stickyHeaderEl && stickyHeaderEl.parentNode === container) {
+      stickyHeaderEl.remove()
+    }
+    stickyHeaderEl = null
 
     if (topSpacer && topSpacer.parentNode === container) {
       topSpacer.remove()
