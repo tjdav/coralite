@@ -1,0 +1,52 @@
+<template id="lists-grouped">
+  <ul ref="list"></ul>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ refs, signal, lists }) {
+      const items = [
+        { id: '1', name: 'Apple', category: 'Fruits' },
+        { id: '2', name: 'Carrot', category: 'Vegetables' },
+        { id: '3', name: 'Banana', category: 'Fruits' },
+        { id: '4', name: 'Broccoli', category: 'Vegetables' }
+      ]
+
+      const store = lists.createStore({
+        key: (item) => item.id,
+        initial: items
+      })
+
+      lists.bind({
+        container: refs('list'),
+        store,
+        signal,
+        key: (item) => item.id,
+        groupBy: (item) => item.category,
+        createHeader (groupKey, groupItems) {
+          const header = document.createElement('div')
+          header.className = 'group-header'
+          header.textContent = `${groupKey} (${groupItems.length})`
+          return header
+        },
+        create (item) {
+          const li = document.createElement('li')
+          li.textContent = item.name
+          return li
+        }
+      })
+    }
+  })
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+  ul {
+    padding: 0;
+    list-style: none;
+  }
+</style>

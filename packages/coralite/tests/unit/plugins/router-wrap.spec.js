@@ -104,7 +104,7 @@ describe('Router Outlet Wrapping', () => {
         cleanUrls: true
       })
 
-      const results = await app.build(pagePath)
+      const results = await app.build()
       assert.strictEqual(results.length, 1)
 
       const pageResult = results[0]

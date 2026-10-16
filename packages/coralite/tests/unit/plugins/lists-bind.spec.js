@@ -393,7 +393,15 @@ describe('lists plugin - bind', () => {
         ...opts,
         groupBy: 'category'
       }),
-      /Grouping \(groupBy\) is not yet supported/
+      /groupBy option must be a function/
+    )
+
+    assert.throws(
+      () => bind({
+        ...opts,
+        groupBy: (item) => item.category
+      }),
+      /createHeader must be a function/
     )
 
     assert.throws(

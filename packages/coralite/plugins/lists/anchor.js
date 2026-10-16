@@ -7,6 +7,9 @@ import {
 } from './layouts.js'
 
 function getItemKey (item, keyFn, index) {
+  if (item && item.__header && item.key) {
+    return item.key
+  }
   if (keyFn) {
     return keyFn(item)
   }
@@ -58,6 +61,8 @@ export function computePositions (
 
   const signature = `${activeLanes}:${Math.round(actualLaneWidth)}:${Math.round(containerWidth)}`
 
+  const headerEstimate = typeof layoutOptions.headerHeight === 'number' ? layoutOptions.headerHeight : 40
+
   const heights = new Array(items.length)
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
@@ -69,7 +74,8 @@ export function computePositions (
         measured = measurements.get(k)
       }
     }
-    heights[i] = typeof measured === 'number' && measured > 0 ? measured : defaultSize
+    const fallbackSize = item && item.__header ? headerEstimate : defaultSize
+    heights[i] = typeof measured === 'number' && measured > 0 ? measured : fallbackSize
   }
 
   switch (layout) {

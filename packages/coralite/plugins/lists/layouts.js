@@ -3,6 +3,9 @@
  */
 
 function getItemKey (item, keyFn, index) {
+  if (item && item.__header && item.key) {
+    return item.key
+  }
   if (keyFn) {
     return keyFn(item)
   }
@@ -59,9 +62,28 @@ export function layoutGrid (items, heights, lanes = 1, containerWidth = 800, gap
   let y = 0
   let i = 0
   while (i < items.length) {
+    if (items[i] && items[i].__header) {
+      const k = getItemKey(items[i], keyFn, i)
+      const h = heights[i]
+      positions.push({
+        key: k,
+        x: 0,
+        y,
+        width: containerWidth,
+        height: h,
+        lane: 0
+      })
+      y += h + gap
+      i++
+      continue
+    }
+
     const row = []
     let rowHeight = 0
-    for (let l = 0; l < safeLanes && i < items.length; l++, i++) {
+    for (let l = 0; l < safeLanes && i < items.length; l++) {
+      if (items[i] && items[i].__header) {
+        break
+      }
       const h = heights[i]
       row.push({
         item: items[i],
@@ -71,7 +93,9 @@ export function layoutGrid (items, heights, lanes = 1, containerWidth = 800, gap
       if (h > rowHeight) {
         rowHeight = h
       }
+      i++
     }
+
     for (let l = 0; l < row.length; l++) {
       const k = getItemKey(row[l].item, keyFn, row[l].index)
       positions.push({
@@ -83,7 +107,9 @@ export function layoutGrid (items, heights, lanes = 1, containerWidth = 800, gap
         lane: l
       })
     }
-    y += rowHeight + gap
+    if (row.length > 0) {
+      y += rowHeight + gap
+    }
   }
   return positions
 }
@@ -105,25 +131,46 @@ export function layoutMasonry (items, heights, lanes = 1, containerWidth = 800, 
   const laneHeights = new Array(safeLanes).fill(0)
   const positions = new Array(items.length)
   for (let i = 0; i < items.length; i++) {
-    let shortest = 0
-    for (let l = 1; l < safeLanes; l++) {
-      if (laneHeights[l] < laneHeights[shortest]) {
-        shortest = l
-      }
-    }
-    const x = shortest * (laneWidth + gap)
-    const y = laneHeights[shortest]
+    const item = items[i]
     const h = heights[i]
-    const k = getItemKey(items[i], keyFn, i)
-    positions[i] = {
-      key: k,
-      x,
-      y,
-      width: laneWidth,
-      height: h,
-      lane: shortest
+    const k = getItemKey(item, keyFn, i)
+
+    if (item && item.__header) {
+      let maxLaneY = 0
+      for (let l = 0; l < safeLanes; l++) {
+        if (laneHeights[l] > maxLaneY) {
+          maxLaneY = laneHeights[l]
+        }
+      }
+      positions[i] = {
+        key: k,
+        x: 0,
+        y: maxLaneY,
+        width: containerWidth,
+        height: h,
+        lane: 0
+      }
+      const nextY = maxLaneY + h + gap
+      laneHeights.fill(nextY)
+    } else {
+      let shortest = 0
+      for (let l = 1; l < safeLanes; l++) {
+        if (laneHeights[l] < laneHeights[shortest]) {
+          shortest = l
+        }
+      }
+      const x = shortest * (laneWidth + gap)
+      const y = laneHeights[shortest]
+      positions[i] = {
+        key: k,
+        x,
+        y,
+        width: laneWidth,
+        height: h,
+        lane: shortest
+      }
+      laneHeights[shortest] = y + h + gap
     }
-    laneHeights[shortest] = y + h + gap
   }
   return positions
 }

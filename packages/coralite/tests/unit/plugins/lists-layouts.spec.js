@@ -134,6 +134,70 @@ describe('lists plugin - layout engine', () => {
       assert.equal(positions[4].y, 160)
       assert.equal(positions[5].y, 160)
     })
+
+    it('layoutGrid resets lanes on synthetic header items and spans 100% width', () => {
+      const groupedItems = [
+        {
+          key: '__header__Fruits',
+          __header: true
+        },
+        { id: '1' },
+        { id: '2' },
+        {
+          key: '__header__Veggies',
+          __header: true
+        },
+        { id: '3' }
+      ]
+      const heights = [40, 50, 50, 40, 50]
+      const positions = layoutGrid(groupedItems, heights, 2, 800, 0, (it) => it.id)
+
+      assert.equal(positions.length, 5)
+      // Header 1
+      assert.deepEqual(positions[0], {
+        key: '__header__Fruits',
+        x: 0,
+        y: 0,
+        width: 800,
+        height: 40,
+        lane: 0
+      })
+      // Row 1
+      assert.deepEqual(positions[1], {
+        key: '1',
+        x: 0,
+        y: 40,
+        width: 400,
+        height: 50,
+        lane: 0
+      })
+      assert.deepEqual(positions[2], {
+        key: '2',
+        x: 400,
+        y: 40,
+        width: 400,
+        height: 50,
+        lane: 1
+      })
+      // Header 2
+      assert.deepEqual(positions[3], {
+        key: '__header__Veggies',
+        x: 0,
+        y: 90,
+        width: 800,
+        height: 40,
+        lane: 0
+      })
+      // Row 2
+      assert.deepEqual(positions[4], {
+        key: '3',
+        x: 0,
+        y: 130,
+        width: 400,
+        height: 50,
+        lane: 0
+      })
+    })
   })
 
   describe('layoutMasonry', () => {
@@ -182,6 +246,45 @@ describe('lists plugin - layout engine', () => {
       const masonryPos = layoutMasonry(sampleItems, heights, 3, 900, 10, keyFn)
 
       assert.deepEqual(gridPos, masonryPos)
+    })
+
+    it('layoutMasonry flushes lanes and resets baselines when encountering a header', () => {
+      const groupedItems = [
+        { id: '1' },
+        { id: '2' },
+        {
+          key: '__header__Fruits',
+          __header: true
+        },
+        { id: '3' }
+      ]
+      const heights = [100, 60, 40, 50]
+      const positions = layoutMasonry(groupedItems, heights, 2, 800, 0, (it) => it.id)
+
+      assert.equal(positions.length, 4)
+      assert.equal(positions[0].key, '1')
+      assert.equal(positions[0].height, 100)
+      assert.equal(positions[1].key, '2')
+      assert.equal(positions[1].height, 60)
+
+      // Header flushes maxLaneY (100)
+      assert.deepEqual(positions[2], {
+        key: '__header__Fruits',
+        x: 0,
+        y: 100,
+        width: 800,
+        height: 40,
+        lane: 0
+      })
+      // Next item starts at baseline 140
+      assert.deepEqual(positions[3], {
+        key: '3',
+        x: 0,
+        y: 140,
+        width: 400,
+        height: 50,
+        lane: 0
+      })
     })
   })
 
