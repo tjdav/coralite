@@ -10,10 +10,7 @@
 
   <script type="coralite/page">
     export default definePage({
-      client ({ refs, plugins }) {
-        const lists = plugins?.lists
-        if (!lists) return
-
+      client ({ refs, lists }) {
         const store = lists.createStore({
           key: (item) => item.id,
           initial: [

@@ -13,7 +13,8 @@ import {
   parseScriptAST,
   validateGetters,
   validateStyle,
-  validateServerBlock
+  validateServerBlock,
+  validateDefensiveGuards
 } from '../../validator/index.js'
 
 /**
@@ -364,6 +365,7 @@ function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnosti
     validateGetters(scriptCtx)
     validateStyle(scriptCtx)
     validateServerBlock(scriptCtx)
+    validateDefensiveGuards(scriptCtx)
   }
   if (scriptCtx.diagnostics && scriptCtx.diagnostics.length > 0) {
     diagnostics.push(...scriptCtx.diagnostics)

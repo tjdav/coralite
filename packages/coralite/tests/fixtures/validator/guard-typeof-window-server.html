@@ -1,0 +1,16 @@
+<template id="guard-typeof-window-server">
+  <div>Typeof Window Server</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    server () {
+      if (typeof window !== 'undefined') {
+        console.log('browser')
+      }
+      return { data: 'test' }
+    }
+  })
+</script>

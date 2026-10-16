@@ -1,0 +1,14 @@
+<template id="guard-context-key">
+  <div>Context Guard</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ lists }) {
+      if (!lists) return
+      lists.bind()
+    }
+  })
+</script>

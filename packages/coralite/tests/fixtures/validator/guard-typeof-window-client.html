@@ -1,0 +1,14 @@
+<template id="guard-typeof-window-client">
+  <div>Typeof Window Client</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client () {
+      if (typeof window === 'undefined') return
+      console.log(window.location)
+    }
+  })
+</script>
