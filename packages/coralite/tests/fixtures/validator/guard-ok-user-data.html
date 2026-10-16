@@ -1,0 +1,16 @@
+<template id="guard-ok-user-data">
+  <div>OK User Data Guard</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ state, refs }) {
+      if (!state.user) return
+      const btn = refs('button')
+      if (!btn) return
+      console.log(state.user, btn)
+    }
+  })
+</script>

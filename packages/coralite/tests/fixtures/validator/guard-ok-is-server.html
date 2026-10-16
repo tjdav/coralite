@@ -1,0 +1,13 @@
+<template id="guard-ok-is-server">
+  <div>OK IsServer Branch</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    getters: {
+      greeting: ({ isServer }) => (isServer ? 'Server' : 'Client')
+    }
+  })
+</script>

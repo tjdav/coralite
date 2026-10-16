@@ -12,7 +12,11 @@ Directory boundary responsibilities under `lib/`:
 - `lib/shared/`: Isomorphic utilities, AST helpers, schema definitions, and token parsers shared between server and client runtimes.
 - `lib/validator/`: Build-time validation passes, diagnostic emitters, and code fixers for template, script, and config verification.
 
-## 3. Package-scoped commands
+## 3. Authoring invariants
+
+- Do not guard destructured context keys or check browser globals in deterministic functions (`client()`, `server()`, `getters`, `style`, `slots`). Context keys are guaranteed by the framework.
+
+## 4. Package-scoped commands
 
 Run commands scoped to `coralite`:
 - `pnpm --filter coralite lint:format`
@@ -20,7 +24,7 @@ Run commands scoped to `coralite`:
 - `pnpm --filter coralite build`
 - `pnpm --filter coralite test:smoke`
 
-## 4. Reserved names
+## 5. Reserved names
 
 Reserved diagnostic and error code ranges for Coralite core:
 - `CORALITE-E*`: Core error diagnostics.
@@ -29,12 +33,12 @@ Reserved diagnostic and error code ranges for Coralite core:
 - `CORALITE-P*`: Plugin system errors and warnings.
 - `CORALITE-PAGE-*`: Page-level diagnostics.
 
-## 5. What belongs elsewhere
+## 6. What belongs elsewhere
 
 - CLI commands, runner scripts, and dev server orchestration belong in `packages/coralite-scripts/`.
 - Project scaffolding templates and template generation logic belong in `packages/create-coralite/`.
 - Release tooling and version bump scripts belong in `packages/coralite-release/`.
 
-## 6. Benchmark results
+## 7. Benchmark results
 
 Benchmark result files are stored at `benchmarks/results/` at the repository root. Performance tasks must run `pnpm bench --task-id <task-id> --phase <phase> --save` and commit the generated result files.

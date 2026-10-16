@@ -24,7 +24,56 @@ Top-level imports reserved for `define*` functions and modules used by isomorphi
 - `client` runs in the browser, cannot reference module scope.
 - Module-scope imports in `client` require `await import()`.
 
-## 5. Code style
+## 5. No defensive guards in deterministic blocks
+
+`client()` runs in the browser. `server()` runs in Node at build time. Getters, style, and slots run in both. The context the framework provides is guaranteed. Every destructured context key is always present.
+
+Do not guard context keys.
+
+```js
+// Wrong — the guard hides a real bug
+client({ lists }) {
+  if (!lists) return
+  lists.bind(...)
+}
+
+// Correct — if lists is undefined, the build should fail
+client({ lists }) {
+  lists.bind(...)
+}
+```
+
+Do not check for browser globals in `client()`:
+
+```js
+// Wrong — always false, always dead code
+client() {
+  if (typeof window === 'undefined') return
+}
+
+// Correct — no check needed
+client() {
+  window.addEventListener(...)
+}
+```
+
+Do not check for browser globals in `server()`:
+
+```js
+// Wrong — window is never defined during SSR
+server() {
+  if (typeof window !== 'undefined') { ... }
+}
+
+// Correct — use isServer to branch explicitly
+getters: {
+  greeting: ({ isServer }) => isServer ? 'SSR' : 'Client'
+}
+```
+
+If you find yourself writing a defensive guard, stop. The framework's contract is that context keys are present. If they are not, the bug is elsewhere — in plugin registration, in the build, in the config. Guard clauses make that bug invisible.
+
+## 6. Code style
 
 ### Factory functions over classes
 
@@ -49,7 +98,7 @@ If a factory returns an object with methods, those methods use closures, not `th
 `createCoralite`, `createRenderer`, `createCollection`. Not `makeX`, `buildX`, or
 `XFactory`.
 
-## 6. Non-fixable lint rules
+## 7. Non-fixable lint rules
 
 The list of rules `lint:format` cannot auto-fix:
 
@@ -64,7 +113,7 @@ The list of rules `lint:format` cannot auto-fix:
 - `no-shadow` — no variable names that shadow outer scope.
 - `consistent-return` — all code paths in a function must return, or none must.
 
-## 7. Workflow
+## 8. Workflow
 
 Ordered verification commands:
 1. `pnpm lint:format`
@@ -75,23 +124,23 @@ Ordered verification commands:
 
 All must exit clean for per-task verification (`pnpm test:unit` runs on merge to `v1`).
 
-## 8. Naming
+## 9. Naming
 
 - Commits: Conventional Commits, scope required. Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`, `chore`, `revert`. Scopes: `plugin`, `page`, `component`, `router`, `compiler`, `renderer`, `manifest`, `config`, `signals`, `hydration`, `validator`, `cli`, `test`, `docs`.
 - Branch: `{type}/{task-id}-{slug}` (e.g. `docs/p0-00c-agent-documentation`).
 - PR title format: match the primary commit title.
 
-## 9. Verification
+## 10. Verification
 
 - Every task starts by verifying its Prerequisites checklist. If any check fails, author an exploration task. Do not proceed.
 - Spec drift is a bug: if the code and the spec disagree and the code is right, update the spec.
 - Do not use `git reset`, `git restore`, or `git checkout -- <file>` to discard work.
 
-## 10. Execution mode
+## 11. Execution mode
 
 Autonomous. Do not pause mid-task. Do not emit progress updates. Do not ask clarifying questions. Do not discard work. Stop conditions are the acceptance criteria passing or a hard blocker.
 
-## 11. Benchmark results
+## 12. Benchmark results
 
 Performance tasks (Phase 3 tasks) must record and commit benchmark results.
 

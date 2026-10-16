@@ -1,0 +1,14 @@
+<template id="guard-optional-chain">
+  <div>Optional Chain Context Key</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ lists }) {
+      const store = lists?.createStore()
+      return store
+    }
+  })
+</script>

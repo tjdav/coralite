@@ -6,10 +6,8 @@
       return [{ id: '42' }, { id: '99' }]
     },
     client ({ route, routeAware }) {
-      if (typeof window !== 'undefined') {
-        window.__page_client_route = route
-        window.__plugin_route_via_context = routeAware?.getPluginRoute ? routeAware.getPluginRoute() : undefined
-      }
+      window.__page_client_route = route
+      window.__plugin_route_via_context = routeAware.getPluginRoute ? routeAware.getPluginRoute() : undefined
     }
   })
 </script>

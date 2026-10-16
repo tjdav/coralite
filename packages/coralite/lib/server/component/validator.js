@@ -14,6 +14,7 @@ import {
   validateSlots,
   validateStyle,
   validateClientBlock,
+  validateDefensiveGuards,
   collectDeadCode
 } from '../../validator/index.js'
 
@@ -47,6 +48,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
     validateSlots(context)
     validateStyle(context)
     validateClientBlock(context)
+    validateDefensiveGuards(context)
   }
 
   return collectDeadCode(context)
