@@ -1,0 +1,61 @@
+<template id="lists-grid">
+  <style>
+    :host {
+      display: block;
+      padding: 1rem;
+    }
+    .grid-container {
+      height: 400px;
+      overflow: auto;
+      border: 1px solid #ccc;
+    }
+    .grid-item {
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid #ddd;
+      background: #f9f9f9;
+    }
+  </style>
+
+  <div class="grid-container" ref="container"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ refs, lists }) {
+      const { createStore, bind } = lists
+
+      const items = Array.from({ length: 120 }, (_, i) => ({
+        id: `grid-item-${i}`,
+        text: `Grid Item #${i}`
+      }))
+
+      const store = createStore({ initial: items })
+
+      const handle = bind({
+        container: refs.container,
+        store,
+        key: (item) => item.id,
+        create: (item) => {
+          const div = document.createElement('div')
+          div.className = 'grid-item lists-row'
+          div.textContent = item.text
+          return div
+        },
+        layout: 'grid',
+        lanes: 'auto',
+        laneWidth: 200,
+        gap: 10,
+        virtual: 'window',
+        size: 60,
+        overscan: 4
+      })
+
+      return () => {
+        handle.destroy()
+      }
+    }
+  })
+</script>

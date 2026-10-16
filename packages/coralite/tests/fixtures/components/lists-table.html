@@ -1,0 +1,75 @@
+<template id="lists-table">
+  <style>
+    :host {
+      display: block;
+      padding: 1rem;
+    }
+    .table-container {
+      height: 400px;
+      overflow: auto;
+      border: 1px solid #ccc;
+    }
+    .table-row {
+      display: flex;
+      box-sizing: border-box;
+      border-bottom: 1px solid #eee;
+    }
+    .table-cell {
+      padding: 8px 12px;
+    }
+  </style>
+
+  <div class="table-container" ref="container"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ refs, lists }) {
+      const { createStore, bind } = lists
+
+      const items = Array.from({ length: 50 }, (_, i) => ({
+        id: `row-${i}`,
+        idVal: `#${i}`,
+        name: `User ${i}`,
+        role: i % 2 === 0 ? 'Admin' : 'Member'
+      }))
+
+      const columns = [
+        { key: 'id', width: 80 },
+        { key: 'name', width: 200 },
+        { key: 'role', width: 150 }
+      ]
+
+      const store = createStore({ initial: items })
+
+      const handle = bind({
+        container: refs.container,
+        store,
+        key: (item) => item.id,
+        columns,
+        create: (item, { columns }) => {
+          const row = document.createElement('div')
+          row.className = 'table-row lists-row'
+          for (const col of columns) {
+            const cell = document.createElement('div')
+            cell.className = 'table-cell'
+            cell.style.width = `${col.width}px`
+            cell.textContent = col.key === 'id' ? item.idVal : item[col.key]
+            row.appendChild(cell)
+          }
+          return row
+        },
+        layout: 'table',
+        gap: 0,
+        virtual: 'window',
+        size: 40
+      })
+
+      return () => {
+        handle.destroy()
+      }
+    }
+  })
+</script>
