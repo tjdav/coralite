@@ -16,18 +16,27 @@ describe('lists plugin - anchor model', () => {
     assert.equal(positions.length, 10)
     assert.deepEqual(positions[0], {
       key: 'item-0',
+      x: 0,
       y: 0,
-      height: 50
+      width: 800,
+      height: 50,
+      lane: 0
     })
     assert.deepEqual(positions[1], {
       key: 'item-1',
+      x: 0,
       y: 50,
-      height: 50
+      width: 800,
+      height: 50,
+      lane: 0
     })
     assert.deepEqual(positions[9], {
       key: 'item-9',
+      x: 0,
       y: 450,
-      height: 50
+      width: 800,
+      height: 50,
+      lane: 0
     })
   })
 

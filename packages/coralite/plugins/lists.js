@@ -15,6 +15,7 @@ export const listsPlugin = definePlugin({
       default: 'start'
     },
     followOnAppend: {
+      type: Boolean,
       default: false
     },
     scrollEndThreshold: {
