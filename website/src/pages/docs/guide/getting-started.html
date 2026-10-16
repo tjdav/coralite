@@ -1,159 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <coralite-meta no-hydration title="Coralite Getting Started: Build Your First Interactive Component" description="Follow this beginner-friendly tutorial to build your first Coralite component from scratch. Learn how to write static templates, add dynamic logic with defineComponent, and make it interactive."></coralite-meta>
+  <coralite-meta no-hydration title="Getting Started — Coralite"
+    description="Learn how to install Coralite, set up a project, author your first component and page, and use essential framework scripts."></coralite-meta>
 </head>
+
 <body>
   <coralite-navbar></coralite-navbar>
   <main class="container content">
     <h1 class="display">Getting Started</h1>
 
-    <p>Welcome to Coralite! This tutorial will walk you through building your very first interactive web component using Coralite's unique HTML-first approach. We'll start with a simple static template and slowly make it dynamic.</p>
+    <p>Coralite is an HTML-first framework designed for building fast, static, and server-rendered web applications using native Web Platform standards. This guide covers project setup, directory structure, authoring your first component and page, and running core commands.</p>
 
-    <coralite-heading level="2" text="1. The Setup"></coralite-heading>
+    <coralite-heading level="2" text="1. Installation"></coralite-heading>
 
-    <p>First, make sure you have a basic Coralite project structure. If you used the <code>create-coralite</code> CLI (from the <a href="./quick-start.html">Quick Start</a> guide), you're already good to go. Otherwise, create the following folders:</p>
+    <p>Coralite consists of two primary packages: <code>coralite</code> (the framework runtime and engine) and <code>coralite-scripts</code> (the build, development, and toolchain scripts). You can scaffold a new project using the official <code>create-coralite</code> initializer:</p>
 
-    <coralite-code type="Project Structure">
-    <pre>
-  my-coralite-site/
-  ├── src/
-  │   ├── components/
-  │   └── pages/
-  └── package.json</pre>
-  </coralite-code>
+    <coralite-code-highlight language="bash" title="Scaffold a New Project">
+npm create coralite@latest my-app
+cd my-app
+npm install
+npm run dev
+    </coralite-code-highlight>
 
-    <coralite-heading level="2" text="2. Creating a Static Component"></coralite-heading>
+    <coralite-heading level="2" text="2. Project Structure"></coralite-heading>
 
-    <p>In Coralite, components are just standard HTML <code>&lt;template&gt;</code> tags. Let's create a simple counter component. Create a file named <code>counter.html</code> inside your <code>src/components/</code> directory.</p>
+    <p>A standard Coralite application uses a simple, predictable directory layout:</p>
 
-    <p>Give the template an <code>id</code> attribute. This ID becomes the custom HTML tag you will use in your pages (e.g., <code>&lt;my-counter&gt;</code>).</p>
-
-    <coralite-code-html>
-      <!-- src/components/counter.html -->
-      <template id="my-counter">
-        <div class="counter-box">
-          <h2>Count: <span>0</span></h2>
-          <button type="button">Increment</button>
-        </div>
-      </template>
-    </coralite-code-html>
-
-    <coralite-heading level="2" text="3. Using the Component in a Page"></coralite-heading>
-
-    <p>Now, let's use this static component. Create an <code>index.html</code> file inside your <code>src/pages/</code> directory. You can use your component simply by writing its tag name.</p>
-
-    <coralite-code-html>
-      <!-- src/pages/index.html -->
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <title>My First Coralite App</title>
-      </head>
-      <body>
-        <h1 class="display">Welcome!</h1>
-        
-        <!-- Use our new component -->
-        <my-counter></my-counter>
-
-      </body>
-      </html>
-    </coralite-code-html>
-
-    <p>If you run your build command (<code>npm run build</code>), Coralite will generate an HTML page where the <code>&lt;my-counter&gt;</code> tag is replaced by the contents of your template.</p>
-
-    <coralite-heading level="2" text="4. Making It Dynamic with defineComponent"></coralite-heading>
-
-    <p>Right now, our counter is just static HTML. Clicking the button does nothing. To add interactivity and data processing, we need to turn this into a <strong>Dynamic Component</strong>.</p>
-
-    <p>To do this, we add a <code>&lt;script type="module"&gt;</code> tag below our template and export the <code>defineComponent</code> function.</p>
-
-    <p>Let's update our <code>counter.html</code> to define an initial count value using <strong>Attributes</strong>. Attributes allow us to pass data into our component using double curly braces (<code>{{ }}</code>).</p>
-
-    <coralite-code-html>
-      <!-- src/components/counter.html -->
-      <template id="my-counter">
-        <div class="counter-box">
-          <!-- We replace the hardcoded 0 with our state key -->
-          <h2>Count: <span class="count-display">{{ currentCount }}</span></h2>
-          <button type="button" class="btn">Increment</button>
-        </div>
-      </template>
-
-      <script type="module">
-        import { defineComponent } from 'coralite'
-
-        export default defineComponent({
-          attributes: {
-            // Define our initial value via an attribute
-            currentCount: {
-              type: Number,
-              default: 0
-            }
-          }
-        })
-      </script>
-    </coralite-code-html>
-
-    <coralite-heading level="2" text="5. Adding Interactivity with Refs"></coralite-heading>
-
-    <p>We have data, but we still need the button to actually do something! Coralite provides a built-in <strong>refs system</strong> to easily target DOM elements without needing to use <code>document.querySelector</code>.</p>
-
-    <p>First, add a <code>ref</code> attribute to the elements we want to interact with in our template.</p>
-
-    <p>Second, add a <code>client</code> function inside <code>defineComponent</code>. This script is what runs in the user's browser.</p>
-
-    <coralite-code-html>
-      <!-- src/components/counter.html -->
-      <template id="my-counter">
-        <div class="counter-box">
-          <!-- Add ref attributes -->
-          <h2>Count: <span ref="countDisplay">{{ currentCount }}</span></h2>
-          <button type="button" ref="incrementBtn">Increment</button>
-        </div>
-      </template>
-
-      <script type="module">
-        import { defineComponent } from 'coralite'
-
-        export default defineComponent({
-          attributes: {
-            currentCount: {
-              type: Number,
-              default: 0
-            }
-          },
-          // The client function runs in the browser!
-          client: ({ state, signal, refs }) => {
-            const btn = refs('incrementBtn')
-
-            // Add an event listener using the provided signal for cleanup
-            btn.addEventListener('click', () => {
-              // Mutating state automatically updates the UI!
-              state.currentCount++
-            }, { signal })
-          }
-        })
-      </script>
-    </coralite-code-html>
-
-    <coralite-heading level="2" text="Congratulations!"></coralite-heading>
-
-    <p>You have just built your first fully functional, interactive Coralite component! You learned how to:</p>
+    <coralite-code-highlight language="text" title="Directory Layout">
+my-app/
+  components/
+    site-header.html
+    site-footer.html
+  pages/
+    index.html
+  public/
+    favicon.svg
+  coralite.config.js
+  package.json
+    </coralite-code-highlight>
 
     <ul>
-      <li>Create a static HTML template component.</li>
-      <li>Use the component in a page.</li>
-      <li>Turn it into a dynamic component using <code>defineComponent</code>.</li>
-      <li>Bind data using <code>state</code> and attributes.</li>
-      <li>Add interactivity using <code>client</code>, <code>state</code>, and the <code>refs</code> system.</li>
+      <li><code>components/</code> — Reusable HTML web components that can contain static markup, styles, and dynamic script blocks.</li>
+      <li><code>pages/</code> — Application routes rendered as HTML pages based on directory structure and file names.</li>
+      <li><code>public/</code> — Static assets (such as favicons, images, and fonts) served directly at the output root.</li>
+      <li><code>coralite.config.js</code> — Framework configuration file for output directories, plugins, CSP, and build options.</li>
+      <li><code>package.json</code> — Node package manifest declaring dependencies and framework lifecycle scripts.</li>
+    </ul>
+
+    <coralite-heading level="2" text="3. First Component"></coralite-heading>
+
+    <p>Components in Coralite are authored as HTML files containing a <code>&lt;template&gt;</code> element, an optional <code>&lt;script type="module"&gt;</code> exporting <code>defineComponent</code>, and an optional <code>&lt;style&gt;</code> element.</p>
+
+    <coralite-code-highlight language="javascript" title="components/greeting-card.html">
+<template id="greeting-card">
+  <div class="card">
+    <h3>{{ title }}</h3>
+    <p>{{ message }}</p>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      title: {
+        type: String,
+        default: 'Hello'
+      },
+      message: {
+        type: String,
+        default: 'Welcome to Coralite!'
+      }
+    }
+  })
+</script>
+
+<style>
+  .card {
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+</style>
+    </coralite-code-highlight>
+
+    <p>You can use this component inside any page or other component using its tag name:</p>
+
+    <coralite-code-html>
+<greeting-card title="Welcome" message="Enjoy building with Coralite!"></greeting-card>
+    </coralite-code-html>
+
+    <coralite-heading level="2" text="4. First Page"></coralite-heading>
+
+    <p>Pages are authored inside the <code>pages/</code> directory. Pages can include a <code>&lt;script type="module"&gt;</code> exporting <code>definePage</code> to manage build-time data loading via <code>server()</code>.</p>
+
+    <coralite-code-highlight language="javascript" title="pages/index.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>{{ pageTitle }}</title>
+</head>
+<body>
+  <h1>{{ headline }}</h1>
+  <p>{{ description }}</p>
+</body>
+</html>
+
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server: () => ({
+      pageTitle: 'Home — My Coralite Site',
+      headline: 'Build Fast Static & SSR Websites',
+      description: 'Coralite combines native Web Components with build-time SSR.'
+    })
+  })
+</script>
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="5. Scripts"></coralite-heading>
+
+    <p>The <code>create-coralite</code> scaffolder configures five core lifecycle scripts in <code>package.json</code>:</p>
+
+    <ul>
+      <li><code>dev</code> — Starts the local development server with live preview and instant reloading.</li>
+      <li><code>test</code> — Executes the test suite across components and application logic.</li>
+      <li><code>build</code> — Compiles pages, components, and static assets into optimized SSG output.</li>
+      <li><code>check</code> — Runs static AST validation and type-checking across all templates and scripts.</li>
+      <li><code>fix</code> — Applies automated AST codemods and fixers for diagnostic warnings.</li>
+    </ul>
+
+    <coralite-heading level="2" text="6. Where Next"></coralite-heading>
+
+    <p>Continue exploring the Coralite documentation:</p>
+
+    <ul>
+      <li><a href="./authoring.html">Authoring Pattern</a> — Learn the unified block structure and execution rules for components, pages, and plugins.</li>
+      <li><a href="./components.html">Components</a> — Deep dive into static and dynamic web components, reactivity, and slots.</li>
     </ul>
 
     <hr>
 
-    <p>Ready to learn more? Dive into the <a href="./core-concepts.html">Core Concepts</a> to master Coralite's philosophy.</p>
-    
+    <p>Next: Explore the <a href="./authoring.html">Authoring Pattern</a> to master Coralite's unified structure.</p>
+
   </main>
   <coralite-footer></coralite-footer>
 </body>
+
 </html>
