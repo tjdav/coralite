@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Authoring Pattern — Coralite"
+    description="Learn the core authoring rules for Coralite components, pages, and plugins, including block vocabulary, context parameters, template rules, import rules, and serialization boundaries."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Authoring Pattern</h1>
+
+    <p>Coralite enforces a single, predictable authoring pattern across every layer of the application. Whether you are defining a Web Component, an HTML page, or a custom plugin, code is organized into named blocks inside a default export function imported from <code>coralite</code>.</p>
+
+    <coralite-heading level="2" text="1. The Unified Pattern"></coralite-heading>
+
+    <p>Every entry point in Coralite—<code>defineComponent</code>, <code>definePage</code>, and <code>definePlugin</code>—accepts a configuration object composed of standard blocks. They share the same import source, default export convention, and static validation model.</p>
+
+    <coralite-code-highlight language="javascript" title="Unified Declarations">
+import { defineComponent, definePage, definePlugin } from 'coralite'
+
+export default defineComponent({ /* component blocks */ })
+export default definePage({ /* page blocks */ })
+export default definePlugin({ /* plugin blocks */ })
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="2. Block Vocabulary"></coralite-heading>
+
+    <p>Each block serves a clear, specific role during build-time rendering, runtime reactivity, or lifecycle execution.</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Block</th>
+        <th>Component</th>
+        <th>Page</th>
+        <th>Plugin</th>
+        <th>Purpose</th>
+      </tr>
+      <tr slot="body">
+        <td><code>attributes</code></td>
+        <td>✓</td>
+        <td>—</td>
+        <td>—</td>
+        <td>Input schema for host attributes</td>
+      </tr>
+      <tr slot="body">
+        <td><code>paths</code></td>
+        <td>—</td>
+        <td>✓</td>
+        <td>—</td>
+        <td>Enumerate dynamic route params at build time</td>
+      </tr>
+      <tr slot="body">
+        <td><code>server</code></td>
+        <td>✓</td>
+        <td>✓</td>
+        <td>✓ (as hooks)</td>
+        <td>Build-time data loading and server lifecycle hooks</td>
+      </tr>
+      <tr slot="body">
+        <td><code>getters</code></td>
+        <td>✓</td>
+        <td>✓</td>
+        <td>—</td>
+        <td>Derived reactive values and computed template data</td>
+      </tr>
+      <tr slot="body">
+        <td><code>style</code></td>
+        <td>✓</td>
+        <td>✓</td>
+        <td>—</td>
+        <td>Synchronous CSS custom property injection on <code>&lt;html&gt;</code> or component root</td>
+      </tr>
+      <tr slot="body">
+        <td><code>slots</code></td>
+        <td>✓</td>
+        <td>—</td>
+        <td>—</td>
+        <td>Transform and inspect projected Light DOM content</td>
+      </tr>
+      <tr slot="body">
+        <td><code>provide</code> / <code>consume</code></td>
+        <td>✓</td>
+        <td>✓ (provide only)</td>
+        <td>—</td>
+        <td>Tree dependency injection across component hierarchy</td>
+      </tr>
+      <tr slot="body">
+        <td><code>client</code></td>
+        <td>✓</td>
+        <td>✓</td>
+        <td>✓</td>
+        <td>Browser-side interactive runtime logic and event listeners</td>
+      </tr>
+      <tr slot="body">
+        <td><code>config</code></td>
+        <td>—</td>
+        <td>—</td>
+        <td>✓</td>
+        <td>Plugin options schema and configuration validation</td>
+      </tr>
+      <tr slot="body">
+        <td><code>formAssociated</code></td>
+        <td>✓</td>
+        <td>—</td>
+        <td>—</td>
+        <td>Opt into Custom Elements <code>ElementInternals</code> form participation</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onError</code></td>
+        <td>✓</td>
+        <td>✓</td>
+        <td>—</td>
+        <td>SSR build-time error boundary fallback state</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="2" text="3. Context Keys"></coralite-heading>
+
+    <p>Block functions receive a single destructured context object containing framework utilities, state references, and route metadata.</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Key</th>
+        <th>Meaning</th>
+        <th>Available in</th>
+      </tr>
+      <tr slot="body">
+        <td><code>state</code></td>
+        <td>Reactive state object backing template interpolations</td>
+        <td>All blocks</td>
+      </tr>
+      <tr slot="body">
+        <td><code>route</code></td>
+        <td>Active route details (<code>path</code>, <code>pattern</code>, <code>params</code>, <code>dynamic</code>)</td>
+        <td><code>server</code>, <code>getters</code>, <code>client</code>, <code>onError</code></td>
+      </tr>
+      <tr slot="body">
+        <td><code>refs</code></td>
+        <td>Named template element accessor function (<code>refs('name')</code>)</td>
+        <td><code>getters</code>, <code>client</code>, <code>slots</code></td>
+      </tr>
+      <tr slot="body">
+        <td><code>signal</code></td>
+        <td><code>AbortSignal</code> aborted when the component or page disconnects</td>
+        <td>All blocks</td>
+      </tr>
+      <tr slot="body">
+        <td><code>root</code></td>
+        <td>Host DOM element reference</td>
+        <td><code>getters</code>, <code>client</code>, <code>slots</code></td>
+      </tr>
+      <tr slot="body">
+        <td><code>slots</code></td>
+        <td>Projected slot node accessor function</td>
+        <td><code>getters</code>, <code>client</code></td>
+      </tr>
+      <tr slot="body">
+        <td><code>store</code></td>
+        <td>Global app store (read-only snapshot in <code>server</code>, reactive in <code>client</code> and <code>getters</code>)</td>
+        <td><code>getters</code>, <code>client</code>, <code>server</code></td>
+      </tr>
+      <tr slot="body">
+        <td><code>emit</code></td>
+        <td>Custom DOM Event dispatcher helper function</td>
+        <td><code>client</code> only</td>
+      </tr>
+      <tr slot="body">
+        <td><code>observe</code></td>
+        <td>State key change subscriber function</td>
+        <td><code>client</code> only</td>
+      </tr>
+      <tr slot="body">
+        <td><code>updateComplete</code></td>
+        <td>Promise resolving when DOM updates settle</td>
+        <td><code>client</code> only</td>
+      </tr>
+      <tr slot="body">
+        <td><code>isServer</code></td>
+        <td>Boolean flag indicating SSR execution vs browser runtime</td>
+        <td>All blocks</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="2" text="4. Template Rules"></coralite-heading>
+
+    <p>Coralite templates use flat <code>{{ token }}</code> interpolations exclusively. To keep templates fast, deterministic, and statically indexable, templates forbid expressions, function calls, inline event handlers (such as <code>onclick="..."</code>), conditionals, and loops. All derivation logic must live inside <code>getters</code>.</p>
+
+    <coralite-code-highlight language="javascript" title="Correct (Flat Tokens & Getters)">
+<!-- Good: Flat token resolved via getter -->
+<h2>{{ fullName }}</h2>
+<button ref="submitBtn">Submit</button>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    getters: {
+      fullName: ({ state }) => `${state.firstName} ${state.lastName}`
+    },
+    client ({ refs, signal, state }) {
+      refs('submitBtn').addEventListener('click', () => {
+        state.submitted = true
+      }, { signal })
+    }
+  })
+</script>
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="html" title="Incorrect (Inline Expression / Handler)">
+<!-- Bad: Inline expressions and event handlers are invalid -->
+<h2>{{ user.firstName + ' ' + user.lastName }}</h2>
+<button onclick="handleSubmit()">Submit</button>
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="5. Import Rule"></coralite-heading>
+
+    <p>Top-level imports are reserved for <code>defineComponent</code>, <code>definePage</code>, <code>definePlugin</code>, and ESM modules used by isomorphic blocks (such as <code>getters</code>, <code>style</code>, or <code>slots</code>). Node-only dependencies used strictly in <code>server()</code> or <code>paths()</code>, and browser-only dependencies used in <code>client()</code>, must be imported dynamically using <code>await import(...)</code> inside the respective block.</p>
+
+    <coralite-code-highlight language="javascript" title="Correct Dynamic Imports">
+import { definePage } from 'coralite'
+
+export default definePage({
+  async server () {
+    // Correct: Node module loaded inside server()
+    const fs = await import('node:fs/promises')
+    const data = await fs.readFile('data.json', 'utf8')
+    return { content: JSON.parse(data) }
+  },
+  async client () {
+    // Correct: Browser module loaded inside client()
+    const { animate } = await import('https://esm.sh/motion')
+    animate('.card', { opacity: 1 })
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="javascript" title="Incorrect Top-Level Server/Client Imports">
+// Bad: Importing Node/Browser modules at top-level pollutes bundle scope
+import fs from 'node:fs/promises'
+import { animate } from 'motion'
+import { definePage } from 'coralite'
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="6. Serialization Boundary"></coralite-heading>
+
+    <p>Coralite draws a strict boundary between build-time server execution and browser client runtime execution. The <code>server()</code> function runs in Node.js during build/SSG and its return value is serialized to JSON. The <code>client()</code> function runs in the browser and cannot close over outer module scope variables populated during <code>server()</code> execution.</p>
+
+    <coralite-code-highlight language="javascript" title="Serialization Boundary">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  // 1. Runs at build-time in Node.js
+  server () {
+    return {
+      serverTime: new Date().toISOString()
+    }
+  },
+  // 2. Runs in the browser runtime; receives serialized state
+  client ({ state }) {
+    console.log('Server rendered at:', state.serverTime)
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="7. No Defensive Guards"></coralite-heading>
+
+    <p>Coralite guarantees that all context parameters destructured in block function signatures exist. Authors must not write defensive guards (such as <code>if (!lists) return</code> or <code>if (state == null) return</code>) against destructured context keys or guaranteed framework properties.</p>
+
+    <coralite-code-highlight language="javascript" title="Direct Context Usage">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  // Correct: Destructure directly without defensive checks
+  client ({ state, refs, signal }) {
+    const btn = refs('button')
+    btn.addEventListener('click', () => {
+      state.count++
+    }, { signal })
+  }
+})
+    </coralite-code-highlight>
+
+    <hr>
+
+    <p>Next: Explore <a href="./getting-started.html">Getting Started</a> to build your first Coralite component and page.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
