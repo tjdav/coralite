@@ -1,4 +1,5 @@
 import { CoraliteError } from '../../lib/shared/errors.js'
+import { bindWindow } from './window.js'
 
 /**
  * Binds a keyed store to a DOM container element.
@@ -11,9 +12,7 @@ export function bind (options = {}) {
   const { virtual = false, size = 64 } = opts
 
   if (virtual === 'window') {
-    throw new CoraliteError(
-      'lists.bind: virtual: "window" is not yet implemented. Use "auto" for lists up to ~50,000 items, or omit virtual for full DOM rendering.'
-    )
+    return bindWindow(opts)
   }
   if (virtual !== false && virtual !== 'auto') {
     throw new CoraliteError(
