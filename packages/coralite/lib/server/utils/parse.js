@@ -226,10 +226,11 @@ function sortSlottedChildren (elements) {
  * Parses HTML string containing meta tags or generates Coralite module structure from markup.
  *
  * @param {string} string - HTML content containing meta tags or module markup
- * @param {Object} options - The options for parsing the module.
- * @param {Array<string | Attribute>} options.ignoreByAttribute - An array of attribute names and values to ignore during parsing
+ * @param {Object} [options={}] - The options for parsing the module.
+ * @param {Array<string | Attribute>} [options.ignoreByAttribute] - An array of attribute names and values to ignore during parsing
  * @param {Array<string | Attribute>} [options.skipRenderByAttribute] - An array of attributes that exclude element from rendering
  * @param {CoraliteOnError} [options.onError] - Callback function for error and warning handling
+ * @param {string} [options.filePath] - Optional file path for error messages
  * @returns {CoraliteModule} - Parsed module information, including template, script, tokens, and slot configurations
  *
  * @example
@@ -255,7 +256,9 @@ function sortSlottedChildren (elements) {
  * //}
  * ```
  */
-export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute, onError }) {
+export function parseModule (string, options = {}) {
+  const { ignoreByAttribute, skipRenderByAttribute, onError, filePath } = typeof options === 'object' && options ? options : {}
+
   // root element reference
   const root = createCoraliteComponent({
     type: 'root',
@@ -273,7 +276,6 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
     attributes: [],
     textNodes: []
   }
-  const styles = []
   let isScript = false
   let isTemplate = false
   let templateId = ''
@@ -443,7 +445,8 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
 
   /** @type {CoraliteElement} */
   let template
-  let script
+  const siblingStyles = []
+  let siblingScript = null
 
   for (let i = 0; i < root.children.length; i++) {
     const node = root.children[i]
@@ -452,7 +455,8 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
       if (node.name === 'template') {
         if (template) {
           throw new CoraliteError('One template element is permitted', {
-            componentId: templateId
+            componentId: templateId,
+            filePath
           })
         }
 
@@ -462,23 +466,25 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
       } else if (node.name === 'script') {
         if (node.attribs.type !== 'module') {
           throw new CoraliteError('Template "' + templateId + '" script tag must contain the `type="module"` attribute', {
-            componentId: templateId
+            componentId: templateId,
+            filePath
           })
         }
         const scriptString = node.children[0]
 
-        if (scriptString.type !== 'text') {
+        if (!scriptString || scriptString.type !== 'text') {
           throw new CoraliteError('Script tag must contain text', {
-            componentId: templateId
+            componentId: templateId,
+            filePath
           })
         }
 
-        script = scriptString.data
+        siblingScript = scriptString.data
       } else if (node.name === 'style') {
         const styleContent = node.children[0]
 
         if (styleContent && styleContent.type === 'text') {
-          styles.push(styleContent.data)
+          siblingStyles.push(styleContent.data)
         }
       }
     }
@@ -490,10 +496,160 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
     }
   }
 
-  const scriptIndex = string.indexOf('<script')
-  const scriptTagEnd = string.indexOf('>', scriptIndex) + 1
-  const stringHead = string.substring(0, scriptTagEnd)
-  const lineOffset = stringHead.split(/\r\n|\r|\n/).length - 1
+  const inTemplateStyles = []
+  let inTemplateScript = null
+  const nodesToRemove = []
+
+  const fileOrId = filePath || templateId || '<component>'
+
+  function walkTemplateChildren (parent) {
+    if (!parent || !parent.children || !Array.isArray(parent.children)) {
+      return
+    }
+
+    const childrenCopy = [...parent.children]
+
+    for (let i = 0; i < childrenCopy.length; i++) {
+      const child = childrenCopy[i]
+      if (!child || child.type !== 'tag') {
+        continue
+      }
+
+      if (child.name === 'style') {
+        const styleContent = child.children[0]
+        if (styleContent && styleContent.type === 'text') {
+          inTemplateStyles.push(styleContent.data)
+        } else {
+          inTemplateStyles.push('')
+        }
+        nodesToRemove.push(child)
+      } else if (child.name === 'script') {
+        const scriptType = child.attribs?.type ? String(child.attribs.type).trim() : ''
+
+        if (scriptType === 'module') {
+          if (siblingScript !== null || inTemplateScript !== null) {
+            throw new CoraliteError(
+              `Component "${fileOrId}" has more than one <script type="module"> block.\nEach component accepts exactly one script block.`,
+              {
+                componentId: templateId,
+                filePath
+              }
+            )
+          }
+          const scriptString = child.children[0]
+          inTemplateScript = (scriptString && scriptString.type === 'text') ? scriptString.data : ''
+          nodesToRemove.push(child)
+        } else if (
+          scriptType === 'application/json' ||
+          scriptType === 'application/ld+json' ||
+          scriptType === 'text/template'
+        ) {
+          // Legitimate structured data / template script inside template — leave in place
+        } else if (scriptType) {
+          throw new CoraliteError(
+            `Component "${fileOrId}" has a <script type="${child.attribs.type}"> inside <template>.\nOnly <script type="module"> is supported inside <template>.`,
+            {
+              componentId: templateId,
+              filePath
+            }
+          )
+        } else {
+          throw new CoraliteError(
+            `Component "${fileOrId}" has a <script> inside <template> without type="module".\nOnly <script type="module"> is supported inside <template>.`,
+            {
+              componentId: templateId,
+              filePath
+            }
+          )
+        }
+      } else if (child.name === 'template') {
+        // Do not descend into nested <template> elements
+      } else {
+        walkTemplateChildren(child)
+      }
+    }
+  }
+
+  walkTemplateChildren(template)
+
+  if (nodesToRemove.length > 0) {
+    const parentsToRelink = new Set()
+    for (const node of nodesToRemove) {
+      if (node.parent && node.parent.children) {
+        parentsToRelink.add(node.parent)
+        const idx = node.parent.children.indexOf(node)
+        if (idx !== -1) {
+          node.parent.children.splice(idx, 1)
+        }
+      }
+    }
+    for (const parentNode of parentsToRelink) {
+      relinkChildren(parentNode)
+    }
+
+    const removedSet = new Set(nodesToRemove)
+    if (documentValues) {
+      if (documentValues.textNodes) {
+        documentValues.textNodes = documentValues.textNodes.filter(item => {
+          /** @type {any} */
+          let curr = item.textNode ? item.textNode.parent : null
+          while (curr) {
+            if (removedSet.has(curr)) {
+              return false
+            }
+            curr = curr.parent
+          }
+          return true
+        })
+      }
+      if (documentValues.attributes) {
+        documentValues.attributes = documentValues.attributes.filter(item => {
+          /** @type {any} */
+          let curr = item.element ? item.element.parent : null
+          while (curr) {
+            if (removedSet.has(curr)) {
+              return false
+            }
+            curr = curr.parent
+          }
+          return true
+        })
+      }
+      if (documentValues.refs) {
+        documentValues.refs = documentValues.refs.filter(item => {
+          /** @type {any} */
+          let curr = item.element ? item.element.parent : null
+          while (curr) {
+            if (removedSet.has(curr)) {
+              return false
+            }
+            curr = curr.parent
+          }
+          return true
+        })
+      }
+    }
+  }
+
+  const styles = [...siblingStyles, ...inTemplateStyles]
+  let script
+  if (siblingScript !== null) {
+    script = siblingScript
+  } else if (inTemplateScript !== null) {
+    script = inTemplateScript
+  } else {
+    script = undefined
+  }
+
+  let lineOffset = 0
+  if (script !== undefined) {
+    const scriptIndex = string.indexOf('<script')
+    if (scriptIndex !== -1) {
+      const scriptTagEnd = string.indexOf('>', scriptIndex) + 1
+      const stringHead = string.substring(0, scriptTagEnd)
+      lineOffset = stringHead.split(/\r\n|\r|\n/).length - 1
+    }
+  }
 
   return {
     id: template.attribs.id,

@@ -24,10 +24,13 @@ describe('Coralite Build Modes', () => {
     await project.writeComponent('my-component.html', `
       <template id="my-component">
         <div>{{ message }}</div>
-        <script>
-          export default {
-            state: () => ({ message: 'Hello from Component' })
-          }
+        <script type="module">
+          import { defineComponent } from 'coralite'
+          export default defineComponent({
+            server() {
+              return { message: 'Hello from Component' }
+            }
+          })
         </script>
       </template>
     `)

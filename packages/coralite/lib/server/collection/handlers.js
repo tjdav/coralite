@@ -355,7 +355,8 @@ export function createPageHandlers ({
     const component = parseModule(v.content, {
       ignoreByAttribute: app.options.ignoreByAttribute,
       skipRenderByAttribute: app.options.skipRenderByAttribute,
-      onError: handleError
+      onError: handleError,
+      filePath: v.path?.pathname
     })
 
     if (!component.isTemplate) {
