@@ -1,4 +1,3 @@
-
 import { describe, it, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { createStore } from '../../../plugins/lists/store.js'
@@ -13,6 +12,7 @@ function createMockElement (tagName = 'div') {
     tagName: tagName.toUpperCase(),
     children,
     parentNode: null,
+    style: {},
     setAttribute (k, v) {
       attributes.set(k, String(v))
     },
@@ -75,6 +75,10 @@ function createMockElement (tagName = 'div') {
     },
     get firstChild () {
       return children[0] || null
+    },
+    addEventListener () {
+    },
+    removeEventListener () {
     }
   }
 }
@@ -354,21 +358,27 @@ describe('lists plugin - bind', () => {
     assert.equal(container2.children.length, 4)
   })
 
+  it('delegates virtual: "window" without throwing', () => {
+    const handle = bind({
+      container,
+      store,
+      key: (i) => i.id,
+      create: () => createMockElement('li'),
+      virtual: 'window'
+    })
+
+    assert.ok(handle)
+    assert.equal(typeof handle.destroy, 'function')
+    handle.destroy()
+  })
+
   it('throws CoraliteError when unsupported options are passed', () => {
     const opts = {
       container,
       store,
       key: (i) => i.id,
-      create: (_item) => createMockElement('li')
+      create: () => createMockElement('li')
     }
-
-    assert.throws(
-      () => bind({
-        ...opts,
-        virtual: 'window'
-      }),
-      /virtual: "window" is not yet implemented/
-    )
 
     assert.throws(
       () => bind({

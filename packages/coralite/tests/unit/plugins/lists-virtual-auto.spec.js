@@ -76,6 +76,10 @@ function createMockElement (tagName = 'div') {
     },
     get firstChild () {
       return children[0] || null
+    },
+    addEventListener () {
+    },
+    removeEventListener () {
     }
   }
 }
@@ -248,23 +252,18 @@ describe('lists plugin - virtual: auto', () => {
     assert.equal(container.children[0].style.containIntrinsicSize, '')
   })
 
-  it('bind with virtual: "window" throws CoraliteError with message naming "auto"', () => {
-    assert.throws(
-      () => bind({
-        container,
-        store,
-        key: (i) => i.id,
-        virtual: 'window',
-        create: (_item) => createMockElement('li')
-      }),
-      (err) => {
-        return (
-          err instanceof CoraliteError &&
-          err.message.includes('virtual: "window" is not yet implemented') &&
-          err.message.includes('Use "auto" for lists up to ~50,000 items')
-        )
-      }
-    )
+  it('bind with virtual: "window" delegates to windowed virtualization engine', () => {
+    const handle = bind({
+      container,
+      store,
+      key: (i) => i.id,
+      virtual: 'window',
+      create: (_item) => createMockElement('li')
+    })
+
+    assert.ok(handle)
+    assert.equal(typeof handle.destroy, 'function')
+    handle.destroy()
   })
 
   it('bind with an invalid virtual option throws CoraliteError', () => {
