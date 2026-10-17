@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
+#!/usr/bin/env -S node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve
 
 import { Command } from 'commander'
 import kleur from 'kleur'

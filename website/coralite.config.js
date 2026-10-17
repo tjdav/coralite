@@ -1,4 +1,4 @@
-import { defineConfig } from 'coralite-scripts'
+import { defineConfig } from 'coralite'
 import aggregation from './src/plugins/aggregation.js'
 import searchPlugin from './src/plugins/search-plugin.js'
 import sitemapPlugin from './src/plugins/sitemap-plugin.js'

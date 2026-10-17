@@ -69,10 +69,7 @@
       "development": "./lib/index.js",
       "default": "./dist/lib/index.js"
     },
-    "#lib/*": {
-      "development": "./lib/*",
-      "default": "./dist/lib/*"
-    },
+    "#lib/*": "./lib/*",
     "#plugins": "./plugins/index.js",
     "#plugins/router": "./plugins/router.js",
     "#plugins/lists": "./plugins/lists.js",

@@ -45,7 +45,7 @@
 
     <p>The following example shows the full loop: fetching data on the server, passing it to the state, and rendering it in the template.</p>
 
-    <coralite-code-html>
+    <coralite-code-highlight language="html">
 <template id="user-profile">
   <div class="user-card">
     <h2>{{ user.name }}</h2>
@@ -53,7 +53,7 @@
   </div>
 </template>
 
-<script type="module">
+&lt;script type="module"&gt;
   import { defineComponent } from 'coralite'
   // Safely stays on the server
   import { db } from '#lib/database'
@@ -68,8 +68,8 @@
       return { user: userData }
     }
   })
-</script>
-    </coralite-code-html>
+&lt;/script&gt;
+    </coralite-code-highlight>
 
     <coralite-heading level="2" text="AST Splicing & no-hydration"></coralite-heading>
 

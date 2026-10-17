@@ -485,18 +485,24 @@ export function defineConfig (options, { onError } = {}) {
     }
 
     // Validate each plugin in the array
-    options.plugins.forEach((plugin, index) => {
-      if (typeof plugin !== 'object' || plugin === null) {
+    options.plugins = options.plugins.map((plugin, index) => {
+      /** @type {any} */
+      const fn = plugin
+      const p = typeof plugin === 'function' ? fn() : plugin
+
+      if (typeof p !== 'object' || p === null) {
         throw new CoraliteError(
-          `Plugin at index ${index} must be an object, received ${typeof plugin}`
+          `Plugin at index ${index} must be an object, received ${typeof p}`
         )
       }
 
-      if (typeof plugin.name !== 'string' || plugin.name.trim() === '') {
+      if (typeof p.name !== 'string' || p.name.trim() === '') {
         throw new CoraliteError(
           `Plugin at index ${index} must have a valid "name" property (non-empty string)`
         )
       }
+
+      return p
     })
   }
 
