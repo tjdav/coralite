@@ -2,6 +2,31 @@ import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './utils/html.js'
 import { parseHTML, parseModule } from './utils/parse.js'
 import { ScriptManager } from './script-manager.js'
 import { metadataPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
+import { listsPlugin } from '../../plugins/lists.js'
+import { routerPlugin } from '../../plugins/router.js'
+
+/**
+ * Deduplicates plugins by name, preserving the latest instance if a duplicate occurs.
+ * @param {Array<any>} plugins - Array of plugins to deduplicate
+ * @returns {Array<any>} Deduplicated list of plugins
+ */
+function dedupePluginsByName (plugins) {
+  const map = new Map()
+  for (const plugin of plugins) {
+    const p = typeof plugin === 'function' ? plugin() : plugin
+    if (p && typeof p === 'object') {
+      const name = p.name || p.server?.name || p.client?.name
+      if (name) {
+        map.set(name, p)
+      } else {
+        map.set(Symbol(), p)
+      }
+    } else {
+      map.set(Symbol(), p)
+    }
+  }
+  return Array.from(map.values())
+}
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative } from 'node:path'
 import { CoraliteError, handleError, defaultOnError } from '../shared/errors.js'
@@ -93,10 +118,15 @@ export async function createCoralite ({
     ? process.env.CORALITE_CLEAN_URLS === 'true'
     : Boolean(cleanUrls)
 
+  const corePlugins = [listsPlugin, routerPlugin]
+  const userPluginList = Array.isArray(userPlugins) ? userPlugins : []
+  const allPlugins = [...corePlugins, ...userPluginList]
+  const uniquePlugins = dedupePluginsByName(allPlugins)
+
   const normalizedOptions = {
     components,
     pages,
-    plugins: Array.isArray(userPlugins) ? [...userPlugins] : [],
+    plugins: uniquePlugins,
     concurrency: typeof concurrency === 'number' && concurrency > 0 ? Math.floor(concurrency) : undefined,
     assets,
     externalStyles,
