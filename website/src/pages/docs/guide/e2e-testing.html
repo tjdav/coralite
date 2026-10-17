@@ -155,7 +155,7 @@
         <div>User: {{ name }} (ID: {{ userId }})</div>
       </template>
 
-      <script type="module">
+      &lt;script type="module"&gt;
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
@@ -168,7 +168,7 @@
             return { name: user.name }
           }
         })
-      </script>
+      &lt;/script&gt;
     </coralite-code-highlight>
 
     <p>Next, the mock configuration in <code>coralite.config.js</code> overriding this component's data based on the <code>userId</code> attribute under <code>components</code>:</p>

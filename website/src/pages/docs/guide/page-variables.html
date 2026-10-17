@@ -40,7 +40,7 @@
 
     <p>Here is an example of a navigation link component that automatically adds an "active" class if the current URL matches its target URL:</p>
 
-    <coralite-code-html>
+    <coralite-code-highlight language="html">
       <!-- src/components/nav-link.html -->
       <template id="nav-link">
         <a href="{{ href }}" class="link {{ activeClass }}">
@@ -48,7 +48,7 @@
         </a>
       </template>
 
-      <script type="module">
+      &lt;script type="module"&gt;
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
@@ -60,12 +60,12 @@
             activeClass: ({ state }) => (state.href === state.page.url.pathname ? 'active' : '')
           }
         })
-      </script>
-    </coralite-code-html>
+      &lt;/script&gt;
+    </coralite-code-highlight>
 
     <p>For static values that don't require reactivity on the client, mapping them in <code>data</code> is the preferred approach:</p>
 
-    <coralite-code-html>
+    <coralite-code-highlight language="html">
       <!-- src/components/page-info.html -->
       <template id="page-info">
         <div class="page-info-box">
@@ -75,7 +75,7 @@
         </div>
       </template>
 
-      <script type="module">
+      &lt;script type="module"&gt;
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
@@ -87,8 +87,8 @@
             }
           }
         })
-      </script>
-    </coralite-code-html>
+      &lt;/script&gt;
+    </coralite-code-highlight>
 
   </main>
   <coralite-footer></coralite-footer>
