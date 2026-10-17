@@ -339,6 +339,27 @@ describe('lists plugin - createStore', () => {
     assert.equal(events.length, 1)
   })
 
+  it('swap exchanges two items and notifies subscribers', () => {
+    const store = createStore({
+      initial: [
+        { id: 1, label: 'a' },
+        { id: 2, label: 'b' },
+        { id: 3, label: 'c' }
+      ]
+    })
+    const notifications = []
+    store.subscribe((desc) => notifications.push(desc))
+
+    const result = store.swap(1, 3)
+    assert.strictEqual(result, true)
+    assert.deepStrictEqual(
+      store.all().map((it) => it.id),
+      [3, 2, 1]
+    )
+    assert.strictEqual(notifications.length, 1)
+    assert.deepStrictEqual(notifications[0], { type: 'swap', idA: 1, idB: 3 })
+  })
+
   it('provides signal reactivity on .all(), .get(), and .size', () => {
     const store = createStore({ key: (i) => i.id })
 

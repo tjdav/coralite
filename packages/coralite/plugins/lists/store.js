@@ -175,6 +175,31 @@ export function createStore ({ key = (item) => item?.id, initial = [] } = {}) {
       })
     },
 
+    swap (idA, idB) {
+      if (idA === idB) {
+        return false
+      }
+      if (!itemsMap.has(idA) || !itemsMap.has(idB)) {
+        return false
+      }
+      const idxA = itemsArray.findIndex((it) => getKey(it) === idA)
+      const idxB = itemsArray.findIndex((it) => getKey(it) === idB)
+      if (idxA === -1 || idxB === -1) {
+        return false
+      }
+
+      const temp = itemsArray[idxA]
+      itemsArray[idxA] = itemsArray[idxB]
+      itemsArray[idxB] = temp
+
+      notifySubscribers({
+        type: 'swap',
+        idA,
+        idB
+      })
+      return true
+    },
+
     get (id) {
       // Track reactivity
       void versionSignal.value

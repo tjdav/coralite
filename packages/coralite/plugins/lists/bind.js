@@ -322,6 +322,20 @@ export function bind (options = {}) {
           break
         }
 
+        case 'swap': {
+          const elA = elementMap.get(change.idA)
+          const elB = elementMap.get(change.idB)
+          if (elA && elB && elA !== elB && elA.parentNode === container && elB.parentNode === container) {
+            const tempComment = document.createComment('swap-temp')
+            container.insertBefore(tempComment, elA)
+            container.insertBefore(elA, elB)
+            container.insertBefore(elB, tempComment)
+            tempComment.remove()
+          }
+          recomputeNonLinear()
+          break
+        }
+
         case 'remove': {
           const k = change.id
           const el = elementMap.get(k)
