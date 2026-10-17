@@ -2,6 +2,7 @@ packages:
   - packages/*
   - website
   - benchmarks/js-framework-benchmark/coralite
+  - benchmarks/js-framework-benchmark/coralite-opt
 
 allowBuilds:
   '@parcel/watcher': true

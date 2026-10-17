@@ -342,9 +342,18 @@ describe('lists plugin - createStore', () => {
   it('swap exchanges two items and notifies subscribers', () => {
     const store = createStore({
       initial: [
-        { id: 1, label: 'a' },
-        { id: 2, label: 'b' },
-        { id: 3, label: 'c' }
+        {
+          id: 1,
+          label: 'a'
+        },
+        {
+          id: 2,
+          label: 'b'
+        },
+        {
+          id: 3,
+          label: 'c'
+        }
       ]
     })
     const notifications = []
@@ -357,7 +366,11 @@ describe('lists plugin - createStore', () => {
       [3, 2, 1]
     )
     assert.strictEqual(notifications.length, 1)
-    assert.deepStrictEqual(notifications[0], { type: 'swap', idA: 1, idB: 3 })
+    assert.deepStrictEqual(notifications[0], {
+      type: 'swap',
+      idA: 1,
+      idB: 3
+    })
   })
 
   it('provides signal reactivity on .all(), .get(), and .size', () => {

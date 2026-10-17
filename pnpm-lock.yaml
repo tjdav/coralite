@@ -210,6 +210,12 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/coralite
 
+  benchmarks/js-framework-benchmark/coralite-opt:
+    dependencies:
+      coralite:
+        specifier: workspace:*
+        version: link:../../../packages/coralite
+
   packages/coralite:
     dependencies:
       '@clack/prompts':
