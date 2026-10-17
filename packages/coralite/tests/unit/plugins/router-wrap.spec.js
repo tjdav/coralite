@@ -70,6 +70,10 @@ describe('Router Outlet Wrapping', () => {
   })
 
   it('builds fixture page with router plugin registered, producing outlet wrapper and rendering slotted content', async () => {
+    await rm(tmpDir, {
+      recursive: true,
+      force: true
+    })
     const pagesDir = join(tmpDir, 'pages')
     const componentsDir = join(tmpDir, 'components')
 
@@ -97,11 +101,13 @@ describe('Router Outlet Wrapping', () => {
       const app = await createCoralite({
         pages: pagesDir,
         components: componentsDir,
+        output: join(tmpDir, 'dist'),
         plugins: [
           routerPlugin()
         ],
         mode: 'production',
-        cleanUrls: true
+        cleanUrls: true,
+        incremental: false
       })
 
       const results = await app.build()

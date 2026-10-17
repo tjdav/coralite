@@ -1,47 +1,29 @@
+import { fileURLToPath } from 'node:url'
 import { definePlugin } from '../lib/server/plugin/define.js'
-import { createStore } from './lists/store.js'
-import { bind } from './lists/bind.js'
 
 export const listsPlugin = definePlugin({
   name: 'lists',
-
-  config: {
-    overscan: {
-      type: Number,
-      default: 5
-    },
-    anchorTo: {
-      type: String,
-      default: 'start'
-    },
-    followOnAppend: {
-      type: Boolean,
-      default: false
-    },
-    scrollEndThreshold: {
-      type: Number,
-      default: 80
-    },
-    reachThreshold: {
-      type: Number,
-      default: 200
-    },
-    headerHeight: {
-      type: Number,
-      default: 40
-    }
-  },
+  filePath: fileURLToPath(import.meta.url),
 
   client: {
-    context: (_pluginContext) => (_instanceContext) => ({
-      lists: {
+    // Phase 1: Runs once at boot. Creates the singleton.
+    context: async () => {
+      // Top-level imports are stripped from the client bundle,
+      // so we must dynamically import them here.
+      const { createStore } = await import('./lists/store.js')
+      const { bind } = await import('./lists/bind.js')
+
+      const listsApi = {
         createStore,
         bind
       }
-    })
+
+      // Phase 2: Runs lazily per component.
+      // Return the API directly — the framework namespaces it as `lists`.
+      return () => listsApi
+    }
   }
 })
 
 export const lists = listsPlugin
-
 export default listsPlugin

@@ -3,6 +3,23 @@ import { createCoraliteElement, relinkChildren } from '../lib/server/utils/dom.j
 import { findHeadAndBody } from '../lib/server/utils/render.js'
 import { isDevRuntime } from '../lib/shared/dev-mode.js'
 import { fileURLToPath } from 'node:url'
+import { existsSync } from 'node:fs'
+
+/**
+ * Resolves the absolute path to the router outlet component template.
+ * @returns {string} Path to outlet.html
+ */
+function getOutletComponentPath () {
+  const directPath = fileURLToPath(new URL('./router/outlet.html', import.meta.url))
+  if (existsSync(directPath)) {
+    return directPath
+  }
+  const bundledPath = fileURLToPath(new URL('../../plugins/router/outlet.html', import.meta.url))
+  if (existsSync(bundledPath)) {
+    return bundledPath
+  }
+  return directPath
+}
 
 /**
  * Checks if an element is a router outlet element either by tag name or attribute match.
@@ -97,7 +114,7 @@ export const routerPlugin = definePlugin({
 
   server: {
     components: [
-      fileURLToPath(new URL('./router/outlet.html', import.meta.url))
+      getOutletComponentPath()
     ],
 
     onBeforePageRender ({ component, config }) {
