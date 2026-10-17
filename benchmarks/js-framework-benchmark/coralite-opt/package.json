@@ -1,0 +1,13 @@
+{
+  "name": "js-framework-benchmark-coralite-opt",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build-prod": "coralite build",
+    "dev": "coralite dev"
+  },
+  "dependencies": {
+    "coralite": "workspace:*"
+  }
+}
