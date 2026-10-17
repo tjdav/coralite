@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Pages and Routing Reference — Coralite"
+    description="Definitive API reference for definePage and Coralite file-based routing, dynamic route parameter matching, path enumeration, route context, cleanUrls, navigation, 404 convention, static redirects, and opt-in SPA router."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content">
+    <h1 class="display">Pages &amp; Routing Reference</h1>
+
+    <p>This reference details the <code>definePage</code> API and file-based routing system in Coralite. Pages are HTML files located in your project's pages directory that render top-level route targets and export optional server-side configuration, path enumeration logic, and runtime behavior.</p>
+
+    <coralite-heading level="2" text="1. Page Structure"></coralite-heading>
+
+    <p>A Coralite page file can combine static HTML markup, server-side data fetching, path enumeration, and optional client scripts. Pages are defined by exporting a page configuration object via <code>export default definePage({ ... })</code> inside a <code>&lt;script type="module"&gt;</code> block.</p>
+
+    <coralite-code-highlight language="html" title="Page File Structure">
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;title&gt;{{ state.title }}&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;{{ state.title }}&lt;/h1&gt;
+  &lt;p&gt;{{ state.summary }}&lt;/p&gt;
+
+  &lt;script type="module"&gt;
+    import { definePage } from 'coralite'
+
+    export default definePage({
+      async server ({ route }) {
+        return {
+          title: `Welcome to Coralite (${route.path})`,
+          summary: 'Fast, native Web Component framework with zero build-time bloat.'
+        }
+      }
+    })
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+    </coralite-code-highlight>
+
+    <p><strong>Static Page Exemption:</strong> Pages that require no dynamic data fetching or path enumeration can be authored as pure HTML documents with no <code>&lt;script type="module"&gt;</code> block. Coralite processes static HTML pages directly during build time.</p>
+
+    <coralite-heading level="2" text="2. File-Based Routing"></coralite-heading>
+
+    <p>Coralite maps HTML file paths inside your pages directory directly to URL route targets:</p>
+
+    <ul>
+      <li><code>pages/about.html</code> &rarr; <code>/about</code></li>
+      <li><code>pages/index.html</code> &rarr; <code>/</code></li>
+      <li><code>pages/blog/index.html</code> &rarr; <code>/blog</code></li>
+    </ul>
+
+    <p>Subdirectory structures establish nested URL paths. Trailing <code>index.html</code> files serve as root pages for their containing directory.</p>
+
+    <coralite-heading level="2" text="3. Dynamic Routes"></coralite-heading>
+
+    <p>Dynamic route parameters are declared using square brackets (<code>[param]</code>) in file or directory names. Parameter values are extracted during routing and passed into page context objects via <code>route.params</code>.</p>
+
+    <ul>
+      <li><code>pages/posts/[id].html</code> &rarr; <code>/posts/:id</code> (e.g. <code>/posts/123</code> &rarr; <code>route.params.id = '123'</code>)</li>
+      <li><code>pages/[year]/[month].html</code> &rarr; <code>/:year/:month</code> (e.g. <code>/2025/03</code> &rarr; <code>route.params.year = '2025'</code>, <code>route.params.month = '03'</code>)</li>
+      <li><code>pages/posts/[id]/index.html</code> &rarr; same as <code>pages/posts/[id].html</code></li>
+      <li><code>pages/docs/[...slug].html</code> &rarr; catch-all route matching <code>/docs</code>, <code>/docs/a</code>, <code>/docs/a/b</code> (e.g. <code>route.params.slug = 'a/b'</code>)</li>
+    </ul>
+
+    <p><strong>Precedence Rules:</strong> When resolving incoming request URLs against defined route patterns, Coralite uses left-to-right segment precedence: <code>static</code> segments win over <code>param</code> segments, which win over <code>catchall</code> segments.</p>
+
+    <coralite-heading level="2" text="4. Enumeration via paths"></coralite-heading>
+
+    <p>Dynamic pages must declare the exact parameter combinations to compile during build time by exporting a <code>paths</code> function inside <code>definePage</code>.</p>
+
+    <p><strong>Context Object:</strong> The <code>paths</code> function receives <code>{ app }</code> context and can be synchronous or <code>async</code>. It must return an array of parameter objects matching the dynamic route variables.</p>
+
+    <coralite-code-highlight language="javascript" title="Dynamic Path Enumeration Example">
+import { definePage } from 'coralite'
+
+export default definePage({
+  async paths ({ app }) {
+    console.log('Enumerating paths for app:', app)
+    const fs = await import('node:fs/promises')
+    const raw = await fs.readFile('./content/posts.json', 'utf-8')
+    const posts = JSON.parse(raw)
+
+    return posts.map((post) => ({
+      id: post.id
+    }))
+  },
+
+  async server ({ route }) {
+    // Route parameters extracted per enumerated path
+    const postId = route.params.id
+    return {
+      postId
+    }
+  }
+})
+    </coralite-code-highlight>
+
+    <p><strong>Plugin Path Enumeration:</strong> Plugins can also contribute route paths during collection by returning <code>{ paths: [...] }</code> from an <code>onPageSet</code> hook. Paths returned by <code>definePage.paths</code> and plugin <code>onPageSet</code> returns are deduplicated automatically. If duplicate parameter sets originate from different sources or within the same source, Coralite raises a build error identifying the conflicting sources.</p>
+
+    <coralite-heading level="2" text="5. server() on Pages"></coralite-heading>
+
+    <p>The <code>server()</code> block executes once for each enumerated path during build-time rendering. It retrieves page-level data, reads filesystem files, or runs build queries to construct the page's initial state object.</p>
+
+    <p><strong>Context Object:</strong> Receives <code>{ route, app, session, signal, isServer, ...pluginContext }</code>.</p>
+
+    <coralite-code-highlight language="javascript" title="Page server() Block Example">
+import { definePage } from 'coralite'
+
+export default definePage({
+  async server ({ route, isServer }) {
+    if (!isServer) return {}
+
+    const { id } = route.params
+    return {
+      title: `Article #${id}`,
+      fetchedAt: new Date().toISOString()
+    }
+  }
+})
+    </coralite-code-highlight>
+
+    <p>Data returned from <code>server()</code> is merged into the page's reactive state and serialized for hydration in the browser.</p>
+
+    <coralite-heading level="2" text="6. getters, style, provide, client, onError on Pages"></coralite-heading>
+
+    <p>Pages support the same core context blocks as components, acting as the root node of the application context tree:</p>
+
+    <ul>
+      <li><code>getters</code>: Synchronous derived state functions destructuring <code>({ state, route, refs, slots, signal, isServer })</code>.</li>
+      <li><code>style</code>: Dynamic CSS Custom Property map applied synchronously to the <code>&lt;html&gt;</code> element scope: <code>(state) => ({ '--page-theme': state.theme })</code>.</li>
+      <li><code>provide</code>: Broadcasts context values down to descendant components via W3C Context protocol: <code>provide ({ state }) { return { theme: state.theme } }</code>.</li>
+      <li><code>client</code>: Client-side runtime logic executed on <code>document.documentElement</code> receiving <code>{ state, route, refs, signal, emit, observe }</code>.</li>
+      <li><code>onError</code>: Build-time error boundary returning fallback template markup and state if server rendering fails: <code>onError ({ error }) { return { template: '<h1>Page Unavailable</h1>', state: { err: error.message } } }</code>.</li>
+    </ul>
+
+    <coralite-heading level="2" text="7. The route Context Key"></coralite-heading>
+
+    <p>The <code>route</code> object provides normalized route metadata and parameters across server rendering, getters, client logic, and error boundaries.</p>
+
+    <coralite-code-highlight language="typescript" title="Route Object Shape">
+type Route = {
+  path: string
+  pattern: string
+  params: Record<string, string>
+  dynamic: boolean
+}
+    </coralite-code-highlight>
+
+    <p>Reading <code>route</code> inside page blocks:</p>
+
+    <coralite-code-highlight language="javascript" title="Reading route in Page Getters and Client">
+import { definePage } from 'coralite'
+
+export default definePage({
+  getters: {
+    canonicalUrl: ({ route }) => `https://example.com${route.path}`,
+    activeTab: ({ route }) => route.params.id || 'overview'
+  },
+
+  client ({ route }) {
+    console.log('Page mounted at route:', route.path, 'with params:', route.params)
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="8. URL Conventions (cleanUrls)"></coralite-heading>
+
+    <p>The <code>cleanUrls</code> option in <code>coralite.config.js</code> controls how build output files are named and how <code>route.path</code> is represented:</p>
+
+    <coralite-code-highlight language="javascript" title="coralite.config.js cleanUrls Setting">
+import { defineConfig } from 'coralite'
+
+export default defineConfig({
+  cleanUrls: true // default: true
+})
+    </coralite-code-highlight>
+
+    <ul>
+      <li><code>cleanUrls: true</code> (default): Directory-style output. <code>pages/about.html</code> compiles to <code>dist/about/index.html</code> with extensionless <code>route.path = '/about'</code>.</li>
+      <li><code>cleanUrls: false</code>: File-style output. <code>pages/about.html</code> compiles to <code>dist/about.html</code> with <code>route.path = '/about.html'</code>.</li>
+      <li>Root page (<code>pages/index.html</code>) always compiles to <code>dist/index.html</code> with <code>route.path = '/'</code> regardless of <code>cleanUrls</code> configuration.</li>
+    </ul>
+
+    <coralite-heading level="2" text="9. Navigation"></coralite-heading>
+
+    <p>By default, navigation between pages uses standard HTML anchor tags (<code>&lt;a href="..."&gt;</code>) triggering full document loads accompanied by smooth View Transitions (crossfade animation):</p>
+
+    <coralite-code-highlight language="html" title="Standard Link Navigation">
+&lt;nav&gt;
+  &lt;a href="/"&gt;Home&lt;/a&gt;
+  &lt;a href="/about"&gt;About&lt;/a&gt;
+  &lt;a href="/posts/123"&gt;Read Post&lt;/a&gt;
+&lt;/nav&gt;
+    </coralite-code-highlight>
+
+    <p>View Transitions are enabled by default via the <code>viewTransitions: true</code> option in project configuration, delivering native CSS crossfade transitions without client-side routing overhead.</p>
+
+    <coralite-heading level="2" text="10. 404 Convention"></coralite-heading>
+
+    <p>Creating a <code>pages/404.html</code> file at the root of your pages directory defines the standard 404 error page. It compiles directly to <code>dist/404.html</code> with <code>route.path = '/404'</code>, making it instantly compatible with static web hosts (GitHub Pages, Netlify, Vercel, Cloudflare Pages).</p>
+
+    <p><em>Note: Subdirectory 404 files (such as <code>pages/docs/404.html</code>) are treated as standard content pages rather than root fallback pages.</em></p>
+
+    <coralite-heading level="2" text="11. Redirects"></coralite-heading>
+
+    <p>While host-level web server redirects (e.g. <code>_redirects</code> or server headers) are recommended for production performance, pages can emit static HTML redirect stubs directly from their <code>server()</code> block by returning a <code>__redirect</code> object:</p>
+
+    <coralite-code-highlight language="javascript" title="Static Redirect Return Example">
+import { definePage } from 'coralite'
+
+export default definePage({
+  async server ({ route }) {
+    console.log('Redirecting from route:', route.path)
+    return {
+      __redirect: {
+        to: '/docs/getting-started',
+        status: 301 // 301 permanent or 302 temporary (default: 302)
+      }
+    }
+  }
+})
+    </coralite-code-highlight>
+
+    <p>When <code>__redirect</code> is returned, Coralite generates a lightweight HTML stub containing a <code>&lt;meta http-equiv="refresh"&gt;</code> tag, canonical <code>&lt;link&gt;</code> header, and instant <code>location.replace()</code> JavaScript fallback.</p>
+
+    <coralite-heading level="2" text="12. SPA Router (opt-in)"></coralite-heading>
+
+    <p>For applications requiring persistent client-side state, audio playback, or continuous DOM trees across page navigations, Coralite provides an opt-in single-page application (SPA) router plugin via <code>coralite/plugins/router</code>.</p>
+
+    <coralite-code-highlight language="javascript" title="Registering the SPA Router Plugin">
+import { defineConfig } from 'coralite'
+import router from 'coralite/plugins/router'
+
+export default defineConfig({
+  plugins: [
+    router({
+      base: '/',
+      outlet: 'data-router-outlet'
+    })
+  ]
+})
+    </coralite-code-highlight>
+
+    <p>The router plugin automatically wraps body contents in a <code>&lt;router-outlet&gt;</code> element, intercepts same-origin <code>&lt;a href&gt;</code> clicks, fetches target HTML documents via <code>fetch()</code>, swaps outlet DOM nodes, and updates document head tags without full page reloads.</p>
+
+    <p>Navigation guards can be registered using <code>beforeEach</code> inside client logic:</p>
+
+    <coralite-code-highlight language="javascript" title="Router Guard Example">
+export default defineComponent({
+  client ({ router }) {
+    router.beforeEach(({ to, from }) => {
+      console.log('Navigating from', from.path, 'to', to.path)
+      if (to.path.startsWith('/admin') && !isAuthenticated()) {
+        return '/login' // Redirect to login
+      }
+    })
+  }
+})
+    </coralite-code-highlight>
+
+    <p><em>For detailed SPA routing patterns and state persistence strategies, see the SPA Router Guide (coming soon).</em></p>
+
+  </main>
+
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
