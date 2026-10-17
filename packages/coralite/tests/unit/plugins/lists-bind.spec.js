@@ -103,6 +103,22 @@ if (typeof globalThis.document === 'undefined') {
     },
     createDocumentFragment () {
       return createMockFragment()
+    },
+    createComment (text) {
+      return {
+        type: 'comment',
+        text,
+        parentNode: null,
+        remove () {
+          if (this.parentNode) {
+            const idx = this.parentNode.children.indexOf(this)
+            if (idx !== -1) {
+              this.parentNode.children.splice(idx, 1)
+            }
+            this.parentNode = null
+          }
+        }
+      }
     }
   }
 }
@@ -234,6 +250,28 @@ describe('lists plugin - bind', () => {
     store.remove('1')
     assert.equal(container.children.length, 1)
     assert.equal(container.children[0].text, 'Two')
+  })
+
+  it('swaps elements in DOM on store.swap', () => {
+    bind({
+      container,
+      store,
+      key: (i) => i.id,
+      create: (item) => {
+        const li = createMockElement('li')
+        li.text = item.text
+        return li
+      }
+    })
+
+    const childrenBefore = [...container.children]
+    store.swap('1', '2')
+
+    const childrenAfter = [...container.children]
+    assert.equal(container.children[0].text, 'Two')
+    assert.equal(container.children[1].text, 'One')
+    assert.strictEqual(childrenAfter[0], childrenBefore[1])
+    assert.strictEqual(childrenAfter[1], childrenBefore[0])
   })
 
   it('re-renders on store.set and clears on store.clear', () => {
