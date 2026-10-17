@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Styling & Slots — Coralite"
+    description="Discover how Coralite handles Light DOM component scoping, :host selectors, custom property theming, slot projections, slot transformations, and the client slots helper."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Styling &amp; Slots</h1>
+
+    <p>Coralite components render directly in the Light DOM while maintaining strict style encapsulation and declarative slot projection. This guide explains Light DOM style scoping, root selector rewrites, reactive custom property theming, slot projections, AST slot transformations, and client slot helpers.</p>
+
+    <coralite-heading level="2" text="1. Light DOM &amp; Scoping"></coralite-heading>
+
+    <p>Unlike traditional Web Component frameworks, Coralite components do not use Shadow DOM. Instead, components render directly in the standard Light DOM.</p>
+
+    <p>To avoid style leakage without the restrictions of Shadow DOM encapsulation, Coralite's build-time PostCSS compiler scopes component styles into the CSS cascade layer (<code>@layer components</code>). This architecture guarantees two major advantages:</p>
+
+    <ul>
+      <li><strong>Natural Encapsulation:</strong> Component selectors are scoped to the component root, preventing internal styles from leaking out into the parent page or sibling components.</li>
+      <li><strong>Utility Class Compatibility:</strong> Unlayered global utilities (such as Tailwind CSS or Bootstrap utility classes) take cascade priority over layered component styles without requiring <code>!important</code> rules.</li>
+    </ul>
+
+    <coralite-code-highlight language="css">
+/* Emitted component style block in CSS output */
+@layer components {
+  @scope (:where(user-card)) to (slot, :scope [data-cid]) {
+    :scope {
+      display: block;
+      padding: 1rem;
+    }
+    .title {
+      font-weight: bold;
+    }
+  }
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="2. :host and :host-context()"></coralite-heading>
+
+    <p>Standard CSS pseudo-classes <code>:host</code> and <code>:host-context()</code> are fully supported in Coralite component stylesheets. At build time, Coralite's compiler rewrites these Shadow DOM selectors into standard Light DOM custom element selectors.</p>
+
+    <ul>
+      <li><code>:host</code> — Targets the root custom element container (e.g. <code>&lt;user-card&gt;</code>).</li>
+      <li><code>:host(.active)</code> — Targets the root custom element when a specific class or attribute is present.</li>
+      <li><code>:host-context(.dark)</code> — Applies styles based on ancestor context (such as a <code>.dark</code> class on <code>&lt;html&gt;</code> or <code>&lt;body&gt;</code>).</li>
+    </ul>
+
+    <coralite-code-highlight language="html">
+&lt;template id="user-card"&gt;
+  &lt;div class="content"&gt;
+    &lt;h3 class="title"&gt;{{ name }}&lt;/h3&gt;
+    &lt;slot&gt;&lt;/slot&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;style&gt;
+  /* Targets the host custom element */
+  :host {
+    display: block;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+  }
+
+  /* Parameterized host variant */
+  :host(.featured) {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+  }
+
+  /* Ancestor context styling */
+  :host-context(.dark) {
+    background-color: #1e293b;
+    color: #f8fafc;
+  }
+
+  .title {
+    font-size: 1.25rem;
+  }
+&lt;/style&gt;
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="3. Theming with Custom Properties"></coralite-heading>
+
+    <p>Component theming in Coralite is driven via CSS Custom Properties (<code>--custom-props</code>). The top-level <code>style</code> block in <code>defineComponent</code> allows binding reactive CSS variables directly to the host custom element.</p>
+
+    <p>The <code>style</code> block contains functions that receive a destructured context object (e.g. <code>({ state }) =&gt; ...</code>) and return CSS property values. Returning <code>null</code>, <code>undefined</code>, or an empty string removes the inline variable from the host element.</p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  attributes: {
+    active: Boolean,
+    themeColor: { type: String, default: '#0284c7' }
+  },
+  style: {
+    // Bind reactive CSS variables to the host tag using destructured context
+    '--card-bg': ({ state }) =&gt; state.active ? '#f0fdf4' : '#ffffff',
+    '--card-accent': ({ state }) =&gt; state.themeColor,
+    '--card-border': ({ state }) =&gt; state.active ? '#22c55e' : '#e2e8f0'
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="4. Slot Projection"></coralite-heading>
+
+    <p>Coralite components support standard default <code>&lt;slot&gt;&lt;/slot&gt;</code> and named slots (such as <code>&lt;slot name="title"&gt;&lt;/slot&gt;</code>). Slotted markup passed between component host tags is projected into the corresponding slot location.</p>
+
+    <p>To ensure layout consistency across parent containers, Coralite injects <code>display: contents;</code> onto slot containers at the root stylesheet level. This makes slot wrapper elements layout-transparent, allowing projected consumer children to participate directly in parent CSS Grid or Flexbox layouts.</p>
+
+    <coralite-code-highlight language="html">
+&lt;!-- Component Definition (dialog-box.html) --&gt;
+&lt;template id="dialog-box"&gt;
+  &lt;div class="dialog"&gt;
+    &lt;header class="dialog-header"&gt;
+      &lt;slot name="title"&gt;&lt;/slot&gt;
+    &lt;/header&gt;
+    &lt;div class="dialog-body"&gt;
+      &lt;slot&gt;&lt;/slot&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;!-- Page Usage --&gt;
+&lt;dialog-box&gt;
+  &lt;h2 slot="title"&gt;Confirm Action&lt;/h2&gt;
+  &lt;p&gt;Are you sure you want to proceed with this update?&lt;/p&gt;
+&lt;/dialog-box&gt;
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="5. Transforming Slots"></coralite-heading>
+
+    <p>The <code>slots</code> block in <code>defineComponent</code> allows you to intercept and transform projected Light DOM slot nodes before rendering. Each slot transformation function receives a destructured context object containing <code>{ nodes, state, isServer, signal }</code>.</p>
+
+    <p>The <code>nodes</code> array represents the collection of projected DOM nodes for that slot. You can filter, reorder, or modify <code>nodes</code> in place. On the client, returning <code>undefined</code> preserves existing DOM nodes and skips unnecessary re-transformation passes.</p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  slots: {
+    // Filter default slot nodes to include only paragraph elements
+    default: ({ nodes, state }) =&gt; {
+      return nodes.filter(node =&gt; {
+        if (node.nodeType === 1) { // Element node
+          return node.tagName.toLowerCase() === 'p'
+        }
+        return false
+      })
+    },
+
+    // Transform named slot content
+    title: ({ nodes }) =&gt; {
+      return nodes.map(node =&gt; {
+        if (node.nodeType === 1) {
+          node.classList.add('heading-styled')
+        }
+        return node
+      })
+    }
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="6. The slots Helper in client()"></coralite-heading>
+
+    <p>In the <code>client()</code> block, Coralite provides a <code>slots</code> helper object for imperative slot node inspection and query utilities:</p>
+
+    <ul>
+      <li><code>slots.get('name')</code> — Returns an array of projected DOM nodes for the specified slot name (or <code>'default'</code>).</li>
+      <li><code>slots.has('name')</code> — Returns a boolean indicating whether content was provided for the specified slot.</li>
+      <li><code>slots.count('name')</code> — Returns the count of projected nodes inside the specified slot.</li>
+    </ul>
+
+    <coralite-code-highlight language="javascript">
+client: ({ slots, signal }) =&gt; {
+  // Inspect slotted content imperatively
+  if (slots.has('header')) {
+    console.log('Header slot has', slots.count('header'), 'nodes')
+    const headerNodes = slots.get('header')
+    headerNodes.forEach(node =&gt; node.classList?.add('hydrated-slot'))
+  }
+}
+    </coralite-code-highlight>
+
+    <hr>
+
+    <p>Next: Return to the <a href="/docs/guide/index.html">Guide Overview</a> to explore more Coralite guides and tutorials.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

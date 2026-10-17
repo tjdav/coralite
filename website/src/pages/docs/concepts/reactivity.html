@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Reactivity & Context — Coralite"
+    description="Learn how Coralite handles fine-grained reactivity, reactive state, getters, async getters, state observers, updateComplete DOM synchronization, and tree-scoped context injection."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Reactivity &amp; Context</h1>
+
+    <p>Coralite provides a fine-grained, signal-backed reactivity system combined with tree-scoped dependency injection. This guide covers how component state updates, synchronous and asynchronous derived getters, side-effect observation, DOM render synchronization, and cross-component context injection operate across the framework.</p>
+
+    <coralite-heading level="2" text="1. State"></coralite-heading>
+
+    <p>The <code>state</code> object in Coralite is a reactive Proxy backed by framework signals. When state properties are mutated, Coralite automatically tracks dirty dependencies and schedules a DOM update.</p>
+
+    <p>Synchronous state writes are batched into a single microtask flush. Mutating multiple state keys within the same event handler or synchronous function causes a single re-render pass, preventing unnecessary layout recalculations or intermediate state renders.</p>
+
+    <coralite-code-highlight language="html">
+&lt;template id="counter-btn"&gt;
+  &lt;button ref="btn"&gt;Clicked {{ count }} times&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script type="module"&gt;
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      count: {
+        type: Number,
+        default: 0
+      }
+    },
+    client: ({ state, refs, signal }) =&gt; {
+      const button = refs('btn')
+
+      button.addEventListener('click', () =&gt; {
+        // Mutating reactive state schedules a batched DOM flush
+        state.count++
+      }, { signal })
+    }
+  })
+&lt;/script&gt;
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="2. Getters"></coralite-heading>
+
+    <p>Getters compute derived state synchronously from reactive state values. A getter function must destructure its context parameter (e.g. <code>({ state }) =&gt; ...</code>) and must be pure and synchronous, returning a calculated value without causing side effects or mutating state.</p>
+
+    <p>In component templates, getters are referenced using standard flat template tokens (e.g. <code>{{ getterName }}</code>).</p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  attributes: {
+    price: { type: Number, default: 0 },
+    taxRate: { type: Number, default: 0.1 }
+  },
+  getters: {
+    // Pure synchronous derived state function with destructured context
+    totalPrice: ({ state }) =&gt; (state.price * (1 + state.taxRate)).toFixed(2),
+    isDiscounted: ({ state }) =&gt; state.price &gt; 100
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-alert type="warning">
+      <strong>No Side Effects in Getters</strong>
+      <p>Getters are executed automatically during reactive evaluations. Do not perform network fetches, DOM manipulations, or state mutations inside getters.</p>
+    </coralite-alert>
+
+    <coralite-heading level="2" text="3. Async Getters"></coralite-heading>
+
+    <p>Async getters allow computing derived state using asynchronous operations (such as API calls or async dynamic computations). Async getters execute strictly in the client runtime and are skipped on the server during SSR.</p>
+
+    <p><strong>The Sync Prologue Rule:</strong> Reactive dependency tracking relies on synchronous call stacks. In an <code>async</code> getter, you must read all required <code>state</code> dependencies synchronously <em>before</em> the first <code>await</code> statement. Any state reads occurring after an <code>await</code> statement will not be registered as active dependencies.</p>
+
+    <p>Because async getters are skipped on the server, you should supply a sibling synchronous getter or server property as a fallback value for initial server-rendered output.</p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  attributes: {
+    userId: String
+  },
+  server: () =&gt; ({
+    // Server-rendered initial value
+    userProfile: { name: 'Loading...' }
+  }),
+  getters: {
+    // Fallback sync getter used during SSR and initial render
+    formattedName: ({ state }) =&gt; state.userProfile?.name ?? 'Anonymous',
+
+    // Client-only async getter
+    async userDetails ({ state }) {
+      // SYNC PROLOGUE: Read reactive dependencies BEFORE any await
+      const currentId = state.userId
+      if (!currentId) return null
+
+      // Async operation after dependencies are recorded
+      const res = await fetch(`/api/users/${currentId}`)
+      return await res.json()
+    }
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="4. observe(key, callback)"></coralite-heading>
+
+    <p>The <code>observe</code> function in the <code>client()</code> block registers a reactive subscriber for a specific state key. When that key's value changes during state updates, the callback is invoked with <code>(newValue, oldValue)</code>.</p>
+
+    <p>Use <code>observe</code> exclusively for external side effects, such as updating third-party charts, syncing state to <code>localStorage</code>, or logging metrics. <strong>Never mutate component state directly inside an observe callback</strong>, as doing so can trigger recursive reactive loops or unexpected cascade cycles.</p>
+
+    <coralite-code-highlight language="javascript">
+client: ({ state, observe, signal }) =&gt; {
+  // Sync state changes to localStorage or external services
+  observe('theme', (newTheme, oldTheme) =&gt; {
+    localStorage.setItem('app-theme', newTheme)
+    document.documentElement.setAttribute('data-theme', newTheme)
+  })
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="5. updateComplete"></coralite-heading>
+
+    <p><code>updateComplete</code> is a Promise exposed in the <code>client()</code> context object that resolves when the current microtask DOM update batch and observer flush complete.</p>
+
+    <p><strong>Do not await <code>updateComplete</code> at the top of the <code>client()</code> function.</strong> When <code>client()</code> executes during hydration, the initial DOM is already rendered and ready for binding. Await <code>updateComplete</code> only after mutating state when you need to measure or interact with the updated DOM immediately afterward.</p>
+
+    <coralite-code-highlight language="javascript">
+client: async ({ state, refs, updateComplete, signal }) =&gt; {
+  const container = refs('box')
+
+  refs('expandBtn').addEventListener('click', async () =&gt; {
+    // 1. Mutate state
+    state.expanded = true
+
+    // 2. Await DOM flush to guarantee updated layout
+    await updateComplete
+
+    // 3. Measure DOM element after render
+    const height = container.getBoundingClientRect().height
+    console.log('New container height:', height)
+  }, { signal })
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="6. Context (provide / consume)"></coralite-heading>
+
+    <p>Coralite provides a tree-scoped dependency injection mechanism via <code>provide</code> and <code>consume</code> declarations. This allows ancestor components (providers) to pass data down to any deeply nested descendant components (consumers) without explicit prop drilling.</p>
+
+    <p>Context keys are generated using <code>createContext('keyName')</code>, which returns a uniquely identified string symbol for context registration.</p>
+
+    <coralite-heading level="3" text="Defining Context Key &amp; Provider"></coralite-heading>
+
+    <p>In a provider component, define <code>provide</code> using computed context functions. Context functions receive destructured parameters (such as <code>({ state }) =&gt; ...</code>):</p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent, createContext } from 'coralite'
+
+// Export shared context key
+export const ThemeContext = createContext('app:theme')
+
+export default defineComponent({
+  attributes: {
+    theme: { type: String, default: 'light' }
+  },
+  provide: {
+    [ThemeContext]: ({ state }) =&gt; ({
+      current: state.theme,
+      isDark: state.theme === 'dark'
+    })
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Consuming Context"></coralite-heading>
+
+    <p>In descendant consumer components, declare <code>consume</code> to map provider keys into local state properties:</p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite'
+import { ThemeContext } from './theme-provider.js'
+
+export default defineComponent({
+  consume: {
+    theme: ThemeContext
+  },
+  getters: {
+    themeClass: ({ state }) =&gt; state.theme?.isDark ? 'dark-mode' : 'light-mode'
+  }
+})
+    </coralite-code-highlight>
+
+    <p>Context holds a single value. When passing multiple values or controls down the tree, group related properties into a single object in the <code>provide</code> function.</p>
+
+    <hr>
+
+    <p>Next: Explore <a href="/docs/concepts/styling/">Styling &amp; Slots</a> to learn about Light DOM scoping, custom properties, and slot projections.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
