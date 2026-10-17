@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Lists & Store Reference — Coralite"
+    description="Complete API reference for Coralite's Global Store and built-in Lists plugin, covering reactive stores, DOM list binding, virtualization, chat anchors, infinite scroll feeds, layouts, and grouping."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content">
+    <h1 class="display">Lists & Store Reference</h1>
+
+    <p>This reference documents Coralite's application state management and high-performance list rendering utilities: the signal-backed <strong>Global Store</strong> and the built-in <strong>Lists Plugin</strong>.</p>
+
+    <coralite-heading level="2" text="1. Global Store"></coralite-heading>
+
+    <p>The Global Store provides centralized, application-wide state management. It is declared in your project's configuration file and injected automatically into component and page execution contexts.</p>
+
+    <coralite-heading level="3" text="Declaration"></coralite-heading>
+
+    <p>Declare initial store defaults in <code>coralite.config.js</code> using the <code>store</code> key:</p>
+
+    <coralite-code-highlight language="javascript" title="coralite.config.js">
+import { defineConfig } from 'coralite'
+
+export default defineConfig({
+  public: 'public',
+  output: 'dist',
+  pages: 'src/pages',
+  components: 'src/components',
+  store: {
+    user: { name: 'Alex', role: 'admin' },
+    theme: 'dark',
+    notifications: []
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Component & Page Access"></coralite-heading>
+
+    <p>Access the store directly via the <code>store</code> context key in component and page blocks (<code>getters</code>, <code>client</code>, etc.):</p>
+
+    <coralite-code-highlight language="javascript" title="Accessing Store in Component">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  getters: {
+    userName: ({ store }) => store.user.name,
+    isDark: ({ store }) => store.theme === 'dark'
+  },
+
+  client({ store, observe }) {
+    // Read and update global store state
+    console.log('Current user:', store.user)
+
+    // Update store state reactively
+    store.theme = 'light'
+  }
+})
+    </coralite-code-highlight>
+
+    <p><strong>Reactivity:</strong> The Global Store is signal-backed. Reading a store property inside a <code>getters</code> declaration automatically registers subscriber tracking. When <code>store.theme</code> changes, any getter or component depending on <code>store.theme</code> re-evaluates and updates the DOM immediately.</p>
+
+    <p><strong>Server vs. Client Behavior:</strong> On the server during build-time rendering, <code>store</code> is a read-only snapshot. Attempting to mutate store properties during SSR throws a <code>CoraliteError</code>. On the client runtime, <code>store</code> is fully reactive and mutable.</p>
+
+    <coralite-heading level="3" text="Store Methods"></coralite-heading>
+
+    <p>The store object provides helper methods for subscription tracking, batched state mutations, and resetting state:</p>
+
+    <ul>
+      <li><code>store.subscribe(key, callback)</code> — Subscribes a callback to changes on a specific store key or across all store keys. Returns an unsubscribe function.
+        <coralite-code-highlight language="javascript">
+// Subscribe to a specific key
+const unsubscribe = store.subscribe('theme', (newTheme, oldTheme) => {
+  console.log(`Theme changed from ${oldTheme} to ${newTheme}`)
+})
+
+// Unsubscribe when no longer needed
+unsubscribe()
+        </coralite-code-highlight>
+      </li>
+      <li><code>store.batch(fn)</code> — Coalesces multiple synchronous store writes so subscriber notifications fire only once after the batch callback completes.
+        <coralite-code-highlight language="javascript">
+store.batch(() => {
+  store.theme = 'dark'
+  store.notifications = [...store.notifications, { id: 1, text: 'Settings saved' }]
+})
+        </coralite-code-highlight>
+      </li>
+      <li><code>store.reset()</code> — Resets all store properties back to their initial defaults defined in <code>coralite.config.js</code>.
+        <coralite-code-highlight language="javascript">
+// Resets store back to initial config defaults
+store.reset()
+        </coralite-code-highlight>
+      </li>
+    </ul>
+
+    <coralite-heading level="2" text="2. Lists Plugin (Basic Usage)"></coralite-heading>
+
+    <p>The <code>lists</code> plugin is built-in and auto-registered in Coralite. It provides fine-grained DOM list rendering and virtualized collections without Virtual DOM diffing overhead.</p>
+
+    <coralite-heading level="3" text="Accessing the Plugin"></coralite-heading>
+
+    <p>Destructure <code>lists</code> directly from the <code>client()</code> block context:</p>
+
+    <coralite-code-highlight language="javascript" title="Basic Lists Usage">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  client({ lists, refs, signal }) {
+    // 1. Create a keyed list store
+    const listStore = lists.createStore({
+      key: 'id',
+      initial: [
+        { id: '1', title: 'Task One', done: false },
+        { id: '2', title: 'Task Two', done: true }
+      ]
+    })
+
+    // 2. Bind the list store to a DOM container
+    lists.bind({
+      container: refs.listContainer,
+      store: listStore,
+      signal,
+      create: (item) => {
+        const el = document.createElement('li')
+        el.className = 'task-item'
+        el.textContent = item.title
+        return el
+      },
+      update: (el, item) => {
+        el.classList.toggle('completed', item.done)
+        el.textContent = item.title
+      }
+    })
+  }
+})
+    </coralite-code-highlight>
+
+    <p><strong>Keyed DOM Updates:</strong> <code>lists.bind</code> tracks items by unique key (specified via <code>key: 'id'</code>). Appending an item creates exactly one DOM element. Updating an item modifies only that item's DOM node. Swapping or reordering items re-positions existing DOM nodes without destroying component state or re-creating elements.</p>
+
+    <coralite-heading level="2" text="3. Lists Virtualization"></coralite-heading>
+
+    <p>For large datasets, <code>lists.bind</code> supports built-in virtualization to keep rendering fast and DOM memory footprint low.</p>
+
+    <p>The <code>virtual</code> option supports three modes:</p>
+
+    <ul>
+      <li><code>virtual: false</code> (Default) — Renders all store items directly into the DOM container. Best for lists under 100 items.</li>
+      <li><code>virtual: 'auto'</code> — Uses CSS <code>content-visibility: auto</code> to skip rendering off-screen elements. Ideal for lists containing 100 to 50,000 items.
+        <coralite-code-highlight language="javascript">
+lists.bind({
+  container: refs.container,
+  store: listStore,
+  signal,
+  virtual: 'auto',
+  create: (item) => renderItem(item)
+})
+        </coralite-code-highlight>
+      </li>
+      <li><code>virtual: 'window'</code> — Uses anchor-based DOM windowing to recycle a fixed number of DOM nodes based on scroll position. Ideal for massive datasets (50,000+ items).
+        <coralite-code-highlight language="javascript">
+lists.bind({
+  container: refs.container,
+  store: listStore,
+  signal,
+  virtual: 'window',
+  size: 48, // Fixed item height in pixels (or 'measure')
+  overscan: 5, // Number of items to render outside visible viewport
+  create: (item) => renderItem(item)
+})
+        </coralite-code-highlight>
+      </li>
+    </ul>
+
+    <p><strong>Configuring <code>size</code>:</strong> Specify a numeric pixel value (e.g. <code>size: 48</code>) for fixed-height items, or pass <code>size: 'measure'</code> to dynamically compute item heights as elements enter the viewport.</p>
+
+    <coralite-heading level="2" text="4. Chat & Feeds (Anchor Features)"></coralite-heading>
+
+    <p>The <code>lists</code> plugin provides built-in anchor options designed for real-time messaging, chat interfaces, and infinite scrolling feeds.</p>
+
+    <coralite-heading level="3" text="Chat Layouts (anchorTo & followOnAppend)"></coralite-heading>
+
+    <p>For chat applications where messages append to the bottom and require automatically scrolling down when new messages arrive:</p>
+
+    <coralite-code-highlight language="javascript" title="Chat Anchor Setup">
+lists.bind({
+  container: refs.chatContainer,
+  store: chatStore,
+  signal,
+  anchorTo: 'end',        // Stick scroll position relative to bottom
+  followOnAppend: true,   // Automatically scroll to newest message when appended
+  create: (msg) => renderMessage(msg)
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Infinite Scroll Feeds (onReachStart & onReachEnd)"></coralite-heading>
+
+    <p>Attach scroll threshold callbacks to trigger pagination or dynamic data loading when users reach the top or bottom of a list:</p>
+
+    <coralite-code-highlight language="javascript" title="Infinite Scroll Callbacks">
+lists.bind({
+  container: refs.feedContainer,
+  store: feedStore,
+  signal,
+  scrollEndThreshold: 150, // Trigger when within 150px of list boundary
+  onReachEnd: async () => {
+    // User scrolled near the bottom — load next page
+    const nextItems = await fetchNextPage()
+    feedStore.push(...nextItems)
+  },
+  onReachStart: async () => {
+    // User scrolled near the top — load previous history
+    const prevItems = await fetchHistory()
+    feedStore.unshift(...prevItems)
+  },
+  create: (post) => renderPost(post)
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="5. Layouts & Groups"></coralite-heading>
+
+    <p>Customize list presentation and structure using built-in grid layouts and grouping options.</p>
+
+    <coralite-heading level="3" text="Layout Modes"></coralite-heading>
+
+    <p>Set <code>layout</code> to standard display arrangements:</p>
+
+    <ul>
+      <li><code>layout: 'linear'</code> (Default) — Standard single-column vertical list.</li>
+      <li><code>layout: 'grid'</code> — Responsive multi-column CSS grid list. Configure with <code>lanes</code> or <code>laneWidth</code>.</li>
+      <li><code>layout: 'masonry'</code> — Dynamic Pinterest-style masonry layout balancing columns by height.</li>
+      <li><code>layout: 'table'</code> — Tabular list format with structured column headers.</li>
+    </ul>
+
+    <coralite-code-highlight language="javascript" title="Responsive Grid Example">
+lists.bind({
+  container: refs.gridContainer,
+  store: galleryStore,
+  signal,
+  layout: 'grid',
+  lanes: 'auto',
+  minLaneWidth: 200, // Minimum column width in pixels
+  gap: 16,           // Gap between items in pixels
+  create: (photo) => renderPhotoCard(photo)
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Grouping & Sticky Headers"></coralite-heading>
+
+    <p>Group items dynamically by key and render custom header elements:</p>
+
+    <coralite-code-highlight language="javascript" title="Grouping with Sticky Headers">
+lists.bind({
+  container: refs.groupedList,
+  store: transactionStore,
+  signal,
+  groupBy: (item) => item.date, // Group transactions by date string
+  stickyGroups: true,          // Keep active group header sticky at top during scroll
+  createHeader: (groupKey, groupItems) => {
+    const header = document.createElement('div')
+    header.className = 'group-header'
+    header.textContent = `${groupKey} (${groupItems.length} transactions)`
+    return header
+  },
+  create: (tx) => renderTransactionRow(tx)
+})
+    </coralite-code-highlight>
+
+  </main>
+
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
