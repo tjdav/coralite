@@ -1,0 +1,16 @@
+{
+  "name": "coralite-jsbenchmarks",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "coralite dev",
+    "build": "coralite build"
+  },
+  "devDependencies": {
+    "coralite": "workspace:*"
+  },
+  "jsbenchmarks": {
+    "website": "https://coralite.dev",
+    "package": "coralite"
+  }
+}
