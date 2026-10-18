@@ -100,9 +100,11 @@
 
       refs('update').addEventListener('click', () => {
         const allItems = store.all()
-        for (let i = 0; i < allItems.length; i += 10) {
-          store.update(allItems[i].id, { label: `${allItems[i].label} !!!` })
-        }
+        store.batch(() => {
+          for (let i = 0; i < allItems.length; i += 10) {
+            store.update(allItems[i].id, { label: `${allItems[i].label} !!!` })
+          }
+        })
       }, { signal })
 
       refs('clear').addEventListener('click', () => {

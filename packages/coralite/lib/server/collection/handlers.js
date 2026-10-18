@@ -352,12 +352,34 @@ export function createPageHandlers ({
       v.content = await getHtmlFile(v.path.pathname)
     }
 
-    const component = parseModule(v.content, {
-      ignoreByAttribute: app.options.ignoreByAttribute,
-      skipRenderByAttribute: app.options.skipRenderByAttribute,
-      onError: handleError,
-      filePath: v.path?.pathname
-    })
+    let component
+    try {
+      component = parseModule(v.content, {
+        ignoreByAttribute: app.options.ignoreByAttribute,
+        skipRenderByAttribute: app.options.skipRenderByAttribute,
+        onError: handleError,
+        filePath: v.path?.pathname
+      })
+    } catch (err) {
+      if (typeof app?.onError === 'function') {
+        app.onError({
+          level: 'ERR',
+          code: err.code,
+          message: err.message,
+          error: err,
+          filePath: v.path?.pathname
+        })
+      } else if (typeof handleError === 'function') {
+        handleError({
+          level: 'ERR',
+          code: err.code,
+          message: err.message,
+          error: err,
+          filePath: v.path?.pathname
+        })
+      }
+      return null
+    }
 
     if (!component.isTemplate) {
       return
@@ -381,11 +403,33 @@ export function createPageHandlers ({
       v.content = await getHtmlFile(v.path.pathname)
     }
 
-    const component = parseModule(v.content, {
-      ignoreByAttribute: app.options.ignoreByAttribute,
-      skipRenderByAttribute: app.options.skipRenderByAttribute,
-      onError: handleError
-    })
+    let component
+    try {
+      component = parseModule(v.content, {
+        ignoreByAttribute: app.options.ignoreByAttribute,
+        skipRenderByAttribute: app.options.skipRenderByAttribute,
+        onError: handleError
+      })
+    } catch (err) {
+      if (typeof app?.onError === 'function') {
+        app.onError({
+          level: 'ERR',
+          code: err.code,
+          message: err.message,
+          error: err,
+          filePath: v.path?.pathname
+        })
+      } else if (typeof handleError === 'function') {
+        handleError({
+          level: 'ERR',
+          code: err.code,
+          message: err.message,
+          error: err,
+          filePath: v.path?.pathname
+        })
+      }
+      return null
+    }
 
     if (!component.isTemplate) {
       return

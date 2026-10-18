@@ -57,15 +57,39 @@ export const listsPlugin = definePlugin({
         const subscribers = new Set()
         const versionSignal = createSignal(0)
 
-        function notifySubscribers (descriptor) {
+        let pendingChanges = []
+        let scheduled = false
+        let batchDepth = 0
+
+        function flushChanges () {
+          scheduled = false
+          if (pendingChanges.length === 0) {
+            return
+          }
+
+          const changes = pendingChanges
+          pendingChanges = []
+
           versionSignal.value++
           const subs = Array.from(subscribers)
           for (const sub of subs) {
             try {
-              sub(descriptor)
+              sub(changes)
             } catch (err) {
               console.error('Error in lists store subscriber:', err)
             }
+          }
+        }
+
+        function notifySubscribers (descriptor) {
+          pendingChanges.push(descriptor)
+          if (batchDepth > 0) {
+            return
+          }
+
+          if (!scheduled) {
+            scheduled = true
+            queueMicrotask(flushChanges)
           }
         }
 
@@ -99,6 +123,19 @@ export const listsPlugin = definePlugin({
 
         const store = {
           getKey,
+
+          batch (fn) {
+            batchDepth++
+            try {
+              fn()
+            } finally {
+              batchDepth--
+              if (batchDepth === 0 && pendingChanges.length > 0 && !scheduled) {
+                scheduled = true
+                queueMicrotask(flushChanges)
+              }
+            }
+          },
 
           append (item) {
             addItemInternal(item, 'end')
@@ -195,6 +232,7 @@ export const listsPlugin = definePlugin({
           },
 
           set (items = []) {
+            pendingChanges = []
             itemsMap.clear()
             itemsArray.length = 0
             if (Array.isArray(items)) {
@@ -1316,14 +1354,18 @@ export const listsPlugin = definePlugin({
 
         renderVisibleWindow()
 
-        function handleStoreChange (change) {
-          if (destroyed) {
+        function handleStoreChange (changes) {
+          if (destroyed || !changes || changes.length === 0) {
             return
           }
 
           let mustFollow = false
-          if ((change.type === 'append' || change.type === 'appendMany') && anchorTo === 'end' && followOnAppend) {
-            mustFollow = shouldFollow()
+          for (const change of changes) {
+            if ((change.type === 'append' || change.type === 'appendMany') && anchorTo === 'end' && followOnAppend) {
+              if (shouldFollow()) {
+                mustFollow = true
+              }
+            }
           }
 
           const oldPositions = positions
@@ -1333,47 +1375,49 @@ export const listsPlugin = definePlugin({
           groups = nextGroups
           positions = computePositions(items, effectiveKey, measurements, defaultSize, getLayoutOptions())
 
-          switch (change.type) {
-            case 'update': {
-              const k = change.id
-              const el = elementMap.get(k)
-              if (el && typeof update === 'function') {
-                const newItem = store.get(k)
-                if (newItem) {
-                  update(el, newItem)
+          for (const change of changes) {
+            switch (change.type) {
+              case 'update': {
+                const k = change.id
+                const el = elementMap.get(k)
+                if (el && typeof update === 'function') {
+                  const newItem = store.get(k)
+                  if (newItem) {
+                    update(el, newItem)
+                  }
                 }
-              }
-              break
-            }
-
-            case 'remove': {
-              const removedKey = change.id
-              const oldEl = elementMap.get(removedKey)
-              if (oldEl) {
-                if (isDynamicMeasure) {
-                  measurements.unobserve(oldEl)
-                }
-                elementMap.delete(removedKey)
+                break
               }
 
-              if (anchor && anchor.key === removedKey) {
-                anchor = reanchorOnRemove(removedKey, anchor, oldPositions, anchorTo)
-                if (anchor) {
-                  const viewportHeight = getViewportHeight()
-                  const derivedVirtualScrollTop = computeScrollTopFromAnchor(anchor, positions, anchorTo, viewportHeight)
-                  const scale = getScale()
-                  container.scrollTop = derivedVirtualScrollTop * scale
-                } else {
-                  container.scrollTop = 0
+              case 'remove': {
+                const removedKey = change.id
+                const oldEl = elementMap.get(removedKey)
+                if (oldEl) {
+                  if (isDynamicMeasure) {
+                    measurements.unobserve(oldEl)
+                  }
+                  elementMap.delete(removedKey)
                 }
-              }
-              break
-            }
 
-            case 'clear': {
-              anchor = null
-              measurements.clear()
-              break
+                if (anchor && anchor.key === removedKey) {
+                  anchor = reanchorOnRemove(removedKey, anchor, oldPositions, anchorTo)
+                  if (anchor) {
+                    const viewportHeight = getViewportHeight()
+                    const derivedVirtualScrollTop = computeScrollTopFromAnchor(anchor, positions, anchorTo, viewportHeight)
+                    const scale = getScale()
+                    container.scrollTop = derivedVirtualScrollTop * scale
+                  } else {
+                    container.scrollTop = 0
+                  }
+                }
+                break
+              }
+
+              case 'clear': {
+                anchor = null
+                measurements.clear()
+                break
+              }
             }
           }
 
@@ -1641,120 +1685,124 @@ export const listsPlugin = definePlugin({
           container.scrollTop = Math.max(0, (container.scrollHeight || 0) - (container.clientHeight || 0))
         }
 
-        function handleStoreChange (change) {
-          if (destroyed) {
+        function handleStoreChange (changes) {
+          if (destroyed || !changes || changes.length === 0) {
             return
           }
 
           let mustFollow = false
-          if ((change.type === 'append' || change.type === 'appendMany') && anchorTo === 'end' && followOnAppend) {
-            mustFollow = shouldFollow()
+          for (const change of changes) {
+            if ((change.type === 'append' || change.type === 'appendMany') && anchorTo === 'end' && followOnAppend) {
+              if (shouldFollow()) {
+                mustFollow = true
+              }
+            }
           }
 
           rawItems = store.all()
           const regroup = groupItems(rawItems, groupBy)
           items = regroup.flatItems
 
-          switch (change.type) {
-            case 'append': {
-              if (!groupBy) {
-                for (const item of change.items) {
-                  const el = createElementForItem(item)
-                  if (el) {
-                    if (bottomSentinel && bottomSentinel.parentNode === container) {
-                      container.insertBefore(el, bottomSentinel)
-                    } else {
-                      container.appendChild(el)
-                    }
-                  }
-                }
-              } else {
-                renderAll()
-              }
-              break
-            }
-
-            case 'prepend': {
-              if (!groupBy) {
-                const insertBeforeNode = topSentinel && topSentinel.parentNode === container
-                  ? topSentinel.nextSibling
-                  : container.firstChild
-
-                for (const item of change.items) {
-                  const el = createElementForItem(item)
-                  if (el) {
-                    if (insertBeforeNode) {
-                      container.insertBefore(el, insertBeforeNode)
-                    } else if (bottomSentinel && bottomSentinel.parentNode === container) {
-                      container.insertBefore(el, bottomSentinel)
-                    } else {
-                      container.appendChild(el)
-                    }
-                  }
-                }
-              } else {
-                renderAll()
-              }
-              break
-            }
-
-            case 'update': {
-              const k = change.id
-              const el = elementMap.get(k)
-              if (el && typeof update === 'function') {
-                const newItem = store.get(k)
-                if (newItem) {
-                  update(el, newItem)
-                }
-              }
-              break
-            }
-
-            case 'remove': {
-              const k = change.id
-              const el = elementMap.get(k)
-              if (el) {
-                if (el.parentNode === container) {
-                  el.remove()
-                }
-                elementMap.delete(k)
-              }
-              if (groupBy) {
-                renderAll()
-              }
-              break
-            }
-
-            case 'swap': {
-              const elA = elementMap.get(change.idA)
-              const elB = elementMap.get(change.idB)
-
-              if (elA && elB && elA.parentNode === container && elB.parentNode === container && !groupBy) {
-                const nextA = elA.nextSibling
-                const nextB = elB.nextSibling
-
-                if (nextA === elB) {
-                  container.insertBefore(elB, elA)
-                } else if (nextB === elA) {
-                  container.insertBefore(elA, elB)
-                } else {
-                  container.insertBefore(elA, nextB)
-                  container.insertBefore(elB, nextA)
-                }
-              } else {
-                renderAll()
-              }
-              break
-            }
-
-            case 'set':
-            case 'clear':
-            default: {
+          if (groupBy) {
+            for (const change of changes) {
               if (change.type === 'clear') {
                 elementMap.clear()
               }
-              renderAll()
-              break
+            }
+            renderAll()
+          } else {
+            for (const change of changes) {
+              switch (change.type) {
+                case 'append': {
+                  for (const item of change.items) {
+                    const el = createElementForItem(item)
+                    if (el) {
+                      if (bottomSentinel && bottomSentinel.parentNode === container) {
+                        container.insertBefore(el, bottomSentinel)
+                      } else {
+                        container.appendChild(el)
+                      }
+                    }
+                  }
+                  break
+                }
+
+                case 'prepend': {
+                  const insertBeforeNode = topSentinel && topSentinel.parentNode === container
+                    ? topSentinel.nextSibling
+                    : container.firstChild
+
+                  for (const item of change.items) {
+                    const el = createElementForItem(item)
+                    if (el) {
+                      if (insertBeforeNode) {
+                        container.insertBefore(el, insertBeforeNode)
+                      } else if (bottomSentinel && bottomSentinel.parentNode === container) {
+                        container.insertBefore(el, bottomSentinel)
+                      } else {
+                        container.appendChild(el)
+                      }
+                    }
+                  }
+                  break
+                }
+
+                case 'update': {
+                  const k = change.id
+                  const el = elementMap.get(k)
+                  if (el && typeof update === 'function') {
+                    const newItem = store.get(k)
+                    if (newItem) {
+                      update(el, newItem)
+                    }
+                  }
+                  break
+                }
+
+                case 'remove': {
+                  const k = change.id
+                  const el = elementMap.get(k)
+                  if (el) {
+                    if (el.parentNode === container) {
+                      el.remove()
+                    }
+                    elementMap.delete(k)
+                  }
+                  break
+                }
+
+                case 'swap': {
+                  const elA = elementMap.get(change.idA)
+                  const elB = elementMap.get(change.idB)
+
+                  if (elA && elB && elA.parentNode === container && elB.parentNode === container) {
+                    const nextA = elA.nextSibling
+                    const nextB = elB.nextSibling
+
+                    if (nextA === elB) {
+                      container.insertBefore(elB, elA)
+                    } else if (nextB === elA) {
+                      container.insertBefore(elA, elB)
+                    } else {
+                      container.insertBefore(elA, nextB)
+                      container.insertBefore(elB, nextA)
+                    }
+                  } else {
+                    renderAll()
+                  }
+                  break
+                }
+
+                case 'set':
+                case 'clear':
+                default: {
+                  if (change.type === 'clear') {
+                    elementMap.clear()
+                  }
+                  renderAll()
+                  break
+                }
+              }
             }
           }
 
