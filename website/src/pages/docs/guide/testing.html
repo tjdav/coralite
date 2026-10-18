@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Testing & Deployment — Coralite"
+    description="Comprehensive guide to unit testing, E2E hydration testing with Playwright, production deployment, and Content Security Policy (CSP) setup in Coralite."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Testing &amp; Deployment</h1>
+
+    <p>Shipping production-grade Coralite applications requires verifying component behavior at unit level, testing full-page hydration during end-to-end (E2E) workflows, deploying static artifacts to host platforms, and hardening application security with strict Content Security Policies (CSP).</p>
+
+    <coralite-heading level="2" text="1. Unit Testing"></coralite-heading>
+
+    <p>Coralite provides isolated evaluation utilities via <code>coralite/testing</code> to unit test components and pages without launching a full browser instance or static server.</p>
+
+    <coralite-heading level="3" text="Testing Component Server Logic"></coralite-heading>
+
+    <p>Use <code>loadComponent(path, options)</code> to evaluate a component's <code>server()</code>, <code>getters</code>, and context blocks in Node.js isolated VM contexts. You can pass mock state, route context, and custom context parameters.</p>
+
+    <coralite-code-highlight language="javascript" title="Node.js Test Runner Example">
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { loadComponent } from 'coralite/testing'
+
+test('user-card component evaluates server state', async () => {
+  const result = await loadComponent('src/components/user-card.html', {
+    context: {
+      route: { path: '/team', params: {} }
+    }
+  })
+
+  assert.equal(result.errors.length, 0)
+  assert.ok(result.definition)
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Testing Pages with loadPage"></coralite-heading>
+
+    <p>Similarly, <code>loadPage(path, options)</code> isolates page definitions and returns evaluated route patterns, enumerated paths, and server return values.</p>
+
+    <coralite-code-highlight language="javascript" title="Testing Page Definition">
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { loadPage } from 'coralite/testing'
+
+test('blog page exports enumerated paths', async () => {
+  const result = await loadPage('src/pages/blog/[slug].html')
+  assert.equal(typeof result.definition.paths, 'function')
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="2. End-to-End (E2E) Testing"></coralite-heading>
+
+    <p>For end-to-end verification in real browser environments (such as Playwright or Cypress), Coralite exposes hydration testing helpers when built in testing mode (<code>mode: 'testing'</code>).</p>
+
+    <coralite-heading level="3" text="The window.__coralite_test__ API"></coralite-heading>
+
+    <p>When mode is set to <code>'testing'</code> (or when using <code>coralite test</code>), the browser exposes <code>window.__coralite_test__</code> on the global scope:</p>
+
+    <ul>
+      <li><code>window.__coralite_test__.ready</code>: A Promise resolving when <code>data-coralite-ready</code> is set on <code>&lt;html&gt;</code> and all initial component <code>client()</code> controllers finish execution.</li>
+      <li><code>window.__coralite_test__.reset()</code>: Clears <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB databases, and service worker registrations without triggering a hard page reload.</li>
+      <li><code>window.__coralite_test__.flush()</code>: Awaits active microtask DOM batch updates across all custom element instances.</li>
+    </ul>
+
+    <coralite-heading level="3" text="Playwright Test Example"></coralite-heading>
+
+    <coralite-code-highlight language="javascript" title="Playwright E2E Test Suite">
+import { test, expect } from '@playwright/test'
+
+test('counter button increments state post-hydration', async ({ page }) => {
+  await page.goto('http://localhost:4200/')
+
+  // 1. Wait for framework hydration readiness
+  await page.evaluate(() => window.__coralite_test__.ready)
+
+  // 2. Interact with hydrated component
+  const button = page.locator('button[ref="counter"]')
+  await button.click()
+
+  // 3. Assert updated state in DOM
+  await expect(button).toHaveText('Count: 1')
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="3. Production Deployment"></coralite-heading>
+
+    <p>Building a Coralite project with <code>coralite build</code> compiles all HTML pages, scoped CSS, component scripts, and public static assets into the target directory (default <code>dist/</code>).</p>
+
+    <coralite-heading level="3" text="Clean URLs Configuration"></coralite-heading>
+
+    <p>The <code>cleanUrls</code> configuration setting in <code>coralite.config.js</code> dictates how page HTML files are structured in the output directory:</p>
+
+    <coralite-code-highlight language="javascript" title="coralite.config.js Clean URLs Option">
+import { defineConfig } from 'coralite'
+
+export default defineConfig({
+  cleanUrls: true // Default: outputs dist/about/index.html (/about)
+})
+    </coralite-code-highlight>
+
+    <ul>
+      <li><strong><code>cleanUrls: true</code> (Directory Style, Default):</strong> Page <code>src/pages/about.html</code> builds to <code>dist/about/index.html</code> with route path <code>/about</code>.</li>
+      <li><strong><code>cleanUrls: false</code> (File Style):</strong> Page <code>src/pages/about.html</code> builds to <code>dist/about.html</code> with route path <code>/about.html</code>.</li>
+    </ul>
+
+    <coralite-heading level="3" text="Zero Server Runtime Hosting"></coralite-heading>
+
+    <p>Because the output is pure static HTML, CSS, and client JS bundles, Coralite applications require zero Node.js server runtime. You can deploy the <code>dist/</code> folder directly to any static web host or object storage CDN:</p>
+
+    <ul>
+      <li><strong>Netlify:</strong> Set publish directory to <code>dist</code> and build command to <code>pnpm build</code>.</li>
+      <li><strong>Vercel:</strong> Configure output directory as <code>dist</code> with static framework preset.</li>
+      <li><strong>Cloudflare Pages:</strong> Point build output directory to <code>dist</code>.</li>
+      <li><strong>AWS S3 + CloudFront:</strong> Sync <code>dist/</code> directly to your S3 bucket.</li>
+    </ul>
+
+    <coralite-heading level="2" text="4. Content Security Policy (CSP)"></coralite-heading>
+
+    <p>Coralite provides automated Content Security Policy generation to protect your site against Cross-Site Scripting (XSS) and code injection.</p>
+
+    <coralite-heading level="3" text="CSP Configuration"></coralite-heading>
+
+    <p>Enable and configure CSP directly in <code>coralite.config.js</code>:</p>
+
+    <coralite-code-highlight language="javascript" title="coralite.config.js CSP Configuration">
+import { defineConfig } from 'coralite'
+
+export default defineConfig({
+  csp: {
+    enabled: true,
+    hashAlgorithm: 'sha256',
+    injectMeta: true,
+    directives: {
+      'default-src': ["'self'"],
+      'script-src': ["'self'"],
+      'style-src': ["'self'"]
+    }
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Hash Mode vs Nonce Mode"></coralite-heading>
+
+    <ul>
+      <li><strong>SSG Hash Mode (Default):</strong> During build, Coralite computes cryptographic hashes (SHA-256) for all inline scripts, import maps, and styles, injecting <code>&lt;meta http-equiv="Content-Security-Policy" content="..."&gt;</code> into the document head.</li>
+      <li><strong>SSR Nonce Mode:</strong> When rendering on demand, pass a per-request cryptographic <code>nonce</code> option to <code>coralite.build(url, { nonce })</code> to propagate nonce attributes across framework scripts.</li>
+    </ul>
+
+    <hr>
+
+    <p>Return to the <a href="/docs/guide/index.html">Guide Overview</a> to explore all framework documentation.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
