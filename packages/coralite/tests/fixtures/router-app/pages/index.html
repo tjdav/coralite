@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Home</title></head>
+<body>
+  <app-shell>
+    <h1 id="page-title">Home Page</h1>
+  </app-shell>
+  <script type="module">
+    import { definePage } from 'coralite'
+
+    export default definePage({
+      client ({ router, signal }) {
+        router.beforeEach(({ to }) => {
+          if (to.path === '/admin' || to === '/admin') {
+            return '/about'
+          }
+        })
+      }
+    })
+  </script>
+</body>
+</html>

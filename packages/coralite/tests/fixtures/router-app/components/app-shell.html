@@ -1,0 +1,32 @@
+<template id="app-shell">
+  <header>
+    <nav>
+      <a href="/" id="link-home">Home</a>
+      <a href="/about" id="link-about">About</a>
+      <a href="/admin" id="link-admin">Admin</a>
+      <a href="https://example.com" id="link-external">External</a>
+    </nav>
+    <div>
+      <span>Counter: <span id="counter-display">{{ count }}</span></span>
+      <button id="increment" ref="btn">+</button>
+    </div>
+  </header>
+  <main data-router-outlet>
+    <slot></slot>
+  </main>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    server: () => ({ count: 0 }),
+    client ({ state, refs, signal }) {
+      window.__shellHydrated__ = true
+      refs('btn').addEventListener('click', () => {
+        state.count++
+        document.getElementById('counter-display').textContent = state.count
+      }, { signal })
+    }
+  })
+</script>
