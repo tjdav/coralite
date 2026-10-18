@@ -102,16 +102,18 @@
         const allItems = store.all()
         const tbody = refs('tbody')
 
-        for (let i = 0; i < allItems.length; i += 10) {
-          const item = allItems[i]
-          item.label = `${item.label} !!!`
+        store.batch(() => {
+          for (let i = 0; i < allItems.length; i += 10) {
+            const item = allItems[i]
+            item.label = `${item.label} !!!`
 
-          const row = tbody.querySelector(`tr[data-id="${item.id}"]`)
-          if (row) {
-            const lbl = row.querySelector('.lbl')
-            if (lbl) lbl.textContent = item.label
+            const row = tbody.querySelector(`tr[data-id="${item.id}"]`)
+            if (row) {
+              const lbl = row.querySelector('.lbl')
+              if (lbl) lbl.textContent = item.label
+            }
           }
-        }
+        })
       }, { signal })
 
       refs('clear').addEventListener('click', () => {
