@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.0.0-rc.6
+
+### Features
+- **Signals:** Replaced Proxy-based reactivity with a signal-based primitive for faster, more predictable updates.
+- **Global Store:** Added `store` configuration and context key for application-wide reactive state.
+- **Lists Plugin:** Added a built-in keyed store, virtualization (auto and window), layouts (grid, masonry, table), and groups.
+- **Router Plugin:** Added the opt-in SPA router with `beforeEach` guards and View Transitions support.
+- **CLI:** `coralite` now owns all build, dev, and test scripts. `coralite-scripts` is deprecated.
+- **Type-Checking:** Added Volar-bridged type checking to `coralite check --types`.
+- **Async Getters:** Added support for `async` getters with sync-prologue dependency tracking.
+- **Context Protocol:** Updated `provide`/`consume` to support string keys with fallback.
+- **Auto-registration:** Core plugins (`lists`, `router`) are now included automatically.
+
+### Breaking Changes
+- `coralite-scripts` is deprecated. Use `coralite dev`, `coralite build`, etc.
+- `urlStyle` config replaced by `cleanUrls: boolean`.
+- `templates` config replaced by `components`.
+- Pages using bare exports (`export const paths`) must migrate to `definePage`.
+- `style` signature is now `({ state }) => ...`.
+- `slots` signature is now `({ nodes, state }) => ...`.
+
 ## v1.0.0-rc.5
 
 > Comparing `coralite-v1.0.0-rc.4` to `HEAD`

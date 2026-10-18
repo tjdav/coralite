@@ -4,14 +4,13 @@
   "license": "MPL-2.0",
   "type": "module",
   "scripts": {
-    "start": "coralite-scripts dev",
-    "test": "coralite-scripts test",
-    "build": "coralite-scripts build",
-    "check": "coralite-scripts check",
-    "fix": "coralite-scripts fix"
+    "dev": "coralite dev",
+    "test": "coralite test",
+    "build": "coralite build",
+    "check": "coralite check",
+    "fix": "coralite fix"
   },
   "devDependencies": {
-    "coralite": "^1.0.0-rc.5",
-    "coralite-scripts": "^1.0.0-rc.5"
+    "coralite": "^1.0.0-rc.6"
   }
 }

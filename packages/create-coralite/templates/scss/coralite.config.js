@@ -1,4 +1,4 @@
-import { defineConfig } from 'coralite-scripts'
+import { defineConfig } from 'coralite'
 
 export default defineConfig({
   public: 'public',
