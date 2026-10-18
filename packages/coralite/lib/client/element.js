@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue, isAsyncFunction, createCombinedSignal } from '../shared/core.js'
+import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue, isAsyncFunction, createCombinedSignal, normalizeFunction } from '../shared/core.js'
 import { processHTML } from './utils/inject.js'
 import { recordDevToolsEvent } from './utils/devtools.js'
 import { isDevRuntime } from '../shared/dev-mode.js'
@@ -4818,7 +4818,8 @@ export async function setupPageRuntime (pageConfig) {
     }
     if (typeof fnOrStr === 'string' && fnOrStr.trim()) {
       try {
-        return (0, eval)(`(${fnOrStr})`)
+        const normalizedStr = normalizeFunction(fnOrStr.trim())
+        return (0, eval)(`(${normalizedStr})`)
       } catch {
         return null
       }

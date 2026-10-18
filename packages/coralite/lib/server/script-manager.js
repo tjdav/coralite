@@ -858,9 +858,9 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
     }
   };\n`)
 
-  entryCodeParts.push(`import { createCoraliteClass } from ${JSON.stringify(coraliteElementPath)};\n`)
+  entryCodeParts.push(`import { createCoraliteClass, setupPageRuntime } from ${JSON.stringify(coraliteElementPath)};\n`)
   entryCodeParts.push(`import { setupDevTools, registerDevToolsComponent } from ${JSON.stringify(devToolsPath)};\n`)
-  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, clientPluginConfigs, initPlugins };\n')
+  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, setupPageRuntime, globalClientHooks, setupDevTools, registerDevToolsComponent, clientPluginConfigs, initPlugins };\n')
 
   this.virtualModules.clear()
   this.virtualModules.set('coralite-runtime', entryCodeParts.join('').trimEnd())

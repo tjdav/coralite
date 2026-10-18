@@ -440,11 +440,11 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
     const phase2 = phase1({})
     const ctx = phase2({})
 
-    assert.ok(ctx.router)
-    assert.strictEqual(typeof ctx.router.beforeEach, 'function')
+    assert.ok(ctx.beforeEach, 'beforeEach present in context')
+    assert.strictEqual(typeof ctx.beforeEach, 'function')
 
     let guardRun = false
-    const dispose = ctx.router.beforeEach(() => {
+    const dispose = ctx.beforeEach(() => {
       guardRun = true
     })
 

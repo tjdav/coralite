@@ -352,14 +352,47 @@ export function createPageHandlers ({
       v.content = await getHtmlFile(v.path.pathname)
     }
 
-    const component = parseModule(v.content, {
-      ignoreByAttribute: app.options.ignoreByAttribute,
-      skipRenderByAttribute: app.options.skipRenderByAttribute,
-      onError: handleError,
-      filePath: v.path?.pathname
-    })
+    let component
+    try {
+      component = parseModule(v.content, {
+        ignoreByAttribute: app.options.ignoreByAttribute,
+        skipRenderByAttribute: app.options.skipRenderByAttribute,
+        onError: handleError,
+        filePath: v.path?.pathname
+      })
+    } catch (err) {
+      const compErr = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
+        code: err.code || 'CORALITE-E402',
+        cause: err,
+        filePath: v.path?.pathname
+      })
+      compErr.filePath = compErr.filePath || v.path?.pathname
 
-    if (!component.isTemplate) {
+      try {
+        if (typeof app.onError === 'function') {
+          app.onError({
+            level: 'ERR',
+            code: compErr.code,
+            message: `Failed to parse component "${v.path?.pathname}": ${compErr.message}`,
+            error: compErr,
+            filePath: v.path?.pathname
+          })
+        } else if (typeof handleError === 'function') {
+          handleError({
+            level: 'ERR',
+            code: compErr.code,
+            message: `Failed to parse component "${v.path?.pathname}": ${compErr.message}`,
+            error: compErr,
+            filePath: v.path?.pathname
+          })
+        }
+      } catch {
+        /* ignore throw to preserve collection loading */
+      }
+      return null
+    }
+
+    if (!component || !component.isTemplate) {
       return
     }
 
@@ -381,13 +414,47 @@ export function createPageHandlers ({
       v.content = await getHtmlFile(v.path.pathname)
     }
 
-    const component = parseModule(v.content, {
-      ignoreByAttribute: app.options.ignoreByAttribute,
-      skipRenderByAttribute: app.options.skipRenderByAttribute,
-      onError: handleError
-    })
+    let component
+    try {
+      component = parseModule(v.content, {
+        ignoreByAttribute: app.options.ignoreByAttribute,
+        skipRenderByAttribute: app.options.skipRenderByAttribute,
+        onError: handleError,
+        filePath: v.path?.pathname
+      })
+    } catch (err) {
+      const compErr = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
+        code: err.code || 'CORALITE-E402',
+        cause: err,
+        filePath: v.path?.pathname
+      })
+      compErr.filePath = compErr.filePath || v.path?.pathname
 
-    if (!component.isTemplate) {
+      try {
+        if (typeof app.onError === 'function') {
+          app.onError({
+            level: 'ERR',
+            code: compErr.code,
+            message: `Failed to parse component "${v.path?.pathname}": ${compErr.message}`,
+            error: compErr,
+            filePath: v.path?.pathname
+          })
+        } else if (typeof handleError === 'function') {
+          handleError({
+            level: 'ERR',
+            code: compErr.code,
+            message: `Failed to parse component "${v.path?.pathname}": ${compErr.message}`,
+            error: compErr,
+            filePath: v.path?.pathname
+          })
+        }
+      } catch {
+        /* ignore throw to preserve collection loading */
+      }
+      return null
+    }
+
+    if (!component || !component.isTemplate) {
       return
     }
 
