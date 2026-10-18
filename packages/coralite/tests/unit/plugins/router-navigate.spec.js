@@ -147,9 +147,8 @@ describe('Router Plugin Navigate Unit Tests', () => {
     const phase1 = pluginInstance.client.context
     const phase2 = phase1({})
     const ctx = phase2({})
-    assert.ok(ctx.router, 'router object present in context')
-    assert.strictEqual(typeof ctx.router.navigate, 'function')
-    assert.deepStrictEqual(ctx.router.current(), {
+    assert.strictEqual(typeof ctx.navigate, 'function')
+    assert.deepStrictEqual(ctx.current(), {
       path: '/'
     })
   })

@@ -46,18 +46,30 @@ function isOutletElement (node, outletAttr) {
  *
  * @param {any} node - The AST node/container to check
  * @param {string} outletAttr - The attribute name identifying the outlet
+ * @param {Object} [app] - The global Coralite app instance
+ * @param {Set<string>} [visited=new Set()] - Set of visited component names to prevent recursion loops
  * @returns {boolean} True if an outlet element is found in the AST
  */
-function hasOutlet (node, outletAttr) {
+function hasOutlet (node, outletAttr, app, visited = new Set()) {
   if (!node) {
     return false
   }
   if (isOutletElement(node, outletAttr)) {
     return true
   }
+  if (node.type === 'tag' && app?.components) {
+    const componentItem = app.components.getItem(node.name)
+    if (componentItem?.result && !visited.has(node.name)) {
+      visited.add(node.name)
+      const compRoot = componentItem.result.template || componentItem.result.root
+      if (compRoot && hasOutlet(compRoot, outletAttr, app, visited)) {
+        return true
+      }
+    }
+  }
   if (node.children && Array.isArray(node.children)) {
     for (const child of node.children) {
-      if (hasOutlet(child, outletAttr)) {
+      if (hasOutlet(child, outletAttr, app, visited)) {
         return true
       }
     }
@@ -70,8 +82,9 @@ function hasOutlet (node, outletAttr) {
  *
  * @param {Object} component - Coralite component object containing root AST
  * @param {string} outletAttr - Attribute name for outlet selector
+ * @param {Object} [app] - Global Coralite app instance
  */
-function wrapBodyInOutlet (component, outletAttr) {
+function wrapBodyInOutlet (component, outletAttr, app) {
   if (!component || !component.root) {
     return
   }
@@ -80,7 +93,7 @@ function wrapBodyInOutlet (component, outletAttr) {
     return
   }
 
-  if (hasOutlet(body, outletAttr)) {
+  if (hasOutlet(body, outletAttr, app)) {
     return
   }
 
@@ -117,10 +130,10 @@ export const routerPlugin = definePlugin({
       getOutletComponentPath()
     ],
 
-    onBeforePageRender ({ component, config }) {
+    onBeforePageRender ({ component, config, app }) {
       const activeConfig = config || {}
       const outletAttr = activeConfig.outlet || 'data-router-outlet'
-      wrapBodyInOutlet(component, outletAttr)
+      wrapBodyInOutlet(component, outletAttr, app)
     }
   },
 
@@ -404,30 +417,28 @@ export const routerPlugin = definePlugin({
     },
 
     context: (_pluginContext) => (_instanceContext) => ({
-      router: {
-        navigate: (path, options) => {
-          /** @type {any} */
-          const win = typeof window !== 'undefined' ? window : {}
-          const router = win.__coralite_router__
-          if (router && typeof router.navigate === 'function') {
-            return router.navigate(path, options)
-          }
-        },
-        current: () => {
-          /** @type {any} */
-          const win = typeof window !== 'undefined' ? window : {}
-          const router = win.__coralite_router__
-          return router ? router.current() : { path: typeof window !== 'undefined' && window.location ? window.location.pathname : '/' }
-        },
-        beforeEach: (guard) => {
-          /** @type {any} */
-          const win = typeof window !== 'undefined' ? window : {}
-          const router = win.__coralite_router__
-          if (router && typeof router.beforeEach === 'function') {
-            return router.beforeEach(guard)
-          }
-          return () => {
-          }
+      navigate: (path, options) => {
+        /** @type {any} */
+        const win = typeof window !== 'undefined' ? window : {}
+        const router = win.__coralite_router__
+        if (router && typeof router.navigate === 'function') {
+          return router.navigate(path, options)
+        }
+      },
+      current: () => {
+        /** @type {any} */
+        const win = typeof window !== 'undefined' ? window : {}
+        const router = win.__coralite_router__
+        return router ? router.current() : { path: typeof window !== 'undefined' && window.location ? window.location.pathname : '/' }
+      },
+      beforeEach: (guard) => {
+        /** @type {any} */
+        const win = typeof window !== 'undefined' ? window : {}
+        const router = win.__coralite_router__
+        if (router && typeof router.beforeEach === 'function') {
+          return router.beforeEach(guard)
+        }
+        return () => {
         }
       }
     })

@@ -455,7 +455,7 @@ export function mergeUniqueObjects (arr1, arr2) {
  * Converts shorthand method syntax to full function declarations where needed,
  * while preserving arrow functions and existing full declarations.
  *
- * @param {Function} func - The function to normalize
+ * @param {Function | string} func - The function or function string representation to normalize
  * @returns {string} The normalized function string representation
  */
 export function normalizeFunction (func) {
