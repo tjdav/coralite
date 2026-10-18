@@ -1,0 +1,36 @@
+<template id="virtual-list">
+  <div class="container" style="height: 300px; overflow-y: auto;" ref="container"></div>
+  <button id="add-btn" ref="addBtn">Add Item</button>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs, lists, signal }) {
+      window.__virtualListReady__ = true
+      const store = lists.createStore({ key: 'id', initial: [] })
+
+      const items = Array.from({ length: 1000 }, (_, i) => ({ id: i, text: `Item ${i}` }))
+      store.set(items)
+
+      lists.bind({
+        container: refs('container'),
+        store,
+        signal,
+        key: (item) => item.id,
+        virtual: 'window',
+        size: 40,
+        create: (item) => {
+          const div = document.createElement('div')
+          div.textContent = item.text
+          div.className = 'list-item'
+          return div
+        }
+      })
+
+      refs('addBtn').addEventListener('click', () => {
+        store.append({ id: store.size, text: `Item ${store.size}` })
+      }, { signal })
+    }
+  })
+</script>

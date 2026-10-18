@@ -80,6 +80,22 @@ try {
   }
 }
 
+const listsApp = await createCoralite({
+  components: 'tests/fixtures/lists-app/components',
+  pages: 'tests/fixtures/lists-app/pages',
+  output: `${output}/lists-app`,
+  mode,
+  cleanUrls: true
+})
+
+try {
+  await listsApp.save()
+  console.log(`Coralite lists-app build HTML complete (mode: ${mode}, output: ${output}/lists-app)`)
+} catch (error) {
+  console.error(error)
+  process.exit(1)
+}
+
 let routerAppOutDir = '.coralite-router-dev'
 if (mode === 'production') {
   routerAppOutDir = '.coralite-router-prod'

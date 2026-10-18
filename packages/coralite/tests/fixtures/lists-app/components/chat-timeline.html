@@ -1,0 +1,35 @@
+<template id="chat-timeline">
+  <div class="chat-container" style="height: 300px; overflow-y: auto;" ref="container"></div>
+  <button id="add-msg" ref="addMsg">Send Message</button>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs, lists, signal }) {
+      const store = lists.createStore({ key: 'id', initial: [
+        { id: 1, text: 'Message 1' },
+        { id: 2, text: 'Message 2' }
+      ] })
+
+      lists.bind({
+        container: refs('container'),
+        store,
+        signal,
+        key: (item) => item.id,
+        anchorTo: 'end',
+        followOnAppend: true,
+        create: (item) => {
+          const div = document.createElement('div')
+          div.textContent = item.text
+          div.className = 'chat-msg'
+          return div
+        }
+      })
+
+      refs('addMsg').addEventListener('click', () => {
+        store.append({ id: store.size + 1, text: `Message ${store.size + 1}` })
+      }, { signal })
+    }
+  })
+</script>
