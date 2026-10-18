@@ -1,0 +1,19 @@
+body {
+  padding-top: 20px;
+}
+.jumbotron {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+.jumbotron h1 {
+  margin-top: 0;
+}
+.smallpad {
+  padding: 5px;
+}
+.table {
+  margin-top: 20px;
+}
+.lbl {
+  cursor: pointer;
+}

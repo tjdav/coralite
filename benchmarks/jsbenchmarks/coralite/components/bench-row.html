@@ -1,0 +1,29 @@
+<template id="bench-row">
+  <tr data-id="{{ id }}" class="{{ rowClass }}">
+    <td class="col-md-1">{{ id }}</td>
+    <td class="col-md-4">
+      <a class="lbl">{{ label }}</a>
+    </td>
+    <td class="col-md-1">
+      <a class="remove">
+        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+      </a>
+    </td>
+    <td class="col-md-6"></td>
+  </tr>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      id: { type: Number, required: true },
+      label: { type: String, required: true },
+      selected: { type: Boolean, default: false }
+    },
+    getters: {
+      rowClass: ({ state }) => (state.selected ? 'danger' : '')
+    }
+  })
+</script>

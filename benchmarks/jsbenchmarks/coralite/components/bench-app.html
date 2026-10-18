@@ -1,0 +1,135 @@
+<template id="bench-app">
+  <div class="container">
+    <div class="jumbotron">
+      <div class="row">
+        <div class="col-md-6">
+          <h1>Coralite</h1>
+        </div>
+        <div class="col-md-6">
+          <div class="row">
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="run" ref="run">Create 1,000 rows</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="runlots" ref="runlots">Create 10,000 rows</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="add" ref="add">Append 1,000 rows</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="update" ref="update">Update every 10th row</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="clear" ref="clear">Clear</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="swaprows" ref="swaprows">Swap Rows</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <table class="table table-hover table-striped test-data">
+      <tbody ref="tbody"></tbody>
+    </table>
+    <span class="preloadicon glyphicon glyphicon-remove" aria-hidden="true"></span>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client({ refs, signal, lists }) {
+      let nextId = 1
+      const adjectives = ['pretty', 'large', 'big', 'small', 'tall', 'short', 'long', 'handsome', 'plain', 'quaint', 'clean', 'elegant', 'easy', 'angry', 'crazy', 'helpful', 'mushy', 'odd', 'unsightly', 'adorable', 'important', 'inexpensive', 'cheap', 'expensive', 'fancy']
+      const colours = ['red', 'yellow', 'blue', 'green', 'pink', 'brown', 'purple', 'brown', 'white', 'black', 'orange']
+      const nouns = ['table', 'chair', 'house', 'bbq', 'desk', 'car', 'pony', 'cookie', 'sandwich', 'burger', 'pizza', 'pancake', 'asset', 'laptop', 'box']
+
+      function _random (max) {
+        return Math.round(Math.random() * 1000) % max
+      }
+
+      function buildData (count = 1000) {
+        const data = new Array(count)
+        for (let i = 0; i < count; i++) {
+          data[i] = {
+            id: nextId++,
+            label: `${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`
+          }
+        }
+        return data
+      }
+
+      const store = lists.createStore({ key: 'id' })
+      let selectedId = null
+
+      lists.bind({
+        container: refs('tbody'),
+        store,
+        signal,
+        key: (item) => item.id,
+        create (item) {
+          const el = document.createElement('bench-row')
+          el.setAttribute('id', item.id)
+          el.setAttribute('label', item.label)
+          el.setAttribute('selected', item.id === selectedId)
+          return el
+        },
+        update (el, item) {
+          el.setAttribute('label', item.label)
+          el.setAttribute('selected', item.id === selectedId)
+        }
+      })
+
+      refs('tbody').addEventListener('click', (e) => {
+        const row = e.target.closest('bench-row')
+        if (!row) return
+        const id = Number(row.getAttribute('id'))
+
+        if (e.target.closest('.remove')) {
+          if (selectedId === id) selectedId = null
+          store.remove(id)
+        } else if (e.target.closest('.lbl')) {
+          const prev = selectedId
+          selectedId = id
+          if (prev !== null) store.update(prev, { selected: false })
+          store.update(id, { selected: true })
+        }
+      }, { signal })
+
+      refs('run').addEventListener('click', () => {
+        selectedId = null
+        store.set(buildData(1000))
+      }, { signal })
+
+      refs('runlots').addEventListener('click', () => {
+        selectedId = null
+        store.set(buildData(10000))
+      }, { signal })
+
+      refs('add').addEventListener('click', () => {
+        store.appendMany(buildData(1000))
+      }, { signal })
+
+      refs('update').addEventListener('click', () => {
+        const allItems = store.all()
+        for (let i = 0; i < allItems.length; i += 10) {
+          store.update(allItems[i].id, { label: `${allItems[i].label} !!!` })
+        }
+      }, { signal })
+
+      refs('clear').addEventListener('click', () => {
+        selectedId = null
+        store.clear()
+      }, { signal })
+
+      refs('swaprows').addEventListener('click', () => {
+        const allItems = store.all()
+        if (allItems.length > 998) {
+          store.swap(allItems[1].id, allItems[998].id)
+        }
+      }, { signal })
+    }
+  })
+</script>
