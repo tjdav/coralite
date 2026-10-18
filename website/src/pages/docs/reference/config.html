@@ -2,238 +2,178 @@
 <html lang="en">
 
 <head>
-  <coralite-meta no-hydration title="Coralite Configuration Reference (coralite.config.js)"
-    description="Complete reference for the coralite.config.js configuration file options, including input paths, output directories, and plugin configuration."></coralite-meta>
+  <coralite-meta no-hydration title="Configuration Reference — Coralite"
+    description="Complete reference for coralite.config.js configuration options, including required directories, core options, extended state, CSP rules, and static asset injection."></coralite-meta>
 </head>
 
 <body>
   <coralite-navbar></coralite-navbar>
+
   <main class="container content">
     <h1 class="display">Configuration Reference</h1>
 
-    <p>Coralite is configured using a <code>coralite.config.js</code> file in the root of your project. This file exports a configuration object that defines input paths, output directories, plugins, and build options.</p>
+    <p>Coralite projects are configured using a <code>coralite.config.js</code> file placed at the root directory of your project.</p>
 
-    <p>If you prefer TypeScript or type hinting, you can use the <code>defineConfig</code> helper from <code>coralite-scripts</code>.</p>
+    <coralite-heading level="2" text="1. The coralite.config.js File"></coralite-heading>
 
-    <coralite-code-highlight language="javascript">
-// coralite.config.js
-import { defineConfig } from 'coralite-scripts';
-import myPlugin from './plugins/my-plugin.js';
+    <p>Use the <code>defineConfig</code> helper exported from <code>coralite</code> to construct and validate your project configuration:</p>
+
+    <coralite-code-highlight language="javascript" title="coralite.config.js">
+import { defineConfig } from 'coralite'
 
 export default defineConfig({
+  output: 'dist',
   components: 'src/components',
   pages: 'src/pages',
-  output: 'dist',
-  plugins: [myPlugin],
-  onError: ({ level, message, error }) => {
-    if (level === 'ERR') {
-      console.error(`[FATAL] ${message}`);
-      if (error) console.error(error.stack);
-    } else {
-      console.warn(`[${level}] ${message}`);
-    }
-  }
-});
+  public: 'public',
+  cleanUrls: true,
+  viewTransitions: true,
+  mode: 'production'
+})
     </coralite-code-highlight>
 
-    <coralite-heading level="2" text="Configuration Options"></coralite-heading>
+    <coralite-heading level="2" text="2. Required Keys"></coralite-heading>
 
-    <p>The <code>CoraliteConfig</code> object accepts the following options:</p>
+    <p>Every Coralite application requires three path configuration keys:</p>
 
     <coralite-table>
       <tr slot="head">
-        <th>Property</th>
+        <th>Key</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>output</code></td>
+        <td><code>string</code></td>
+        <td>Path to the destination directory where compiled static files are emitted (e.g. <code>'dist'</code>).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>components</code></td>
+        <td><code>string</code></td>
+        <td>Path to the directory containing Coralite Web Components (e.g. <code>'src/components'</code>).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>pages</code></td>
+        <td><code>string</code></td>
+        <td>Path to the directory containing application pages (e.g. <code>'src/pages'</code>).</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="2" text="3. Core Options"></coralite-heading>
+
+    <p>Core options control asset delivery, URL routing formats, view transitions, and build modes:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Option</th>
         <th>Type</th>
         <th>Default</th>
         <th>Description</th>
       </tr>
       <tr slot="body">
-        <td><code>components</code></td>
+        <td><code>public</code></td>
         <td><code>string</code></td>
-        <td>-</td>
-        <td>Path to the directory containing Coralite component files.</td>
+        <td><code>'public'</code></td>
+        <td>Directory containing static assets copied directly to the build root.</td>
       </tr>
       <tr slot="body">
-        <td><code>pages</code></td>
-        <td><code>string</code></td>
-        <td>-</td>
-        <td>Path to the directory containing page files.</td>
+        <td><code>cleanUrls</code></td>
+        <td><code>boolean</code></td>
+        <td><code>true</code></td>
+        <td>When <code>true</code>, outputs directory-style clean URLs (e.g. <code>/about/index.html</code> at route <code>/about</code>). When <code>false</code>, outputs file-style URLs (e.g. <code>/about.html</code>).</td>
       </tr>
       <tr slot="body">
-        <td><code>output</code></td>
-        <td><code>string</code></td>
-        <td>-</td>
-        <td>Path to the output directory.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>plugins</code></td>
-        <td><code>CoralitePluginInstance[]</code></td>
-        <td><code>[]</code></td>
-        <td>Array of plugin instances to register.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>assets</code></td>
-        <td><code>CoraliteStaticAsset[]</code></td>
-        <td><code>[]</code></td>
-        <td>Static assets to copy during build. See <a href="/docs/reference/plugins/static-assets.html">Static Assets Plugin</a>.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>baseURL</code></td>
-        <td><code>string</code></td>
-        <td><code>'/'</code></td>
-        <td>Base URL for asset paths.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>ignoreByAttribute</code></td>
-        <td><code>IgnoreByAttribute[]</code></td>
-        <td><code>[]</code></td>
-        <td>Elements to ignore by attribute name-value pair during parsing.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>skipRenderByAttribute</code></td>
-        <td><code>string[]</code></td>
-        <td><code>[]</code></td>
-        <td>Attribute names that trigger elements to be excluded from the final render.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>onError</code></td>
-        <td><code><a href="/docs/reference/types.html#coraliteonerror">CoraliteOnError</a></code></td>
-        <td>Default handler</td>
-        <td>Callback for handling errors and warnings.</td>
+        <td><code>viewTransitions</code></td>
+        <td><code>boolean</code></td>
+        <td><code>true</code></td>
+        <td>Enables native Same-Document View Transitions for client navigation.</td>
       </tr>
       <tr slot="body">
         <td><code>mode</code></td>
         <td><code>'production' | 'development' | 'testing'</code></td>
         <td><code>'production'</code></td>
-        <td>Build mode. Use <code>'testing'</code> for zero-config E2E environments.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>testing</code></td>
-        <td><code>CoraliteTestingConfig</code></td>
-        <td><code>{}</code></td>
-        <td>Optional configuration for testing mode, including server-side mocks.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>incremental</code></td>
-        <td><code>boolean</code></td>
-        <td><code>true</code></td>
-        <td>Whether to skip rebuilding unchanged pages and components via change detection. Set to <code>false</code> to force a full rebuild on every run.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>csp</code></td>
-        <td><code><a href="/docs/reference/types.html#coralitecspconfig">CoraliteCSPConfig</a></code></td>
-        <td><code>undefined</code></td>
-        <td>Content Security Policy (CSP Level 2/3) configuration options.</td>
+        <td>Build and execution environment mode.</td>
       </tr>
     </coralite-table>
 
-    <coralite-heading level="2" text="Content Security Policy (csp)"></coralite-heading>
+    <coralite-heading level="2" text="4. Extended Options"></coralite-heading>
 
-    <p>Coralite provides build-time and runtime Content Security Policy support for SSG and SSR environments.</p>
+    <p>Extended configuration options allow declaring global store state, injecting stylesheets, registering plugins, and setting Content Security Policies:</p>
 
-    <coralite-code-highlight language="javascript">
-// coralite.config.js
-import { defineConfig } from 'coralite-scripts';
+    <ul>
+      <li><code>store</code> — Object declaring initial default values for the signal-backed global store.
+        <coralite-code-highlight language="javascript">
+store: {
+  theme: 'dark',
+  user: { name: 'Alex' }
+}
+        </coralite-code-highlight>
+      </li>
+      <li><code>externalStyles</code> — Array of external stylesheet URLs or paths injected into every page.
+        <coralite-code-highlight language="javascript">
+externalStyles: [
+  'https://cdn.example.com/styles.css',
+  '/css/theme.css'
+]
+        </coralite-code-highlight>
+      </li>
+      <li><code>plugins</code> — Array of configured plugin instances created via <code>definePlugin</code>.
+        <coralite-code-highlight language="javascript">
+plugins: [
+  myPlugin({ apiKey: 'secret-key' })
+]
+        </coralite-code-highlight>
+      </li>
+      <li><code>csp</code> — Content Security Policy rules and options.
+        <coralite-code-highlight language="javascript">
+csp: {
+  enabled: true,
+  hashAlgorithm: 'sha256',
+  injectMeta: true,
+  directives: {
+    'default-src': ["'self'"],
+    'script-src': ["'self'"]
+  }
+}
+        </coralite-code-highlight>
+      </li>
+    </ul>
+
+    <coralite-heading level="2" text="5. Asset Injection"></coralite-heading>
+
+    <p>The <code>assets</code> configuration array manages third-party library assets, copying files to the output directory and optionally injecting <code>&lt;script&gt;</code>, <code>&lt;link&gt;</code>, or <code>&lt;meta&gt;</code> tags with Subresource Integrity (SRI) hashes:</p>
+
+    <coralite-code-highlight language="javascript" title="Asset Injection Example">
+import { defineConfig } from 'coralite'
 
 export default defineConfig({
   output: 'dist',
+  components: 'src/components',
   pages: 'src/pages',
-  templates: 'src/templates',
-  csp: {
-    enabled: true,
-    hashAlgorithm: 'sha256',
-    injectMeta: true,
-    reportOnly: false,
-    externalScripts: false,
-    externalStyles: false,
-    directives: {
-      'default-src': ["'self'"],
-      'script-src': ["'self'"],
-      'style-src': ["'self'"]
+  assets: [
+    {
+      src: 'node_modules/lib/dist/lib.js',
+      dest: 'assets/js/lib.js',
+      inject: {
+        type: 'script',
+        placement: 'head-end',
+        sri: true
+      }
     }
-  }
-});
+  ]
+})
     </coralite-code-highlight>
 
-    <p>The <code>csp</code> sub-options include:</p>
+    <p>The <code>inject</code> option object supports configuration properties:</p>
 
-    <coralite-table>
-      <tr slot="head">
-        <th>Sub-Property</th>
-        <th>Type</th>
-        <th>Default</th>
-        <th>Description</th>
-      </tr>
-      <tr slot="body">
-        <td><code>enabled</code></td>
-        <td><code>boolean</code></td>
-        <td><code>true</code></td>
-        <td>Enables or disables CSP calculation and meta tag injection.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>nonce</code></td>
-        <td><code>string</code></td>
-        <td><code>undefined</code></td>
-        <td>Cryptographic random nonce for per-request SSR propagation (SSR Nonce Mode).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>hashAlgorithm</code></td>
-        <td><code>'sha256' | 'sha384' | 'sha512'</code></td>
-        <td><code>'sha256'</code></td>
-        <td>Hashing algorithm for inline text nodes (SSG Hash Mode).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>injectMeta</code></td>
-        <td><code>boolean</code></td>
-        <td><code>true</code></td>
-        <td>Automatically injects <code>&lt;meta http-equiv="Content-Security-Policy" content="..."&gt;</code> into <code>&lt;head&gt;</code>.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>reportOnly</code></td>
-        <td><code>boolean</code></td>
-        <td><code>false</code></td>
-        <td>Uses report-only meta/header naming instead of enforcing policies.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>externalScripts</code></td>
-        <td><code>boolean</code></td>
-        <td><code>false</code></td>
-        <td>Bundles page runtime scripts into external JS files (<code>assets/js/pages/[page]-[hash].js</code>).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>externalStyles</code></td>
-        <td><code>boolean</code></td>
-        <td><code>false</code></td>
-        <td>Bundles component scoped and inline styles into external CSS files (<code>assets/css/coralite-inline-[hash].css</code>).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>directives</code></td>
-        <td><code><a href="/docs/reference/types.html#coralitecspdirectives">CoraliteCSPDirectives</a></code></td>
-        <td>Default directives</td>
-        <td>Custom directive overrides merged into standard CSP rules.</td>
-      </tr>
-    </coralite-table>
-
-    <coralite-heading level="2" text="Error & Warning Handling (onError)"></coralite-heading>
-
-    <p>Coralite provides a centralized <code>onError</code> callback in its configuration to handle framework-level issues.</p>
-
-    <h3>The API Signature</h3>
-    <p>The <code>onError</code> callback receives a single structured error object containing:</p>
     <ul>
-      <li><code>level</code>: The severity of the issue (<code>'WARN'</code>, <code>'ERR'</code>, or <code>'LOG'</code>).</li>
-      <li><code>message</code>: A descriptive string explaining the issue.</li>
-      <li><code>error</code>: (Optional) The original <code>Error</code> object, useful for stack traces.</li>
+      <li><code>type</code> — <code>'script'</code>, <code>'link'</code>, or <code>'meta'</code>.</li>
+      <li><code>placement</code> — <code>'head-start'</code>, <code>'head-end'</code>, <code>'body-start'</code>, or <code>'body-end'</code>.</li>
+      <li><code>sri</code> — Boolean or hash algorithm (<code>'sha256'</code>, <code>'sha384'</code>, <code>'sha512'</code>) to calculate and attach Subresource Integrity attributes.</li>
     </ul>
 
-    <h3>The Default Behavior</h3>
-    <p>If omitted, Coralite defaults to using <code>console.warn</code> and <code>console.log</code> for warnings and logs. However, for level <code>'ERR'</code>, the default handler <strong>throws</strong> an actual Error with the provided message to intentionally break the build pipeline if an unrecoverable issue occurs.</p>
-
-    <coralite-heading level="2" text="Environment Considerations"></coralite-heading>
-
-    <p>When running Coralite using the <code>coralite-scripts</code> development mode (e.g., <code>npm run dev</code> or <code>mode === 'development'</code>), the <code>output</code> directory is automatically overridden to a temporary <code>.coralite/build</code> folder to isolate build artifacts from production outputs.</p>
-
   </main>
+
   <coralite-footer></coralite-footer>
 </body>
 
