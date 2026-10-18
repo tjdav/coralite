@@ -1,0 +1,14 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server () {
+      return {
+        __redirect: {
+          to: '/docs/guide/building.html',
+          status: 302
+        }
+      }
+    }
+  })
+</script>

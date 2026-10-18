@@ -210,8 +210,13 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/coralite
 
-  benchmarks/lumeland-benchmark/coralite:
   benchmarks/js-framework-benchmark/coralite-opt:
+    dependencies:
+      coralite:
+        specifier: workspace:*
+        version: link:../../../packages/coralite
+
+  benchmarks/lumeland-benchmark/coralite:
     dependencies:
       coralite:
         specifier: workspace:*
