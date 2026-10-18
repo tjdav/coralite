@@ -58,7 +58,8 @@ const coralite = await createCoralite({
         error.message.includes('bare-export') ||
         error.message.includes('definePage does not support') ||
         error.message.includes('Malformed dynamic segment') ||
-        (error.filePath && (error.filePath.includes('rejected-block') || error.filePath.includes('bare-exports') || error.filePath.includes('unknown-block') || error.filePath.includes('error-handling') || error.filePath.includes('patterns')))
+        error.message.includes('has more than one <script type="module"> block') ||
+        (error.filePath && (error.filePath.includes('rejected-block') || error.filePath.includes('bare-exports') || error.filePath.includes('unknown-block') || error.filePath.includes('error-handling') || error.filePath.includes('patterns') || error.filePath.includes('script-both-places')))
       ) {
         return
       }
@@ -77,4 +78,27 @@ try {
     console.error(error)
     process.exit(1)
   }
+}
+
+let routerAppOutDir = '.coralite-router-dev'
+if (mode === 'production') {
+  routerAppOutDir = '.coralite-router-prod'
+} else if (mode === 'testing') {
+  routerAppOutDir = '.coralite-router-testing'
+}
+
+const routerApp = await createCoralite({
+  components: 'tests/fixtures/router-app/components',
+  pages: 'tests/fixtures/router-app/pages',
+  output: routerAppOutDir,
+  mode,
+  cleanUrls: true
+})
+
+try {
+  await routerApp.save()
+  console.log(`Coralite router-app build HTML complete (mode: ${mode}, output: ${routerAppOutDir})`)
+} catch (error) {
+  console.error(error)
+  process.exit(1)
 }

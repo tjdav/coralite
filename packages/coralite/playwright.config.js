@@ -26,6 +26,7 @@ export default defineConfig({
     {
       name: 'framework-core-dev',
       testDir: './tests/e2e/core',
+      testIgnore: /router\.spec\.js$/,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3000'
@@ -34,6 +35,7 @@ export default defineConfig({
     {
       name: 'framework-core-prod',
       testDir: './tests/e2e/core',
+      testIgnore: /router\.spec\.js$/,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3001'
@@ -45,6 +47,15 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3002'
+      }
+    },
+    {
+      name: 'router-app-dev',
+      testDir: './tests/e2e/core',
+      testMatch: /router\.spec\.js$/,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:3003'
       }
     }
   ],
@@ -64,6 +75,11 @@ export default defineConfig({
     {
       command: 'pnpm run server:testing',
       port: 3002,
+      reuseExistingServer: !process.env.CI
+    },
+    {
+      command: 'pnpm run server:router',
+      port: 3003,
       reuseExistingServer: !process.env.CI
     }
   ]
