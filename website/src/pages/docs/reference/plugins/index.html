@@ -2,569 +2,205 @@
 <html lang="en">
 
 <head>
-  <coralite-meta no-hydration title="Coralite Plugin System: Complete Guide to Extending Coralite"
-    description="Learn how to create and use Coralite plugins, script plugins, and custom components."></coralite-meta>
+  <coralite-meta no-hydration title="Plugins Reference — Coralite"
+    description="Complete API reference for creating and configuring Coralite plugins with definePlugin, including core plugins, two-phase context resolvers, configuration schemas, and lifecycle hooks."></coralite-meta>
 </head>
 
 <body>
   <coralite-navbar></coralite-navbar>
 
   <main class="container content">
-    <!-- Introduction -->
-    <h1 class="display">Coralite Plugin System</h1>
-    <p>Coralite plugins are extensible modules that integrate into the Coralite framework's lifecycle, enabling
-      developers to customize and enhance its behavior through hooks, data manipulation, and dynamic content generation.
-    </p>
+    <h1 class="display">Plugins Reference</h1>
 
-    <!-- Table of Contents -->
-    <nav aria-label="table of contents">
-      <coralite-heading level="2" text="Table of Contents"></coralite-heading>
-      <ul>
-        <li><a href="#component-types">Component Types</a></li>
-        <li><a href="#creating-plugins">Creating Plugins</a></li>
-        <li><a href="#server-context">Server Context Binding</a></li>
-        <li><a href="#lifecycle-hooks">Lifecycle Hooks</a></li>
-        <li><a href="#client-plugins">Client Plugins & Helpers</a></li>
-        <li><a href="./define-plugin.html">Create Plugin API</a></li>
-        <li><a href="#built-in-plugins">Built-in Plugins</a></li>
-      </ul>
-    </nav>
+    <p>Coralite provides an extensible plugin system built around <code>definePlugin</code>. Plugins can extend server compilation, inject browser runtime utilities, register components, and manage build lifecycle hooks.</p>
 
-    <!-- Component Types Section -->
-    <section id="component-types">
-      <coralite-heading level="2" text="Component Types"></coralite-heading>
-      <p>Coralite supports two types of components, each with different requirements:</p>
+    <coralite-heading level="2" text="1. The definePlugin Function"></coralite-heading>
 
-      <coralite-heading level="3" text="Static Components"></coralite-heading>
-      <p>Static components are simple HTML files that support basic token replacement but don't require any script
-        processing:</p>
+    <p>Define custom framework plugins using the <code>definePlugin</code> helper exported from <code>coralite</code>:</p>
 
-      <coralite-code-html>
-        <template id="simple-component">
-          <div>
-            <h1 class="display">{{ title }}</h1>
-            <p>{{ description }}</p>
-          </div>
-        </template>
-      </coralite-code-html>
+    <coralite-code-highlight language="javascript" title="Basic Plugin Structure">
+import { definePlugin } from 'coralite'
 
-      <p><strong>No script tag needed</strong> - Coralite will process token replacements automatically.</p>
+export default definePlugin({
+  name: 'my-plugin',
+  config: {
+    // Plugin configuration schema
+  },
+  server: {
+    // Server-side hooks, context, and components
+  },
+  client: {
+    // Client-side browser runtime hooks and context
+  }
+})
+    </coralite-code-highlight>
 
-      <coralite-heading level="3" text="Dynamic Components"></coralite-heading>
-      <p>Dynamic components require a script tag and are used when you need:</p>
-      <ul>
-        <li>Attributes or server state fetching</li>
-        <li>Derived state via Getters</li>
-        <li>Client-side JavaScript execution</li>
-        <li>Access to plugin methods</li>
-        <li>DOM element references</li>
-      </ul>
+    <coralite-heading level="2" text="2. Auto-Registered Core Plugins"></coralite-heading>
 
-      <coralite-code-html>
-        <template id="dynamic-component">
-          <div>
-            <h1 class="display">{{ greeting }}</h1>
-            <button type="button" ref="actionBtn">Click me</button>
-          </div>
-        </template>
+    <p>Coralite automatically registers three core plugins in every application. You do not need to manually import or register them in <code>coralite.config.js</code>:</p>
 
-        <script type="module">
-          import { defineComponent } from 'coralite'
+    <ul>
+      <li><strong>lists</strong> — Provides fine-grained DOM list rendering, keyed collection stores, virtualization, and layout support.</li>
+      <li><strong>router</strong> — Provides client-side SPA routing, outlet wrapping, route transition events, and navigation guards.</li>
+      <li><strong>store</strong> — Implements application-wide signal-backed global state management.</li>
+    </ul>
 
-          export default defineComponent({
-            attributes: {
-              name: {
-                type: String,
-                default: 'Guest'
-              }
-            },
-            getters: {
-              greeting: ({ state }) => `Hello, ${state.name}!`
-            },
-            client: ({ refs }) => {
-              const btn = refs('actionBtn')
-              btn.addEventListener('click', () => {
-                console.log('Button clicked!')
-              })
-            }
-          })
-        </script>
-      </coralite-code-html>
+    <coralite-heading level="2" text="3. Plugin Configuration & Schemas"></coralite-heading>
 
-      <p><strong>Requires <code>defineComponent</code></strong> as the default export.</p>
-    </section>
+    <p>Plugins define their configuration schema using primitive type constructors (<code>String</code>, <code>Number</code>, <code>Boolean</code>) within the <code>config</code> block, identical to component attribute schemas:</p>
 
-    <!-- Creating Plugins Section -->
-    <section id="creating-plugins">
-      <coralite-heading level="2" text="Creating Plugins"></coralite-heading>
-      <p>Use the <code>definePlugin</code> function to define a new plugin with configuration options:</p>
+    <coralite-code-highlight language="javascript" title="Plugin Configuration Schema">
+import { definePlugin } from 'coralite'
 
-      <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite'
+export const myPlugin = definePlugin({
+  name: 'my-plugin',
+  config: {
+    apiKey: { type: String, required: true },
+    timeout: { type: Number, default: 5000 },
+    debug: { type: Boolean, default: false }
+  },
+  server: {
+    context: (pluginContext) => {
+      // Access validated user config
+      const { apiKey, timeout } = pluginContext.config
+      return { apiKey, timeout }
+    }
+  }
+})
+    </coralite-code-highlight>
 
-        const myPlugin = definePlugin({
-          name: 'my-plugin',
-          server: {
-            context: (pluginContext) => {
-              return {
-                myServerMethod: () => {
-                  return { custom: 'data' }
-                }
-              }
-            },
-            components: ['src/components/custom.html'],
-            onPageSet: async (data) => {
-              console.log('Page created:', data.path.pathname)
-            }
-          },
-          client: {
-            context: (pluginContext) => (instanceContext) => {
-              return {
-                formatDate: (date) => new Date(date).toLocaleDateString()
-              }
-            }
+    <p>Consumers register and configure plugins in <code>coralite.config.js</code> by invoking the plugin function with options:</p>
+
+    <coralite-code-highlight language="javascript" title="coralite.config.js">
+import { defineConfig } from 'coralite'
+import { myPlugin } from './plugins/my-plugin.js'
+
+export default defineConfig({
+  output: 'dist',
+  components: 'src/components',
+  pages: 'src/pages',
+  plugins: [
+    myPlugin({
+      apiKey: 'xyz-12345',
+      debug: true
+    })
+  ]
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="4. The Two-Phase Context Resolver"></coralite-heading>
+
+    <p>Client runtime utilities exposed to component <code>client()</code> blocks use a <strong>Two-Phase Resolver</strong> pattern to safely isolate global setup from per-component instance execution:</p>
+
+    <coralite-code-highlight language="javascript" title="Two-Phase Resolver Example">
+import { definePlugin } from 'coralite'
+
+export default definePlugin({
+  name: 'analytics',
+  config: {
+    trackingId: { type: String, required: true }
+  },
+  client: {
+    context: (pluginContext) => {
+      // Phase 1: Runs once during boot.
+      // Useful for global singletons or dynamic module imports.
+      const trackingId = pluginContext.config.trackingId
+
+      return (instanceContext) => {
+        // Phase 2: Runs once per component instance.
+        // Receives instance state, signal, refs, and root element.
+        const { signal } = instanceContext
+
+        return {
+          track: (eventName, payload) => {
+            console.log(`[${trackingId}] Event: ${eventName}`, payload)
           }
-        })
-      </coralite-code-highlight>
-
-      <coralite-heading level="3" text="definePlugin Parameters"></coralite-heading>
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Parameter</th>
-              <th>Type</th>
-              <th>Required</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>name</code></td>
-              <td><code>string</code></td>
-              <td>Yes</td>
-              <td>Unique identifier for the plugin</td>
-            </tr>
-            <tr>
-              <td><code>server</code></td>
-              <td><code>object</code></td>
-              <td>No</td>
-              <td>Server-side configuration, components, context, and lifecycle hooks</td>
-            </tr>
-            <tr>
-              <td><code>client</code></td>
-              <td><code>object</code></td>
-              <td>No</td>
-              <td>Client-side runtime configuration, context resolver, and browser hooks</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Server Context Section -->
-    <section id="server-context">
-      <coralite-heading level="2" text="Server Context Binding"></coralite-heading>
-      <p>Plugins can expose custom methods and data to component <code>server()</code> blocks via <code>server.context</code>. This runs strictly on the server during the build process.</p>
-
-      <coralite-heading level="3" text="Defining Server Context"></coralite-heading>
-      <p>The <code>server.context</code> property is a function that receives the plugin context (with the plugin's configuration and the global app instance) and returns an object of utilities:</p>
-
-      <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite'
-
-        export const dbPlugin = definePlugin({
-          name: 'db-plugin',
-          server: {
-            config: {
-              connectionString: 'mongodb://localhost:27017'
-            },
-            context: (pluginContext) => {
-              const db = connect(pluginContext.config.connectionString);
-              return {
-                getUser: async (userId) => {
-                  return await db.users.findOne({ id: userId });
-                }
-              }
-            }
-          }
-        })
-      </coralite-code-highlight>
-
-      <coralite-heading level="3" text="Using Server Context in Components"></coralite-heading>
-      <p>Component <code>server()</code> functions receive namespaced plugin contexts via their first parameter. You can extract methods from the namespace key matching your plugin's name:</p>
-
-      <coralite-code-html>
-        <template id="user-profile">
-          <div>
-            <h1>{{ userName }}</h1>
-          </div>
-        </template>
-
-        <script type="module">
-          import { defineComponent } from 'coralite'
-
-          export default defineComponent({
-            attributes: {
-              userId: { type: String }
-            },
-            async server (context) {
-              const { getUser } = context['db-plugin']
-              const user = await getUser(context.state.userId)
-              return {
-                userName: user.name
-              }
-            }
-          })
-        </script>
-      </coralite-code-html>
-
-      <p><strong>Note:</strong> Since <code>server.context</code> is evaluated once per build session rather than per-instance, any methods requiring instance-specific data (such as current component state) should accept the component context as a parameter when called.</p>
-    </section>
-
-    <!-- Page-Level Plugins Section -->
-    <section id="page-level-plugins">
-      <coralite-heading level="2" text="Page-Level Plugins"></coralite-heading>
-      <p>Page-level plugins use lifecycle hooks to modify the final HTML output. They work across all pages and
-        components.</p>
-
-      <coralite-heading level="3" text="How Page-Level Plugins Work"></coralite-heading>
-      <p>These plugins are registered in your coralite.config.js and automatically process pages during the build:</p>
-
-      <coralite-code-highlight language="JavaScript">
-        // coralite.config.js
-        import inlineCSSPlugin from './plugins/inline-css.js'
-
-        export default {
-          components: './components',
-          pages: './pages',
-          plugins: [
-            inlineCSSPlugin({
-              path: './styles',
-              minify: true
-            })
-          ]
         }
-      </coralite-code-highlight>
+      }
+    }
+  }
+})
+    </coralite-code-highlight>
 
-      <coralite-heading level="3" text="Example: Inline CSS Plugin"></coralite-heading>
-      <p>Here's how a page-level plugin transforms <code>&lt;link&gt;</code> tags to inline <code>&lt;style&gt;</code>
-        tags:</p>
+    <p>In component <code>client()</code> blocks, destructured plugin methods are accessed directly from the context object:</p>
 
-      <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite'
-        import { readFile } from 'node:fs/promises'
-        import { join, resolve } from 'node:path'
+    <coralite-code-highlight language="javascript" title="Component Client Access">
+import { defineComponent } from 'coralite'
 
-        /**
-        * @param {Object} config -
-        * @param {string} config.path -
-        * @param {boolean} config.minify -
-        */
-        export default ({ path, minify } = {}) => {
-          return definePlugin({
-            name: 'inline-css',
-            async onPageSet (context) {
-              // Walk through all elements in the page
-              let stack = [context.elements.root]
+export default defineComponent({
+  client({ analytics, refs }) {
+    refs.button.addEventListener('click', () => {
+      analytics.track('button_click', { id: 'submit' })
+    })
+  }
+})
+    </coralite-code-highlight>
 
-              while (stack.length > 0) {
-                const node = stack.pop()
+    <coralite-heading level="2" text="5. Lifecycle Hooks"></coralite-heading>
 
-                if (node.type === 'tag'
-                && node.name === 'link'
-                && node.attribs.rel === 'stylesheet'
-                && node.attribs['inline-css'] != null
-                ) {
-                  // Read and inline CSS file
-                  const cssPath = resolve(join(path || '', node.attribs['inline-css']))
-                  const css = await readFile(cssPath, 'utf8')
+    <p>Plugins intercept framework events across build and runtime phases via lifecycle hooks:</p>
 
-                  // Replace link with style tag
-                  node.name = 'style'
-                  node.attribs = {}
-                  node.children = [{
-                    type: 'text',
-                    data: css,
-                    parent: node
-                  }]
-                }
+    <coralite-heading level="3" text="Server Hooks"></coralite-heading>
 
-                if (node.children) {
-                  stack.push(...node.children)
-                }
-              }
-            }
-          })
-        }
-      </coralite-code-highlight>
+    <coralite-table>
+      <tr slot="head">
+        <th>Hook</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>onBeforeBuild</code></td>
+        <td>Fires before compilation starts. Useful for environment checks or asset preparation.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onPageSet</code></td>
+        <td>Fires when a page record is initially registered during collection.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onPageUpdate</code></td>
+        <td>Fires in watch mode when a page file is modified.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onPageDelete</code></td>
+        <td>Fires in watch mode when a page file is removed.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onBeforePageRender</code></td>
+        <td>Fires before rendering a page to static HTML. Can inspect or modify page AST nodes.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onAfterPageRender</code></td>
+        <td>Fires after page render completes. Can transform generated HTML output.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onAfterBuild</code></td>
+        <td>Fires after all pages and components have completed building.</td>
+      </tr>
+    </coralite-table>
 
-    <!-- Lifecycle Hooks Section -->
-    <section id="lifecycle-hooks">
-      <coralite-heading level="2" text="Server-Side Lifecycle Hooks"></coralite-heading>
-      <p>Hooks allow plugins to respond to specific events in the Coralite build lifecycle. These execute strictly on the server during the compilation and generation phases, making them perfect for generating sitemaps, indexing search data, or tracking build analytics. All hooks must reside inside the <code>server</code> block.</p>
+    <coralite-heading level="3" text="Client Hooks"></coralite-heading>
 
-      <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite'
-
-        export const analyticsPlugin = definePlugin({
-          name: 'analytics',
-          server: {
-            // Page Lifecycle
-            onPageSet: async ({ page, elements, state, data, app }) => {
-              // Called when a new page is created
-              console.log('New page:', page.url.pathname)
-            },
-            onPageUpdate: async ({ page, elements, newValue, oldValue, app }) => {
-              // Called when a page is updated
-              console.log('Page updated:', page.url.pathname)
-            },
-            onPageDelete: async ({ ...data, app }) => {
-              // Called when a page is deleted
-              console.log('Page deleted.')
-            },
-
-            // Component Lifecycle
-            onComponentSet: async ({ component, app }) => {
-              // Called when a component is created
-              console.log('New component:', component.id)
-            },
-            onComponentUpdate: async ({ component, app }) => {
-              // Called when a component is updated
-              console.log('Component updated:', component.id)
-            },
-            onComponentDelete: async ({ component, app }) => {
-              // Called when a component is deleted
-              console.log('Component deleted:', component.id)
-            },
-
-            // Build Orchestration
-            onBeforeBuild: async ({ path, options, app }) => {
-              console.log('Build process starting...');
-            },
-            onAfterBuild: async ({ results, error, duration }) => {
-              console.log(`Build completed in ${duration}ms`);
-            }
-          }
-        })
-      </coralite-code-highlight>
-    </section>
-
-    <!-- Client Plugins Section -->
-    <section id="client-plugins">
-      <coralite-heading level="2" text="Client Plugins & Helpers"></coralite-heading>
-      <p>Client plugins provide client-side utilities that are available in component client blocks. To safely bridge global plugin configuration with local Web Component instances, Coralite requires <code>client.context</code> to be authored using a <strong>Two-Phase Resolver</strong>.</p>
-
-      <coralite-heading level="3" text="The Two-Phase Resolver"></coralite-heading>
-      <ol>
-        <li><strong>Phase 1 (Global Context):</strong> The outermost function receives the <code>pluginContext</code> (containing global <code>config</code>). Use this phase to initialize shared state or load global modules.</li>
-        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ state, signal, root, instanceId, refs, observe }</code>).</li>
-        <li><strong>Phase 3 (Helpers Object):</strong> The second function returns an object containing the helper methods. These helpers are exposed on the component's client context under the plugin's namespace key.</li>
-      </ol>
-
-      <p><strong>Note on <code>signal</code>:</strong> The <code>signal</code> is tied natively to the component's mount lifecycle. It triggers <code>.abort()</code> automatically when a component is unmounted from the DOM, making it perfect for cleaning up event listeners (e.g. <code>element.addEventListener('click', fn, { signal })</code>).</p>
-
-      <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite'
-
-        export const myCustomPlugin = definePlugin({
-          name: 'my-custom-plugin',
-          client: {
-            context: (pluginContext) => {
-              // Phase 1: Receives Plugin Context
-              const globalValue = pluginContext.config?.value;
-
-              return (instanceContext) => {
-                // Phase 2: Receives Local Instance Context
-                const { signal } = instanceContext;
-
-                // Phase 3: Return the helper object accessible via context['my-custom-plugin']
-                return {
-                  myHelper: (selector) => {
-                    const element = document.querySelector(selector);
-                    if (element && signal) {
-                      element.addEventListener('click', () => {
-                        console.log('Clicked element with config value:', globalValue)
-                      }, { signal });
-                    }
-                    return element;
-                  }
-                }
-              }
-            }
-          }
-        })
-      </coralite-code-highlight>
-
-      <coralite-heading level="3" text="Usage in Components"></coralite-heading>
-      <p>Once registered, component client blocks access the helpers object under the plugin's namespace:</p>
-
-      <coralite-code-highlight language="JavaScript">
-        // In component client block:
-        export default defineComponent({
-          client: (context) => {
-            const { myHelper } = context['my-custom-plugin'];
-            const btn = myHelper('.btn-class');
-          }
-        })
-      </coralite-code-highlight>
-    </section>
-
-    <!-- Built-in Plugins Section -->
-    <section id="built-in-plugins">
-      <coralite-heading level="2" text="Built-in Plugins"></coralite-heading>
-      <p>Coralite includes built-in plugins that provide core functionality:</p>
-
-      <coralite-heading level="3" text="defineComponent"></coralite-heading>
-      <p>The <code>defineComponent</code> plugin is required for all dynamic components. It provides the structured wrapper for your inputs (<code>attributes</code>), server-side fetching (<code>server</code>), derived state (<code>getters</code>), and client-side execution (<code>client</code>):</p>
-
-      <coralite-code-highlight language="JavaScript">
-        import { defineComponent } from 'coralite'
-
-        export default defineComponent({
-          attributes: {
-              firstName: { type: String, default: '' },
-              lastName: { type: String, default: '' },
-              date: { type: String }
-          },
-          getters: {
-            fullName: ({ state }) => `${state.firstName} ${state.lastName}`.trim(),
-            formattedDate: ({ state }) => state.date ? new Date(state.date).toLocaleDateString() : ''
-          },
-          slots: {
-            // Custom Light DOM interception and transformation
-            content (slotNodes, state) {
-              // Transform slot content before it projects into the component
-              return slotNodes
-            }
-          },
-          // Behavior: Runs natively in the browser
-          client ({ state, signal, refs }) {
-            // The client block natively receives the unified reactive state
-            const btn = refs('actionBtn')
-            
-            btn.addEventListener('click', () => {
-              console.log(`Hello, ${state.fullName}!`)
-            }, { signal })
-          }
-        })
-      </coralite-code-highlight>
-
-      <coralite-heading level="4" text="When to Use"></coralite-heading>
-      <ul>
-        <li>When your component needs attributes or server state fetching</li>
-        <li>When you need derived state via getters</li>
-        <li>When you need custom slot processing</li>
-        <li>When you need client-side JavaScript</li>
-        <li>When you need to use plugin methods</li>
-      </ul>
-
-      <coralite-heading level="4" text="When NOT to Use"></coralite-heading>
-      <ul>
-        <li>Simple static components with only token replacement</li>
-        <li>Components that don't need client-side execution</li>
-      </ul>
-
-      <coralite-heading level="3" text="refs Helper"></coralite-heading>
-      <p>The <code>refs</code> helper provides DOM element access at runtime:</p>
-
-      <coralite-code-html>
-        <template id="my-component">
-          <div>
-            <span ref="author">Author Name</span>
-            <button type="button" ref="actionBtn">Click me</button>
-            <input type="text" ref="userInput">
-          </div>
-        </template>
-
-        <script type="module">
-          import { defineComponent } from 'coralite'
-
-          export default defineComponent({
-            client ({ signal, refs }) {
-              // Get DOM elements by their ref name
-              const button = refs('actionBtn')
-              const input = refs('userInput')
-              const author = refs('author')
-
-              // Use the elements at runtime
-              button.addEventListener('click', () => {
-                author.textContent = input.value || 'Anonymous'
-              }, { signal })
-            }
-          })
-        </script>
-      </coralite-code-html>
-
-      <coralite-heading level="3" text="Metadata Plugin"></coralite-heading>
-      <p>The <code>metadata</code> plugin automatically extracts SEO data from the document's <code>&lt;head&gt;</code> during the build and exposes it to the <code>context.page.meta</code> environment object:</p>
-
-      <ul>
-        <li>Maps <code>&lt;html lang="..."&gt;</code> to <code>context.page.meta.lang</code>.</li>
-        <li>Maps <code>&lt;title&gt;</code> to <code>context.page.meta.title</code>.</li>
-        <li>Maps <code>&lt;meta name="viewport" content="..."&gt;</code> to <code>context.page.meta.viewport</code>.</li>
-      </ul>
-
-      <p>See the <a href="./metadata.html">Metadata Plugin Reference</a> for full details.</p>
-
-      <coralite-heading level="3" text="Static Assets Plugin"></coralite-heading>
-      <p>The <code>staticAssetPlugin</code> handles the orchestration of copying raw files (like <code>.wasm</code>, images, or pre-compiled scripts) directly into the final build directory.</p>
-
-      <coralite-heading level="4" text="Configuration"></coralite-heading>
-      <p>It acts as a higher-order function that accepts an <code>assets</code> array and returns a configured Coralite plugin. Every object in the array <em>must</em> contain a <code>dest</code> (destination) property.</p>
-
-      <coralite-heading level="4" text="Lifecycle Hook"></coralite-heading>
-      <p>It triggers on the <code>onBeforeBuild</code> hook, ensuring all required binary/static dependencies are physically present in the output directory before Coralite attempts to render pages or start the dev server.</p>
-
-      <coralite-heading level="4" text="Resolution Strategies"></coralite-heading>
-      <ul>
-        <li><strong>Local Resolution:</strong> If the asset object contains a <code>src</code> property, it recursively creates the destination directory and copies the file/folder using Node's <code>cp</code>.</li>
-        <li><strong>NPM Package Resolution:</strong> If <code>src</code> is missing, it requires both <code>pkg</code> and <code>path</code> options. It uses Node's <code>createRequire</code> and <code>require.resolve</code> to traverse <code>node_modules</code> and locate the root directory of the requested <code>pkg</code>. It then appends the <code>path</code> to the package root and copies the asset out of the dependency.</li>
-      </ul>
-
-      <coralite-heading level="3" text="Complete Example"></coralite-heading>
-      <p>Here's a complete example showing the "Smart State, Dumb Template" architecture and built-in plugins working together:</p>
-
-      <coralite-code-html>
-        <template id="counter">
-          <div class="counter">
-            <h2>Count: {{ currentCount }}</h2>
-            <button type="button" ref="increment">+</button>
-            <button type="button" ref="decrement">-</button>
-          </div>
-        </template>
-
-        <script type="module">
-          import { defineComponent } from 'coralite'
-
-          export default defineComponent({
-            attributes: {
-              initial: {
-                type: Number,
-                default: 0
-              }
-            },
-            server ({ state }) {
-              return {
-                currentCount: state.initial
-              }
-            },
-            client ({ state, signal, refs }) {
-              const increment = refs('increment')
-              const decrement = refs('decrement')
-
-              increment.addEventListener('click', () => {
-                state.currentCount++
-              }, { signal })
-
-              decrement.addEventListener('click', () => {
-                state.currentCount--
-              }, { signal })
-            }
-          })
-        </script>
-      </coralite-code-html>
-    </section>
+    <coralite-table>
+      <tr slot="head">
+        <th>Hook</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>client.init</code></td>
+        <td>Runs once in the browser runtime when Coralite initializes.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onBeforeComponentRender</code></td>
+        <td>Runs before a client component mounts into the DOM.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onAfterComponentRender</code></td>
+        <td>Runs after a component has mounted and completed initial hydration.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onDisconnected</code></td>
+        <td>Runs when a component instance is removed from the DOM.</td>
+      </tr>
+    </coralite-table>
 
   </main>
 

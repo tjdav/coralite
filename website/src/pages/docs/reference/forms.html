@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Forms Reference — Coralite"
+    description="Complete reference for Form-Associated Custom Elements (FACE), ElementInternals integration, setFormValue, setValidity, and form lifecycle hooks in Coralite."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content">
+    <h1 class="display">Forms Reference</h1>
+
+    <p>This reference documents Coralite's support for standard web platform <strong>Form-Associated Custom Elements (FACE)</strong>, <strong>ElementInternals</strong> synchronization, and native form lifecycle hooks.</p>
+
+    <coralite-heading level="2" text="1. Form-Associated Custom Elements (FACE)"></coralite-heading>
+
+    <p>By default, custom elements do not participate in native HTML <code>&lt;form&gt;</code> submission or constraint validation. Setting <code>formAssociated: true</code> in <code>defineComponent</code> opts the custom element into Form-Associated Custom Elements (FACE).</p>
+
+    <coralite-code-highlight language="javascript" title="Opting into Form Association">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  formAssociated: true,
+
+  attributes: {
+    name: String,
+    value: String,
+    required: Boolean
+  }
+})
+    </coralite-code-highlight>
+
+    <p>When <code>formAssociated: true</code> is enabled:</p>
+
+    <ul>
+      <li>The custom element attaches W3C standard <code>ElementInternals</code> on host initialization.</li>
+      <li>The component participates directly in parent <code>&lt;form&gt;</code> submissions, including FormData collection.</li>
+      <li>The host element supports native form properties like <code>element.form</code>, <code>element.validity</code>, <code>element.validationMessage</code>, and <code>element.checkValidity()</code>.</li>
+      <li>The framework injects FACE helper functions (<code>setFormValue</code>, <code>setValidity</code>, <code>onFormReset</code>, <code>onFormDisabled</code>, <code>onFormRestore</code>) into the component's <code>client()</code> execution context.</li>
+    </ul>
+
+    <coralite-heading level="2" text="2. ElementInternals Helpers"></coralite-heading>
+
+    <p>The <code>client()</code> block context provides helper methods to sync internal component state and validation constraints with the surrounding form:</p>
+
+    <coralite-heading level="3" text="setFormValue(value)"></coralite-heading>
+
+    <p>Updates the entry value submitted for this component when its parent <code>&lt;form&gt;</code> submits. Accepts a string, <code>File</code>, or <code>FormData</code> instance (or <code>null</code> to clear value).</p>
+
+    <coralite-code-highlight language="javascript">
+// Sync a simple string input value
+setFormValue('user@example.com')
+
+// Clear the submitted form value
+setFormValue(null)
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="setValidity(flags, message, anchor)"></coralite-heading>
+
+    <p>Sets the constraint validation state on the element's <code>ElementInternals</code> instance.</p>
+
+    <ul>
+      <li><code>flags</code> — Validity state flags object (e.g. <code>{ valueMissing: true }</code> or <code>{ customError: true }</code>). Pass <code>{}</code> to mark the component valid.</li>
+      <li><code>message</code> — Optional validation error message string displayed by browser popups or <code>validationMessage</code> property.</li>
+      <li><code>anchor</code> — Optional internal element reference (e.g. <code>refs.input</code>) targeted for browser focus during validation reporting.</li>
+    </ul>
+
+    <coralite-heading level="3" text="Complete Custom Input Example"></coralite-heading>
+
+    <coralite-code-highlight language="html" title="custom-input.html">
+<template id="custom-input">
+  <div class="field">
+    <label for="input-element">{{ state.label }}</label>
+    <input
+      id="input-element"
+      ref="input"
+      type="text"
+      value="{{ state.value }}"
+      placeholder="{{ state.placeholder }}"
+    >
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    formAssociated: true,
+
+    attributes: {
+      label: String,
+      placeholder: String,
+      value: {
+        type: String,
+        default: ''
+      },
+      required: Boolean
+    },
+
+    client ({ state, refs, signal, setFormValue, setValidity, onFormReset }) {
+      function validate (val) {
+        if (state.required && !val) {
+          setValidity({ valueMissing: true }, 'This field is required', refs.input)
+        } else {
+          setValidity({})
+        }
+      }
+
+      // Initial synchronization
+      setFormValue(state.value)
+      validate(state.value)
+
+      // Sync state and validity on DOM input events
+      if (refs.input) {
+        refs.input.addEventListener('input', (e) => {
+          state.value = e.target.value
+          setFormValue(state.value)
+          validate(state.value)
+        }, { signal })
+      }
+
+      // Handle native form reset
+      onFormReset(() => {
+        state.value = ''
+        if (refs.input) {
+          refs.input.value = ''
+        }
+        setFormValue('')
+        validate('')
+      })
+    }
+  })
+</script>
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="3. Form Lifecycle Hooks"></coralite-heading>
+
+    <p>Form-Associated components receive lifecycle hooks to react to native form events triggered by user actions or browser restoration:</p>
+
+    <coralite-heading level="3" text="onFormReset(callback)"></coralite-heading>
+
+    <p>Fires when the enclosing <code>&lt;form&gt;</code> element is reset via a reset button or <code>form.reset()</code> call. Use this hook to restore internal component state and form values back to initial defaults.</p>
+
+    <coralite-code-highlight language="javascript">
+onFormReset(() => {
+  state.value = initialDefaultValue
+  setFormValue(state.value)
+  setValidity({})
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="onFormDisabled(callback)"></coralite-heading>
+
+    <p>Fires whenever the component's disabled status changes, such as when an ancestor <code>&lt;fieldset disabled&gt;</code> is enabled or disabled. Receives boolean <code>isDisabled</code> argument.</p>
+
+    <coralite-code-highlight language="javascript">
+onFormDisabled((isDisabled) => {
+  state.disabled = isDisabled
+  if (refs.input) {
+    refs.input.disabled = isDisabled
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="onFormRestore(callback)"></coralite-heading>
+
+    <p>Fires when the browser automatically restores form state, such as during back/forward page navigation or auto-fill restoration. Receives <code>(state, reason)</code> where <code>reason</code> is either <code>'restore'</code> or <code>'autocomplete'</code>.</p>
+
+    <coralite-code-highlight language="javascript">
+onFormRestore((restoredValue, reason) => {
+  if (restoredValue) {
+    state.value = restoredValue
+    setFormValue(restoredValue)
+  }
+})
+    </coralite-code-highlight>
+
+  </main>
+
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

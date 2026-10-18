@@ -1,0 +1,168 @@
+<template id="bench-app">
+  <div class="container">
+    <div class="jumbotron">
+      <div class="row">
+        <div class="col-md-6">
+          <h1>Coralite</h1>
+        </div>
+        <div class="col-md-6">
+          <div class="row">
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="run" ref="run">Create 1,000 rows</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="runlots" ref="runlots">Create 10,000 rows</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="add" ref="add">Append 1,000 rows</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="update" ref="update">Update every 10th row</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="clear" ref="clear">Clear</button>
+            </div>
+            <div class="col-sm-6 smallpad">
+              <button type="button" class="btn btn-primary btn-block" id="swaprows" ref="swaprows">Swap Rows</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <table class="table table-hover table-striped test-data">
+      <tbody ref="tbody"></tbody>
+    </table>
+    <span class="preloadicon glyphicon glyphicon-remove" aria-hidden="true"></span>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client({ refs, signal, lists }) {
+      let nextId = 1
+      const adjectives = ['pretty', 'large', 'big', 'small', 'tall', 'short', 'long', 'handsome', 'plain', 'quaint', 'clean', 'elegant', 'easy', 'angry', 'crazy', 'helpful', 'mushy', 'odd', 'unsightly', 'adorable', 'important', 'inexpensive', 'cheap', 'expensive', 'fancy']
+      const colours = ['red', 'yellow', 'blue', 'green', 'pink', 'brown', 'purple', 'brown', 'white', 'black', 'orange']
+      const nouns = ['table', 'chair', 'house', 'bbq', 'desk', 'car', 'pony', 'cookie', 'sandwich', 'burger', 'pizza', 'pancake', 'asset', 'laptop', 'box']
+
+      function _random (max) {
+        return Math.round(Math.random() * 1000) % max
+      }
+
+      function buildData (count = 1000) {
+        const data = new Array(count)
+        for (let i = 0; i < count; i++) {
+          data[i] = {
+            id: nextId++,
+            label: `${adjectives[_random(adjectives.length)]} ${colours[_random(colours.length)]} ${nouns[_random(nouns.length)]}`
+          }
+        }
+        return data
+      }
+
+      const store = lists.createStore({ key: 'id' })
+      let selectedId = null
+
+      lists.bind({
+        container: refs('tbody'),
+        store,
+        signal,
+        key: (item) => item.id,
+        create (item) {
+          const tr = document.createElement('tr')
+          tr.setAttribute('data-id', item.id)
+          if (item.id === selectedId) {
+            tr.className = 'danger'
+          }
+          tr.innerHTML = `<td class="col-md-1">${item.id}</td><td class="col-md-4"><a class="lbl">${item.label}</a></td><td class="col-md-1"><a><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a></td><td class="col-md-6"></td>`
+          return tr
+        },
+        update (el, item) {
+          const a = el.querySelector('.lbl')
+          if (a) a.textContent = item.label
+        }
+      })
+
+      refs('run').addEventListener('click', () => {
+        selectedId = null
+        store.set(buildData(1000))
+      }, { signal })
+
+      refs('runlots').addEventListener('click', () => {
+        selectedId = null
+        store.set(buildData(10000))
+      }, { signal })
+
+      refs('add').addEventListener('click', () => {
+        store.appendMany(buildData(1000))
+      }, { signal })
+
+      refs('update').addEventListener('click', () => {
+        const allItems = store.all()
+        const tbody = refs('tbody')
+
+        for (let i = 0; i < allItems.length; i += 10) {
+          const item = allItems[i]
+          item.label = `${item.label} !!!`
+
+          const row = tbody.querySelector(`tr[data-id="${item.id}"]`)
+          if (row) {
+            const lbl = row.querySelector('.lbl')
+            if (lbl) lbl.textContent = item.label
+          }
+        }
+      }, { signal })
+
+      refs('clear').addEventListener('click', () => {
+        selectedId = null
+        store.clear()
+      }, { signal })
+
+      refs('swaprows').addEventListener('click', () => {
+        const tbody = refs('tbody')
+        const rows = tbody.children
+        if (rows.length > 998) {
+          const row1 = rows[1]
+          const row998 = rows[998]
+
+          const placeholder = document.createComment('')
+          row1.parentNode.insertBefore(placeholder, row1)
+          row998.parentNode.insertBefore(row1, row998)
+          placeholder.parentNode.insertBefore(row998, placeholder)
+          placeholder.remove()
+
+          const allItems = store.all()
+          const temp = allItems[1]
+          allItems[1] = allItems[998]
+          allItems[998] = temp
+        }
+      }, { signal })
+
+      const tbody = refs('tbody')
+      tbody.addEventListener('click', (e) => {
+        const target = e.target
+        if (!target) return
+
+        if (target.matches('.glyphicon-remove') || target.closest('.glyphicon-remove')) {
+          const tr = target.closest('tr')
+          if (tr) {
+            const id = Number(tr.getAttribute('data-id'))
+            store.remove(id)
+          }
+        } else if (target.matches('.lbl') || target.closest('.lbl')) {
+          const tr = target.closest('tr')
+          if (tr) {
+            const id = Number(tr.getAttribute('data-id'))
+            if (selectedId !== null) {
+              const oldSelected = tbody.querySelector(`tr[data-id="${selectedId}"]`)
+              if (oldSelected) oldSelected.classList.remove('danger')
+            }
+            selectedId = id
+            tr.classList.add('danger')
+          }
+        }
+      }, { signal })
+    }
+  })
+</script>
