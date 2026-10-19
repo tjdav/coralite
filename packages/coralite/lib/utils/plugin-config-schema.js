@@ -1,5 +1,5 @@
-import { CoraliteError } from './errors.js'
-import { inferTypeFromValues } from './attributes.js'
+import { CoraliteError } from '../shared/errors.js'
+import { inferTypeFromValues } from '../shared/attributes.js'
 
 export const SUPPORTED_CONFIG_TYPES = new Set(['String', 'Number', 'Boolean', 'Object', 'Array'])
 

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { createCoraliteElement, createVirtualWindow } from '../../../lib/utils/server/index.js'
-import { cloneNode, isServer, isClient } from '../../../lib/utils/core.js'
+import { cloneNode, isServer, isClient } from '../../../lib/shared/core.js'
 import { evaluateProduction } from '../../../lib/compiler.js'
 import { assertSame } from '../helpers.js'
 

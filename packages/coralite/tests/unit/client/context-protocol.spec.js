@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { Window } from 'happy-dom'
-import { createContext, ContextRequestEvent } from '../../../lib/utils/core.js'
+import { createContext, ContextRequestEvent } from '../../../lib/shared/core.js'
 
 describe('W3C Web Components Context Protocol', () => {
   let window

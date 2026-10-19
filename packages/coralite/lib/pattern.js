@@ -1,5 +1,5 @@
 import { relative } from 'node:path'
-import { CoraliteError } from '../../shared/errors.js'
+import { CoraliteError } from './shared/errors.js'
 
 /**
  * Parses a page file path relative to pagesRoot into a normalized route pattern,

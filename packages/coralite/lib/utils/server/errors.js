@@ -1,6 +1,6 @@
 
 import { parse as parseJS } from 'acorn'
-import { CoraliteError } from '../errors.js'
+import { CoraliteError } from '../../shared/errors.js'
 
 /**
  * @import { CoraliteModule, CoraliteCollectionItem, CoralitePage } from '../../../types/index.js'

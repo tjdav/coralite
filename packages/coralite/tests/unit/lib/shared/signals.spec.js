@@ -4,7 +4,7 @@ import {
   createSignal,
   createComputed,
   createEffect
-} from '../../../../lib/shared/signals.js'
+} from '../../../../lib/utils/signals.js'
 
 describe('signal primitive', () => {
   describe('createSignal', () => {

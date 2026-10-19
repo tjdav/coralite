@@ -4,7 +4,7 @@ import { strict as assert } from 'node:assert'
 import { createCoraliteClass } from '../../../lib/coralite-element.js'
 import { createComponentDefinition } from '../../../lib/component-setup.js'
 import { validateComponentSource } from '../../../lib/component-validator.js'
-import { CoraliteError } from '../../../lib/utils/errors.js'
+import { CoraliteError } from '../../../lib/shared/errors.js'
 
 describe('emit Helper in Client Context', () => {
   it('should dispatch CustomEvent with default bubbles: true and composed: true', (t, done) => {

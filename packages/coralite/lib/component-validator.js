@@ -1,7 +1,7 @@
 import { readFile, stat, access } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
 import { discoverHtmlFiles } from './utils/server/html.js'
-import { formatValidationReport } from './utils/diagnostics.js'
+import { formatValidationReport } from './shared/diagnostics.js'
 import {
   createValidationContext,
   parseIgnoreDirectives,

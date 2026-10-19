@@ -1,6 +1,6 @@
 import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
-import { CoraliteError, defaultOnError } from '../errors.js'
+import { CoraliteError, defaultOnError } from '../../shared/errors.js'
 
 /**
  * @import { CoraliteOnError } from '../../../types/index.js'

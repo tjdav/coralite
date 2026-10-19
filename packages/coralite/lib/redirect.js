@@ -1,4 +1,4 @@
-import { CoraliteBuildError } from '../../shared/errors.js'
+import { CoraliteBuildError } from './shared/errors.js'
 
 /**
  * Validates and normalizes a __redirect declaration.
