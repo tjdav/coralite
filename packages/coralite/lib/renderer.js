@@ -47,7 +47,7 @@ import {
 } from './utils/server/csp.js'
 import picomatch from 'picomatch'
 import { stat } from 'node:fs/promises'
-import { generateClientRuntime } from './utils/client/runtime.js'
+import { generateClientRuntime } from './client/utils/runtime.js'
 import { formatComponentCss, buildComponentStylesheet } from './utils/server/style.js'
 import { transformNode } from './parser.js'
 import { CoraliteError, CoraliteBuildError } from './shared/errors.js'
