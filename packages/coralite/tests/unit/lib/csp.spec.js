@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { calculateHash, calculateSRIDigest, resolveNonce, formatCSPDirectives, injectCSPMeta } from '../../../lib/utils/server/csp.js'
-import { CoraliteError } from '../../../lib/utils/errors.js'
+import { CoraliteError } from '../../../lib/shared/errors.js'
 import { createCoraliteElement } from '../../../lib/utils/server/dom.js'
 import { defineConfig } from '../../../lib/config.js'
 

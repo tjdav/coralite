@@ -1,6 +1,6 @@
 import path from 'node:path'
-import { getHtmlFile } from '../utils/html.js'
-import { CoraliteError } from '../../shared/errors.js'
+import { getHtmlFile } from './utils/server/html.js'
+import { CoraliteError } from './shared/errors.js'
 import { access } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 

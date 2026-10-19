@@ -14,10 +14,10 @@ import {
   extractTemplateBlock,
   stripCssComments,
   stripHtmlComments
-} from '../../../lib/utils/core.js'
-import { CoraliteError } from '../../../lib/utils/errors.js'
+} from '../../../lib/shared/core.js'
+import { CoraliteError } from '../../../lib/shared/errors.js'
 
-describe('utils/core.js', () => {
+describe('shared/core.js', () => {
   describe('indexOfCI', () => {
     it('returns -1 for invalid or missing inputs', () => {
       assert.strictEqual(indexOfCI(null, 'needle'), -1)

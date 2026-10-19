@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {
   normalizeAndValidateConfigSchemaKey,
   validatePluginConfigBlocks
-} from '../../../../lib/shared/plugin-config-schema.js'
+} from '../../../../lib/utils/plugin-config-schema.js'
 
 describe('plugin-config-schema.js', () => {
   describe('normalizeAndValidateConfigSchemaKey', () => {

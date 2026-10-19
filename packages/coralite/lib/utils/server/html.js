@@ -3,7 +3,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import pLimit from 'p-limit'
-import CoraliteCollection from '../collection/index.js'
+import CoraliteCollection from '../../collection.js'
 import { CoraliteError } from '../../shared/errors.js'
 
 /**

@@ -1,4 +1,4 @@
-import { kebabToCamel } from '../../utils/core.js'
+import { kebabToCamel } from '../../shared/core.js'
 import {
   getPropKeyName,
   createDiagnostic

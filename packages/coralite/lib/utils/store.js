@@ -1,5 +1,5 @@
 import { createSignal } from './signals.js'
-import { CoraliteError } from './errors.js'
+import { CoraliteError } from '../shared/errors.js'
 
 /**
  * Creates a signal-backed reactive store.

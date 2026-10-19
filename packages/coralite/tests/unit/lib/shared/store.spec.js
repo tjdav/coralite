@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { createStore, createServerStore } from '../../../../lib/shared/store.js'
-import { createComputed } from '../../../../lib/shared/signals.js'
+import { createStore, createServerStore } from '../../../../lib/utils/store.js'
+import { createComputed } from '../../../../lib/utils/signals.js'
 
 describe('Global Store Runtime (createStore)', () => {
   it('reads initial default values', () => {

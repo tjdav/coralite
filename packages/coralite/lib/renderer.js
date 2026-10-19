@@ -19,15 +19,15 @@ import {
   resolveComponentSlots,
   NOOP_SIGNAL,
   isAsyncFunction
-} from '../shared/core.js'
+} from './shared/core.js'
 import {
   replaceToken,
   findAndExtractScript,
   extractComponentProperty,
   astTransformer
-} from './utils/server.js'
-import { getHtmlFile } from './utils/html.js'
-import { parseHTML } from './utils/parse.js'
+} from './utils/server/server.js'
+import { getHtmlFile } from './utils/server/html.js'
+import { parseHTML } from './utils/server/parse.js'
 import {
   findHeadAndBody,
   injectExternalStyles,
@@ -36,7 +36,7 @@ import {
   injectImportMap,
   removeElements,
   resolvePageQueue
-} from './utils/render.js'
+} from './utils/server/render.js'
 import {
   calculateHash,
   calculateSRIDigest,
@@ -44,27 +44,27 @@ import {
   resolveCspConfig,
   formatCSPDirectives,
   injectCSPMeta
-} from './utils/csp.js'
+} from './utils/server/csp.js'
 import picomatch from 'picomatch'
 import { stat } from 'node:fs/promises'
-import { generateClientRuntime } from '../client/utils/runtime.js'
-import { formatComponentCss, buildComponentStylesheet } from './utils/style.js'
-import { transformNode } from './parser/html.js'
-import { CoraliteError, CoraliteBuildError } from '../shared/errors.js'
-import { RESERVED_DOM_ATTRIBUTES } from '../shared/attributes.js'
-import { checkFileChange, hash } from './utils/manifest.js'
+import { generateClientRuntime } from './utils/client/runtime.js'
+import { formatComponentCss, buildComponentStylesheet } from './utils/server/style.js'
+import { transformNode } from './parser.js'
+import { CoraliteError, CoraliteBuildError } from './shared/errors.js'
+import { RESERVED_DOM_ATTRIBUTES } from './shared/attributes.js'
+import { checkFileChange, hash } from './utils/server/manifest.js'
 import {
   isCoraliteElement,
   isCoraliteCollectionItem
-} from '../shared/types.js'
-import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './utils/dom.js'
-import { emitFragment, prepareAllComponentOps } from './utils/fragment.js'
-import { createServerSlotsHelper } from './component/setup.js'
-import { createStore, createServerStore } from '../shared/store.js'
-import { validateLateBoundClientConfig } from '../shared/plugin-config-schema.js'
+} from './shared/types.js'
+import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './utils/server/dom.js'
+import { emitFragment, prepareAllComponentOps } from './utils/server/fragment.js'
+import { createServerSlotsHelper } from './component-setup.js'
+import { createStore, createServerStore } from './utils/store.js'
+import { validateLateBoundClientConfig } from './utils/plugin-config-schema.js'
 import { buildRouteTable } from './routes/build-table.js'
 import { validateRouteTable, buildConcreteUrl } from './routes/validate.js'
-import { validateAndNormalizeRedirect, generateRedirectStub } from './page/redirect.js'
+import { validateAndNormalizeRedirect, generateRedirectStub } from './redirect.js'
 
 /**
  * Computes route.path and output file path based on cleanUrls configuration.

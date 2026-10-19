@@ -1,5 +1,5 @@
 import { inspect } from 'node:util'
-import { CoraliteError, CoraliteBuildError } from '../../shared/errors.js'
+import { CoraliteError, CoraliteBuildError } from './shared/errors.js'
 import { parsePagePattern } from './pattern.js'
 
 /**

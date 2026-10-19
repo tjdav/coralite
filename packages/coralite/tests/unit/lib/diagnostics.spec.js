@@ -7,7 +7,7 @@ import {
   formatDiagnosticTerminal,
   formatValidationReport,
   extractInlineExpression
-} from '../../../lib/utils/diagnostics.js'
+} from '../../../lib/shared/diagnostics.js'
 
 describe('diagnostics utilities', () => {
   describe('extractInlineExpression', () => {

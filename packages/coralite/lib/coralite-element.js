@@ -1,11 +1,11 @@
-import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue, isAsyncFunction, createCombinedSignal, normalizeFunction } from '../shared/core.js'
-import { processHTML } from './utils/inject.js'
-import { recordDevToolsEvent } from './utils/devtools.js'
-import { isDevRuntime } from '../shared/dev-mode.js'
-import { ObserverRecord, detectListPattern, applyListPattern } from '../shared/observer-record.js'
-import { createSignal, createComputed } from '../shared/signals.js'
-import { CoraliteError } from '../shared/errors.js'
-import { classifyAttribute, resolveAriaBooleanState } from '../shared/tags.js'
+import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue, isAsyncFunction, createCombinedSignal, normalizeFunction } from './shared/core.js'
+import { processHTML } from './utils/client/inject.js'
+import { recordDevToolsEvent } from './utils/client/devtools.js'
+import { isDevRuntime } from './utils/dev-mode.js'
+import { ObserverRecord, detectListPattern, applyListPattern } from './utils/observer-record.js'
+import { createSignal, createComputed } from './utils/signals.js'
+import { CoraliteError } from './shared/errors.js'
+import { classifyAttribute, resolveAriaBooleanState } from './shared/tags.js'
 import {
   RESERVED_DOM_ATTRIBUTES,
   RESERVED_PROPERTY_BLACKLIST,
@@ -14,10 +14,10 @@ import {
   inferTypeFromValues,
   resolveSchema,
   isBooleanCustomAttribute
-} from '../shared/attributes.js'
+} from './shared/attributes.js'
 import {
   findOwnedRefNode
-} from './utils/dom.js'
+} from './utils/client/dom.js'
 
 export {
   RESERVED_DOM_ATTRIBUTES,
@@ -28,13 +28,13 @@ export {
   coerce,
   shouldReflectAttribute,
   isBooleanCustomAttribute
-} from '../shared/attributes.js'
+} from './shared/attributes.js'
 
 export {
   getEnclosingComponent,
   isOwnedByComponent,
   findOwnedRefNode
-} from './utils/dom.js'
+} from './utils/client/dom.js'
 
 /**
  * @import {

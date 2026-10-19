@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { createCoraliteClass } from '../../../lib/coralite-element.js'
 import { createComponentDefinition } from '../../../lib/component-setup.js'
 import { ScriptManager } from '../../../lib/script-manager.js'
-import { CoraliteError } from '../../../lib/utils/errors.js'
+import { CoraliteError } from '../../../lib/shared/errors.js'
 
 test('Form-Associated Custom Elements (FACE)', async (t) => {
 

@@ -1,4 +1,4 @@
-import { defineComponent, createContext, ContextRequestEvent } from '../core.js'
+import { defineComponent, createContext, ContextRequestEvent } from '../../shared/core.js'
 import { definePlugin } from '../../plugin.js'
 
 /**

@@ -1,16 +1,16 @@
-import { createReadOnlyProxy, cloneModuleInstance, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL, isAsyncFunction } from '../../shared/core.js'
-import { processTokenValue } from '../parser/html.js'
-import { CoraliteError, handleError } from '../../shared/errors.js'
+import { createReadOnlyProxy, cloneModuleInstance, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL, isAsyncFunction } from './shared/core.js'
+import { processTokenValue } from './parser.js'
+import { CoraliteError, handleError } from './shared/errors.js'
 import {
   isCoraliteElement,
   isCoraliteTextNode,
   isCoraliteComment
-} from '../../shared/types.js'
-import { findAndExtractScript, extractComponentProperty } from '../utils/server.js'
-import { formatComponentCss } from '../utils/style.js'
-import { inferTypeFromValues, validateAttributeValue } from '../../shared/attributes.js'
-import { prepareAllComponentOps } from '../utils/fragment.js'
-import { createStore, createServerStore } from '../../shared/store.js'
+} from './shared/types.js'
+import { findAndExtractScript, extractComponentProperty } from './utils/server/server.js'
+import { formatComponentCss } from './utils/server/style.js'
+import { inferTypeFromValues, validateAttributeValue } from './shared/attributes.js'
+import { prepareAllComponentOps } from './utils/server/fragment.js'
+import { createStore, createServerStore } from './utils/store.js'
 
 export { prepareAllComponentOps, createServerSlotsHelper }
 

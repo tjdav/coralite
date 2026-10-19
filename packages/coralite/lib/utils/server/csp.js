@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { createCoraliteElement } from './dom.js'
-import { CoraliteError } from '../errors.js'
+import { CoraliteError } from '../../shared/errors.js'
 
 const ALLOWED_HASH_ALGORITHMS = new Set(['sha256', 'sha384', 'sha512'])
 

@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { createCoraliteClass } from '../../../lib/coralite-element.js'
 import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/component-setup.js'
-import { CoraliteError } from '../../../lib/utils/errors.js'
+import { CoraliteError } from '../../../lib/shared/errors.js'
 
 describe('Component Attribute transform Pipeline', () => {
   describe('Definition-Time Validation', () => {
