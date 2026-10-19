@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { createCoraliteClass } from '../../../lib/client/element.js'
 import { createComponentDefinition } from '../../../lib/component-setup.js'
 
 describe('State Key Parity & Reserved DOM Attribute Filtering (F1 & F2)', () => {

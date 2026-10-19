@@ -1,12 +1,12 @@
 /**
  * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute, CoraliteRef, CoraliteTextNodeToken, CoraliteAttributeToken } from './component.js'
- * @import { CoraliteComponentOptions } from '../lib/coralite-element.js'
+ * @import { CoraliteComponentOptions } from '../lib/client/element.js'
  * @import { HTMLData, CoraliteFilePath, CoralitePage, CoraliteSession, CoraliteInstance, CoraliteBuildOptions } from './core.js'
  * @import { CoraliteModule, CoraliteModuleDefinition, CoraliteModuleDefinitions } from './module.js'
  * @import { CoraliteAnyNode, CoraliteComponentRoot } from './dom.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
- * @import { CoraliteElement } from '../lib/coralite-element.js'
+ * @import { CoraliteElement } from '../lib/client/element.js'
  * @import { CoraliteDiagnostic } from './component-validator.js'
  */
 

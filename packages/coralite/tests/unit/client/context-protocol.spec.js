@@ -20,7 +20,7 @@ describe('W3C Web Components Context Protocol', () => {
     global.Node = window.Node
     global.customElements = window.customElements
 
-    const module = await import('../../../lib/coralite-element.js')
+    const module = await import('../../../lib/client/element.js')
     createCoraliteClass = module.createCoraliteClass
   })
 

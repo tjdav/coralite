@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { generateClientRuntime } from '../../../lib/utils/client/runtime.js'
+import { generateClientRuntime } from '../../../lib/client/utils/runtime.js'
 import serialize from 'serialize-javascript'
 
 function getProcessHTML (mode) {

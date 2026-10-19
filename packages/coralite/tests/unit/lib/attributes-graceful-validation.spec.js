@@ -2,7 +2,7 @@ import '../setup.js'
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import { createComponentDefinition } from '../../../lib/component-setup.js'
-import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { createCoraliteClass } from '../../../lib/client/element.js'
 
 describe('Graceful Attribute Validation & error_* Tokens', () => {
   const dummyApp = {

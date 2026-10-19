@@ -12,7 +12,7 @@ globalThis.MutationObserver = window.MutationObserver
 globalThis.Node = window.Node
 globalThis.customElements = window.customElements
 
-const { createCoraliteClass } = await import('../../../lib/coralite-element.js')
+const { createCoraliteClass } = await import('../../../lib/client/element.js')
 const { createComponentDefinition } = await import('../../../lib/component-setup.js')
 
 describe('Isomorphic slots Helper Context ({ slots })', () => {

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import '../setup.js'
-import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { createCoraliteClass } from '../../../lib/client/element.js'
 
 describe('Coralite HTML Rendering', () => {
   it('should render HTML content when a token contains HTML', async () => {

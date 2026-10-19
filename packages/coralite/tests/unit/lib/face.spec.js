@@ -1,7 +1,7 @@
 import '../setup.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { createCoraliteClass } from '../../../lib/client/element.js'
 import { createComponentDefinition } from '../../../lib/component-setup.js'
 import { ScriptManager } from '../../../lib/script-manager.js'
 import { CoraliteError } from '../../../lib/shared/errors.js'

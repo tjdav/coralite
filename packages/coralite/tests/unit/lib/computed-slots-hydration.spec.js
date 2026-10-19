@@ -27,7 +27,7 @@ function setupDOM () {
 test('Computed Slots Hydration & Input Parity', async (t) => {
   setupDOM()
 
-  const { CoraliteElement, createCoraliteClass } = await import('../../../lib/coralite-element.js')
+  const { CoraliteElement, createCoraliteClass } = await import('../../../lib/client/element.js')
 
   await t.test('1. Double Transformation Prevention: Non-idempotent slot function preserves SSR output on hydration', async () => {
     const componentId = 'non-idempotent-comp'

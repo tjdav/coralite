@@ -2,7 +2,7 @@ import '../setup.js'
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
 import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/component-setup.js'
-import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { createCoraliteClass } from '../../../lib/client/element.js'
 import { CoraliteError } from '../../../lib/shared/errors.js'
 
 describe('Required Component Attributes', () => {

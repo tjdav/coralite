@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it, beforeEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { createCoraliteClass } from '../../../lib/client/element.js'
 
 describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
   beforeEach(() => {
