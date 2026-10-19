@@ -1,9 +1,9 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { calculateHash, calculateSRIDigest, resolveNonce, formatCSPDirectives, injectCSPMeta } from '../../../lib/server/utils/csp.js'
-import { CoraliteError } from '../../../lib/shared/errors.js'
-import { createCoraliteElement } from '../../../lib/server/utils/dom.js'
-import { defineConfig } from '../../../lib/server/config.js'
+import { calculateHash, calculateSRIDigest, resolveNonce, formatCSPDirectives, injectCSPMeta } from '../../../lib/utils/server/csp.js'
+import { CoraliteError } from '../../../lib/utils/errors.js'
+import { createCoraliteElement } from '../../../lib/utils/server/dom.js'
+import { defineConfig } from '../../../lib/config.js'
 
 describe('CSP Utilities & Config Validation', () => {
   describe('calculateHash', () => {
@@ -100,10 +100,7 @@ describe('CSP Utilities & Config Validation', () => {
     })
 
     it('should skip whitespace-only nonces and trim resolved values', () => {
-      assert.equal(resolveNonce({
-        buildOptions: { nonce: '   ' },
-        session: { nonce: 's-123' }
-      }), 's-123')
+      assert.equal(resolveNonce({ buildOptions: { nonce: '   ' }, session: { nonce: 's-123' } }), 's-123')
       assert.equal(resolveNonce({ session: { nonce: '  s-123  ' } }), 's-123')
     })
   })
@@ -121,10 +118,7 @@ describe('CSP Utilities & Config Validation', () => {
     it('should format directives with script/style hashes', () => {
       const result = formatCSPDirectives(
         {},
-        {
-          scriptHashes: ["'sha256-abc'"],
-          styleHashes: ["'sha256-xyz'"]
-        }
+        { scriptHashes: ["'sha256-abc'"], styleHashes: ["'sha256-xyz'"] }
       )
       assert.ok(result.includes("script-src 'self' 'sha256-abc'"))
       assert.ok(result.includes("style-src 'self' 'sha256-xyz'"))
@@ -165,10 +159,7 @@ describe('CSP Utilities & Config Validation', () => {
 
     it('should coerce string directive values to arrays and preserve user sources alongside a nonce', () => {
       const result = formatCSPDirectives(
-        {
-          'img-src': 'https://cdn.example.com',
-          'script-src': ["'unsafe-inline'"]
-        },
+        { 'img-src': 'https://cdn.example.com', 'script-src': ["'unsafe-inline'"] },
         { nonce: 'n1' }
       )
       assert.ok(result.includes('img-src https://cdn.example.com'))
@@ -176,10 +167,7 @@ describe('CSP Utilities & Config Validation', () => {
     })
 
     it('should filter out directives with empty source lists', () => {
-      const result = formatCSPDirectives({
-        'img-src': [],
-        'default-src': ["'self'"]
-      })
+      const result = formatCSPDirectives({ 'img-src': [], 'default-src': ["'self'"] })
       assert.ok(!result.includes('img-src'))
       assert.ok(result.includes("default-src 'self'"))
     })
@@ -187,19 +175,8 @@ describe('CSP Utilities & Config Validation', () => {
 
   describe('injectCSPMeta', () => {
     it('should inject meta CSP tag into head or root', () => {
-      const root = createCoraliteElement({
-        type: 'tag',
-        name: 'html',
-        attribs: {},
-        children: []
-      })
-      const head = createCoraliteElement({
-        type: 'tag',
-        name: 'head',
-        parent: root,
-        attribs: {},
-        children: []
-      })
+      const root = createCoraliteElement({ type: 'tag', name: 'html', attribs: {}, children: [] })
+      const head = createCoraliteElement({ type: 'tag', name: 'head', parent: root, attribs: {}, children: [] })
       root.children.push(head)
 
       injectCSPMeta(root, head, "script-src 'self'", false)
@@ -209,19 +186,8 @@ describe('CSP Utilities & Config Validation', () => {
     })
 
     it('should skip injection when cspContent is empty or whitespace', () => {
-      const root = createCoraliteElement({
-        type: 'tag',
-        name: 'html',
-        attribs: {},
-        children: []
-      })
-      const head = createCoraliteElement({
-        type: 'tag',
-        name: 'head',
-        parent: root,
-        attribs: {},
-        children: []
-      })
+      const root = createCoraliteElement({ type: 'tag', name: 'html', attribs: {}, children: [] })
+      const head = createCoraliteElement({ type: 'tag', name: 'head', parent: root, attribs: {}, children: [] })
       root.children.push(head)
 
       injectCSPMeta(root, head, '', false)
@@ -232,19 +198,8 @@ describe('CSP Utilities & Config Validation', () => {
     })
 
     it('should use the Report-Only http-equiv when reportOnly is true', () => {
-      const root = createCoraliteElement({
-        type: 'tag',
-        name: 'html',
-        attribs: {},
-        children: []
-      })
-      const head = createCoraliteElement({
-        type: 'tag',
-        name: 'head',
-        parent: root,
-        attribs: {},
-        children: []
-      })
+      const root = createCoraliteElement({ type: 'tag', name: 'html', attribs: {}, children: [] })
+      const head = createCoraliteElement({ type: 'tag', name: 'head', parent: root, attribs: {}, children: [] })
       root.children.push(head)
 
       injectCSPMeta(root, head, "script-src 'self'", true)
@@ -252,12 +207,7 @@ describe('CSP Utilities & Config Validation', () => {
     })
 
     it('should fall back to the root when head is null', () => {
-      const root = createCoraliteElement({
-        type: 'tag',
-        name: 'html',
-        attribs: {},
-        children: []
-      })
+      const root = createCoraliteElement({ type: 'tag', name: 'html', attribs: {}, children: [] })
 
       injectCSPMeta(root, null, "script-src 'self'", false)
       assert.equal(root.children[0].name, 'meta')

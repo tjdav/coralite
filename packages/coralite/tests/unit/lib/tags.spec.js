@@ -13,7 +13,7 @@ import {
   VALID_TAGS,
   RESERVED_ELEMENT_NAMES,
   isValidCustomElementName
-} from '../../../lib/shared/tags.js'
+} from '../../../lib/utils/tags.js'
 
 describe('tags.js', () => {
   describe('BOOLEAN_ATTRIBUTES', () => {

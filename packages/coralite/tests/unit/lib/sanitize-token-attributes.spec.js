@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { processHTML } from '../../../lib/client/utils/inject.js'
+import { processHTML } from '../../../lib/utils/client/inject.js'
 
 // Run sanitizeTokenAttributes through the processHTML fallback path
 // (no window.processHTML, empty instanceId → no ref-prefixing side-effects)

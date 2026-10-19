@@ -7,8 +7,8 @@ import {
   createCoraliteComponent,
   relinkChildren
 } from './dom.js'
-import { isValidCustomElementName, VALID_TAGS } from '../../shared/tags.js'
-import { CoraliteError, defaultOnError } from '../../shared/errors.js'
+import { isValidCustomElementName, VALID_TAGS } from '../tags.js'
+import { CoraliteError, defaultOnError } from '../errors.js'
 
 /**
  * @import {

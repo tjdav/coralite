@@ -12,7 +12,7 @@ import {
   analyseComponentFile,
   analyzeComponentFile,
   formatComponentAnalysis
-} from '../../../lib/server/component/validator.js'
+} from '../../../lib/component-validator.js'
 
 describe('Component Validator Diagnostics & AST Analysis', () => {
   // 0. Component Tag Validation (CORALITE-E204)
@@ -1211,10 +1211,7 @@ ${templateLines}
     assert.strictEqual(report.summary.validComponents, 2)
     assert.strictEqual(report.summary.errorCount, 0)
 
-    rmSync(tmpDir, {
-      recursive: true,
-      force: true
-    })
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
   // 24. CSS Comment Stripping & ReDoS Prevention (#125)
@@ -1369,10 +1366,7 @@ ${templateLines}
     const reportDir = await validateComponentsDir(tmpDir)
     assert.strictEqual(reportDir.summary.fixableCount, 2)
 
-    rmSync(tmpDir, {
-      recursive: true,
-      force: true
-    })
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
   // 26. validateComponentFile & Single-File Component Validation
@@ -1389,10 +1383,7 @@ ${templateLines}
       assert.strictEqual(result.defined.attributes.length, 1)
       assert.strictEqual(result.defined.attributes[0], 'title')
 
-      rmSync(tmpDir, {
-        recursive: true,
-        force: true
-      })
+      rmSync(tmpDir, { recursive: true, force: true })
     })
 
     test('validateComponentFile throws when file does not exist', async () => {
@@ -1424,10 +1415,7 @@ ${templateLines}
         }
       )
 
-      rmSync(tmpDir, {
-        recursive: true,
-        force: true
-      })
+      rmSync(tmpDir, { recursive: true, force: true })
     })
 
     test('supports validateComponentFile aliases (analyseComponentFile, analyzeComponentFile)', () => {
@@ -1449,10 +1437,7 @@ ${templateLines}
       assert.strictEqual(report.components.length, 1)
       assert.strictEqual(report.components[0].valid, true)
 
-      rmSync(tmpDir, {
-        recursive: true,
-        force: true
-      })
+      rmSync(tmpDir, { recursive: true, force: true })
     })
   })
 })

@@ -1,5 +1,5 @@
-import { defineComponent, createContext, ContextRequestEvent } from '../../shared/core.js'
-import { definePlugin } from '../../server/plugin/define.js'
+import { defineComponent, createContext, ContextRequestEvent } from '../core.js'
+import { definePlugin } from '../../plugin.js'
 
 /**
  * Creates a Coralite element or a standard HTML element.
@@ -126,11 +126,11 @@ export function processHTML (html, instanceId) {
     return html
   }
 
-  const sanitizedHtml = sanitizeTokenAttributes(html)
+  html = sanitizeTokenAttributes(html)
 
   if (instanceId) {
     const prefix = instanceId + '__'
-    return sanitizedHtml.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
+    return html.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
       let newAttrs = attrs
       const refRegex = /\s+ref\s*=\s*(['"])(.*?)\1/g
       newAttrs = newAttrs.replace(refRegex, (attrMatch, quote, refValue) => {
@@ -145,7 +145,7 @@ export function processHTML (html, instanceId) {
     })
   }
 
-  return sanitizedHtml
+  return html
 }
 
 export { defineComponent, definePlugin, createContext, ContextRequestEvent }

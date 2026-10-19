@@ -7,7 +7,7 @@ import {
   extractComponentProperty,
   findAndExtractImperativeComponents,
   extractGlobals
-} from '../../../../../lib/server/utils/server.js'
+} from '../../../../../lib/utils/server/server.js'
 
 describe('getAST() Cache Hardening & Validation', () => {
   beforeEach(() => {

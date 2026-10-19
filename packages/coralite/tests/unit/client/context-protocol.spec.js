@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { Window } from 'happy-dom'
-import { createContext, ContextRequestEvent } from '../../../lib/shared/core.js'
+import { createContext, ContextRequestEvent } from '../../../lib/utils/core.js'
 
 describe('W3C Web Components Context Protocol', () => {
   let window
@@ -20,7 +20,7 @@ describe('W3C Web Components Context Protocol', () => {
     global.Node = window.Node
     global.customElements = window.customElements
 
-    const module = await import('../../../lib/client/element.js')
+    const module = await import('../../../lib/coralite-element.js')
     createCoraliteClass = module.createCoraliteClass
   })
 
@@ -94,10 +94,7 @@ describe('W3C Web Components Context Protocol', () => {
 
     const ProviderClass = createCoraliteClass({
       componentId: 'test-provider-selective',
-      defaultValues: {
-        count: 0,
-        unrelated: 'foo'
-      },
+      defaultValues: { count: 0, unrelated: 'foo' },
       provide: {
         'count-context': ({ state }) => {
           providerEvalCount++
@@ -317,10 +314,7 @@ describe('W3C Web Components Context Protocol', () => {
       componentId: 'test-consumer-object-consumer',
       consume: {
         activeTheme: themeToken,
-        activeCount: {
-          context: countToken,
-          default: 0
-        }
+        activeCount: { context: countToken, default: 0 }
       }
     })
 
@@ -386,7 +380,7 @@ describe('W3C Web Components Context Protocol', () => {
     document.body.appendChild(provider)
 
     let deadCallbackCalled = false
-    const deadCallback = (_val) => {
+    let deadCallback = (val) => {
       deadCallbackCalled = true
     }
 
@@ -501,10 +495,7 @@ describe('W3C Web Components Context Protocol', () => {
     const ConsumerClass = createCoraliteClass({
       componentId: 'test-consumer-fallback',
       consume: {
-        mode: {
-          context: 'unprovided-key',
-          default: 'fallback-mode'
-        }
+        mode: { context: 'unprovided-key', default: 'fallback-mode' }
       }
     })
 

@@ -7,7 +7,7 @@ import {
   formatDiagnosticTerminal,
   formatValidationReport,
   extractInlineExpression
-} from '../../../lib/shared/diagnostics.js'
+} from '../../../lib/utils/diagnostics.js'
 
 describe('diagnostics utilities', () => {
   describe('extractInlineExpression', () => {
@@ -127,10 +127,7 @@ describe('diagnostics utilities', () => {
           description: 'Lift expression to getter',
           action: 'lift_to_getter',
           replacement: '{{ countPlusOne }}',
-          getter: {
-            name: 'countPlusOne',
-            code: 'get countPlusOne() { return this.state.count + 1 }'
-          }
+          getter: { name: 'countPlusOne', code: 'get countPlusOne() { return this.state.count + 1 }' }
         }
       }
 
@@ -159,14 +156,7 @@ describe('diagnostics utilities', () => {
     it('returns JSON string when format is json', () => {
       const report = {
         components: [],
-        summary: {
-          totalComponents: 0,
-          validComponents: 0,
-          errorCount: 0,
-          warningCount: 0,
-          fixableCount: 0,
-          usageCoveragePercentage: 100
-        }
+        summary: { totalComponents: 0, validComponents: 0, errorCount: 0, warningCount: 0, fixableCount: 0, usageCoveragePercentage: 100 }
       }
       const json = formatValidationReport(report, { format: 'json' })
       assert.equal(typeof json, 'string')
@@ -184,28 +174,19 @@ describe('diagnostics utilities', () => {
                 code: 'CORALITE-E201',
                 severity: 'error',
                 message: 'Expression error',
-                fix: {
-                  description: 'Fix auto',
-                  action: 'lift_to_getter'
-                }
+                fix: { description: 'Fix auto', action: 'lift_to_getter' }
               },
               {
                 code: 'CORALITE-P201',
                 severity: 'error',
                 message: 'Plugin context error',
-                fix: {
-                  description: 'Wrap context',
-                  action: 'wrap_two_phase_context'
-                }
+                fix: { description: 'Wrap context', action: 'wrap_two_phase_context' }
               },
               {
                 code: 'CORALITE-E102',
                 severity: 'warning',
                 message: 'Attribute error',
-                fix: {
-                  description: 'Add required attribute',
-                  action: 'add_required_attribute'
-                }
+                fix: { description: 'Add required attribute', action: 'add_required_attribute' }
               },
               {
                 code: 'CORALITE-W401',

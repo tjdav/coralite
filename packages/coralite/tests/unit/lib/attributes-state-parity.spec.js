@@ -1,32 +1,23 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass } from '../../../lib/client/element.js'
-import { createComponentDefinition } from '../../../lib/server/component/setup.js'
+import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { createComponentDefinition } from '../../../lib/component-setup.js'
 
 describe('State Key Parity & Reserved DOM Attribute Filtering (F1 & F2)', () => {
   it('Fix F1: omitted optional attributes without defaults are omitted from state in both SSR and client', async () => {
-    const mockApp = {
-      createComponentElement: () => null,
-      options: {}
-    }
+    const mockApp = { createComponentElement: () => null, options: {} }
     const defineComp = createComponentDefinition({ app: mockApp })
 
     // 1. SSR Check
     const ssrResult = await defineComp({
       attributes: {
-        present: {
-          type: String,
-          default: 'yes'
-        },
+        present: { type: String, default: 'yes' },
         omittedNoDefault: String
       }
     }, {
       state: {},
-      module: {
-        id: 'f1-comp',
-        path: { pathname: '/f1.coral' }
-      },
+      module: { id: 'f1-comp', path: { pathname: '/f1.coral' } },
       root: null
     })
 
@@ -39,10 +30,7 @@ describe('State Key Parity & Reserved DOM Attribute Filtering (F1 & F2)', () => 
     const ClientComp = createCoraliteClass({
       componentId: 'f1-comp',
       attributes: {
-        present: {
-          type: String,
-          default: 'yes'
-        },
+        present: { type: String, default: 'yes' },
         omittedNoDefault: String
       }
     })
@@ -63,10 +51,8 @@ describe('State Key Parity & Reserved DOM Attribute Filtering (F1 & F2)', () => 
     const ClientComp = createCoraliteClass({
       componentId: 'f2-comp',
       attributes: {
-        // Explicitly declared reserved attribute
-        slot: String,
-        // Declared normal attribute
-        title: String
+        slot: String, // Explicitly declared reserved attribute
+        title: String // Declared normal attribute
       }
     })
     customElements.define(tagName, ClientComp)

@@ -1,4 +1,4 @@
-import { definePlugin } from '../lib/server/plugin/define.js'
+import { definePlugin } from '../lib/plugin.js'
 
 /**
  * @import { CoralitePluginComponentContext, CoralitePluginBeforeComponentRenderContext, CoralitePluginAfterComponentRenderContext, CoralitePluginPageSetContext, CoraliteModule, CoraliteAnyNode } from '../types/index.js'

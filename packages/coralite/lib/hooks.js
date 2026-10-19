@@ -1,5 +1,5 @@
-import { mergePluginState } from '../shared/core.js'
-import { CoraliteError } from '../shared/errors.js'
+import { mergePluginState } from './utils/core.js'
+import { CoraliteError } from './utils/errors.js'
 
 /**
  * Registers a callback function under the specified hook name.

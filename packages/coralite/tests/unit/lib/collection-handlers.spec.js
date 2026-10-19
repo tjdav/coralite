@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createPageHandlers } from '../../../lib/server/collection/handlers.js'
+import { createPageHandlers } from '../../../lib/collection-handlers.js'
 
 describe('collection-handlers.js', () => {
   const mockApp = {

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { generateClientRuntime } from '../../../lib/client/utils/runtime.js'
+import { generateClientRuntime } from '../../../lib/utils/client/runtime.js'
 
 describe('Trusted Types Sink Compliance', () => {
   it('generateClientRuntime contains no innerHTML, outerHTML, or string style assignment sinks', () => {

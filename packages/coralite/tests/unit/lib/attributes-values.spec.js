@@ -1,9 +1,9 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { inferTypeFromValues, validateAttributeValue, createCoraliteClass } from '../../../lib/client/element.js'
-import { normalizeAndValidateAttributes } from '../../../lib/server/component/setup.js'
-import { CoraliteError } from '../../../lib/shared/errors.js'
+import { inferTypeFromValues, validateAttributeValue, createCoraliteClass } from '../../../lib/coralite-element.js'
+import { normalizeAndValidateAttributes } from '../../../lib/component-setup.js'
+import { CoraliteError } from '../../../lib/utils/errors.js'
 
 describe('Component Attribute values & Validation', () => {
   describe('Helpers & Coercion', () => {
@@ -32,10 +32,7 @@ describe('Component Attribute values & Validation', () => {
     })
 
     it('coerces empty/whitespace strings to null for type: Number to prevent false matches against 0', () => {
-      const numSchema = {
-        type: Number,
-        values: [0, 10, 20]
-      }
+      const numSchema = { type: Number, values: [0, 10, 20] }
       assert.throws(() => {
         validateAttributeValue('', numSchema, 'count', 'comp')
       }, (err) => {
@@ -61,19 +58,13 @@ describe('Component Attribute values & Validation', () => {
       assert.strictEqual(validateAttributeValue(null, boolSchema, 'disabled', 'comp'), false)
       assert.strictEqual(validateAttributeValue(undefined, boolSchema, 'disabled', 'comp'), undefined)
 
-      const boolWithDefault = {
-        type: Boolean,
-        default: true
-      }
+      const boolWithDefault = { type: Boolean, default: true }
       assert.strictEqual(validateAttributeValue(undefined, boolWithDefault, 'disabled', 'comp'), true)
       assert.strictEqual(validateAttributeValue(null, boolWithDefault, 'disabled', 'comp'), false)
     })
 
     it('validateAttributeValue handles undefined and null values', () => {
-      const schemaWithDefault = {
-        values: ['a', 'b'],
-        default: 'a'
-      }
+      const schemaWithDefault = { values: ['a', 'b'], default: 'a' }
       assert.strictEqual(validateAttributeValue(undefined, schemaWithDefault, 'prop', 'comp'), 'a')
       assert.strictEqual(validateAttributeValue(null, schemaWithDefault, 'prop', 'comp'), 'a')
 
@@ -163,10 +154,7 @@ describe('Component Attribute values & Validation', () => {
     it('throws error when default value is not in values list', () => {
       assert.throws(() => {
         normalizeAndValidateAttributes({
-          variant: {
-            values: ['primary', 'secondary'],
-            default: 'danger'
-          }
+          variant: { values: ['primary', 'secondary'], default: 'danger' }
         }, 'my-btn')
       }, (err) => {
         assert.ok(err instanceof CoraliteError)
@@ -206,10 +194,7 @@ describe('Component Attribute values & Validation', () => {
       const ChangeComp = createCoraliteClass({
         componentId: 'values-change',
         attributes: {
-          variant: {
-            values: ['primary', 'secondary'],
-            default: 'primary'
-          }
+          variant: { values: ['primary', 'secondary'], default: 'primary' }
         }
       })
       customElements.define(tagName, ChangeComp)

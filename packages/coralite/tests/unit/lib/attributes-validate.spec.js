@@ -1,19 +1,16 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { executeAttributeValidator, validateAttributeValue, normalizeErrorMessage } from '../../../lib/client/element.js'
-import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/server/component/setup.js'
-import { CoraliteError } from '../../../lib/shared/errors.js'
+import { executeAttributeValidator, validateAttributeValue, normalizeErrorMessage } from '../../../lib/coralite-element.js'
+import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/component-setup.js'
+import { CoraliteError } from '../../../lib/utils/errors.js'
 
 describe('Component Attribute validate Feature', () => {
   describe('Definition-Time Validation', () => {
     it('throws CoraliteError if validate property is not a function', () => {
       assert.throws(() => {
         normalizeAndValidateAttributes({
-          score: {
-            type: Number,
-            validate: 'not-a-function'
-          }
+          score: { type: Number, validate: 'not-a-function' }
         }, 'test-comp')
       }, (err) => {
         assert.ok(err instanceof CoraliteError)
@@ -57,13 +54,7 @@ describe('Component Attribute validate Feature', () => {
       const schemaTrue = { validate: (v) => v > 0 }
       assert.strictEqual(executeAttributeValidator(5, schemaTrue, 'count', 'comp-a'), 5)
 
-      const schemaVoid = {
-        validate: (v) => {
-          if (v < 0) {
-            throw new Error('invalid')
-          }
-        }
-      }
+      const schemaVoid = { validate: (v) => { if (v < 0) throw new Error('invalid') } }
       assert.strictEqual(executeAttributeValidator(5, schemaVoid, 'count', 'comp-a'), 5)
     })
 
@@ -139,22 +130,14 @@ describe('Component Attribute validate Feature', () => {
       })
 
       // Thrown error with exclamation mark !
-      const schemaThrowExclamation = {
-        validate: () => {
-          throw new Error('Out of bounds!')
-        }
-      }
+      const schemaThrowExclamation = { validate: () => { throw new Error('Out of bounds!') } }
       assert.throws(() => executeAttributeValidator(1, schemaThrowExclamation, 'test', 'comp-a'), (err) => {
         assert.strictEqual(err.message, 'Component "comp-a" attribute "test" validation failed: Out of bounds!')
         return true
       })
 
       // Thrown error without terminal punctuation
-      const schemaThrowNoPunct = {
-        validate: () => {
-          throw new Error('Out of bounds')
-        }
-      }
+      const schemaThrowNoPunct = { validate: () => { throw new Error('Out of bounds') } }
       assert.throws(() => executeAttributeValidator(1, schemaThrowNoPunct, 'test', 'comp-a'), (err) => {
         assert.strictEqual(err.message, 'Component "comp-a" attribute "test" validation failed: Out of bounds.')
         return true
@@ -213,10 +196,7 @@ describe('Component Attribute validate Feature', () => {
 
     it('should throw instead of returning a result object without graceful', () => {
       assert.throws(
-        () => validateAttributeValue(undefined, {
-          type: Number,
-          required: true
-        }, 'level', 'strict-comp'),
+        () => validateAttributeValue(undefined, { type: Number, required: true }, 'level', 'strict-comp'),
         CoraliteError
       )
     })
@@ -292,10 +272,7 @@ describe('Component Attribute validate Feature', () => {
 
       const invalidContext = {
         state: { age: '15' },
-        module: {
-          id: 'user-card',
-          path: { pathname: '/user.coral' }
-        },
+        module: { id: 'user-card', path: { pathname: '/user.coral' } },
         root: null
       }
 
@@ -319,10 +296,7 @@ describe('Component Attribute validate Feature', () => {
       const errorsReported = []
       const mockApp = {
         createComponentElement: () => null,
-        options: {
-          suppressValidationWarnings: true,
-          mode: 'development'
-        },
+        options: { suppressValidationWarnings: true, mode: 'development' },
         onError: (errData) => {
           errorsReported.push(errData)
         }
@@ -331,10 +305,7 @@ describe('Component Attribute validate Feature', () => {
 
       const invalidContext = {
         state: { age: '15' },
-        module: {
-          id: 'user-card',
-          path: { pathname: '/user.coral' }
-        },
+        module: { id: 'user-card', path: { pathname: '/user.coral' } },
         root: null
       }
 
@@ -385,19 +356,13 @@ describe('Component Attribute validate Feature', () => {
       try {
         const mockAppSuppressed = {
           createComponentElement: () => null,
-          options: {
-            suppressValidationWarnings: true,
-            mode: 'development'
-          }
+          options: { suppressValidationWarnings: true, mode: 'development' }
         }
         const defineComponentSuppressed = createComponentDefinition({ app: mockAppSuppressed })
 
         const invalidContext = {
           state: { age: '15' },
-          module: {
-            id: 'user-card',
-            path: { pathname: '/user.coral' }
-          },
+          module: { id: 'user-card', path: { pathname: '/user.coral' } },
           root: null
         }
 

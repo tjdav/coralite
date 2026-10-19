@@ -1,6 +1,6 @@
 import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
-import { CoraliteError, defaultOnError } from '../../shared/errors.js'
+import { CoraliteError, defaultOnError } from '../errors.js'
 
 /**
  * @import { CoraliteOnError } from '../../../types/index.js'
@@ -212,7 +212,7 @@ export async function transformCss (css, onError, options = {}) {
                 const targetFirst = selector.first
 
                 if (hostContextNode.nodes && hostContextNode.nodes.length > 0) {
-                  const insertBeforeTarget = targetFirst
+                  let insertBeforeTarget = targetFirst
                   for (const innerSel of hostContextNode.nodes) {
                     for (const child of innerSel.nodes) {
                       selector.insertBefore(insertBeforeTarget, child.clone())

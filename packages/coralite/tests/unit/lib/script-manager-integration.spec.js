@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { ScriptManager as OriginalScriptManager } from '../../../lib/server/script-manager.js'
+import { ScriptManager as OriginalScriptManager } from '../../../lib/script-manager.js'
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'

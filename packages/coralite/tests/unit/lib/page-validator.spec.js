@@ -7,7 +7,7 @@ import {
   validatePageSource,
   validatePagesDir,
   formatPageValidationReport
-} from '../../../lib/server/page/validator.js'
+} from '../../../lib/page-validator.js'
 
 describe('Coralite Page Validator (page-validator.js)', () => {
   describe('CORALITE-PAGE-101: Unknown Custom Element', () => {
@@ -144,10 +144,7 @@ describe('Coralite Page Validator (page-validator.js)', () => {
         knownComponents: new Map([
           ['user-card', {
             attributes: {
-              userId: {
-                type: Number,
-                required: true
-              }
+              userId: { type: Number, required: true }
             }
           }]
         ])
@@ -173,10 +170,7 @@ describe('Coralite Page Validator (page-validator.js)', () => {
         knownComponents: new Map([
           ['user-card', {
             attributes: {
-              userId: {
-                type: Number,
-                required: true
-              }
+              userId: { type: Number, required: true }
             }
           }]
         ])
@@ -397,10 +391,7 @@ describe('Coralite Page Validator (page-validator.js)', () => {
       assert.ok(typeof formatted === 'string')
       assert.match(formatted, /Coralite Page Validation Report/)
 
-      rmSync(tmpDir, {
-        recursive: true,
-        force: true
-      })
+      rmSync(tmpDir, { recursive: true, force: true })
     })
 
     it('forwards ignoreAttributes, skipRenderByAttribute, ignoreTags and slots in validatePagesDir', async () => {
@@ -415,10 +406,7 @@ describe('Coralite Page Validator (page-validator.js)', () => {
 
       const report = await validatePagesDir(tmpDir, {
         knownComponents: new Map([
-          ['layout-wrapper', {
-            attributes: {},
-            slots: ['default']
-          }]
+          ['layout-wrapper', { attributes: {}, slots: ['default'] }]
         ]),
         ignoreAttributes: ['data-custom'],
         skipRenderByAttribute: ['data-custom'],
@@ -430,10 +418,7 @@ describe('Coralite Page Validator (page-validator.js)', () => {
       assert.equal(report.summary.errorCount, 0)
       assert.equal(report.summary.warningCount, 0)
 
-      rmSync(tmpDir, {
-        recursive: true,
-        force: true
-      })
+      rmSync(tmpDir, { recursive: true, force: true })
     })
   })
 })

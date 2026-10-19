@@ -1,10 +1,10 @@
 import '../setup.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createCoraliteClass } from '../../../lib/client/element.js'
-import { createComponentDefinition } from '../../../lib/server/component/setup.js'
-import { ScriptManager } from '../../../lib/server/script-manager.js'
-import { CoraliteError } from '../../../lib/shared/errors.js'
+import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { createComponentDefinition } from '../../../lib/component-setup.js'
+import { ScriptManager } from '../../../lib/script-manager.js'
+import { CoraliteError } from '../../../lib/utils/errors.js'
 
 test('Form-Associated Custom Elements (FACE)', async (t) => {
 
@@ -62,9 +62,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
         value: {
           type: String,
           validate (val) {
-            if (!val || val.length < 3) {
-              return 'Value must be at least 3 characters long.'
-            }
+            if (!val || val.length < 3) return 'Value must be at least 3 characters long.'
             return true
           }
         }
@@ -219,14 +217,8 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
       componentId: 'c-host-props',
       formAssociated: true,
       attributes: {
-        name: {
-          type: String,
-          default: 'customName'
-        },
-        value: {
-          type: String,
-          default: 'customValue'
-        }
+        name: { type: String, default: 'customName' },
+        value: { type: String, default: 'customValue' }
       }
     })
     const tag = 'c-host-props'
@@ -337,10 +329,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     )
 
     // Test unknown option warning
-    await defineComponent({
-      formAssociated: true,
-      someUnknownKey: 'invalid'
-    }, {
+    await defineComponent({ formAssociated: true, someUnknownKey: 'invalid' }, {
       state: {},
       module: { id: 'warn-comp' },
       root: null

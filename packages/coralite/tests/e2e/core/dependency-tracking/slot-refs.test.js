@@ -36,9 +36,7 @@ test.describe('Slot Ref Liveness & DOM Lifecycle', () => {
     // Remove component from DOM
     await page.evaluate(() => {
       const container = document.getElementById('container')
-      if (container) {
-        container.innerHTML = ''
-      }
+      if (container) container.innerHTML = ''
     })
 
     await expect(comp).not.toBeAttached()

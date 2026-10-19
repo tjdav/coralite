@@ -1,8 +1,8 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { applyPluginFixes } from '../../../lib/server/plugin/fixer.js'
-import { validatePluginSource } from '../../../lib/server/plugin/validator.js'
-import { generateColorizedDiff } from '../../../lib/server/component/fixer.js'
+import { applyPluginFixes } from '../../../lib/plugin-fixer.js'
+import { validatePluginSource } from '../../../lib/plugin-validator.js'
+import { generateColorizedDiff } from '../../../lib/component-fixer.js'
 
 describe('Plugin Fixer Engine (applyPluginFixes)', () => {
   test('CORALITE-P201: transforms single-phase context into Two-Phase curried function (arrow function expression)', () => {
@@ -124,10 +124,7 @@ export default {
   name: 'dry-run-plugin'
 }`
 
-    const fixRes = applyPluginFixes(oldCode, null, {
-      filePath: 'dry-run-plugin.js',
-      dryRun: true
-    })
+    const fixRes = applyPluginFixes(oldCode, null, { filePath: 'dry-run-plugin.js', dryRun: true })
     assert.strictEqual(fixRes.modified, true)
     assert.ok(fixRes.diff.includes('[DRY-RUN PREVIEW] dry-run-plugin.js'))
     assert.ok(fixRes.diff.includes('+ import { definePlugin } from \'coralite\''))

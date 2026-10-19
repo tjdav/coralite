@@ -1,5 +1,5 @@
 /**
- * @import {CoraliteElement} from '../client/element.js'
+ * @import {CoraliteElement} from '../coralite-element.js'
  */
 
 /**

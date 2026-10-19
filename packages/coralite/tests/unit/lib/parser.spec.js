@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { processTokenValue } from '../../../lib/server/parser/html.js'
-import { createCoraliteTextNode } from '../../../lib/server/utils/dom.js'
+import { processTokenValue } from '../../../lib/parser.js'
+import { createCoraliteTextNode } from '../../../lib/utils/server/dom.js'
 
 describe('parser.js', () => {
   describe('processTokenValue', () => {

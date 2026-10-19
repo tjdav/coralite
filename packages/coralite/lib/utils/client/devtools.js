@@ -1,5 +1,5 @@
 // Module-scoped private registry (Garbage-collection safe)
-import { isDevRuntime } from '../../shared/dev-mode.js'
+import { isDevRuntime } from '../dev-mode.js'
 
 const registeredComponents = new Set()
 const eventLog = []

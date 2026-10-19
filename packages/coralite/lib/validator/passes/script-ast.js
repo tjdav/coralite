@@ -1,6 +1,6 @@
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
-import { kebabToCamel } from '../../shared/core.js'
+import { kebabToCamel } from '../../utils/core.js'
 import {
   ALLOWED_COMPONENT_CONFIG_KEYS,
   TOP_LEVEL_CONFIG_KEYS,

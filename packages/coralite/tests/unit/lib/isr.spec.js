@@ -100,10 +100,7 @@ describe('Incremental Static Regeneration (ISR)', () => {
   })
 
   it('should rebuild virtual pages when cacheKey changes', async () => {
-    const options = {
-      content: '<h1>Virtual</h1>',
-      cacheKey: 'v1'
-    }
+    const options = { content: '<h1>Virtual</h1>', cacheKey: 'v1' }
     const plugin = virtualPagePlugin('virtual.html', options)
 
     const coralite = await project.createCoralite({
@@ -249,10 +246,7 @@ describe('Incremental Static Regeneration (ISR)', () => {
   it('should rebuild all pages without skipping when incremental is set to false in config', async () => {
     await project.writePage('index.html', '<h1>Home</h1>')
 
-    const coralite = await project.createCoralite({
-      output: undefined,
-      incremental: false
-    })
+    const coralite = await project.createCoralite({ output: undefined, incremental: false })
 
     const results1 = await coralite.build()
     assert.strictEqual(results1[0].status, undefined)
@@ -265,10 +259,7 @@ describe('Incremental Static Regeneration (ISR)', () => {
   it('should allow overriding incremental: false per build call', async () => {
     await project.writePage('index.html', '<h1>Home</h1>')
 
-    const coralite = await project.createCoralite({
-      output: undefined,
-      incremental: true
-    })
+    const coralite = await project.createCoralite({ output: undefined, incremental: true })
 
     const results1 = await coralite.build()
     assert.strictEqual(results1[0].status, undefined)
