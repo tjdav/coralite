@@ -4,8 +4,8 @@
 
 import { basename, dirname } from 'path'
 import { fileURLToPath } from 'node:url'
-import { CoraliteError } from './shared/errors.js'
-import { validatePluginConfigBlocks, validateValues } from './utils/plugin-config-schema.js'
+import { CoraliteError } from '../shared/errors.js'
+import { validatePluginConfigBlocks, validateValues } from '../utils/plugin-config-schema.js'
 
 const VALID_MODES = new Set(['development', 'testing', 'production'])
 const ALLOWED_PLUGIN_KEYS = new Set([

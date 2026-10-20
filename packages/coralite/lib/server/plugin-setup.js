@@ -1,10 +1,10 @@
-import { addPluginHook } from '../hooks.js'
-import { CoraliteError, handleError } from './shared/errors.js'
-import { validatePluginConfigBlocks, validateValues } from './utils/plugin-config-schema.js'
+import { addPluginHook } from './hooks.js'
+import { CoraliteError, handleError } from '../shared/errors.js'
+import { validatePluginConfigBlocks, validateValues } from '../utils/plugin-config-schema.js'
 
 /**
  * @import { CoraliteInstance, CoralitePluginContext } from '../../../types/index.js'
- * @import { ScriptManager } from '../script-manager.js'
+ * @import { ScriptManager } from './script-manager.js'
  */
 
 /**

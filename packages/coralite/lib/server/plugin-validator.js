@@ -4,8 +4,8 @@ import { readFile, readdir, stat, access } from 'node:fs/promises'
 import { join, resolve, extname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import kleur from 'kleur'
-import { buildCodeframe, normalizeErrorCodes, matchesErrorCode } from '../../shared/diagnostics.js'
-import { validatePluginConfigBlocks, SUPPORTED_CONFIG_TYPES } from '../../shared/plugin-config-schema.js'
+import { buildCodeframe, normalizeErrorCodes, matchesErrorCode } from '../shared/diagnostics.js'
+import { validatePluginConfigBlocks, SUPPORTED_CONFIG_TYPES } from '../shared/plugin-config-schema.js'
 
 /**
  * @import {

@@ -1,4 +1,4 @@
-import { createCoralite } from './server/create.js'
+import { createCoralite } from './server/coralite.js'
 
 export * from '../types/index.js'
 export * from './shared/index.js'

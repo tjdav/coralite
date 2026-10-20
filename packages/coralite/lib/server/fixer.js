@@ -1,6 +1,6 @@
 import { parse as parseJS } from 'acorn'
-import { generateColorizedDiff } from '../component/fixer.js'
-import { validatePageSource } from './validator.js'
+import { generateColorizedDiff } from './component-fixer.js'
+import { validatePageSource } from '../validator.js'
 
 /**
  * Re-indents initializer lines by trimming leading base indentation and adding target indentation.

@@ -1,5 +1,5 @@
 /**
- * @import {CoraliteConfig} from '../../types/index.js'
+ * @import {CoraliteConfig} from '../../../types/index.js'
  */
 import { CoraliteError, handleError } from '../shared/errors.js'
 import { validateSerializable } from '../shared/core.js'

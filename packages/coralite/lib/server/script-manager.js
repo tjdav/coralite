@@ -1,7 +1,7 @@
 import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, hasContextEntries, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap, generateBindingTree, validateSerializable } from '../shared/core.js'
-import { findAndExtractImperativeComponents, astTransformer } from './utils/server.js'
+import { findAndExtractImperativeComponents, astTransformer } from '../utils/server.js'
 import { CoraliteError } from '../shared/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname, basename, isAbsolute } from 'node:path'
@@ -352,8 +352,8 @@ export function shouldUseTemplateCloning (sharedFn, allSharedFunctions = {}, com
 
 /**
  * Script Manager for Coralite
- * @import { ScriptPlugin, InstanceContext, CoralitePlugin } from '../../types/index.js'
- * @import { ScriptContent } from '../../types/script.js'
+ * @import { ScriptPlugin, InstanceContext, CoralitePlugin } from '../../../types/index.js'
+ * @import { ScriptContent } from '../../../types/script.js'
  */
 
 /**
@@ -795,8 +795,8 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
     });
   }\n`)
 
-  const coraliteElementPath = fileURLToPath(import.meta.resolve('./client/element.js'))
-  const devToolsPath = fileURLToPath(import.meta.resolve('./client/utils/devtools.js'))
+  const coraliteElementPath = fileURLToPath(import.meta.resolve('../client/element.js'))
+  const devToolsPath = fileURLToPath(import.meta.resolve('../client/utils/devtools.js'))
 
   entryCodeParts.push(`const globalClientHooks = {
     onBeforeComponentRender: [${this.scriptModules.map((_, i) => `onBeforeComponentRender_${i}`).join(', ')}].filter(Boolean),
@@ -1065,7 +1065,7 @@ export default {
     }
   }
 
-  const injectPath = fileURLToPath(import.meta.resolve('./client/utils/inject.js'))
+  const injectPath = fileURLToPath(import.meta.resolve('../client/utils/inject.js'))
 
   // Build and bundle
   /** @type {import('esbuild').BuildOptions} */

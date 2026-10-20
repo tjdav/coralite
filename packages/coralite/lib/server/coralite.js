@@ -1,9 +1,9 @@
-import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './utils/html.js'
-import { parseHTML, parseModule } from './utils/parse.js'
+import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from '../utils/html.js'
+import { parseHTML, parseModule } from '../utils/parse.js'
 import { ScriptManager } from './script-manager.js'
 import { metadataPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
-import { listsPlugin } from '../../plugins/lists.js'
-import { routerPlugin } from '../../plugins/router.js'
+import { listsPlugin } from '../../../plugins/lists.js'
+import { routerPlugin } from '../../../plugins/router.js'
 
 /**
  * Deduplicates plugins by name, preserving the latest instance if a duplicate occurs.
@@ -29,9 +29,9 @@ function dedupePluginsByName (plugins) {
 }
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative } from 'node:path'
-import { CoraliteError, handleError, defaultOnError } from './shared/errors.js'
-import { createExecutionError } from './utils/server/errors.js'
-import { transformNode } from './parser/html.js'
+import { CoraliteError, handleError, defaultOnError } from '../shared/errors.js'
+import { createExecutionError } from '../utils/server/errors.js'
+import { transformNode } from '../parser/html.js'
 import { evaluate } from './compiler.js'
 import {
   triggerPluginAggregateHook,
@@ -45,7 +45,7 @@ import { createComponentDefinition, registerBaseComponent, prepareAllComponentOp
 import { setupPlugins } from './plugin/setup.js'
 import { createPageHandlers } from './collection/handlers.js'
 import { createRenderer } from './renderer.js'
-import { initHasher } from './utils/manifest.js'
+import { initHasher } from '../utils/manifest.js'
 
 /**
  * @import {
@@ -53,7 +53,7 @@ import { initHasher } from './utils/manifest.js'
  *  CoraliteInstance,
  *  CoraliteBuildOptions,
  *  CoraliteSaveResult
- * } from '../../types/index.js'
+ * } from '../../../types/index.js'
  */
 
 /**
