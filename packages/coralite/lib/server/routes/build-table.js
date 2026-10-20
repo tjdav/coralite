@@ -1,4 +1,4 @@
-import { CoraliteBuildError } from '../shared/errors.js'
+import { CoraliteBuildError } from '../../shared/errors.js'
 
 /**
  * Normalizes segments into a shape string for shape collision detection.

@@ -1,15 +1,15 @@
 import { createReadOnlyProxy, cloneModuleInstance, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL, isAsyncFunction } from '../shared/core.js'
-import { processTokenValue } from '../parser.js'
+import { processTokenValue } from './parser.js'
 import { CoraliteError, handleError } from '../shared/errors.js'
 import {
   isCoraliteElement,
   isCoraliteTextNode,
   isCoraliteComment
 } from '../shared/types.js'
-import { findAndExtractScript, extractComponentProperty } from '../utils/server/server.js'
-import { formatComponentCss } from '../utils/server/style.js'
+import { findAndExtractScript, extractComponentProperty } from './utils/server.js'
+import { formatComponentCss } from './utils/style.js'
 import { inferTypeFromValues, validateAttributeValue } from '../shared/attributes.js'
-import { prepareAllComponentOps } from '../utils/server/fragment.js'
+import { prepareAllComponentOps } from './utils/fragment.js'
 import { createStore, createServerStore } from '../utils/store.js'
 
 export { prepareAllComponentOps, createServerSlotsHelper }
@@ -213,7 +213,7 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
  * @import {
  *  CoralitePluginContext,
  *  CoraliteInstance
- * } from '../../../types/index.js'
+ * } from '../../types/index.js'
  */
 
 /**
@@ -863,7 +863,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
  * @param {any} options.scriptManager - The script manager instance.
  * @param {Function} options.createSession - The session creation function.
  * @param {string} options.mode - The current build mode.
- * @param {import('../../../types/index.js').CoraliteOnError} [options.onError] - Error handler callback.
+ * @param {import('../../types/index.js').CoraliteOnError} [options.onError] - Error handler callback.
  * @param {any} [options.app] - Global Coralite app instance.
  * @returns {Promise<void>}
  */

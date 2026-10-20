@@ -2,7 +2,7 @@ import { Parser } from 'htmlparser2'
 import { parse as parseJS } from 'acorn'
 import { ancestor as walkAncestorJS } from 'acorn-walk'
 import kleur from 'kleur'
-import { validateComponentSource } from '../validator.js'
+import { validateComponentSource } from './validator/index.js'
 import { kebabToCamel, camelToKebab, indexOfCI, extractTemplateBlock } from '../shared/core.js'
 import { extractInlineExpression } from '../shared/diagnostics.js'
 import { applySlotsFixes } from '../slots/fixer.js'
@@ -10,7 +10,7 @@ import { applySlotsFixes } from '../slots/fixer.js'
 const INTERACTIVE_TAGS = new Set(['button', 'input', 'form', 'a', 'select', 'textarea'])
 
 /**
- * @import { CoraliteDiagnostic } from '../../../types/index.js'
+ * @import { CoraliteDiagnostic } from '../../types/index.js'
  */
 
 function getPropKeyName (propNode) {

@@ -1,7 +1,7 @@
 import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, hasContextEntries, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap, generateBindingTree, validateSerializable } from '../shared/core.js'
-import { findAndExtractImperativeComponents, astTransformer } from '../utils/server.js'
+import { findAndExtractImperativeComponents, astTransformer } from './utils/server.js'
 import { CoraliteError } from '../shared/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname, basename, isAbsolute } from 'node:path'
@@ -352,8 +352,8 @@ export function shouldUseTemplateCloning (sharedFn, allSharedFunctions = {}, com
 
 /**
  * Script Manager for Coralite
- * @import { ScriptPlugin, InstanceContext, CoralitePlugin } from '../../../types/index.js'
- * @import { ScriptContent } from '../../../types/script.js'
+ * @import { ScriptPlugin, InstanceContext, CoralitePlugin } from '../../types/index.js'
+ * @import { ScriptContent } from '../../types/script.js'
  */
 
 /**

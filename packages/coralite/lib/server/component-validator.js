@@ -1,6 +1,6 @@
 import { readFile, stat, access } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
-import { discoverHtmlFiles } from '../utils/server/html.js'
+import { discoverHtmlFiles } from './utils/html.js'
 import { formatValidationReport } from '../shared/diagnostics.js'
 import {
   createValidationContext,
@@ -16,7 +16,7 @@ import {
   validateClientBlock,
   validateDefensiveGuards,
   collectDeadCode
-} from '../validator/index.js'
+} from './validator/index.js'
 
 /**
  * @import {
@@ -126,7 +126,7 @@ export async function validateComponentsDir (componentsDir, options = {}) {
         totalUnused,
         totalErrors: errs,
         overallCoveragePercentage,
-        coverageReportEnabled: !!options.coverage
+        coverageReportEnabled: Boolean(options.coverage)
       }
     }
   }
@@ -191,7 +191,7 @@ export async function validateComponentsDir (componentsDir, options = {}) {
       totalUnused,
       totalErrors: errorCount,
       overallCoveragePercentage,
-      coverageReportEnabled: !!options.coverage
+      coverageReportEnabled: Boolean(options.coverage)
     }
   }
 }

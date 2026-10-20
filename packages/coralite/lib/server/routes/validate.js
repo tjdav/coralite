@@ -1,5 +1,5 @@
 import { matchRoute } from './match.js'
-import { CoraliteBuildError } from '../shared/errors.js'
+import { CoraliteBuildError } from '../../shared/errors.js'
 
 /**
  * Constructs a concrete URL string for a pattern entry given parameter values.

@@ -10,7 +10,7 @@ import { buildComponentStylesheet } from './style.js'
  */
 
 /**
- * @import CoraliteCollection from '../../collection.js'
+ * @import CoraliteCollection from '../collection.js'
  */
 
 /**

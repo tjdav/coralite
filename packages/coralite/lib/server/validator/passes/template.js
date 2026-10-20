@@ -1,7 +1,7 @@
 import { Parser } from 'htmlparser2'
-import { isValidCustomElementName } from '../../shared/tags.js'
-import { getLocForSubstring } from '../../shared/diagnostics.js'
-import { kebabToCamel } from '../../shared/core.js'
+import { isValidCustomElementName } from '../../../shared/tags.js'
+import { getLocForSubstring } from '../../../shared/diagnostics.js'
+import { kebabToCamel } from '../../../shared/core.js'
 import {
   RESERVED_IDENTIFIERS,
   extractIdentifiersFromExpr,

@@ -1,7 +1,7 @@
-import { transformNode } from '../../parser.js'
+import { transformNode } from '../parser.js'
 import { createCoraliteTextNode } from './dom.js'
 import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, formatInlineStyle, hasContextEntries, resolveComponentSlots, NOOP_SIGNAL } from '../../shared/core.js'
-import { filterReservedAttributes } from '../../renderer.js'
+import { filterReservedAttributes } from '../renderer.js'
 import { CoraliteError } from '../../shared/errors.js'
 import { BOOLEAN_ATTRIBUTES, isAriaAttribute, isAriaBooleanState, resolveAriaBooleanState } from '../../shared/tags.js'
 

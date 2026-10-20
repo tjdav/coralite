@@ -3,15 +3,15 @@ import { resolve } from 'node:path'
 import { createContext } from 'node:vm'
 import { transform } from 'esbuild'
 import { createRequire } from 'node:module'
-import { extractGlobals } from '../utils/server/server.js'
-import * as serverUtilsBase from '../utils/server/index.js'
+import { extractGlobals } from './utils/server.js'
+import * as serverUtilsBase from './utils/index.js'
 import { CoraliteError } from '../shared/errors.js'
 import { createContext as createContextUtil, ContextRequestEvent } from '../shared/core.js'
 import { definePage } from '../shared/page.js'
 import { createStore, createServerStore } from '../utils/store.js'
 
 /**
- * @import { CoraliteModule, CoraliteModuleDefinitions, CoralitePage, CoraliteSession, CoraliteFilePath, CoralitePluginContext } from '../../../types/index.js'
+ * @import { CoraliteModule, CoraliteModuleDefinitions, CoralitePage, CoraliteSession, CoraliteFilePath, CoralitePluginContext } from '../../types/index.js'
  * @import { Module } from 'node:vm'
  */
 
