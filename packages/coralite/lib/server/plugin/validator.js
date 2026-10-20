@@ -4,8 +4,8 @@ import { readFile, readdir, stat, access } from 'node:fs/promises'
 import { join, resolve, extname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import kleur from 'kleur'
-import { buildCodeframe, normalizeErrorCodes, matchesErrorCode } from '../shared/diagnostics.js'
-import { validatePluginConfigBlocks, SUPPORTED_CONFIG_TYPES } from '../utils/plugin-config-schema.js'
+import { buildCodeframe, normalizeErrorCodes, matchesErrorCode } from '../../shared/diagnostics.js'
+import { validatePluginConfigBlocks, SUPPORTED_CONFIG_TYPES } from '../../utils/plugin-config-schema.js'
 
 /**
  * @import {
@@ -13,7 +13,7 @@ import { validatePluginConfigBlocks, SUPPORTED_CONFIG_TYPES } from '../utils/plu
  *   CoralitePluginValidationResult,
  *   CoralitePluginDirectoryValidationReport,
  *   CoraliteDiagnostic
- * } from '../../types/index.js'
+ * } from '../../../types/index.js'
  */
 
 const RESERVED_PLUGIN_NAMES = new Set(['testing', 'metadata', 'static-assets'])
