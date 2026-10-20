@@ -3,7 +3,7 @@ import { CoraliteError, handleError } from '../shared/errors.js'
 import { validatePluginConfigBlocks, validateValues } from '../utils/plugin-config-schema.js'
 
 /**
- * @import { CoraliteInstance, CoralitePluginContext } from '../../../types/index.js'
+ * @import { CoraliteInstance, CoralitePluginContext } from '../../types/index.js'
  * @import { ScriptManager } from './script-manager.js'
  */
 

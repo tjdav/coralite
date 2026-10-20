@@ -1,9 +1,9 @@
 import { dirname, join, relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { parseHTML, parseModule } from '../utils/server/parse.js'
-import { extractPageScript } from '../parser.js'
+import { parseHTML, parseModule } from './utils/parse.js'
+import { extractPageScript } from './parser.js'
 import { registerBaseComponent } from './component-setup.js'
-import { prepareAllComponentOps } from '../utils/server/fragment.js'
+import { prepareAllComponentOps } from './utils/fragment.js'
 import { validateEnumeratedPaths, validatePluginEnumeratedPaths, deduplicateEnumeratedPaths } from './route.js'
 import { parsePagePattern } from './pattern.js'
 import { CoraliteError } from '../shared/errors.js'
@@ -12,7 +12,7 @@ import { CoraliteError } from '../shared/errors.js'
  * @import {
  *  CoraliteInstance,
  *  CoraliteOnError
- * } from '../../../types/index.js'
+ * } from '../../types/index.js'
  */
 
 /**

@@ -6,8 +6,8 @@ import { relative, resolve } from 'node:path'
 import kleur from 'kleur'
 import { camelToKebab, stripHtmlComments } from '../shared/core.js'
 import { createDiagnostic, formatDiagnosticTerminal, normalizeErrorCodes, matchesErrorCode, getLocForSubstring } from '../shared/diagnostics.js'
-import { discoverHtmlFiles } from '../utils/html.js'
-import { getIgnoreAttributeMap, findAttributesToIgnore } from '../utils/parse.js'
+import { discoverHtmlFiles } from './utils/html.js'
+import { getIgnoreAttributeMap, findAttributesToIgnore } from './utils/parse.js'
 import {
   createValidationContext,
   parseScriptAST,
@@ -15,14 +15,14 @@ import {
   validateStyle,
   validateServerBlock,
   validateDefensiveGuards
-} from '../validator/index.js'
+} from './validator/index.js'
 
 /**
  * @import {
  *   CoraliteDiagnostic,
  *   CoraliteValidationSummary,
  *   Attribute
- * } from '../../../types/index.js'
+ * } from '../../types/index.js'
  */
 
 const INERT_TAGS = new Set(['template', 'code', 'pre', 'noscript'])

@@ -212,7 +212,7 @@ export async function transformCss (css, onError, options = {}) {
                 const targetFirst = selector.first
 
                 if (hostContextNode.nodes && hostContextNode.nodes.length > 0) {
-                  let insertBeforeTarget = targetFirst
+                  const insertBeforeTarget = targetFirst
                   for (const innerSel of hostContextNode.nodes) {
                     for (const child of innerSel.nodes) {
                       selector.insertBefore(insertBeforeTarget, child.clone())

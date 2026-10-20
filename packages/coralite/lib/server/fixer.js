@@ -1,6 +1,6 @@
 import { parse as parseJS } from 'acorn'
 import { generateColorizedDiff } from './component-fixer.js'
-import { validatePageSource } from '../validator.js'
+import { validatePageSource } from './validator/index.js'
 
 /**
  * Re-indents initializer lines by trimming leading base indentation and adding target indentation.
@@ -234,7 +234,7 @@ function transformScriptBareExports (scriptContent) {
  * Applies deterministic AST auto-fixes for page bare exports (CORALITE-E108).
  *
  * @param {string} sourceCode - Raw page file content
- * @param {Array<import('../../../types/index.js').CoraliteDiagnostic>} [diagnostics=null] - Pre-computed diagnostics
+ * @param {Array<import('../../types/index.js').CoraliteDiagnostic>} [diagnostics=null] - Pre-computed diagnostics
  * @param {Object} [options={}] - Options (filePath, dryRun)
  * @returns {{ outputCode: string, modified: boolean, fixesApplied: Array<Object>, diff: string }} Fix result
  */

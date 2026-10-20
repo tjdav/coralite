@@ -1,11 +1,11 @@
 import { parse as parseJS } from 'acorn'
 import { ancestor as walkAncestorJS } from 'acorn-walk'
-import { validatePluginSource, isTwoPhaseCurried } from '../validator.js'
+import { validatePluginSource, isTwoPhaseCurried } from './validator/index.js'
 import { generateColorizedDiff } from './component-fixer.js'
-import { getPropKeyName } from '../validator/helpers.js'
+import { getPropKeyName } from './validator/helpers.js'
 
 /**
- * @import { CoraliteDiagnostic } from '../../../types/index.js'
+ * @import { CoraliteDiagnostic } from '../../types/index.js'
  */
 
 export { generateColorizedDiff }

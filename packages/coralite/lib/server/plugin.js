@@ -1,5 +1,5 @@
 /**
- * @import { CoralitePlugin, HTMLData } from '../../../types/index.js'
+ * @import { CoralitePlugin, HTMLData } from '../../types/index.js'
  */
 
 import { basename, dirname } from 'path'
