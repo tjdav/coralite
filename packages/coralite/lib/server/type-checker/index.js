@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import path from 'node:path'
-import { coraliteLanguagePlugin, extractScriptBlock } from './type-checker/volar-plugin.js'
+import { coraliteLanguagePlugin, extractScriptBlock } from './volar-plugin.js'
 
 /**
  * @typedef {Object} Diagnostic
@@ -70,7 +70,7 @@ export async function typeCheck (files, options = {}) {
     volarTs = requireSelf('@volar/typescript')
   } catch {
     try {
-      const coralitePkg = createRequire(new URL('../../package.json', import.meta.url))
+      const coralitePkg = createRequire(new URL('../../../package.json', import.meta.url))
       volarTs = coralitePkg('@volar/typescript')
     } catch {
       try {

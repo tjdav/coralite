@@ -1,12 +1,12 @@
 import render from 'dom-serializer'
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
-import { parseHTML } from './utils/parse.js'
-import { relinkChildren } from './utils/dom.js'
-import { CoraliteError } from '../shared/errors.js'
+import { parseHTML } from '../utils/parse.js'
+import { relinkChildren } from '../utils/dom.js'
+import { CoraliteError } from '../../shared/errors.js'
 
 /**
- * @import { CoraliteElement, CoraliteAnyNode, CoraliteComponentRoot, Attribute, CoraliteModule, CoraliteSession } from '../../types/index.js'
+ * @import { CoraliteElement, CoraliteAnyNode, CoraliteComponentRoot, Attribute, CoraliteModule, CoraliteSession } from '../../../types/index.js'
  * @import { DomSerializerOptions } from 'dom-serializer'
  */
 

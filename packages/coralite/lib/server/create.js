@@ -31,7 +31,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative } from 'node:path'
 import { CoraliteError, handleError, defaultOnError } from '../shared/errors.js'
 import { createExecutionError } from './utils/errors.js'
-import { transformNode } from './parser.js'
+import { transformNode } from './parser/html.js'
 import { evaluate } from './compiler.js'
 import {
   triggerPluginAggregateHook,
