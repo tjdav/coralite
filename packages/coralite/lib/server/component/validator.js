@@ -1,7 +1,7 @@
 import { readFile, stat, access } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
-import { discoverHtmlFiles } from './utils/html.js'
-import { formatValidationReport } from '../shared/diagnostics.js'
+import { discoverHtmlFiles } from '../utils/html.js'
+import { formatValidationReport } from '../../shared/diagnostics.js'
 import {
   createValidationContext,
   parseIgnoreDirectives,
@@ -16,13 +16,13 @@ import {
   validateClientBlock,
   validateDefensiveGuards,
   collectDeadCode
-} from './validator/index.js'
+} from '../validator/index.js'
 
 /**
  * @import {
  *   CoraliteComponentValidationResult,
  *   CoraliteComponentDirectoryValidationReport
- * } from '../../types/index.js'
+ * } from '../../../types/index.js'
  */
 
 /**
