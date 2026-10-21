@@ -668,7 +668,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
   // Setup store runtime
   const hasStore = this.options.store && typeof this.options.store === 'object'
   if (hasStore) {
-    const storeModulePath = fileURLToPath(import.meta.resolve('../shared/store.js'))
+    const storeModulePath = fileURLToPath(import.meta.resolve('../utils/store.js'))
     entryCodeParts.push(`import { createStore } from ${JSON.stringify(storeModulePath)};\n`)
     entryCodeParts.push(`const storeDefaults = ${serialize(this.options.store)};\n`)
     entryCodeParts.push('const store = createStore(storeDefaults);\n')

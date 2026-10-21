@@ -89,7 +89,7 @@ export const buildOptions = {
       out: 'lib/utils/index'
     },
     {
-      in: './lib/utils/server/index.js',
+      in: './lib/server/utils/index.js',
       out: 'lib/utils/server/index'
     },
     {
