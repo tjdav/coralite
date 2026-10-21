@@ -1,7 +1,7 @@
 import { definePlugin } from '../lib/server/plugin/define.js'
 import { createCoraliteElement, relinkChildren } from '../lib/server/utils/dom.js'
 import { findHeadAndBody } from '../lib/server/utils/render.js'
-import { isDevRuntime } from '../lib/shared/dev-mode.js'
+import { isDevRuntime } from '../lib/utils/dev-mode.js'
 import { fileURLToPath } from 'node:url'
 import { existsSync } from 'node:fs'
 

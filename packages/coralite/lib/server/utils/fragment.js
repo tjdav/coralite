@@ -1,4 +1,4 @@
-import { transformNode } from '../parser.js'
+import { transformNode } from '../parser/html.js'
 import { createCoraliteTextNode } from './dom.js'
 import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, formatInlineStyle, hasContextEntries, resolveComponentSlots, NOOP_SIGNAL } from '../../shared/core.js'
 import { filterReservedAttributes } from '../renderer.js'

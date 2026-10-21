@@ -86,14 +86,14 @@ const SERVER_ONLY_MODULES = new Set([
 /**
  * @param {Object} params
  * @param {string} params.code
- * @param {import('../../types/index.js').CoraliteDiagnosticSeverity} [params.severity='error']
+ * @param {import('../../../types/index.js').CoraliteDiagnosticSeverity} [params.severity='error']
  * @param {string} params.message
  * @param {string} [params.filePath]
  * @param {number} [params.line]
  * @param {number} [params.column]
  * @param {string} [params.sourceCode]
  * @param {string} [params.cause]
- * @param {import('../../types/index.js').CoraliteDiagnosticFix} [params.fix]
+ * @param {import('../../../types/index.js').CoraliteDiagnosticFix} [params.fix]
  * @returns {CoraliteDiagnostic}
  */
 function createDiagnostic ({ code, severity = 'error', message, filePath, line, column, sourceCode, cause, fix }) {
@@ -643,12 +643,12 @@ export function validatePluginSource (sourceCode, filePath = '') {
    * @param {Object} params
    * @param {string} params.code
    * @param {string} [params.legacyCode]
-   * @param {import('../../types/index.js').CoraliteDiagnosticSeverity} [params.severity='error']
+   * @param {import('../../../types/index.js').CoraliteDiagnosticSeverity} [params.severity='error']
    * @param {string} params.message
    * @param {number} [params.line]
    * @param {number} [params.column]
    * @param {string} [params.cause]
-   * @param {import('../../types/index.js').CoraliteDiagnosticFix} [params.fix]
+   * @param {import('../../../types/index.js').CoraliteDiagnosticFix} [params.fix]
    */
   const addIssueAndDiagnostic = ({ code, legacyCode, severity = 'error', message, line, column, cause, fix }) => {
     issues.push({
@@ -1349,10 +1349,10 @@ export function validatePluginObject (plugin, filePath = '') {
    * @param {Object} params
    * @param {string} params.code
    * @param {string} [params.legacyCode]
-   * @param {import('../../types/index.js').CoraliteDiagnosticSeverity} [params.severity='error']
+   * @param {import('../../../types/index.js').CoraliteDiagnosticSeverity} [params.severity='error']
    * @param {string} params.message
    * @param {string} [params.cause]
-   * @param {import('../../types/index.js').CoraliteDiagnosticFix} [params.fix]
+   * @param {import('../../../types/index.js').CoraliteDiagnosticFix} [params.fix]
    */
   const addIssueAndDiagnostic = ({ code, legacyCode, severity = 'error', message, cause, fix }) => {
     issues.push({

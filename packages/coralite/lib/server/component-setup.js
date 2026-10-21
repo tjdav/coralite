@@ -1,5 +1,5 @@
 import { createReadOnlyProxy, cloneModuleInstance, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL, isAsyncFunction } from '../shared/core.js'
-import { processTokenValue } from './parser.js'
+import { processTokenValue } from './parser/html.js'
 import { CoraliteError, handleError } from '../shared/errors.js'
 import {
   isCoraliteElement,

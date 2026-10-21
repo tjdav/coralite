@@ -1,6 +1,6 @@
 import { inspect } from 'node:util'
 import { CoraliteError, CoraliteBuildError } from '../shared/errors.js'
-import { parsePagePattern } from './pattern.js'
+import { parsePagePattern } from './page/pattern.js'
 
 /**
  * Extracts route parameters from a page relative path.
