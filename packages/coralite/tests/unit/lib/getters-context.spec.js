@@ -13,7 +13,7 @@ globalThis.Node = window.Node
 globalThis.customElements = window.customElements
 
 const { createCoraliteClass } = await import('../../../lib/client/element.js')
-const { createComponentDefinition } = await import('../../../lib/server/component/setup.js')
+const { createComponentDefinition } = await import('../../../lib/server/component-setup.js')
 
 describe('Getters Context ({ root, refs, signal })', () => {
   beforeEach(() => {

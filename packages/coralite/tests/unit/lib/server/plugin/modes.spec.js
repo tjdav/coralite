@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { setupPlugins } from '../../../../../lib/server/plugin/setup.js'
+import { setupPlugins } from '../../../../../lib/server/plugin-setup.js'
 import modesPlugin from '../../../../fixtures/plugins/modes-plugin.js'
 
 function createMockApp (mode, pluginsList = []) {

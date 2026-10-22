@@ -3,7 +3,7 @@ import '../../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { createCoraliteClass } from '../../../../lib/client/element.js'
-import { detectListPattern } from '../../../../lib/shared/observer-record.js'
+import { detectListPattern } from '../../../../lib/utils/observer-record.js'
 
 describe('Reconcile List Patterns', () => {
   describe('detectListPattern', () => {

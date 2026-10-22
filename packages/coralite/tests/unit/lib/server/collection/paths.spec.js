@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { extractRouteParams, validateEnumeratedPaths } from '../../../../../lib/server/page/route.js'
-import { createPageHandlers } from '../../../../../lib/server/collection/handlers.js'
+import { extractRouteParams, validateEnumeratedPaths } from '../../../../../lib/server/route.js'
+import { createPageHandlers } from '../../../../../lib/server/collection-handlers.js'
 import { evaluate } from '../../../../../lib/server/compiler.js'
 
 describe('Page route param extraction and paths validation', () => {

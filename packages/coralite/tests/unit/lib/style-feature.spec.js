@@ -15,7 +15,7 @@ globalThis.customElements = window.customElements
 const { createTestProject } = await import('../utils/project.js')
 const { createCoraliteClass } = await import('../../../lib/client/element.js')
 const { validateComponentSource } = await import('../../../lib/server/component/validator.js')
-const { createComponentDefinition } = await import('../../../lib/server/component/setup.js')
+const { createComponentDefinition } = await import('../../../lib/server/component-setup.js')
 const { CoraliteError } = await import('../../../lib/shared/errors.js')
 
 describe('Component Reactive style Feature', () => {

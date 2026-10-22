@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
-import { findAndExtractScript } from '../../../lib/utils/server/server.js'
+import { findAndExtractScript } from '../../../lib/server/utils/server.js'
 
 describe('findAndExtractScript', () => {
   describe('script extraction & line offsets', () => {

@@ -19,7 +19,7 @@ import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPlu
 import { applyPluginFixes } from '#lib/server/plugin/fixer.js'
 import { applyPageFixes } from '#lib/server/page/fixer.js'
 import { validatePagesDir, formatPageValidationReport } from '#lib/server/page/validator.js'
-import { typeCheck } from '#lib/server/type-checker.js'
+import { typeCheck } from '#lib/server/type-checker/index.js'
 import { discoverHtmlFiles } from '#lib/server/utils/html.js'
 import {
   promptCheckOptions,

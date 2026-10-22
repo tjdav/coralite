@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { definePlugin } from '../../../../../lib/server/plugin/define.js'
-import { setupPlugins } from '../../../../../lib/server/plugin/setup.js'
+import { setupPlugins } from '../../../../../lib/server/plugin-setup.js'
 
 describe('plugin dependencies field and topological sorting in setupPlugins', () => {
   it('should topologically sort plugins by dependencies', async () => {

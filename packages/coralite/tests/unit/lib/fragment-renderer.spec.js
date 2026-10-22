@@ -1,18 +1,32 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { freezeTemplate, compileOps } from '../../../lib/utils/server/fragment.js'
+import { freezeTemplate, compileOps } from '../../../lib/server/utils/fragment.js'
 
 describe('Fragment-Op SSR Renderer Unit Tests', () => {
   describe('freezeTemplate', () => {
     it('should deeply freeze component metadata dictionaries without freezing DOM AST nodes', () => {
-      const parent = { type: 'tag', name: 'div', children: [] }
-      const child = { type: 'text', data: 'hello', parent }
+      const parent = {
+        type: 'tag',
+        name: 'div',
+        children: []
+      }
+      const child = {
+        type: 'text',
+        data: 'hello',
+        parent
+      }
       parent.children.push(child)
 
       const moduleMock = {
         template: parent,
         values: {
-          textNodes: [{ textNode: child, tokens: [{ name: 'val', content: '{{ val }}' }] }],
+          textNodes: [{
+            textNode: child,
+            tokens: [{
+              name: 'val',
+              content: '{{ val }}'
+            }]
+          }],
           attributes: [],
           refs: []
         },
@@ -36,18 +50,53 @@ describe('Fragment-Op SSR Renderer Unit Tests', () => {
 
   describe('capability cascade and cycle detection', () => {
     it('should recursively evaluate capability for depth-3 component tree (A -> B -> C)', async () => {
-      const { checkComponentCapability } = await import('../../../lib/utils/server/fragment.js')
+      const { checkComponentCapability } = await import('../../../lib/server/utils/fragment.js')
 
-      const compC = { id: 'comp-c', template: { children: [{ type: 'text', data: 'C' }] }, customElements: [] }
-      const compB = { id: 'comp-b', template: { children: [{ type: 'tag', name: 'comp-c', children: [] }] }, customElements: [{ name: 'comp-c' }] }
-      const compA = { id: 'comp-a', template: { children: [{ type: 'tag', name: 'comp-b', children: [] }] }, customElements: [{ name: 'comp-b' }] }
+      const compC = {
+        id: 'comp-c',
+        template: {
+          children: [{
+            type: 'text',
+            data: 'C'
+          }]
+        },
+        customElements: []
+      }
+      const compB = {
+        id: 'comp-b',
+        template: {
+          children: [{
+            type: 'tag',
+            name: 'comp-c',
+            children: []
+          }]
+        },
+        customElements: [{ name: 'comp-c' }]
+      }
+      const compA = {
+        id: 'comp-a',
+        template: {
+          children: [{
+            type: 'tag',
+            name: 'comp-b',
+            children: []
+          }]
+        },
+        customElements: [{ name: 'comp-b' }]
+      }
 
       const appMock = {
         components: {
           getItem (name) {
-            if (name === 'comp-c') return { result: compC }
-            if (name === 'comp-b') return { result: compB }
-            if (name === 'comp-a') return { result: compA }
+            if (name === 'comp-c') {
+              return { result: compC }
+            }
+            if (name === 'comp-b') {
+              return { result: compB }
+            }
+            if (name === 'comp-a') {
+              return { result: compA }
+            }
             return null
           }
         }
@@ -62,16 +111,28 @@ describe('Fragment-Op SSR Renderer Unit Tests', () => {
     })
 
     it('should detect cycles (A -> B -> A) and mark components as not opsCapable', async () => {
-      const { checkComponentCapability } = await import('../../../lib/utils/server/fragment.js')
+      const { checkComponentCapability } = await import('../../../lib/server/utils/fragment.js')
 
-      const compB = { id: 'comp-b', template: { children: [] }, customElements: [{ name: 'comp-a' }] }
-      const compA = { id: 'comp-a', template: { children: [] }, customElements: [{ name: 'comp-b' }] }
+      const compB = {
+        id: 'comp-b',
+        template: { children: [] },
+        customElements: [{ name: 'comp-a' }]
+      }
+      const compA = {
+        id: 'comp-a',
+        template: { children: [] },
+        customElements: [{ name: 'comp-b' }]
+      }
 
       const appMock = {
         components: {
           getItem (name) {
-            if (name === 'comp-a') return { result: compA }
-            if (name === 'comp-b') return { result: compB }
+            if (name === 'comp-a') {
+              return { result: compA }
+            }
+            if (name === 'comp-b') {
+              return { result: compB }
+            }
             return null
           }
         }
@@ -89,9 +150,17 @@ describe('Fragment-Op SSR Renderer Unit Tests', () => {
       const mockComponent = {
         template: {
           children: [
-            { type: 'tag', name: 'div', attribs: { class: 'container' }, children: [
-              { type: 'text', data: 'Static Content' }
-            ]}
+            {
+              type: 'tag',
+              name: 'div',
+              attribs: { class: 'container' },
+              children: [
+                {
+                  type: 'text',
+                  data: 'Static Content'
+                }
+              ]
+            }
           ]
         },
         values: {},
@@ -108,7 +177,10 @@ describe('Fragment-Op SSR Renderer Unit Tests', () => {
     })
 
     it('should identify dynamic text nodes and emit text ops with surrounding static text', () => {
-      const textNodeObj = { type: 'text', data: 'Hello {{ name }}!' }
+      const textNodeObj = {
+        type: 'text',
+        data: 'Hello {{ name }}!'
+      }
       const mockComponent = {
         template: {
           children: [textNodeObj]
@@ -117,7 +189,10 @@ describe('Fragment-Op SSR Renderer Unit Tests', () => {
           textNodes: [
             {
               textNode: textNodeObj,
-              tokens: [{ name: 'name', content: '{{ name }}' }]
+              tokens: [{
+                name: 'name',
+                content: '{{ name }}'
+              }]
             }
           ]
         },
@@ -153,7 +228,12 @@ describe('Fragment-Op SSR Renderer Unit Tests', () => {
       const mockComponent = {
         template: {
           children: [
-            { type: 'tag', name: 'div', attribs: { 'no-hydration': '' }, children: [] }
+            {
+              type: 'tag',
+              name: 'div',
+              attribs: { 'no-hydration': '' },
+              children: []
+            }
           ]
         }
       }
@@ -164,7 +244,12 @@ describe('Fragment-Op SSR Renderer Unit Tests', () => {
     })
 
     it('should gate components with uncapable child custom elements', () => {
-      const customEl = { type: 'tag', name: 'child-comp', attribs: {}, children: [] }
+      const customEl = {
+        type: 'tag',
+        name: 'child-comp',
+        attribs: {},
+        children: []
+      }
       const mockComponent = {
         template: { children: [customEl] },
         customElements: [customEl]

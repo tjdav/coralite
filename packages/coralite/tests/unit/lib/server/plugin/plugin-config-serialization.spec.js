@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { ScriptManager } from '../../../../../lib/server/script-manager.js'
-import { setupPlugins } from '../../../../../lib/server/plugin/setup.js'
+import { setupPlugins } from '../../../../../lib/server/plugin-setup.js'
 import { definePlugin } from '../../../../../lib/server/plugin/define.js'
 
 describe('plugin-config-serialization.spec.js', () => {

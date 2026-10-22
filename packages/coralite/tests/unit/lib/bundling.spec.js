@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { ScriptManager } from '../../../lib/script-manager.js'
+import { ScriptManager } from '../../../lib/server/script-manager.js'
 
 describe('Bundling Leak Prevention', () => {
   it('should not include server-side utilities in the client bundle', async () => {

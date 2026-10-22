@@ -1,7 +1,7 @@
 import { describe, test, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
 import { createTestProject } from '../utils/project.js'
-import { ScriptManager } from '../../../lib/script-manager.js'
+import { ScriptManager } from '../../../lib/server/script-manager.js'
 
 describe('Source Map Generation', () => {
   let project

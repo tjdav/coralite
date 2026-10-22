@@ -88,9 +88,15 @@ describe('shared/core.js', () => {
     })
 
     it('should preserve plain and camelCase keys without duplicate alias properties', () => {
-      const input = { foo: 'bar', bazQux: 123 }
+      const input = {
+        foo: 'bar',
+        bazQux: 123
+      }
       const result = cleanKeys(input)
-      assert.deepStrictEqual(result, { foo: 'bar', bazQux: 123 })
+      assert.deepStrictEqual(result, {
+        foo: 'bar',
+        bazQux: 123
+      })
       assert.strictEqual(Object.keys(result).length, 2)
     })
 
@@ -190,9 +196,13 @@ describe('shared/core.js', () => {
     })
 
     it('should return raw item object on array element read without proxy wrapping', () => {
-      const item = { id: 1, label: 'test' }
+      const item = {
+        id: 1,
+        label: 'test'
+      }
       const target = { data: [item] }
-      const proxy = createReactiveProxy(target, () => {})
+      const proxy = createReactiveProxy(target, () => {
+      })
       const readItem = proxy.data[0]
       assert.strictEqual(readItem, item)
     })
@@ -235,7 +245,10 @@ describe('shared/core.js', () => {
     })
 
     it('should return raw item object on array element read without proxy wrapping', () => {
-      const item = { id: 1, label: 'test' }
+      const item = {
+        id: 1,
+        label: 'test'
+      }
       const target = { data: [item] }
       const proxy = createReadOnlyProxy(target)
       const readItem = proxy.data[0]
