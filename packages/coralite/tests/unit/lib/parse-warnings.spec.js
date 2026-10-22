@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { parseHTML } from '../../../lib/utils/server/parse.js'
+import { parseHTML } from '../../../lib/server/utils/parse.js'
 import { defaultOnError } from '../../../lib/shared/errors.js'
 
 describe('parseHTML warnings', () => {

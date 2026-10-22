@@ -53,7 +53,10 @@ describe('SSR Page-Level Fault Isolation & Component Error Boundaries', () => {
   })
 
   afterEach(async () => {
-    await rm(TEST_DIR, { recursive: true, force: true })
+    await rm(TEST_DIR, {
+      recursive: true,
+      force: true
+    })
   })
 
   it('multi-page fault isolation: 1 failing page does not abort 9 healthy sibling pages', async () => {

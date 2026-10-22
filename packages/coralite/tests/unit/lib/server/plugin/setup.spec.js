@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { definePlugin } from '../../../../../lib/server/plugin/define.js'
-import { setupPlugins } from '../../../../../lib/server/plugin/setup.js'
+import { setupPlugins } from '../../../../../lib/server/plugin-setup.js'
 
 describe('setupPlugins value routing and object freezing', () => {
   it('should route config values correctly to server.config and client.config and freeze both', async () => {

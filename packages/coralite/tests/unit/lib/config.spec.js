@@ -4,7 +4,7 @@
 
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { defineConfig } from '../../../lib/config.js'
+import { defineConfig } from '../../../lib/server/config.js'
 
 describe('config.js', () => {
   describe('defineConfig', () => {

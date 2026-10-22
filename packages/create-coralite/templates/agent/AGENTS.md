@@ -1,7 +1,7 @@
 # Coralite AI Agent Guidelines & Architecture Reference (v{{ version }})
 
 > **Audience**: AI coding assistants (Cursor, Claude Code, GitHub Copilot, Codex, Cline, Windsurf) and developers building applications with Coralite.
-> **Runtime Floor**: Node.js `>=22.22.2` (ESM native)
+> **Runtime Floor**: Node.js `>=22.0.0` (ESM native)
 > **Source of Truth**: This document defines the non-negotiable architectural invariants, reactivity rules, and negative constraints for Coralite workspaces.
 
 ---

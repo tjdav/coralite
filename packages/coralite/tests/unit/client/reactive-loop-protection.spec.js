@@ -9,14 +9,21 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     window.__coralite__.mode = 'development'
   })
 
-  it('Tier 1: Direct self-mutation is aborted in Dev mode with warning and error log', (_t, done) => {
+  it('Tier 1: Direct self-mutation is aborted in Dev mode with warning and error log', (_, done) => {
     let warningEmitted = null
     let errorLogged = null
     const origWarn = console.warn
     const origErr = console.error
 
-    console.warn = (msg) => { warningEmitted = msg }
-    console.error = (msg, err) => { errorLogged = { msg, err } }
+    console.warn = (msg) => {
+      warningEmitted = msg
+    }
+    console.error = (msg, err) => {
+      errorLogged = {
+        msg,
+        err
+      }
+    }
 
     const tag = 't1-dev-' + Math.random().toString(36).substring(2, 9)
     const Comp = createCoraliteClass({
@@ -58,7 +65,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 1: Direct self-mutation is aborted in Prod mode without warn or throw, emitting coralite-error event', (_t, done) => {
+  it('Tier 1: Direct self-mutation is aborted in Prod mode without warn or throw, emitting coralite-error event', (_, done) => {
     window.__coralite__.mode = 'production'
 
     let warningEmitted = null
@@ -68,8 +75,15 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const origWarn = console.warn
     const origErr = console.error
 
-    console.warn = (msg) => { warningEmitted = msg }
-    console.error = (msg, err) => { errorLogged = { msg, err } }
+    console.warn = (msg) => {
+      warningEmitted = msg
+    }
+    console.error = (msg, err) => {
+      errorLogged = {
+        msg,
+        err
+      }
+    }
 
     const tag = 't1-prod-' + Math.random().toString(36).substring(2, 9)
     const Comp = createCoraliteClass({
@@ -112,7 +126,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 1: All mutation traps are protected (set, deleteProperty, errors set, errors deleteProperty)', (_t, done) => {
+  it('Tier 1: All mutation traps are protected (set, deleteProperty, errors set, errors deleteProperty)', (_, done) => {
     const tag = 't1-traps-' + Math.random().toString(36).substring(2, 9)
     let deleteAttempted = false
 
@@ -160,7 +174,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 1: Non-cyclic mutations (a -> b) are permitted and settle cleanly', (_t, done) => {
+  it('Tier 1: Non-cyclic mutations (a -> b) are permitted and settle cleanly', (_, done) => {
     const tag = 't1-noncyclic-' + Math.random().toString(36).substring(2, 9)
     const Comp = createCoraliteClass({
       componentId: 't1-noncyclic',
@@ -193,17 +207,22 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 1: Async observer throws and rejected promises do not produce unhandled rejections', (_t, done) => {
+  it('Tier 1: Async observer throws and rejected promises do not produce unhandled rejections', (_, done) => {
     const tag = 't1-async-' + Math.random().toString(36).substring(2, 9)
     let errorLogged = null
     const origErr = console.error
-    console.error = (msg, err) => { errorLogged = { msg, err } }
+    console.error = (msg, err) => {
+      errorLogged = {
+        msg,
+        err
+      }
+    }
 
     const Comp = createCoraliteClass({
       componentId: 't1-async',
       defaultValues: { x: 1 },
-      client ({ state, observe }) {
-        observe('x', async () => {
+      client ({ observe }) {
+        observe('x', async (_val) => {
           throw new Error('Async observer failure')
         })
       }
@@ -228,7 +247,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 2: Indirect ping-pong cycle (a -> b -> a) trips depth breaker at 50, latches, renders final DOM, and resets on external mutation', (_t, done) => {
+  it('Tier 2: Indirect ping-pong cycle (a -> b -> a) trips depth breaker at 50, latches, renders final DOM, and resets on external mutation', (_, done) => {
     const tag = 't2-depth-' + Math.random().toString(36).substring(2, 9)
     let cascadeErrorLogged = null
     let errorEventFired = false
@@ -236,16 +255,25 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const origErr = console.error
     console.error = (msg, err) => {
       if (msg === 'Coralite Reactive Cascade Error:') {
-        cascadeErrorLogged = { msg, err }
+        cascadeErrorLogged = {
+          msg,
+          err
+        }
       }
     }
 
     const Comp = createCoraliteClass({
       componentId: 't2-depth',
       templateHTML: '<div id="val">{{ a }}</div>',
-      defaultValues: { a: 1, b: 1 },
+      defaultValues: {
+        a: 1,
+        b: 1
+      },
       hydrationMap: {
-        texts: [{ path: [0, 0], template: '{{ a }}' }]
+        texts: [{
+          path: [0, 0],
+          template: '{{ a }}'
+        }]
       },
       client ({ state, observe }) {
         // Indirect loop: a -> b -> a
@@ -299,14 +327,17 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 2: Deferred microtask loop trips rate watchdog at 100 flushes', (_t, done) => {
+  it('Tier 2: Deferred microtask loop trips rate watchdog at 100 flushes', (_, done) => {
     const tag = 't2-rate-' + Math.random().toString(36).substring(2, 9)
     let cascadeErrorLogged = null
 
     const origErr = console.error
     console.error = (msg, err) => {
       if (msg === 'Coralite Reactive Cascade Error:') {
-        cascadeErrorLogged = { msg, err }
+        cascadeErrorLogged = {
+          msg,
+          err
+        }
       }
     }
 
@@ -344,14 +375,14 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Sibling Observers Isolation: Error in first observer does not prevent second observer from running', (_t, done) => {
+  it('Sibling Observers Isolation: Error in first observer does not prevent second observer from running', (_, done) => {
     const tag = 'sibling-obs-' + Math.random().toString(36).substring(2, 9)
     let secondObsRan = false
 
     const Comp = createCoraliteClass({
       componentId: 'sibling-obs',
       defaultValues: { score: 10 },
-      client ({ state, observe }) {
+      client ({ observe }) {
         observe('score', () => {
           throw new Error('First observer fault')
         })

@@ -11,7 +11,10 @@ const OUTPUT_DIR = join(TEST_DIR, 'dist')
 
 describe('Concurrent Page Generation', () => {
   beforeEach(async () => {
-    await rm(TEST_DIR, { recursive: true, force: true })
+    await rm(TEST_DIR, {
+      recursive: true,
+      force: true
+    })
     await mkdir(COMPONENTS_DIR, { recursive: true })
     await mkdir(PAGES_DIR, { recursive: true })
 
@@ -48,7 +51,10 @@ describe('Concurrent Page Generation', () => {
   })
 
   afterEach(async () => {
-    await rm(TEST_DIR, { recursive: true, force: true })
+    await rm(TEST_DIR, {
+      recursive: true,
+      force: true
+    })
   })
 
   it('serial equivalence: output under maxConcurrent: 4 matches maxConcurrent: 1 exactly', async () => {
@@ -155,7 +161,9 @@ describe('Concurrent Page Generation', () => {
 
   it('handles page rendering failures cleanly with CoraliteBuildError without unhandled rejections', async () => {
     let unhandledRejections = 0
-    const rejectionHandler = () => { unhandledRejections++ }
+    const rejectionHandler = () => {
+      unhandledRejections++
+    }
     process.on('unhandledRejection', rejectionHandler)
 
     const failingPlugin = {

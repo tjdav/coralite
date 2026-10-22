@@ -83,7 +83,10 @@ describe('Async Getter Dependency Tracking', () => {
       },
       client ({ observe }) {
         observe('asyncVal', (newVal, oldVal) => {
-          receivedValues.push({ newVal, oldVal })
+          receivedValues.push({
+            newVal,
+            oldVal
+          })
         })
       }
     }
@@ -235,7 +238,8 @@ describe('Async Getter Dependency Tracking', () => {
         }
       },
       client ({ observe }) {
-        observe('userName', () => {})
+        observe('userName', () => {
+        })
       }
     }
 

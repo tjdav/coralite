@@ -147,7 +147,8 @@ describe('errors.js', () => {
     })
 
     it('should log to console for unknown levels', (t) => {
-      const logMock = t.mock.method(console, 'log', () => {})
+      const logMock = t.mock.method(console, 'log', () => {
+      })
 
       defaultOnError({
         level: 'INFO',

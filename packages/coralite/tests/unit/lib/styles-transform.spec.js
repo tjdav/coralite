@@ -1,9 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { transformCss, formatComponentCss, buildComponentStylesheet } from '../../../lib/utils/server/style.js'
-import { parseModule } from '../../../lib/utils/server/parse.js'
-import { injectStyles } from '../../../lib/utils/server/render.js'
-import { createCoraliteElement, createCoraliteComponent } from '../../../lib/utils/server/dom.js'
+import { transformCss, formatComponentCss, buildComponentStylesheet } from '../../../lib/server/utils/style.js'
+import { parseModule } from '../../../lib/server/utils/parse.js'
+import { injectStyles } from '../../../lib/server/utils/render.js'
+import { createCoraliteElement, createCoraliteComponent } from '../../../lib/server/utils/dom.js'
 
 test('Style Transformation Logic', async (t) => {
   await t.test('parseModule correctly identifies root and descendant classes', () => {
@@ -309,7 +309,10 @@ test('Style Transformation Logic', async (t) => {
   })
 
   await t.test('injectStyles wraps component CSS in @layer components, preserving c-token', async () => {
-    const head = createCoraliteElement({ name: 'head', children: [] })
+    const head = createCoraliteElement({
+      name: 'head',
+      children: []
+    })
     const root = createCoraliteComponent({ children: [head] })
 
     const formattedCss = await formatComponentCss('my-comp', '.btn { color: red; }')

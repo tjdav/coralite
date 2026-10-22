@@ -94,7 +94,10 @@ describe('W3C Web Components Context Protocol', () => {
 
     const ProviderClass = createCoraliteClass({
       componentId: 'test-provider-selective',
-      defaultValues: { count: 0, unrelated: 'foo' },
+      defaultValues: {
+        count: 0,
+        unrelated: 'foo'
+      },
       provide: {
         'count-context': ({ state }) => {
           providerEvalCount++
@@ -314,7 +317,10 @@ describe('W3C Web Components Context Protocol', () => {
       componentId: 'test-consumer-object-consumer',
       consume: {
         activeTheme: themeToken,
-        activeCount: { context: countToken, default: 0 }
+        activeCount: {
+          context: countToken,
+          default: 0
+        }
       }
     })
 
@@ -380,7 +386,7 @@ describe('W3C Web Components Context Protocol', () => {
     document.body.appendChild(provider)
 
     let deadCallbackCalled = false
-    let deadCallback = (val) => {
+    const deadCallback = (_val) => {
       deadCallbackCalled = true
     }
 
@@ -495,7 +501,10 @@ describe('W3C Web Components Context Protocol', () => {
     const ConsumerClass = createCoraliteClass({
       componentId: 'test-consumer-fallback',
       consume: {
-        mode: { context: 'unprovided-key', default: 'fallback-mode' }
+        mode: {
+          context: 'unprovided-key',
+          default: 'fallback-mode'
+        }
       }
     })
 

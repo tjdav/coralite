@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-imports -- Node test runner spec; requires node:* builtins */
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { createStore, createServerStore } from '../../../../lib/shared/store.js'
+import { createStore, createServerStore } from '../../../../lib/utils/store.js'
 
 describe('Store Context Wiring', () => {
   it('server context receives read-only store snapshot that throws on mutation', () => {

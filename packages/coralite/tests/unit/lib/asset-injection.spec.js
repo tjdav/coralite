@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test, describe, beforeEach, afterEach } from 'node:test'
-import { createCoralite } from '../../../lib/coralite.js'
+import { createCoralite } from '../../../lib/server/create.js'
 import { rm, mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -20,7 +20,10 @@ describe('Asset Injection & SRI Flush Pass', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await rm(tmpDir, {
+      recursive: true,
+      force: true
+    })
   })
 
   test('declarative asset injection & SRI placement ordering', async () => {

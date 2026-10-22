@@ -2,7 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { typeCheck } from '../../../../lib/server/type-checker.js'
+import { typeCheck } from '../../../../lib/server/type-checker/index.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const fixturesDir = path.resolve(__dirname, '../../../fixtures/type-checker')

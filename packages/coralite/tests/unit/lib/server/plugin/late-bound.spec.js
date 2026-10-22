@@ -1,7 +1,7 @@
 import { describe, it, before } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { definePlugin } from '../../../../../lib/server/plugin/define.js'
-import { setupPlugins } from '../../../../../lib/server/plugin/setup.js'
+import { setupPlugins } from '../../../../../lib/server/plugin-setup.js'
 import { createRenderer } from '../../../../../lib/server/renderer.js'
 import { initHasher } from '../../../../../lib/server/utils/manifest.js'
 import { triggerPluginHook, triggerPluginAggregateHook, bindPlugins } from '../../../../../lib/server/hooks.js'

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import createCoralite from '../../../lib/coralite.js'
-import { calculateHash } from '../../../lib/utils/server/csp.js'
+import createCoralite from '../../../lib/server/create.js'
+import { calculateHash } from '../../../lib/server/utils/csp.js'
 import { join } from 'node:path'
 import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -47,7 +47,10 @@ async function setupTestProject () {
 }
 
 async function cleanupTestProject () {
-  await rm(tmpDir, { recursive: true, force: true })
+  await rm(tmpDir, {
+    recursive: true,
+    force: true
+  })
 }
 
 describe('CSP Renderer Modes & Parity', () => {

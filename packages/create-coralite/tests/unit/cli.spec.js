@@ -16,7 +16,7 @@ function runCLI (args, options = {}) {
       {
         cwd: options.cwd || process.cwd(),
         env: {
-          TEST_NODE_VERSION: 'v22.22.2',
+          TEST_NODE_VERSION: 'v22.0.0',
           ...process.env,
           ...options.env
         }
@@ -145,7 +145,7 @@ describe('CLI integration tests', () => {
     })
 
     assert.equal(res.code, 1)
-    assert.match(res.stderr, /Error: this project requires Node\.js >=22\.22\.2\. You are running v18\.20\.0\./)
+    assert.match(res.stderr, /Error: this project requires Node\.js >=22\.0\.0\. You are running v18\.20\.0\./)
     assert.equal(fs.existsSync(targetDir), false)
   })
 })
