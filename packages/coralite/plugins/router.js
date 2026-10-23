@@ -220,10 +220,12 @@ function updateHead (doc) {
 }
 
 async function performSwap (outlet, newOutlet, doc, runtime, signal) {
+  if (signal && signal.aborted) {
+    return false
+  }
   outlet.replaceChildren(...newOutlet.childNodes)
-  signal.throwIfAborted()
   updateHead(doc)
-  signal.throwIfAborted()
+  return true
 }
 
 export const routerPlugin = definePlugin({
@@ -405,18 +407,34 @@ export const routerPlugin = definePlugin({
             throw new Error('No outlet found in current document')
           }
 
+          let didSwap = false
           const shouldAnimate =
             viewTransitions === true &&
             typeof document.startViewTransition === 'function' &&
             !prefersReducedMotion()
 
           if (shouldAnimate) {
-            const transition = document.startViewTransition(async () => {
-              await performSwap(outlet, newOutlet, doc, runtime, signal)
-            })
-            await transition.finished
+            try {
+              const transition = document.startViewTransition(async () => {
+                if (signal.aborted) {
+                  return
+                }
+                didSwap = await performSwap(outlet, newOutlet, doc, runtime, signal)
+              })
+              await transition.finished
+            } catch (err) {
+              if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') {
+                return
+              }
+              if (signal.aborted) {
+                return
+              }
+              if (!didSwap) {
+                didSwap = await performSwap(outlet, newOutlet, doc, runtime, signal)
+              }
+            }
           } else {
-            await performSwap(outlet, newOutlet, doc, runtime, signal)
+            didSwap = await performSwap(outlet, newOutlet, doc, runtime, signal)
           }
 
           if (typeof runtime.upgrade === 'function') {

@@ -342,4 +342,85 @@ describe('Router Plugin Events Unit Tests', () => {
     assert.strictEqual(navigatingEvents.length, 1)
     assert.strictEqual(navigatedEvents.length, 1)
   })
+
+  it('falls back to sync swap when startViewTransition throws non-AbortError', async () => {
+    const pluginInstance = routerPlugin()
+    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+    globalThis.document.startViewTransition = () => {
+      throw new Error('startViewTransition failed')
+    }
+
+    pluginInstance.client.init({
+      config: pluginInstance.config,
+      runtime: mockRuntime
+    })
+
+    await mockWindow.__coralite_router__.navigate('/admin/users')
+
+    assert.deepStrictEqual(mockOutlet.childNodes, ['new-node'], 'Swap fell back to sync swap')
+    const navigatedEvents = dispatchedEvents.filter(e => e.type === 'coralite:navigated')
+    assert.strictEqual(navigatedEvents.length, 1, 'coralite:navigated still fired')
+  })
+
+  it('does not double-swap if view transition callback already ran before transition rejection', async () => {
+    const pluginInstance = routerPlugin()
+    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+
+    let swapCallCount = 0
+    const originalReplaceChildren = mockOutlet.replaceChildren
+    mockOutlet.replaceChildren = function (...nodes) {
+      swapCallCount++
+      originalReplaceChildren.apply(this, nodes)
+    }
+
+    globalThis.document.startViewTransition = (cb) => {
+      return {
+        finished: (async () => {
+          await cb()
+          throw new Error('Animation error after swap')
+        })()
+      }
+    }
+
+    pluginInstance.client.init({
+      config: pluginInstance.config,
+      runtime: mockRuntime
+    })
+
+    await mockWindow.__coralite_router__.navigate('/admin/users')
+
+    assert.strictEqual(swapCallCount, 1, 'replaceChildren called exactly once')
+    assert.deepStrictEqual(mockOutlet.childNodes, ['new-node'])
+  })
+
+  it('skips DOM swap if navigation signal is aborted before VT callback runs', async () => {
+    const pluginInstance = routerPlugin()
+    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+
+    let callbackRan = false
+    let isFirst = true
+    globalThis.document.startViewTransition = (cb) => {
+      return {
+        finished: (async () => {
+          if (isFirst) {
+            isFirst = false
+            // Simulate second navigation aborting the first one before cb runs
+            mockWindow.__coralite_router__.navigate('/fast')
+          }
+          await cb()
+          callbackRan = true
+        })()
+      }
+    }
+
+    pluginInstance.client.init({
+      config: pluginInstance.config,
+      runtime: mockRuntime
+    })
+
+    await mockWindow.__coralite_router__.navigate('/slow')
+
+    assert.ok(callbackRan, 'Callback was called by browser')
+    assert.deepStrictEqual(mockOutlet.childNodes, ['new-node'])
+  })
 })

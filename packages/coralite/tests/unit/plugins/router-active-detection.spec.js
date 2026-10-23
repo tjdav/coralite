@@ -11,7 +11,10 @@ describe('Router Active Detection (PERF-02b)', () => {
     const pagesDir = path.join(tmpDir, 'pages')
     const componentsDir = path.join(tmpDir, 'components')
 
-    await rm(tmpDir, { recursive: true, force: true })
+    await rm(tmpDir, {
+      recursive: true,
+      force: true
+    })
     await mkdir(pagesDir, { recursive: true })
     await mkdir(componentsDir, { recursive: true })
 
@@ -29,7 +32,10 @@ describe('Router Active Detection (PERF-02b)', () => {
       assert.ok(results.length > 0)
       assert.strictEqual(app._routerActiveCache, true)
     } finally {
-      await rm(tmpDir, { recursive: true, force: true })
+      await rm(tmpDir, {
+        recursive: true,
+        force: true
+      })
     }
   })
 
@@ -38,7 +44,10 @@ describe('Router Active Detection (PERF-02b)', () => {
     const pagesDir = path.join(tmpDir, 'pages')
     const componentsDir = path.join(tmpDir, 'components')
 
-    await rm(tmpDir, { recursive: true, force: true })
+    await rm(tmpDir, {
+      recursive: true,
+      force: true
+    })
     await mkdir(pagesDir, { recursive: true })
     await mkdir(componentsDir, { recursive: true })
 
@@ -62,7 +71,10 @@ describe('Router Active Detection (PERF-02b)', () => {
       assert.strictEqual(pageResult.content.includes('data-router-outlet'), false)
       assert.strictEqual(pageResult.content.includes('<router-outlet'), false)
     } finally {
-      await rm(tmpDir, { recursive: true, force: true })
+      await rm(tmpDir, {
+        recursive: true,
+        force: true
+      })
     }
   })
 
@@ -90,7 +102,10 @@ describe('Router Active Detection (PERF-02b)', () => {
     const pagesDir = path.join(tmpDir, 'pages')
     const componentsDir = path.join(tmpDir, 'components')
 
-    await rm(tmpDir, { recursive: true, force: true })
+    await rm(tmpDir, {
+      recursive: true,
+      force: true
+    })
     await mkdir(pagesDir, { recursive: true })
     await mkdir(componentsDir, { recursive: true })
 
@@ -109,7 +124,10 @@ describe('Router Active Detection (PERF-02b)', () => {
       assert.ok(results.length > 0)
       assert.strictEqual(app._routerActiveCache, true)
     } finally {
-      await rm(tmpDir, { recursive: true, force: true })
+      await rm(tmpDir, {
+        recursive: true,
+        force: true
+      })
     }
   })
 
@@ -118,7 +136,10 @@ describe('Router Active Detection (PERF-02b)', () => {
     const pagesDir = path.join(tmpDir, 'pages')
     const componentsDir = path.join(tmpDir, 'components')
 
-    await rm(tmpDir, { recursive: true, force: true })
+    await rm(tmpDir, {
+      recursive: true,
+      force: true
+    })
     await mkdir(pagesDir, { recursive: true })
     await mkdir(componentsDir, { recursive: true })
 
@@ -136,7 +157,10 @@ describe('Router Active Detection (PERF-02b)', () => {
       assert.ok(results.length > 0)
       assert.strictEqual(app._routerActiveCache, true)
     } finally {
-      await rm(tmpDir, { recursive: true, force: true })
+      await rm(tmpDir, {
+        recursive: true,
+        force: true
+      })
     }
   })
 })
