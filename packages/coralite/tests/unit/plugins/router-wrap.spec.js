@@ -20,10 +20,14 @@ describe('Router Outlet Wrapping', () => {
     const component = {
       root: parsed.root
     }
+    const app = {
+      _explicitPluginNames: new Set(['router'])
+    }
 
     pluginInstance.server.onBeforePageRender({
       component,
-      config: pluginInstance.config
+      config: pluginInstance.config,
+      app
     })
 
     const rendered = transformNode(component.root)
@@ -39,10 +43,14 @@ describe('Router Outlet Wrapping', () => {
     const component = {
       root: parsed.root
     }
+    const app = {
+      _explicitPluginNames: new Set(['router'])
+    }
 
     pluginInstance.server.onBeforePageRender({
       component,
-      config: pluginInstance.config
+      config: pluginInstance.config,
+      app
     })
 
     const rendered = transformNode(component.root)
@@ -59,10 +67,14 @@ describe('Router Outlet Wrapping', () => {
     const component = {
       root: parsed.root
     }
+    const app = {
+      _explicitPluginNames: new Set(['router'])
+    }
 
     pluginInstance.server.onBeforePageRender({
       component,
-      config: pluginInstance.config
+      config: pluginInstance.config,
+      app
     })
 
     const rendered = transformNode(component.root)
