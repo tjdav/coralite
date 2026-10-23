@@ -80,7 +80,8 @@ export async function createCoralite ({
   testing,
   incremental = true,
   csp,
-  cleanUrls = true
+  cleanUrls = true,
+  viewTransitions = true
 }) {
   if (onError !== undefined && typeof onError !== 'function') {
     throw new CoraliteError('createCoralite requires "onError" option to be a function if provided')
@@ -141,7 +142,8 @@ export async function createCoralite ({
     testing,
     incremental,
     csp,
-    cleanUrls: effectiveCleanUrls
+    cleanUrls: effectiveCleanUrls,
+    viewTransitions
   }
 
   const trackedOutputFiles = new Set()
