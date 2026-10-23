@@ -1,6 +1,5 @@
 import { defineComponent, createContext, ContextRequestEvent } from '../../shared/core.js'
-// eslint-disable-next-line no-restricted-imports -- TODO(FIX-B): move definePlugin to lib/shared/
-import { definePlugin } from '../../server/plugin/define.js'
+import { definePlugin } from '../../shared/define-plugin.js'
 
 /**
  * Creates a Coralite element or a standard HTML element.

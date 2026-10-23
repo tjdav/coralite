@@ -667,8 +667,7 @@ export function replaceToken ({
     && node.type === 'tag'
   ) {
     const attrLower = attribute ? attribute.toLowerCase() : ''
-    const isSingleToken = (node.attribs[attribute] || '').trim() === content
-    if (BOOLEAN_ATTRIBUTES.has(attrLower) && isSingleToken) {
+    if (BOOLEAN_ATTRIBUTES.has(attrLower) && (node.attribs[attribute] || '').trim() === content) {
       // @ts-ignore
       const isFalsy = value === 'false' || value === 'null' || value === 'undefined' || value === '0' || value === 0 || value === '' || value === false || value === null || value === undefined
 
@@ -677,25 +676,31 @@ export function replaceToken ({
       } else {
         node.attribs[attribute] = ''
       }
-    } else if (isAriaBooleanState(attrLower) && isSingleToken) {
-      const targetVal = resolveAriaBooleanState(value)
-      if (targetVal === null) {
-        delete node.attribs[attribute]
+    } else if (isAriaAttribute(attrLower) && (node.attribs[attribute] || '').trim() === content) {
+      if (isAriaBooleanState(attrLower)) {
+        const targetVal = resolveAriaBooleanState(value)
+        if (targetVal === null) {
+          delete node.attribs[attribute]
+        } else {
+          node.attribs[attribute] = targetVal
+        }
       } else {
-        node.attribs[attribute] = targetVal
-      }
-    } else if (isAriaAttribute(attrLower) && isSingleToken) {
-      // @ts-ignore
-      const isFalsy = value === 'false' || value === 'null' || value === 'undefined' || value === '' || value === false || value === null || value === undefined
+        // @ts-ignore
+        const isFalsy = value === 'false' || value === 'null' || value === 'undefined' || value === '' || value === false || value === null || value === undefined
 
-      if (isFalsy) {
-        delete node.attribs[attribute]
-      } else {
-        node.attribs[attribute] = String(value)
+        if (isFalsy) {
+          delete node.attribs[attribute]
+        } else {
+          node.attribs[attribute] = String(value)
+        }
       }
     } else {
-      // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
-      const strVal = value == null ? '' : String(value)
+      let strVal = ''
+      if (typeof value === 'string') {
+        strVal = value
+      } else if (value !== null && value !== undefined) {
+        strVal = String(value)
+      }
       if (node.attribs[attribute] !== undefined) {
         node.attribs[attribute] = node.attribs[attribute].replace(content, strVal)
       }
@@ -747,24 +752,27 @@ export function replaceToken ({
       // replace token string
       // @ts-ignore
       const newVal = node.data.replace(content, value)
-      const isHTML = /<[a-z][\s\S]*>/i.test(newVal)
 
-      if (isHTML && node.parent
-          && node.parent.type === 'tag'
-          && node.parent.name === 'c-token'
+      if (
+        node.parent
+        && node.parent.type === 'tag'
+        && node.parent.name === 'c-token'
+        && newVal.includes('<')
+        && /<[a-z][\s\S]*>/i.test(newVal)
       ) {
         const sanitized = sanitize(newVal)
         const parsed = parseHTML(sanitized)
         const children = parsed.root.children
 
         // Use the existing object-handling logic by recursing with the children array
-        return replaceToken({
+        replaceToken({
           type,
           node,
           attribute,
           content,
           value: children
         })
+        return
       }
       node.data = newVal
     }

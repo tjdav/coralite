@@ -1229,16 +1229,81 @@ export function createReactiveProxy (target, onChange, proxies = new WeakMap()) 
   return proxy
 }
 
+const UNTRACKED_READONLY_PROXIES =
+  /* @__PURE__ */
+  new WeakMap()
+
+/**
+ * Throws a read-only mutation error.
+ * @returns {never}
+ */
+function throwReadOnlySetError () {
+  throw new CoraliteError('Cannot mutate state inside a getter. State is read-only here.')
+}
+
+/**
+ * Throws a read-only deletion error.
+ * @returns {never}
+ */
+function throwReadOnlyDeleteError () {
+  throw new CoraliteError('Cannot delete state inside a getter. State is read-only here.')
+}
+
+const UNTRACKED_ARRAY_HANDLER = {
+  get (t, property) {
+    return t[property]
+  },
+  set: throwReadOnlySetError,
+  deleteProperty: throwReadOnlyDeleteError
+}
+
+const UNTRACKED_OBJECT_HANDLER = {
+  get (t, property) {
+    const value = t[property]
+    if (value === null || typeof value !== 'object') {
+      return value
+    }
+    const cached = UNTRACKED_READONLY_PROXIES.get(value)
+    if (cached !== undefined) {
+      return cached
+    }
+    if (value.nodeType !== undefined) {
+      return value
+    }
+    const nextProxy = new Proxy(
+      value,
+      Array.isArray(value) ? UNTRACKED_ARRAY_HANDLER : UNTRACKED_OBJECT_HANDLER
+    )
+    UNTRACKED_READONLY_PROXIES.set(value, nextProxy)
+    return nextProxy
+  },
+  set: throwReadOnlySetError,
+  deleteProperty: throwReadOnlyDeleteError
+}
+
 /**
  * Creates a read-only proxy that throws on mutation attempts.
  * Optimized for hot-path state reads inside getters, styles, and context.
  *
  * @param {Object} target - The object to proxy.
- * @param {WeakMap} [proxies=new WeakMap()] - Cache for existing proxies.
+ * @param {WeakMap} [proxies=UNTRACKED_READONLY_PROXIES] - Cache for existing proxies.
  * @param {Object|null} [tracker=null] - Optional dependency tracker.
  * @returns {Proxy} The read-only proxy.
  */
-export function createReadOnlyProxy (target, proxies = new WeakMap(), tracker = null) {
+export function createReadOnlyProxy (target, proxies = UNTRACKED_READONLY_PROXIES, tracker = null) {
+  if (tracker === null && proxies === UNTRACKED_READONLY_PROXIES) {
+    const cached = UNTRACKED_READONLY_PROXIES.get(target)
+    if (cached !== undefined) {
+      return cached
+    }
+    const proxy = new Proxy(
+      target,
+      Array.isArray(target) ? UNTRACKED_ARRAY_HANDLER : UNTRACKED_OBJECT_HANDLER
+    )
+    UNTRACKED_READONLY_PROXIES.set(target, proxy)
+    return proxy
+  }
+
   const cached = proxies.get(target)
   if (cached !== undefined) {
     return cached
@@ -1259,18 +1324,19 @@ export function createReadOnlyProxy (target, proxies = new WeakMap(), tracker = 
         return value
       }
 
+      const cachedChild = proxies.get(value)
+      if (cachedChild !== undefined) {
+        return cachedChild
+      }
+
       if (value.nodeType !== undefined) {
         return value
       }
 
       return createReadOnlyProxy(value, proxies, tracker)
     },
-    set () {
-      throw new CoraliteError('Cannot mutate state inside a getter. State is read-only here.')
-    },
-    deleteProperty () {
-      throw new CoraliteError('Cannot delete state inside a getter. State is read-only here.')
-    }
+    set: throwReadOnlySetError,
+    deleteProperty: throwReadOnlyDeleteError
   }
 
   const proxy = new Proxy(target, handler)

@@ -137,6 +137,83 @@ function comparePrecedence (a, b, urlSegments) {
   return 0
 }
 
+const routeIndexCache = new WeakMap()
+
+/**
+ * Builds or retrieves a cached lookup index for a route table's patterns array.
+ *
+ * @param {Array<Object>} patterns - Array of route pattern entries.
+ * @returns {{
+ *   length: number,
+ *   staticMap: Map<string, Object>,
+ *   dynamicByLength: Map<number, Array<Object>>,
+ *   catchallPatterns: Array<Object>,
+ *   orderMap: Map<Object, number>
+ * }} Cached route index.
+ */
+function getRouteIndex (patterns) {
+  const cached = routeIndexCache.get(patterns)
+  if (cached && cached.length === patterns.length) {
+    return cached
+  }
+
+  const staticMap = new Map()
+  const dynamicByLength = new Map()
+  const catchallPatterns = []
+  const orderMap = new Map()
+
+  for (let i = 0; i < patterns.length; i++) {
+    const entry = patterns[i]
+    const segments = entry.segments || []
+    let isStatic = true
+    for (let j = 0; j < segments.length; j++) {
+      if (segments[j].type !== 'static') {
+        isStatic = false
+        break
+      }
+    }
+
+    if (isStatic) {
+      let staticPath = '/'
+      if (segments.length > 0) {
+        const parts = new Array(segments.length)
+        for (let j = 0; j < segments.length; j++) {
+          parts[j] = segments[j].value
+        }
+        staticPath = '/' + parts.join('/')
+      }
+      const normStatic = normalizeUrl(staticPath)
+      if (normStatic !== null && !staticMap.has(normStatic)) {
+        staticMap.set(normStatic, entry)
+      }
+    } else {
+      orderMap.set(entry, i)
+      const hasCatchall = segments.length > 0 && segments[segments.length - 1].type === 'catchall'
+      if (hasCatchall) {
+        catchallPatterns.push(entry)
+      } else {
+        const segLen = segments.length
+        let bucket = dynamicByLength.get(segLen)
+        if (!bucket) {
+          bucket = []
+          dynamicByLength.set(segLen, bucket)
+        }
+        bucket.push(entry)
+      }
+    }
+  }
+
+  const index = {
+    length: patterns.length,
+    staticMap,
+    dynamicByLength,
+    catchallPatterns,
+    orderMap
+  }
+  routeIndexCache.set(patterns, index)
+  return index
+}
+
 /**
  * Matches a URL against a route table and returns the winning pattern entry and extracted params.
  *
@@ -154,10 +231,36 @@ export function matchRoute (url, routeTable) {
     return null
   }
 
+  const index = getRouteIndex(routeTable.patterns)
+  const staticWinner = index.staticMap.get(normalizedPath)
+  if (staticWinner) {
+    return {
+      pattern: staticWinner.pattern,
+      params: {},
+      pagePath: staticWinner.pagePath
+    }
+  }
+
   const urlSegments = normalizedPath === '/' ? [] : normalizedPath.slice(1).split('/')
+  const dynamicBucket = index.dynamicByLength.get(urlSegments.length)
+  const catchallPatterns = index.catchallPatterns
+
+  if (!dynamicBucket && catchallPatterns.length === 0) {
+    return null
+  }
 
   const matches = []
-  for (const patternEntry of routeTable.patterns) {
+  if (dynamicBucket) {
+    for (let i = 0; i < dynamicBucket.length; i++) {
+      const patternEntry = dynamicBucket[i]
+      if (matchesPattern(patternEntry, urlSegments)) {
+        matches.push(patternEntry)
+      }
+    }
+  }
+
+  for (let i = 0; i < catchallPatterns.length; i++) {
+    const patternEntry = catchallPatterns[i]
     if (matchesPattern(patternEntry, urlSegments)) {
       matches.push(patternEntry)
     }
@@ -167,8 +270,15 @@ export function matchRoute (url, routeTable) {
     return null
   }
 
-  // Sort matching patterns by precedence
-  matches.sort((a, b) => comparePrecedence(a, b, urlSegments))
+  if (matches.length > 1) {
+    matches.sort((a, b) => {
+      const cmp = comparePrecedence(a, b, urlSegments)
+      if (cmp !== 0) {
+        return cmp
+      }
+      return (index.orderMap.get(a) || 0) - (index.orderMap.get(b) || 0)
+    })
+  }
 
   const winner = matches[0]
   const params = extractParams(winner, urlSegments)

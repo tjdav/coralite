@@ -47,13 +47,32 @@ const DATASET_PROXY_SYM = Symbol('datasetProxy')
  * @param {any} node - The node to enhance
  */
 function makeCircularPropertiesNonEnumerable (node) {
-  for (const key of ['parent', 'prev', 'next', 'slots']) {
-    if (Object.hasOwn(node, key)) {
-      const val = node[key]
-      delete node[key]
-      if (val !== undefined) {
-        node[key] = val
-      }
+  if ('parent' in node) {
+    const val = node.parent
+    delete node.parent
+    if (val !== undefined) {
+      node[PARENT_SYM] = val
+    }
+  }
+  if ('prev' in node) {
+    const val = node.prev
+    delete node.prev
+    if (val !== undefined) {
+      node[PREV_SYM] = val
+    }
+  }
+  if ('next' in node) {
+    const val = node.next
+    delete node.next
+    if (val !== undefined) {
+      node[NEXT_SYM] = val
+    }
+  }
+  if ('slots' in node) {
+    const val = node.slots
+    delete node.slots
+    if (val !== undefined) {
+      node[SLOTS_SYM] = val
     }
   }
 }
@@ -311,6 +330,11 @@ const CoraliteNodePrototype = {
 }
 
 Object.defineProperties(CoraliteNodePrototype, {
+  __coralite_enhanced__: {
+    value: true,
+    enumerable: false,
+    configurable: true
+  },
   nodeType: {
     get () {
       return nodeTypes[this.type] || ELEMENT_NODE
@@ -1778,15 +1802,8 @@ export function enhanceNode (node) {
     return node
   }
 
-  const prototype = getPrototypeForType(node.type)
-  Object.setPrototypeOf(node, prototype)
   makeCircularPropertiesNonEnumerable(node)
-
-  Object.defineProperty(node, '__coralite_enhanced__', {
-    value: true,
-    enumerable: false,
-    configurable: true
-  })
+  Object.setPrototypeOf(node, getPrototypeForType(node.type))
 
   return node
 }

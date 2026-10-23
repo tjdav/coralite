@@ -170,12 +170,12 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onE
     },
     oncomment (data) {
       const parent = stack[stack.length - 1]
-
-      parent.children.push(createCoraliteComment({
+      const commentNode = createCoraliteComment({
         type: 'comment',
-        data,
-        parent
-      }))
+        data
+      })
+      commentNode.parent = parent
+      parent.children.push(commentNode)
     }
   }, { decodeEntities: false })
 
@@ -383,10 +383,10 @@ export function parseModule (string, options = {}) {
             const cToken = createCoraliteElement({
               type: 'tag',
               name: 'c-token',
-              parent,
               attribs: {},
               children: []
             })
+            cToken.parent = parent
             parent.children.push(cToken)
 
             const tokenNode = createTextNode(token.content, cToken)
@@ -430,11 +430,13 @@ export function parseModule (string, options = {}) {
     },
 
     oncomment (data) {
-      stack[stack.length - 1].children.push(createCoraliteComment({
+      const parent = stack[stack.length - 1]
+      const commentNode = createCoraliteComment({
         type: 'comment',
-        data,
-        parent: stack[stack.length - 1]
-      }))
+        data
+      })
+      commentNode.parent = parent
+      parent.children.push(commentNode)
     }
   }, { decodeEntities: false })
 
@@ -689,9 +691,9 @@ export function createElement ({
     name: sanitisedName,
     attribs: attributes,
     children: [],
-    parent,
     parentChildIndex: parent.children.length
   })
+  element.parent = parent
 
   if (ignoreByAttribute) {
     const ignore = findAttributesToIgnore(ignoreByAttribute, attributes)
@@ -746,9 +748,9 @@ export function createTextNode (data, parent) {
   /** @type {CoraliteTextNode} */
   const textNode = createCoraliteTextNode({
     type: 'text',
-    data,
-    parent
+    data
   })
+  textNode.parent = parent
 
   // @ts-ignore
   parent.children.push(textNode)
