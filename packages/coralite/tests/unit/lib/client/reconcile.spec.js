@@ -3,9 +3,63 @@ import '../../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { createCoraliteClass } from '../../../../lib/client/element.js'
-import { detectListPattern } from '../../../../lib/utils/observer-record.js'
+import { applyListPattern, detectListPattern } from '../../../../lib/utils/observer-record.js'
 
 describe('Reconcile List Patterns', () => {
+  describe('applyListPattern', () => {
+    function createContainer (labels) {
+      const container = document.createElement('ul')
+      labels.forEach((label) => {
+        const li = document.createElement('li')
+        li.textContent = label
+        container.appendChild(li)
+      })
+      return {
+        container,
+        element: {
+          firstElementChild: container
+        }
+      }
+    }
+
+    function getChildTexts (container) {
+      return Array.from(container.children).map((child) => child.textContent)
+    }
+
+    it('adjacent swap (i > j) reorders correctly', () => {
+      const { container, element } = createContainer(['A', 'B', 'C'])
+      const applied = applyListPattern(element, 'items', {
+        type: 'swap',
+        i: 2,
+        j: 1
+      })
+      assert.strictEqual(applied, true)
+      assert.deepStrictEqual(getChildTexts(container), ['A', 'C', 'B'])
+    })
+
+    it('adjacent swap (i < j) still works', () => {
+      const { container, element } = createContainer(['A', 'B', 'C'])
+      const applied = applyListPattern(element, 'items', {
+        type: 'swap',
+        i: 0,
+        j: 1
+      })
+      assert.strictEqual(applied, true)
+      assert.deepStrictEqual(getChildTexts(container), ['B', 'A', 'C'])
+    })
+
+    it('non-adjacent swap still works', () => {
+      const { container, element } = createContainer(['A', 'B', 'C', 'D'])
+      const applied = applyListPattern(element, 'items', {
+        type: 'swap',
+        i: 0,
+        j: 3
+      })
+      assert.strictEqual(applied, true)
+      assert.deepStrictEqual(getChildTexts(container), ['D', 'B', 'C', 'A'])
+    })
+  })
+
   describe('detectListPattern', () => {
     it('should return null for non-array inputs', () => {
       assert.strictEqual(detectListPattern(null, []), null)

@@ -157,6 +157,9 @@ export function applyListPattern (element, key, pattern) {
     const next2 = row2.nextSibling
     if (next1 === row2) {
       container.insertBefore(row2, row1)
+    } else if (next2 === row1) {
+      // adjacent swap with i > j: next2 === row1
+      container.insertBefore(row1, row2)
     } else {
       container.insertBefore(row2, next1)
       container.insertBefore(row1, next2)
