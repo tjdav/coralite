@@ -124,6 +124,10 @@ export async function createCoralite ({
   const allPlugins = [...corePlugins, ...userPluginList]
   const uniquePlugins = dedupePluginsByName(allPlugins)
 
+  const explicitPluginNames = new Set(
+    (userPluginList || []).map((p) => p?.name).filter(Boolean)
+  )
+
   const normalizedOptions = {
     components,
     pages,
@@ -151,6 +155,7 @@ export async function createCoralite ({
   /** @type {CoraliteInstance} */
   // @ts-ignore
   const app = {
+    _explicitPluginNames: explicitPluginNames,
     options: normalizedOptions,
     onError: (data) => handleError({
       onErrorCallback: resolvedOnError,
