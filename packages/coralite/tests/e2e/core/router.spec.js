@@ -66,4 +66,46 @@ test.describe('SPA Router', () => {
     const count = await page.evaluate(() => window.__vtCallCount)
     expect(count).toBe(1)
   })
+
+  test('navigation succeeds when startViewTransition unavailable', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__coralite_hydration__ = window.__coralite_hydration__ || {}
+      window.__coralite_hydration__.viewTransitions = true
+      delete document.startViewTransition
+      window.__navigatedFired = false
+      window.addEventListener('coralite:navigated', () => {
+        window.__navigatedFired = true
+      })
+    })
+
+    await page.click('#link-about')
+    await expect(page).toHaveURL('/about')
+    await expect(page.locator('#page-title')).toHaveText('About Page')
+
+    const navigatedFired = await page.evaluate(() => window.__navigatedFired)
+    expect(navigatedFired).toBe(true)
+  })
+
+  test('navigation falls back to sync when startViewTransition throws', async ({ page }) => {
+    const consoleErrors = []
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text())
+      }
+    })
+
+    await page.evaluate(() => {
+      window.__coralite_hydration__ = window.__coralite_hydration__ || {}
+      window.__coralite_hydration__.viewTransitions = true
+      document.startViewTransition = () => {
+        throw new Error('mock failure')
+      }
+    })
+
+    await page.click('#link-about')
+    await expect(page).toHaveURL('/about')
+    await expect(page.locator('#page-title')).toHaveText('About Page')
+
+    expect(consoleErrors).toEqual([])
+  })
 })
