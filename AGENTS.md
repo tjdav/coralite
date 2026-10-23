@@ -59,6 +59,7 @@ Top-level imports reserved for `define*` functions and modules used by isomorphi
 - `server` runs at build time, stripped from the browser bundle.
 - `client` runs in the browser, cannot reference module scope.
 - Module-scope imports in `client` require `await import()`.
+- Enforced by `no-restricted-imports` in `eslint.config.js` — see `**/lib/client/**` block.
 
 ## 5. No defensive guards in deterministic blocks
 

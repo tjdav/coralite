@@ -308,10 +308,16 @@ export default [
     files: ['**/lib/client/**/*.js', '**/lib/utils/client/**/*.js'],
     rules: {
       'no-restricted-imports': ['error', {
-        patterns: [{
-          group: ['node:*'],
-          message: 'Node modules cannot be imported in client code.'
-        }]
+        patterns: [
+          {
+            group: ['node:*'],
+            message: 'Node modules cannot be imported in client code.'
+          },
+          {
+            group: ['../../server/**', '../server/**', '**/lib/server/**'],
+            message: 'lib/client cannot import from lib/server. Move shared code to lib/shared/ or expose a documented seam.'
+          }
+        ]
       }]
     }
   },
