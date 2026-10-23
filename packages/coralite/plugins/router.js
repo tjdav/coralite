@@ -6,6 +6,71 @@ import { fileURLToPath } from 'node:url'
 import { existsSync } from 'node:fs'
 
 /**
+ * Checks if the router is active in the application based on explicit plugin registration
+ * or usage of <router-outlet> / router references in registered components or pages.
+ *
+ * @param {Object} app - Global Coralite app instance
+ * @param {string} outletAttr - Attribute name for outlet selector
+ * @returns {boolean} True if router is active in the app
+ */
+function isRouterActive (app, outletAttr) {
+  if (!app) {
+    return false
+  }
+
+  if (app._routerActiveCache !== undefined) {
+    return app._routerActiveCache
+  }
+
+  // Criterion 1: Explicit plugin registration
+  if (app._explicitPluginNames && app._explicitPluginNames.has('router')) {
+    app._routerActiveCache = true
+    return true
+  }
+
+  // Criteria 2 & 3: Scan registered components and pages
+  const outletRegex = new RegExp(`<${outletAttr}[\\s>]|\\[${outletAttr}\\]|data-router-outlet|<router-outlet`)
+  const routerWordRegex = /\brouter\b/
+
+  const checkSource = (str) => {
+    if (typeof str === 'string') {
+      return outletRegex.test(str) || routerWordRegex.test(str)
+    }
+    return false
+  }
+
+  const collections = [app.components?.list, app.pages?.list]
+  for (const list of collections) {
+    if (!list || !Array.isArray(list)) {
+      continue
+    }
+    for (const item of list) {
+      // Ignore the router plugin's own outlet component
+      if (item.path?.pathname && item.path.pathname.endsWith('outlet.html')) {
+        continue
+      }
+      if (checkSource(item.content)) {
+        app._routerActiveCache = true
+        return true
+      }
+      if (item.result) {
+        if (checkSource(item.result.script)) {
+          app._routerActiveCache = true
+          return true
+        }
+        if (checkSource(item.result.page?.script)) {
+          app._routerActiveCache = true
+          return true
+        }
+      }
+    }
+  }
+
+  app._routerActiveCache = false
+  return false
+}
+
+/**
  * Resolves the absolute path to the router outlet component template.
  * @returns {string} Path to outlet.html
  */
@@ -133,7 +198,9 @@ export const routerPlugin = definePlugin({
     onBeforePageRender ({ component, config, app }) {
       const activeConfig = config || {}
       const outletAttr = activeConfig.outlet || 'data-router-outlet'
-      wrapBodyInOutlet(component, outletAttr, app)
+      if (isRouterActive(app, outletAttr)) {
+        wrapBodyInOutlet(component, outletAttr, app)
+      }
     }
   },
 
