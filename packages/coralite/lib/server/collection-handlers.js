@@ -195,11 +195,17 @@ export function createPageHandlers ({
     const directPageComponents = app._dependencyGraph.directPageComponents
 
     if (elements && elements.customElements && directPageComponents) {
+      const pagePath = data.path.pathname
+      const hadPrevious = Object.hasOwn(directPageComponents, pagePath)
       const directComponents = elements.customElements.map(el => el.name)
 
-      directPageComponents[data.path.pathname] = directComponents
+      directPageComponents[pagePath] = directComponents
 
-      app._refreshDependencyGraph()
+      if (typeof app._updatePageDependencies === 'function') {
+        app._updatePageDependencies(pagePath, directComponents, hadPrevious)
+      } else {
+        app._refreshDependencyGraph()
+      }
     }
 
     const pluginHookResults = await triggerHook('onPageSet', {
@@ -315,17 +321,29 @@ export function createPageHandlers ({
 
     const elements = parseHTML(newValue.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
     const directPageComponents = app._dependencyGraph.directPageComponents
+    const pagePath = newValue.path.pathname
 
     if (directPageComponents) {
+      const hadPrevious = Object.hasOwn(directPageComponents, pagePath)
       if (elements && elements.customElements) {
         const directComponents = elements.customElements.map(el => el.name)
-        directPageComponents[newValue.path.pathname] = directComponents
+        directPageComponents[pagePath] = directComponents
+        if (typeof app._updatePageDependencies === 'function') {
+          app._updatePageDependencies(pagePath, directComponents, hadPrevious)
+        } else {
+          app._refreshDependencyGraph()
+        }
       } else {
-        delete directPageComponents[newValue.path.pathname]
+        delete directPageComponents[pagePath]
+        if (typeof app._updatePageDependencies === 'function') {
+          app._updatePageDependencies(pagePath, [], hadPrevious)
+        } else {
+          app._refreshDependencyGraph()
+        }
       }
+    } else {
+      app._refreshDependencyGraph()
     }
-
-    app._refreshDependencyGraph()
 
     return newValue.result
   }
@@ -341,10 +359,16 @@ export function createPageHandlers ({
     const directPageComponents = app._dependencyGraph.directPageComponents
 
     if (pathname && directPageComponents) {
+      const hadPrevious = Object.hasOwn(directPageComponents, pathname)
       delete directPageComponents[pathname]
+      if (typeof app._updatePageDependencies === 'function') {
+        app._updatePageDependencies(pathname, [], hadPrevious)
+      } else {
+        app._refreshDependencyGraph()
+      }
+    } else {
+      app._refreshDependencyGraph()
     }
-
-    app._refreshDependencyGraph()
   }
 
   const onComponentSetLocal = async (v) => {

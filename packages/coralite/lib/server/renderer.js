@@ -2698,9 +2698,11 @@ export function createRenderer ({
       queue.push(...filtered)
     }
 
+    const queueSet = new Set(queue)
     for (let i = 0; i < resolvedQueue.length; i++) {
       const item = resolvedQueue[i]
-      if (!queue.includes(item)) {
+      if (!queueSet.has(item)) {
+        queueSet.add(item)
         queue.push(item)
       }
     }
@@ -2710,17 +2712,21 @@ export function createRenderer ({
 
     // Phase 2: ISR & Manifest Invalidation
     // Restore directPageComponents from manifest
-    for (const [path, metadata] of Object.entries(manifest.physical || {})) {
-      if (metadata.dependencies) {
-        app._dependencyGraph.directPageComponents[path] = metadata.dependencies
+    const physicalEntries = Object.entries(manifest.physical || {})
+    const virtualEntries = Object.entries(manifest.virtual || {})
+    if (physicalEntries.length > 0 || virtualEntries.length > 0) {
+      for (const [path, metadata] of physicalEntries) {
+        if (metadata.dependencies) {
+          app._dependencyGraph.directPageComponents[path] = metadata.dependencies
+        }
       }
-    }
-    for (const [path, metadata] of Object.entries(manifest.virtual || {})) {
-      if (metadata.dependencies) {
-        app._dependencyGraph.directPageComponents[path] = metadata.dependencies
+      for (const [path, metadata] of virtualEntries) {
+        if (metadata.dependencies) {
+          app._dependencyGraph.directPageComponents[path] = metadata.dependencies
+        }
       }
+      app._refreshDependencyGraph()
     }
-    app._refreshDependencyGraph()
 
     const mocksStr = app.options.testing?.mocks ? serialize(app.options.testing.mocks) : ''
     const mocksHash = hash(mocksStr)
@@ -2960,12 +2966,59 @@ export function createRenderer ({
     }
 
     const tasksToRender = []
+    const pagesAffectedByComponents = new Set()
+    if (componentChanges.size > 0) {
+      for (const id of componentChanges.keys()) {
+        const pages = pageCustomElements[id]
+        if (pages instanceof Set) {
+          for (const p of pages) {
+            pagesAffectedByComponents.add(p)
+          }
+        } else if (Array.isArray(pages)) {
+          for (let i = 0; i < pages.length; i++) {
+            pagesAffectedByComponents.add(pages[i])
+          }
+        }
+      }
+    }
+    const failedManifestSet = Array.isArray(manifest.failed) ? new Set(manifest.failed) : null
+
+    const physicalFileMetaMap = new Map()
+    const ioLimit = pLimit(Math.min(availableParallelism() * 2, 16))
+    const physicalCheckPromises = []
+    for (let i = 0; i < renderTasks.length; i++) {
+      const task = renderTasks[i]
+      if (!task.pageItem.virtual) {
+        const pathname = task.pageItem.path.pathname
+        if (!physicalFileMetaMap.has(pathname)) {
+          const samplePrevMeta = manifest.physical ? manifest.physical[task.targetOutPath] : undefined
+          physicalFileMetaMap.set(pathname, null)
+          physicalCheckPromises.push(
+            ioLimit(async () => {
+              const res = await checkFileChange(pathname, samplePrevMeta)
+              physicalFileMetaMap.set(pathname, res.metadata)
+            })
+          )
+        }
+      }
+    }
+    if (physicalCheckPromises.length > 0) {
+      await Promise.all(physicalCheckPromises)
+    }
 
     for (const task of renderTasks) {
       const { pageItem, targetOutPath, targetRoute } = task
-      let shouldRebuild = false
+      const wasFailedInManifest = failedManifestSet !== null && failedManifestSet.has(targetOutPath)
+      let shouldRebuild = mocksChanged
+        || !isIncremental
+        || pagesAffectedByComponents.has(pageItem.path.pathname)
+        || wasFailedInManifest
 
-      if (normalizedOptions.output && (normalizedOptions.mode === 'production' || normalizedOptions.mode === 'testing')) {
+      const existingMeta = pageItem.virtual
+        ? manifest.virtual?.[targetOutPath] || null
+        : manifest.physical?.[targetOutPath] || null
+
+      if (!shouldRebuild && existingMeta && normalizedOptions.output && (normalizedOptions.mode === 'production' || normalizedOptions.mode === 'testing')) {
         const relativeDir = relative(normalizedOptions.path.pages, dirname(targetOutPath))
         const outFile = join(normalizedOptions.output, relativeDir, basename(targetOutPath))
         try {
@@ -2975,28 +3028,10 @@ export function createRenderer ({
         }
       }
 
-      // Check if any dependent component changed
-      const componentIds = Object.keys(pageCustomElements).filter(id => {
-        const pages = pageCustomElements[id]
-        if (pages instanceof Set) {
-          return pages.has(pageItem.path.pathname)
-        }
-        return Array.isArray(pages) && pages.includes(pageItem.path.pathname)
-      })
-      if (componentIds.some(id => componentChanges.get(id))) {
-        shouldRebuild = true
-      }
-
-      if (mocksChanged || !isIncremental) {
-        shouldRebuild = true
-      }
-
-      const wasFailedInManifest = Boolean(manifest.failed && Array.isArray(manifest.failed) && manifest.failed.includes(targetOutPath))
-
       if (pageItem.virtual) {
-        const existingVirtualMeta = manifest.virtual ? manifest.virtual[targetOutPath] : null
+        const existingVirtualMeta = existingMeta
         if (!shouldRebuild) {
-          shouldRebuild = wasFailedInManifest || await checkPageAssetsAndManifest(existingVirtualMeta)
+          shouldRebuild = await checkPageAssetsAndManifest(existingVirtualMeta)
         }
 
         const shouldRebuildVirtual = !isIncremental || shouldRebuild || pageItem.volatile || !existingVirtualMeta || String(existingVirtualMeta.cacheKey) !== String(pageItem.cacheKey) || normalizedOptions.mode === 'development'
@@ -3067,12 +3102,17 @@ export function createRenderer ({
           tasksToRender.push(task)
         }
       } else {
-        const { changed, metadata } = await checkFileChange(pageItem.path.pathname, manifest.physical[targetOutPath])
-        newManifest.physical[targetOutPath] = metadata
+        const fileMeta = physicalFileMetaMap.get(pageItem.path.pathname)
+        const existingPageMeta = manifest.physical ? manifest.physical[targetOutPath] : undefined
+        const changed = !existingPageMeta || existingPageMeta.hash !== fileMeta.hash
+        newManifest.physical[targetOutPath] = {
+          mtime: fileMeta.mtime,
+          size: fileMeta.size,
+          hash: fileMeta.hash
+        }
 
-        const existingPageMeta = manifest.physical[targetOutPath]
         if (!shouldRebuild) {
-          shouldRebuild = wasFailedInManifest || await checkPageAssetsAndManifest(existingPageMeta)
+          shouldRebuild = await checkPageAssetsAndManifest(existingPageMeta)
         }
 
         if (!isIncremental || changed || shouldRebuild || normalizedOptions.mode === 'development') {

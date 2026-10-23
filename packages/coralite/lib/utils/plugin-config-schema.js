@@ -1,7 +1,9 @@
 import { CoraliteError } from '../shared/errors.js'
 import { inferTypeFromValues } from '../shared/attributes.js'
 
-export const SUPPORTED_CONFIG_TYPES = new Set(['String', 'Number', 'Boolean', 'Object', 'Array'])
+export const SUPPORTED_CONFIG_TYPES =
+  /* @__PURE__ */
+  new Set(['String', 'Number', 'Boolean', 'Object', 'Array'])
 
 /**
  * Returns normalized type string for standard constructor or constructor string name.

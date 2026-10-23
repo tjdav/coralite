@@ -236,6 +236,40 @@ export async function createCoralite ({
       pageCustomElements: {},
       directPageComponents: {}
     },
+    _updatePageDependencies: (pagePath, directComponents, hadPrevious = false) => {
+      const { pageCustomElements } = app._dependencyGraph
+      if (hadPrevious) {
+        for (const tag in pageCustomElements) {
+          pageCustomElements[tag].delete(pagePath)
+        }
+      }
+      if (!directComponents || !directComponents.length) {
+        return
+      }
+
+      const visited = new Set()
+
+      const walk = (tags) => {
+        for (let i = 0; i < tags.length; i++) {
+          const tag = tags[i]
+          if (visited.has(tag)) {
+            continue
+          }
+          visited.add(tag)
+          if (!pageCustomElements[tag]) {
+            pageCustomElements[tag] = new Set()
+          }
+          pageCustomElements[tag].add(pagePath)
+
+          const sharedFn = scriptManager.sharedFunctions[tag]
+          if (sharedFn && sharedFn.components?.length) {
+            walk(sharedFn.components)
+          }
+        }
+      }
+
+      walk(directComponents)
+    },
     _refreshDependencyGraph: () => {
       const { pageCustomElements, directPageComponents } = app._dependencyGraph
       // Clear existing graph
@@ -243,37 +277,8 @@ export async function createCoralite ({
         delete pageCustomElements[tag]
       }
 
-      const resolveDependencies = (pagePath, directComponents) => {
-        const visited = new Set()
-        const allDependencies = new Set()
-
-        const walk = (tags) => {
-          for (const tag of tags) {
-            if (visited.has(tag)) {
-              continue
-            }
-            visited.add(tag)
-            allDependencies.add(tag)
-
-            const sharedFn = scriptManager.sharedFunctions[tag]
-            if (sharedFn && sharedFn.components?.length) {
-              walk(sharedFn.components)
-            }
-          }
-        }
-
-        walk(directComponents)
-
-        for (const tag of allDependencies) {
-          if (!pageCustomElements[tag]) {
-            pageCustomElements[tag] = new Set()
-          }
-          pageCustomElements[tag].add(pagePath)
-        }
-      }
-
       for (const [pagePath, directComponents] of Object.entries(directPageComponents)) {
-        resolveDependencies(pagePath, directComponents)
+        app._updatePageDependencies(pagePath, directComponents, false)
       }
     },
     _clearDependencies: () => {

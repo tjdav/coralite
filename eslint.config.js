@@ -93,7 +93,7 @@ export default [
         caughtErrorsIgnorePattern: '^_'
       }],
       'jsdoc/check-param-names': 'error',
-      'no-inline-comments': 'error',
+      'no-inline-comments': ['error', { ignorePattern: '@__PURE__' }],
       curly: ['error', 'all'],
       'no-nested-ternary': 'error',
       'no-restricted-syntax': [
