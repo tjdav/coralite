@@ -163,6 +163,10 @@ export async function setupPlugins ({
   }
 
   for (const plugin of sortedPlugins) {
+    if (app._explicitPluginNames && !app._explicitPluginNames.has(plugin.name)) {
+      plugin._isAutoCorePlugin = true
+    }
+
     let sharedConfig = {}
     let serverConfig = {}
     let clientConfig = {}

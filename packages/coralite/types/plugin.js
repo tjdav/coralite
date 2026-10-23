@@ -320,6 +320,7 @@
  * @property {Record<string, any>} [config] - Top-level shared configuration schema/values
  * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
+ * @property {boolean} [_isAutoCorePlugin] - Internal flag indicating whether plugin was auto-registered by core
  * @property {boolean} [_isConfiguredInstance] - Internal flag
  * @property {any} [_valuesByBlock] - Internal normalized values by block
  * @property {any} [_normalizedSchemas] - Internal normalized schemas
