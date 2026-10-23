@@ -6,10 +6,6 @@ import { fileURLToPath } from 'node:url'
 import { existsSync } from 'node:fs'
 
 /**
- * Resolves the absolute path to the router outlet component template.
- * @returns {string} Path to outlet.html
- */
-/**
  * Checks if the router is active in the application based on explicit plugin registration
  * or usage of <router-outlet> / router references in registered components or pages.
  *
@@ -74,6 +70,10 @@ function isRouterActive (app, outletAttr) {
   return false
 }
 
+/**
+ * Resolves the absolute path to the router outlet component template.
+ * @returns {string} Path to outlet.html
+ */
 function getOutletComponentPath () {
   const directPath = fileURLToPath(new URL('./router/outlet.html', import.meta.url))
   if (existsSync(directPath)) {
