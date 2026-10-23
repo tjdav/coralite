@@ -31,10 +31,9 @@ jobs:
         run: pnpm install
 
       - name: Build Monorepo Packages
-        run: pnpm run build && pnpm run build:scripts
+        run: pnpm run build
 
       - name: Smoke Test Packages
         run: |
           node scripts/smoke.js coralite
           node scripts/smoke.js create-coralite
-          node scripts/smoke.js coralite-scripts

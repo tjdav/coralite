@@ -1,7 +1,7 @@
 {
   "name": "coralite-scripts",
   "version": "1.0.0-rc.5",
-  "description": "Configuration and scripts for Create Coralite.",
+  "description": "Deprecated — Configuration and scripts for Create Coralite.",
   "type": "module",
   "bin": {
     "coralite-scripts": "./bin/index.js"

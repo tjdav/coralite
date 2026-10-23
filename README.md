@@ -22,7 +22,6 @@ This repository is a monorepo managed with `pnpm`. It contains the following pac
 
 ### Core Framework
 * [`coralite`](./packages/coralite) - The core reactive engine, HTML module compiler, and CLI.
-* [`coralite-scripts`](./packages/coralite-scripts) - Unified build, dev-server, and asset pipeline for Coralite projects.
 * [`create-coralite`](./packages/create-coralite) - Scaffolding tool to initialize new projects in seconds.
 
 ### Plugin Ecosystem
