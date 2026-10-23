@@ -11,6 +11,7 @@ Directory boundary responsibilities under `lib/`:
 - `lib/client/`: Web Components custom element base class, browser hydration runtime, reactive state updates, and client plugin runner. Zero Node.js dependencies allowed in client bundle.
 - `lib/shared/`: Isomorphic utilities, AST helpers, schema definitions, and token parsers shared between server and client runtimes.
 - `lib/validator/`: Build-time validation passes, diagnostic emitters, and code fixers for template, script, and config verification.
+- `lib/cli/`: CLI commands, runner scripts, and dev server orchestration.
 
 ## 3. Authoring invariants
 
@@ -35,7 +36,6 @@ Reserved diagnostic and error code ranges for Coralite core:
 
 ## 6. What belongs elsewhere
 
-- CLI commands, runner scripts, and dev server orchestration belong in `packages/coralite-scripts/`.
 - Project scaffolding templates and template generation logic belong in `packages/create-coralite/`.
 - Release tooling and version bump scripts belong in `packages/coralite-release/`.
 

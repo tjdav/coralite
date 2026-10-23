@@ -10,13 +10,13 @@ import { createCoralite, resolveCspConfig } from 'coralite'
 import portfinder from 'portfinder'
 
 /**
- * @import {CoraliteScriptConfig, CoraliteScriptOptions} from 'coralite-scripts/types'
+ * @import {CoraliteConfig, CoraliteCliOptions} from '../../types/index.js'
  */
 
 /**
  * Builds the HTML script tag for live reload.
  *
- * @param {CoraliteScriptConfig} config - Coralite configuration.
+ * @param {CoraliteConfig} config - Coralite configuration.
  * @returns {string} The script tag HTML string.
  */
 export function buildLiveReloadScript (config) {
@@ -70,7 +70,7 @@ export function attachDevRoutes (expressApp) {
  *
  * @param {string} reqPath - The requested URL path.
  * @param {string} extension - The extension of the requested path.
- * @param {CoraliteScriptConfig} config - The Coralite configuration.
+ * @param {CoraliteConfig} config - The Coralite configuration.
  * @param {any} coralite - The Coralite instance.
  * @param {Map<string, string>} memoryPageSource - Map of in-memory page sources.
  * @returns {Promise<{pathname: string, key: string}|null>}
@@ -172,8 +172,8 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
 
 /**
  * Starts a development server with hot-reloading capabilities
- * @param {CoraliteScriptConfig} config - Coralite configuration
- * @param {CoraliteScriptOptions} options - Coralite configuration
+ * @param {CoraliteConfig} config - Coralite configuration
+ * @param {CoraliteCliOptions} options - Coralite configuration
  * @param {string} runMode - The run mode (dev or test)
  * @returns {Promise<void>}
  */

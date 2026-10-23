@@ -1,6 +1,5 @@
 /**
- * @typedef {import('@volar/language-core').LanguagePlugin} LanguagePlugin
- * @typedef {import('@volar/language-core').VirtualCode} VirtualCode
+ * @import { LanguagePlugin, VirtualCode } from '@volar/language-core'
  */
 
 /**
@@ -30,7 +29,7 @@ const TS_SCRIPT_KIND = 3
  * Volar LanguagePlugin for Coralite .html component and page files.
  * Extracts embedded <script> blocks into virtual TypeScript code.
  *
- * @type {LanguagePlugin<string>}
+ * @type {LanguagePlugin<string> & { typescript: Record<string, any> }}
  */
 export const coraliteLanguagePlugin = {
   getLanguageId (fileName) {

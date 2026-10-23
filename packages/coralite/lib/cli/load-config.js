@@ -5,7 +5,7 @@ import { displayError } from './build-utils.js'
 import { defineConfig } from './config.js'
 
 /**
- * @import {CoraliteScriptConfig} from 'coralite-scripts/types'
+ * @import {CoraliteConfig} from '../../types/index.js'
  */
 
 /**
@@ -14,7 +14,7 @@ import { defineConfig } from './config.js'
  * @param {string|{ cwd?: string, silent?: boolean }|null} [cwd=process.cwd()] - The current working directory or options object.
  * @param {object} [options={}] - Additional options.
  * @param {boolean} [options.silent=false] - Whether to suppress error logs when config is missing or fails.
- * @returns {Promise<CoraliteScriptConfig|null>} The configuration object containing path settings or null if no config found or invalid
+ * @returns {Promise<CoraliteConfig|null>} The configuration object containing path settings or null if no config found or invalid
  *
  * @example
  * ```js

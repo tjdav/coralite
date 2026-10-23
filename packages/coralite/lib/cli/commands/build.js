@@ -8,7 +8,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import ora from 'ora'
 
 /**
- * @param {import('coralite-scripts/types').CoraliteScriptConfig} config - The configuration object.
+ * @param {import('../../../types/index.js').CoraliteConfig} config - The configuration object.
  * @param {any} options - The CLI options.
  * @param {any} logger - The logger object.
  */

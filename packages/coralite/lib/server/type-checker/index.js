@@ -46,6 +46,13 @@ export async function typeCheck (files, options = {}) {
   try {
     ts = requireUser('typescript')
   } catch {
+    if (options.cwd) {
+      return {
+        diagnostics: [],
+        skipped: true,
+        reason: 'typescript not installed'
+      }
+    }
     try {
       ts = requireSelf('typescript')
     } catch {

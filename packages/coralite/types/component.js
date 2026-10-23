@@ -196,6 +196,7 @@
  *
  * @template {Record<string, any>} [TState=Record<string, any>]
  * @typedef {Object} CoraliteComponentOptions
+ * @property {TState} [state] - Initial state for the component.
  * @property {CoraliteAttributesDefinition} [attributes] - Attribute schema definitions.
  * @property {Record<string, (context: CoraliteGetterContext<TState>) => any>} [getters] - Isomorphic derived getters.
  * @property {(context: CoraliteClientContext<TState> & Record<string, any>) => void | Promise<void>} [client] - Browser lifecycle function.
