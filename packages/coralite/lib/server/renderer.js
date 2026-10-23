@@ -2169,7 +2169,8 @@ export function createRenderer ({
       }
 
       const hydrationData = {
-        __route__: routeObj
+        __route__: routeObj,
+        viewTransitions: normalizedOptions.viewTransitions
       }
 
       for (const [id, instance] of Object.entries(instances)) {

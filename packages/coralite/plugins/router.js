@@ -362,10 +362,12 @@ export const routerPlugin = definePlugin({
 
       /** @type {Object} */
       const win = window
+      const viewTransitions = win.__coralite_hydration__?.viewTransitions
       win.__coralite_router__ = {
         navigate,
         current: () => ({ path: window.location ? window.location.pathname : '/' }),
-        beforeEach
+        beforeEach,
+        viewTransitions
       }
 
       const outlet = document.querySelector(outletSelector)
