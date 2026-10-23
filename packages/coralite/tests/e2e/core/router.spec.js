@@ -47,4 +47,23 @@ test.describe('SPA Router', () => {
     expect(events).toContain('navigating:/about')
     expect(events).toContain('navigated:/about')
   })
+
+  test('router navigation triggers startViewTransition when enabled', async ({ page }) => {
+    await page.evaluate(() => {
+      window.__coralite_hydration__ = window.__coralite_hydration__ || {}
+      window.__coralite_hydration__.viewTransitions = true
+      window.__vtCallCount = 0
+      document.startViewTransition = (cb) => {
+        window.__vtCallCount++
+        const res = cb ? cb() : null
+        return { finished: Promise.resolve(res) }
+      }
+    })
+
+    await page.click('#link-about')
+    await expect(page).toHaveURL('/about')
+
+    const count = await page.evaluate(() => window.__vtCallCount)
+    expect(count).toBe(1)
+  })
 })
