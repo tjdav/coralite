@@ -3,7 +3,7 @@ import assert from 'node:assert'
 import { mkdtemp, rm, mkdir, writeFile, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { fixCommand } from '../../../../../../coralite-scripts/libs/commands/fix.js'
+import { fixCommand } from '#lib/cli/commands/fix.js'
 
 describe('CORALITE-E108 Auto-Fix Integration (e108-autofix)', () => {
   it('runs coralite fix on a project page with bare exports and rewrites to definePage', async () => {

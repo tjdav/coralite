@@ -18,6 +18,7 @@ jspm_packages
 .coralite-dev/
 .coralite-prod/
 .coralite-testing/
+.coralite-router-dev/
 website/.coralite/components
 website/.coralite/css
 packages/coralite/llms.txt

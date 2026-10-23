@@ -177,6 +177,17 @@
  */
 
 /**
+ * @typedef {Object} CoraliteCliOptions
+ * @property {boolean} [dev] - Start development server with hot-reloading.
+ * @property {boolean} [build] - Build coralite site for production deployment.
+ * @property {boolean} [verbose] - Enable verbose logging output.
+ * @property {boolean} [clean] - Clear the output directory before building.
+ * @property {boolean} [incremental] - Enable or disable incremental build change detection.
+ * @property {string} [incrementalSource] - Source of the incremental option.
+ * @property {string[]} [assets] - Static assets mapping passed via CLI.
+ */
+
+/**
  * @typedef {Object} CoraliteBuildOptions
  * @property {number} [maxConcurrent] - The maximum number of concurrent page render and write operations.
  * @property {AbortSignal} [signal] - An AbortSignal to cancel the build operation.
@@ -322,6 +333,7 @@
  * @property {() => void} _clearDependencies - The internal function to clear the dependency graph.
  * @property {(name: string, initialData: any) => Promise<any>} _triggerPluginHook - The internal function to trigger a sequential plugin hook.
  * @property {(name: string, contextData: any) => Promise<any[]>} _triggerPluginAggregateHook - The internal function to trigger an aggregated plugin hook.
+ * @property {Set<string>} [_explicitPluginNames] - Internal set of plugin names explicitly registered by the user.
  * @property {Object} [source] - The framework source utilities and context.
  */
 
