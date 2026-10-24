@@ -96,6 +96,19 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
         key
       })
     }
+
+    const trimmedRel = relPath.replace(/[/\\]+$/, '')
+    if (trimmedRel) {
+      const altKey = trimmedRel + '.html'
+      const altCandidatePath = normalize(join(config.pages, altKey))
+
+      if (isPathInsideRoot(pagesRoot, altCandidatePath)) {
+        candidates.push({
+          path: altCandidatePath,
+          key: altKey
+        })
+      }
+    }
   } else if (extension === '.html') {
     const key = relPath
     const candidatePath = normalize(join(config.pages, key))
@@ -105,6 +118,18 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
         path: candidatePath,
         key
       })
+    }
+
+    if (relPath !== 'index.html' && !relPath.endsWith('/index.html') && !relPath.endsWith(`${sep}index.html`)) {
+      const cleanKey = join(relPath.slice(0, -5), 'index.html')
+      const cleanCandidatePath = normalize(join(config.pages, cleanKey))
+
+      if (isPathInsideRoot(pagesRoot, cleanCandidatePath)) {
+        candidates.push({
+          path: cleanCandidatePath,
+          key: cleanKey
+        })
+      }
     }
   } else {
     // No extension, no trailing slash
@@ -119,7 +144,7 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
     }
 
     const key2 = join(relPath, 'index.html')
-    const candidatePath2 = normalize(join(config.pages, key1))
+    const candidatePath2 = normalize(join(config.pages, key2))
 
     if (isPathInsideRoot(pagesRoot, candidatePath2)) {
       candidates.push({
@@ -274,6 +299,8 @@ async function server (config, options, runMode = 'dev') {
           return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')
         }),
         baseURL: currentConfig.baseURL,
+        cleanUrls: currentConfig.cleanUrls,
+        viewTransitions: currentConfig.viewTransitions,
         ignoreByAttribute: currentConfig.ignoreByAttribute,
         skipRenderByAttribute: currentConfig.skipRenderByAttribute,
         mode: runMode === 'test' ? 'testing' : 'development',
@@ -293,8 +320,52 @@ async function server (config, options, runMode = 'dev') {
       displaySuccess('Coralite initialized successfully')
 
       if (runMode === 'dev') {
-        coralite.build().catch((error) => {
-          displayError(error.message, error)
+        compilePromise = compilePromise.then(async () => {
+          try {
+            const rebuildScript = buildLiveReloadScript(currentConfig)
+            await coralite.build(async (buildResult) => {
+              if (!buildResult || !buildResult.content) {
+                return buildResult
+              }
+              const injectedHtml = buildResult.content.replace(/<\/body>/i, rebuildScript)
+              const relPath = relative(config.pages, buildResult.path.pathname)
+              const normalizedKey = relPath.split(sep).join('/')
+              const htmlAliasKey = normalizedKey.endsWith('/index.html')
+                ? normalizedKey.slice(0, -11) + '.html'
+                : normalizedKey
+
+              pageCache.set(normalizedKey, injectedHtml)
+              pageCache.set(htmlAliasKey, injectedHtml)
+
+              const sourcePathname = normalize(join(config.pages, htmlAliasKey))
+              memoryPageSource.set(normalizedKey, sourcePathname)
+              memoryPageSource.set(htmlAliasKey, sourcePathname)
+
+              return {
+                path: buildResult.path,
+                content: injectedHtml,
+                duration: buildResult.duration
+              }
+            })
+
+            if (coralite.outputFiles) {
+              const assetsJsDir = join(config.output, 'assets', 'js')
+              const assetsCssDir = join(config.output, 'assets', 'css')
+
+              const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
+                const isCSS = (file.path || file.hashedPath)?.endsWith('.css')
+                const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
+                const outFile = join(baseAssetsDir, file.hashedPath)
+
+                await mkdir(dirname(outFile), { recursive: true })
+                await writeFile(outFile, file.text)
+              })
+
+              await Promise.all(assetWrites)
+            }
+          } catch (error) {
+            displayError(error.message, error)
+          }
         })
       }
 
@@ -340,18 +411,24 @@ async function server (config, options, runMode = 'dev') {
 
     // middleware to log request information including response time and status code
     app.use(function (req, res, next) {
-      if (options.verbose) {
-        const start = process.hrtime()
-        // when the response is finished, calculate duration and log details
-        res.on('finish', function () {
-          const dash = colours.gray(' ─ ')
-          const duration = process.hrtime(start)
-          const uri = req.originalUrl || req.url
-
-          // log the response time and status code
-          process.stdout.write(toTime() + toCode(res.statusCode) + dash + toMS(duration) + dash + uri + '\n')
-        })
+      const uri = req.originalUrl || req.url
+      if (uri.startsWith('/__coralite/')) {
+        next()
+        return
       }
+
+      const isPageRoute = !extname(req.path) || extname(req.path) === '.html'
+      const start = process.hrtime()
+
+      res.on('finish', function () {
+        if (!options.verbose && !isPageRoute && res.statusCode < 400) {
+          return
+        }
+        const dash = colours.gray(' ─ ')
+        const duration = process.hrtime(start)
+
+        process.stdout.write(toTime() + toCode(res.statusCode) + dash + toMS(duration) + dash + uri + '\n')
+      })
 
       next()
     })
@@ -417,9 +494,16 @@ async function server (config, options, runMode = 'dev') {
       }
 
       const { pathname, key: cacheKey } = result
+      const cleanCacheKey = (cacheKey.endsWith('.html') && cacheKey !== 'index.html' && !cacheKey.endsWith('/index.html'))
+        ? cacheKey.slice(0, -5) + '/index.html'
+        : cacheKey
 
       if (pageCache.has(cacheKey)) {
         res.send(pageCache.get(cacheKey))
+        return
+      }
+      if (pageCache.has(cleanCacheKey)) {
+        res.send(pageCache.get(cleanCacheKey))
         return
       }
 
@@ -428,6 +512,10 @@ async function server (config, options, runMode = 'dev') {
           try {
             if (pageCache.has(cacheKey)) {
               res.send(pageCache.get(cacheKey))
+              return
+            }
+            if (pageCache.has(cleanCacheKey)) {
+              res.send(pageCache.get(cleanCacheKey))
               return
             }
 
@@ -441,36 +529,54 @@ async function server (config, options, runMode = 'dev') {
             }
 
             // Only set item if it does not already exist in coralite.pages
-            const item = coralite.pages.getItem(pathname)
+            let item = coralite.pages.getItem(pathname)
 
             if (!item) {
-              await coralite.pages.setItem(pathname)
+              try {
+                await access(pathname, constants.R_OK)
+                await coralite.pages.setItem(pathname)
+                item = coralite.pages.getItem(pathname)
+              } catch {
+                // Virtual page from onBeforeBuild
+              }
             }
 
-            // build the HTML for this page using the built-in compiler.
-            const documents = await coralite.build(pathname, async (buildResult) => {
+            const buildCallback = async (buildResult) => {
+              if (!buildResult || !buildResult.content) {
+                return buildResult
+              }
               // inject a script to enable live reload via Server-Sent Events
               const injectedHtml = buildResult.content.replace(/<\/body>/i, rebuildScript)
 
               const relPath = relative(config.pages, buildResult.path.pathname)
               const normalizedKey = relPath.split(sep).join('/')
+              const htmlAliasKey = normalizedKey.endsWith('/index.html')
+                ? normalizedKey.slice(0, -11) + '.html'
+                : normalizedKey
 
               // map in memory page to source
               if (normalizedKey !== pathname) {
                 memoryPageSource.set(normalizedKey, pathname)
               }
-
-              // only cache pages that were out of scope of the initial page request
-              if (normalizedKey !== cacheKey) {
-                pageCache.set(normalizedKey, injectedHtml)
+              if (htmlAliasKey !== pathname) {
+                memoryPageSource.set(htmlAliasKey, pathname)
               }
+
+              // cache rendered output under both normalized and .html alias keys
+              pageCache.set(normalizedKey, injectedHtml)
+              pageCache.set(htmlAliasKey, injectedHtml)
 
               return {
                 path: buildResult.path,
                 content: injectedHtml,
                 duration: buildResult.duration
               }
-            })
+            }
+
+            // build the HTML for this page using the built-in compiler.
+            const documents = item
+              ? await coralite.build(pathname, buildCallback)
+              : await coralite.build(buildCallback)
 
             // Write ESM script and style assets generated during the build phase
             if (coralite.outputFiles) {
@@ -495,16 +601,20 @@ async function server (config, options, runMode = 'dev') {
 
             // find the document that matches the request path
             const doc = documents.find(matchedDoc => {
-              if (!matchedDoc) {
+              if (!matchedDoc || !matchedDoc.content) {
                 return false
               }
               const relPath = relative(config.pages, matchedDoc.path.pathname)
               const normalizedKey = relPath.split(sep).join('/')
-              return normalizedKey === cacheKey
+              const htmlAliasKey = normalizedKey.endsWith('/index.html')
+                ? normalizedKey.slice(0, -11) + '.html'
+                : normalizedKey
+              return normalizedKey === cacheKey || normalizedKey === cleanCacheKey || htmlAliasKey === cacheKey
             })
 
             if (doc) {
               pageCache.set(cacheKey, doc.content)
+              pageCache.set(cleanCacheKey, doc.content)
               res.send(doc.content)
             } else {
               res.sendStatus(404)

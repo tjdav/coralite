@@ -119,6 +119,7 @@
     },
     "./utils/server": {
       "types": "./dist/lib/utils/server/index.d.ts",
+      "development": "./lib/server/utils/index.js",
       "default": "./dist/lib/utils/server/index.js"
     },
     "./utils/client": {

@@ -11,6 +11,7 @@ import { formatComponentCss } from './utils/style.js'
 import { inferTypeFromValues, validateAttributeValue } from '../shared/attributes.js'
 import { prepareAllComponentOps } from './utils/fragment.js'
 import { createStore, createServerStore } from '../utils/store.js'
+import { isDevRuntime } from '../utils/dev-mode.js'
 
 export { prepareAllComponentOps, createServerSlotsHelper }
 
@@ -420,7 +421,7 @@ async function _processServerSlots (slots, state, root, context, app, module) {
         }
       }
 
-      const slotContext = new Proxy({
+      const contextTarget = {
         ...context,
         nodes: slotContent,
         state,
@@ -434,15 +435,34 @@ async function _processServerSlots (slots, state, root, context, app, module) {
         signal: NOOP_SIGNAL,
         isServer: true,
         isClient: false,
-        // @ts-ignore
         instanceId: context?.instanceId || module.id
-      }, {
+      }
+
+      const slotContext = new Proxy(slotContent, {
         get (target, prop, receiver) {
           if (typeof prop === 'symbol') {
+            if (prop === Symbol.iterator) {
+              return target[Symbol.iterator].bind(target)
+            }
             return Reflect.get(target, prop, receiver)
           }
-          if (Reflect.has(target, prop)) {
-            return Reflect.get(target, prop, receiver)
+          if (prop === 'nodes') {
+            return target
+          }
+          if (prop === 'state') {
+            return state
+          }
+          if (Reflect.has(contextTarget, prop)) {
+            return Reflect.get(contextTarget, prop, receiver)
+          }
+          if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+            return target[Number(prop)]
+          }
+          if (prop === 'length') {
+            return target.length
+          }
+          if (typeof Array.prototype[prop] === 'function') {
+            return Array.prototype[prop].bind(target)
           }
           if (state && prop in state) {
             return state[prop]
@@ -450,16 +470,20 @@ async function _processServerSlots (slots, state, root, context, app, module) {
           return Reflect.get(target, prop, receiver)
         },
         has (target, prop) {
-          return Reflect.has(target, prop) || Boolean(state && prop in state)
+          return Reflect.has(target, prop) || Reflect.has(contextTarget, prop) || Boolean(state && prop in state)
         },
         ownKeys (target) {
-          const contextKeys = Reflect.ownKeys(target)
+          const targetKeys = Reflect.ownKeys(target)
+          const contextKeys = Reflect.ownKeys(contextTarget)
           const stateKeys = state ? Object.keys(state) : []
-          return Array.from(new Set([...contextKeys, ...stateKeys]))
+          return Array.from(new Set([...targetKeys, ...contextKeys, ...stateKeys]))
         },
         getOwnPropertyDescriptor (target, prop) {
           if (Reflect.has(target, prop)) {
             return Reflect.getOwnPropertyDescriptor(target, prop)
+          }
+          if (Reflect.has(contextTarget, prop)) {
+            return Reflect.getOwnPropertyDescriptor(contextTarget, prop)
           }
           if (typeof prop === 'string' && state && prop in state) {
             return {
@@ -472,12 +496,23 @@ async function _processServerSlots (slots, state, root, context, app, module) {
         }
       })
 
+      const stateArg = new Proxy(state, {
+        get (target, prop, receiver) {
+          if (prop === 'state') {
+            return target
+          }
+          return Reflect.get(target, prop, receiver)
+        }
+      })
+
       let result
       try {
-        result = computedSlot(slotContext)
+        result = computedSlot(slotContext, stateArg)
         result = result && typeof result.then === 'function' ? await result : result
-      } catch {
-        // Gracefully catch browser-only API access or SSR errors, falling back to original slot content
+      } catch (err) {
+        if (isDevRuntime()) {
+          console.error(`[Coralite] Slot "${name}" evaluation failed in component "${module?.id || 'unknown'}":`, err)
+        }
         result = slotContent
       }
 
@@ -516,10 +551,19 @@ async function _processServerSlots (slots, state, root, context, app, module) {
             }
           })
         }
-      } else if (Array.isArray(result)) {
-        for (let index = 0; index < result.length; index++) {
-          const node = result[index]
-          if (isCoraliteElement(node) || isCoraliteTextNode(node) || isCoraliteComment(node)) {
+      } else {
+        const resultArray = Array.isArray(result) ? result : [result]
+        for (let index = 0; index < resultArray.length; index++) {
+          const node = resultArray[index]
+          if (typeof node === 'string') {
+            elementSlots.push({
+              name,
+              node: {
+                type: 'text',
+                data: node
+              }
+            })
+          } else if (isCoraliteElement(node) || isCoraliteTextNode(node) || isCoraliteComment(node)) {
             elementSlots.push({
               name,
               node

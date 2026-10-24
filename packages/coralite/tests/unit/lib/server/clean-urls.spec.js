@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { mkdir, mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { createCoralite, defineConfig, CoraliteError } from '#lib'
+import { resolveSource } from '../../../../lib/cli/server.js'
 
 let TEST_DIR
 let COMPONENTS_DIR
@@ -203,5 +204,44 @@ describe('Clean URLs Config (P2.08)', () => {
         return true
       }
     )
+  })
+
+  it('dev server resolveSource resolves .html, extensionless, and nested index.html routes', async () => {
+    await writeFile(
+      join(PAGES_DIR, 'blog.html'),
+      '<!DOCTYPE html><html><body><h1>Blog</h1></body></html>'
+    )
+    await mkdir(join(PAGES_DIR, 'docs', 'guide'), { recursive: true })
+    await writeFile(
+      join(PAGES_DIR, 'docs', 'guide', 'index.html'),
+      '<!DOCTYPE html><html><body><h1>Guide Index</h1></body></html>'
+    )
+
+    const app = await createCoralite({
+      components: COMPONENTS_DIR,
+      pages: PAGES_DIR,
+      output: OUTPUT_DIR,
+      mode: 'development'
+    })
+
+    const memoryPageSource = new Map()
+    const config = { pages: PAGES_DIR }
+
+    const resHtml = await resolveSource('/blog.html', '.html', config, app, memoryPageSource)
+    assert.ok(resHtml)
+    assert.equal(resHtml.key, 'blog.html')
+
+    const resClean = await resolveSource('/blog', '', config, app, memoryPageSource)
+    assert.ok(resClean)
+    assert.equal(resClean.key, 'blog.html')
+
+    const resDirNoSlash = await resolveSource('/docs/guide', '', config, app, memoryPageSource)
+    assert.ok(resDirNoSlash)
+    assert.equal(resDirNoSlash.key, 'docs/guide/index.html')
+
+    const resDirSlash = await resolveSource('/docs/guide/', '', config, app, memoryPageSource)
+    assert.ok(resDirSlash)
+    assert.equal(resDirSlash.key, 'docs/guide/index.html')
+    await app.clearCache(true)
   })
 })

@@ -163,4 +163,50 @@ describe('Router Active Detection (PERF-02b)', () => {
       })
     }
   })
+
+  it('router remains inactive when pages mention router or data-router-outlet only in prose or code blocks', async () => {
+    const tmpDir = path.resolve('packages/coralite/tests/unit/plugins/tmp-router-prose-test')
+    const pagesDir = path.join(tmpDir, 'pages')
+    const componentsDir = path.join(tmpDir, 'components')
+
+    await rm(tmpDir, {
+      recursive: true,
+      force: true
+    })
+    await mkdir(pagesDir, { recursive: true })
+    await mkdir(componentsDir, { recursive: true })
+
+    await writeFile(
+      path.join(pagesDir, 'index.html'),
+      `<!DOCTYPE html>
+      <html>
+        <body>
+          <p>Coralite includes an opt-in SPA router using data-router-outlet or &lt;router-outlet&gt;.</p>
+          <pre><code>&lt;div data-router-outlet&gt;&lt;/div&gt;
+          client({ router }) { router.navigate('/about') }</code></pre>
+        </body>
+      </html>`,
+      'utf8'
+    )
+
+    try {
+      const app = await createCoralite({
+        components: componentsDir,
+        pages: pagesDir,
+        plugins: [],
+        mode: 'development'
+      })
+
+      const results = await app.build()
+      await app.clearCache(true)
+      assert.ok(results.length > 0)
+      assert.strictEqual(app._routerActiveCache, false)
+      assert.strictEqual(results[0].content.includes('<router-outlet'), false)
+    } finally {
+      await rm(tmpDir, {
+        recursive: true,
+        force: true
+      })
+    }
+  })
 })
