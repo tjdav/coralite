@@ -1023,6 +1023,7 @@ export class CoraliteElement extends BaseElement {
     this._flushWindowStart = 0
     this._reactiveLoopBroken = false
     this._cascadeBreakerTripped = false
+    this._latchMacrotaskPending = false
 
     if (!this._abortController || this._abortController.signal.aborted) {
       this._abortController = new AbortController()
@@ -1327,6 +1328,8 @@ export class CoraliteElement extends BaseElement {
     this._consecutiveFlushCount = 0
     this._flushWindowCount = 0
     this._reactiveLoopBroken = false
+    this._cascadeBreakerTripped = false
+    this._latchMacrotaskPending = false
     this._slotRuntimeReady = false
     this._processSlotsOnReady = false
   }
@@ -2494,10 +2497,6 @@ export class CoraliteElement extends BaseElement {
         if (!self._assertNotObservingStateMutation(p)) {
           return true
         }
-        if (!self._isExecutingObserver) {
-          self._reactiveLoopBroken = false
-          self._cascadeBreakerTripped = false
-        }
         if (p === 'errors') {
           const existingKeys = Object.keys(errorsTarget)
           const newKeys = (nextValue && typeof nextValue === 'object') ? Object.keys(nextValue) : []
@@ -3000,6 +2999,15 @@ export class CoraliteElement extends BaseElement {
         this._flushWindowCount = 0
         this._reactiveLoopBroken = true
         this._cascadeBreakerTripped = true
+
+        if (!this._latchMacrotaskPending) {
+          this._latchMacrotaskPending = true
+          setTimeout(() => {
+            this._reactiveLoopBroken = false
+            this._cascadeBreakerTripped = false
+            this._latchMacrotaskPending = false
+          }, 0)
+        }
 
         if (this._dirtyObservers) {
           this._dirtyObservers.clear()
@@ -3609,7 +3617,7 @@ export class CoraliteElement extends BaseElement {
     if (this._signals && this._signals.has(key)) {
       const sig = this._signals.get(key)
       signalDispose = sig.subscribe((newVal, oldVal) => {
-        if ((this._pendingDisconnect && !this.isConnected) || this._wasTornDown) {
+        if ((this._pendingDisconnect && !this.isConnected) || this._wasTornDown || this._reactiveLoopBroken) {
           return
         }
         /** @type {any} */
