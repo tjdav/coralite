@@ -11,9 +11,10 @@ import { existsSync } from 'node:fs'
  *
  * @param {Object} app - Global Coralite app instance
  * @param {string} outletAttr - Attribute name for outlet selector
+ * @param {Object} [pageComponent] - Optional page component currently being rendered
  * @returns {boolean} True if router is active in the app
  */
-function isRouterActive (app, outletAttr) {
+function isRouterActive (app, outletAttr, pageComponent) {
   if (!app) {
     return false
   }
@@ -28,13 +29,19 @@ function isRouterActive (app, outletAttr) {
     return true
   }
 
-  // Criteria 2 & 3: Scan registered components and pages
-  const outletRegex = new RegExp(`<${outletAttr}[\\s>]|\\[${outletAttr}\\]|data-router-outlet|<router-outlet`)
-  const routerWordRegex = /\brouter\b/
+  // Criterion 2: Outlet element in current page AST
+  if (pageComponent?.root && hasOutlet(pageComponent.root, outletAttr, app)) {
+    app._routerActiveCache = true
+    return true
+  }
 
-  const checkSource = (str) => {
+  // Criteria 2 & 3: Scan registered components and pages via parsed AST and extracted scripts
+  const escapedOutletAttr = outletAttr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const scriptRefRegex = new RegExp(`\\brouter\\b|\\b${escapedOutletAttr}\\b`)
+
+  const checkScriptSource = (str) => {
     if (typeof str === 'string') {
-      return outletRegex.test(str) || routerWordRegex.test(str)
+      return scriptRefRegex.test(str)
     }
     return false
   }
@@ -49,16 +56,17 @@ function isRouterActive (app, outletAttr) {
       if (item.path?.pathname && item.path.pathname.endsWith('outlet.html')) {
         continue
       }
-      if (checkSource(item.content)) {
-        app._routerActiveCache = true
-        return true
-      }
       if (item.result) {
-        if (checkSource(item.result.script)) {
+        const astRoot = item.result.template || item.result.root
+        if (astRoot && hasOutlet(astRoot, outletAttr, app)) {
           app._routerActiveCache = true
           return true
         }
-        if (checkSource(item.result.page?.script)) {
+        if (checkScriptSource(item.result.script)) {
+          app._routerActiveCache = true
+          return true
+        }
+        if (item.result.page?.hasDefinePage && checkScriptSource(item.result.page?.script)) {
           app._routerActiveCache = true
           return true
         }
@@ -117,6 +125,18 @@ function isOutletElement (node, outletAttr) {
  */
 function hasOutlet (node, outletAttr, app, visited = new Set()) {
   if (!node) {
+    return false
+  }
+  if (
+    node.type === 'tag' &&
+    typeof node.name === 'string' &&
+    (
+      node.name === 'pre' ||
+      node.name === 'code' ||
+      node.name === 'script' ||
+      node.name === 'style'
+    )
+  ) {
     return false
   }
   if (isOutletElement(node, outletAttr)) {
@@ -250,7 +270,7 @@ export const routerPlugin = definePlugin({
     onBeforePageRender ({ component, config, app }) {
       const activeConfig = config || {}
       const outletAttr = activeConfig.outlet || 'data-router-outlet'
-      if (isRouterActive(app, outletAttr)) {
+      if (isRouterActive(app, outletAttr, component)) {
         wrapBodyInOutlet(component, outletAttr, app)
       }
     }
@@ -476,49 +496,57 @@ export const routerPlugin = definePlugin({
         viewTransitions
       }
 
+      const handleLinkClick = (event) => {
+        /** @type {any} */
+        const mouseEvent = event
+        if (mouseEvent.defaultPrevented) {
+          return
+        }
+        if (mouseEvent.button !== 0) {
+          return
+        }
+        if (mouseEvent.metaKey || mouseEvent.ctrlKey || mouseEvent.shiftKey || mouseEvent.altKey) {
+          return
+        }
+
+        /** @type {any} */
+        const targetEl = mouseEvent.target
+        const link = targetEl ? targetEl.closest('a[href]') : null
+        if (!link) {
+          return
+        }
+        if (link.target && link.target !== '_self') {
+          return
+        }
+        if (link.hasAttribute && link.hasAttribute('download')) {
+          return
+        }
+        if (link.hasAttribute && link.hasAttribute('data-router-ignore')) {
+          return
+        }
+
+        const currentOrigin = window.location ? window.location.origin : ''
+        const url = new URL(link.href, currentOrigin)
+        if (url.origin !== currentOrigin) {
+          return
+        }
+
+        mouseEvent.preventDefault()
+        navigate(url.pathname + url.search + url.hash)
+      }
+
       const outlet = document.querySelector(outletSelector)
       if (outlet) {
-        outlet.addEventListener('click', (event) => {
-          /** @type {any} */
-          const mouseEvent = event
-          if (mouseEvent.defaultPrevented) {
-            return
-          }
-          if (mouseEvent.button !== 0) {
-            return
-          }
-          if (mouseEvent.metaKey || mouseEvent.ctrlKey || mouseEvent.shiftKey || mouseEvent.altKey) {
-            return
-          }
-
-          /** @type {any} */
-          const targetEl = mouseEvent.target
-          const link = targetEl ? targetEl.closest('a[href]') : null
-          if (!link) {
-            return
-          }
-          if (link.target && link.target !== '_self') {
-            return
-          }
-          if (link.hasAttribute && link.hasAttribute('download')) {
-            return
-          }
-          if (link.hasAttribute && link.hasAttribute('data-router-ignore')) {
-            return
-          }
-
-          const currentOrigin = window.location ? window.location.origin : ''
-          const url = new URL(link.href, currentOrigin)
-          if (url.origin !== currentOrigin) {
-            return
-          }
-
-          mouseEvent.preventDefault()
-          navigate(url.pathname + url.search + url.hash)
-        })
+        outlet.addEventListener('click', handleLinkClick)
+        if (typeof document.addEventListener === 'function') {
+          document.addEventListener('click', handleLinkClick)
+        }
       }
 
       window.addEventListener('popstate', () => {
+        if (!document.querySelector(outletSelector)) {
+          return
+        }
         const currentPath = window.location ? (window.location.pathname + window.location.search + window.location.hash) : '/'
         navigate(currentPath, { replace: true })
       })

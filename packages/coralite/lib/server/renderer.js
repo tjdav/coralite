@@ -283,12 +283,14 @@ export function createRenderer ({
         const slotName = elementSlotContent.name
         const slot = slots[slotName]
         if (slot) {
-          if (elementSlotContent.node.attribs) {
-            delete elementSlotContent.node.attribs.slot
-          } else {
-            elementSlotContent.node.attribs = {}
+          if (elementSlotContent.node && elementSlotContent.node.type === 'tag') {
+            if (elementSlotContent.node.attribs) {
+              delete elementSlotContent.node.attribs.slot
+            } else {
+              elementSlotContent.node.attribs = {}
+            }
+            elementSlotContent.node.attribs['data-coralite-slot-index'] = String(i)
           }
-          elementSlotContent.node.attribs['data-coralite-slot-index'] = String(i)
           slotChildren[slotName].push(elementSlotContent.node)
         }
       }
@@ -307,7 +309,10 @@ export function createRenderer ({
         }
         slot.element.attribs['data-coralite-owner'] = instanceId
 
-        const componentSlots = resolveComponentSlots(module)
+        const rawSlots = resolveComponentSlots(module)
+        const componentSlots = (rawSlots && Object.keys(rawSlots).length > 0)
+          ? rawSlots
+          : (scriptManager.sharedFunctions?.[module.id]?.slots || scriptManager.sharedFunctions?.[id]?.slots || {})
         const isComputed = Boolean(componentSlots && typeof componentSlots[slotName] === 'function')
         if (isComputed) {
           slot.element.attribs['data-coralite-slot-computed'] = ''
@@ -675,6 +680,8 @@ export function createRenderer ({
         // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
         if (scriptResult && scriptResult.__script__ != null) {
           evaluatedScriptMeta = scriptResult.__script__
+          // @ts-ignore
+          module.__script__ = scriptResult.__script__
           /** @type {any} */
           const scriptMetaAny = scriptResult.__script__
           evaluatedStyle = scriptMetaAny.style

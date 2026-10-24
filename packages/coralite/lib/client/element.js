@@ -1042,7 +1042,7 @@ export class CoraliteElement extends BaseElement {
 
     // Declarative components receive a data-cid from the server.
     // Imperative components (created via document.createElement) do not.
-    const isImperative = !this.hasAttribute('data-cid')
+    const isImperative = !this.hasAttribute('data-cid') && this.componentOptions.componentId !== 'router-outlet'
 
     if (!isImperative && !this._templateRoots) {
       this._templateRoots = new Set(this.childNodes)
@@ -4337,10 +4337,22 @@ export class CoraliteElement extends BaseElement {
     return new Proxy(slotContextObj, {
       get (target, prop, receiver) {
         if (typeof prop === 'symbol') {
+          if (prop === Symbol.iterator) {
+            return origNodes[Symbol.iterator].bind(origNodes)
+          }
           return Reflect.get(target, prop, receiver)
+        }
+        if (prop === 'length') {
+          return origNodes.length
+        }
+        if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+          return origNodes[Number(prop)]
         }
         if (Reflect.has(target, prop)) {
           return Reflect.get(target, prop, receiver)
+        }
+        if (typeof Array.prototype[prop] === 'function') {
+          return Array.prototype[prop].bind(origNodes)
         }
         if (stateProxy && prop in stateProxy) {
           return stateProxy[prop]
@@ -4434,7 +4446,7 @@ export class CoraliteElement extends BaseElement {
         const renderVersion = ++this._slotRenderVersionCounter
         slotEl._slotRenderVersion = renderVersion
 
-        const result = slotFn(slotContext)
+        const result = slotFn(slotContext, this._state)
         slotEl._slotEvaluated = true
 
         this._applySlotResult(slotEl, result, renderVersion)

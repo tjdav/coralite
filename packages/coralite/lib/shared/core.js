@@ -1364,6 +1364,7 @@ export function resolveComponentSlots (component) {
     return {}
   }
   return component.__script__?.slots ||
+    component.slots ||
     component.script?.slots ||
     component.result?.script?.slots ||
     component.result?.slots ||
