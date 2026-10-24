@@ -377,6 +377,13 @@ export class CoraliteElement extends BaseElement {
     this._renderVersionCounter = 0
 
     /**
+     * Tracks whether the custom element instance has previously completed connectedCallback.
+     * @type {boolean}
+     * @private
+     */
+    this._wasConnected = false
+
+    /**
      * Active DOM render cycle version lock.
      * @type {number}
      * @protected
@@ -1025,6 +1032,17 @@ export class CoraliteElement extends BaseElement {
     this._cascadeBreakerTripped = false
     this._latchMacrotaskPending = false
 
+    if (this._wasConnected) {
+      if (this._getterContexts) {
+        this._getterContexts.clear()
+      }
+      this._slotsHelper = null
+      this._cachedOwnSlots = null
+      if (this._stateRaw && this.componentOptions?.getters) {
+        this._reinitGetters()
+      }
+    }
+
     if (!this._abortController || this._abortController.signal.aborted) {
       this._abortController = new AbortController()
       this._observers = new Map()
@@ -1132,6 +1150,7 @@ export class CoraliteElement extends BaseElement {
       }))
     }
 
+    this._wasConnected = true
     this._init(isImperative)
   }
 
@@ -1691,7 +1710,10 @@ export class CoraliteElement extends BaseElement {
         this._computedGetters.set(key, computedSignal)
 
         Object.defineProperty(target, key, {
-          get: () => computedSignal.value,
+          get: () => {
+            const currentComputed = this._computedGetters?.get(key)
+            return currentComputed ? currentComputed.value : computedSignal.value
+          },
           enumerable: true,
           configurable: true
         })
@@ -1703,6 +1725,90 @@ export class CoraliteElement extends BaseElement {
     this._registerSlotStateObserver()
     this._syncValidityFromErrors()
 
+  }
+
+  /**
+   * Re-initializes computed getter signals on component re-attachment to invalidate cached computations.
+   * @private
+   */
+  _reinitGetters () {
+    const target = this._stateRaw
+    const options = this.componentOptions
+    if (!target || !options?.getters) {
+      return
+    }
+
+    const getRef = (id) => this._resolveRef(id, target)
+    if (!this._computedGetters) {
+      this._computedGetters = new Map()
+    } else {
+      this._computedGetters.clear()
+    }
+
+    for (const [key, getter] of Object.entries(options.getters)) {
+      if (isAsyncFunction(getter)) {
+        continue
+      }
+
+      const computedSignal = createComputed(() => {
+        if (this._getterAbortControllers[key]) {
+          this._getterAbortControllers[key].abort()
+        }
+        this._getterAbortControllers[key] = new AbortController()
+
+        let directDeps = this._getterDeps?.get(key)
+        if (!directDeps) {
+          directDeps = new Set()
+          if (this._getterDeps) {
+            this._getterDeps.set(key, directDeps)
+          }
+        }
+
+        if (!this._getterContexts) {
+          this._getterContexts = new Map()
+        }
+
+        let context = this._getterContexts.get(key)
+        if (!context) {
+          const tracker = {
+            activeCollector: (p) => {
+              if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
+                directDeps.add(p)
+                if (this._collectingDependencies) {
+                  this._collectingDependencies.add(p)
+                }
+                if (this._getterDeps?.has(p)) {
+                  for (const subDep of this._getterDeps.get(p)) {
+                    directDeps.add(subDep)
+                    if (this._collectingDependencies) {
+                      this._collectingDependencies.add(subDep)
+                    }
+                  }
+                }
+              }
+            }
+          }
+          const roState = this._getTrackedReadOnlyState(key, tracker)
+          context = {
+            state: roState,
+            route: _getClientRoute(),
+            root: this,
+            refs: getRef,
+            slots: this._getSlotsHelper(),
+            isServer: false,
+            signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal,
+            // @ts-ignore
+            store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
+          }
+          this._getterContexts.set(key, context)
+        }
+
+        context.signal = this._getterAbortControllers[key].signal
+        return getter(context)
+      })
+
+      this._computedGetters.set(key, computedSignal)
+    }
   }
 
   /**
