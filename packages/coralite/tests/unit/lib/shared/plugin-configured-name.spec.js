@@ -53,3 +53,14 @@ test('no server block still returns undefined server', () => {
   const configured = basePlugin({})
   assert.equal(configured.server, undefined)
 })
+
+test('call-time name override sets server.name when server block lacks explicit name', () => {
+  const basePlugin = definePlugin({
+    name: 'p',
+    server: {}
+  })
+
+  const configured = basePlugin({ name: 'override' })
+  assert.equal(configured.name, 'override')
+  assert.equal(configured.server?.name, 'override')
+})
