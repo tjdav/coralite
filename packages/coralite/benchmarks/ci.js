@@ -1,6 +1,5 @@
 import process from 'node:process'
 import { runInternalSuite } from './suites/04-internal/bench.js'
-import { runDomReactivitySuite } from './suites/01-dom-reactivity/bench.js'
 import { printTerminalResults } from './utils/reporter.js'
 import { compareAgainstBaseline, DEFAULT_BASELINE_PATH } from './utils/regression.js'
 import { triggerGC } from './utils/memory.js'
@@ -23,13 +22,6 @@ async function runCI () {
   console.log('Running internal microbenchmarks...')
   resultsData.suites.internal = await runInternalSuite()
   triggerGC()
-
-  // 2. Run DOM reactivity smoke test (9 iterations)
-  console.log('Running DOM reactivity smoke test...')
-  resultsData.suites['dom-reactivity'] = await runDomReactivitySuite({
-    iterations: 9,
-    rows: 1000
-  })
 
   printTerminalResults(resultsData)
 

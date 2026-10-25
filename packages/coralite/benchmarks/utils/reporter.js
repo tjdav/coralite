@@ -191,7 +191,7 @@ To reproduce these benchmarks on your machine:
 pnpm install
 
 # 2. Run all benchmark suites
-pnpm bench
+pnpm bench:internal
 \`\`\`
 `
 

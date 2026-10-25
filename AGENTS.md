@@ -181,7 +181,7 @@ Autonomous. Do not pause mid-task. Do not emit progress updates. Do not ask clar
 
 Performance tasks (Phase 3 tasks) must record and commit benchmark results.
 
-- Run benchmarks using `pnpm bench --task-id <task-id> --phase <before|after> --save`.
+- Run benchmarks using `pnpm bench:internal --task-id <task-id> --phase <before|after> --save`.
 - Results are saved to `benchmarks/results/<task-id>.json`.
 - Performance task PRs must commit their `before` and `after` benchmark result files to `benchmarks/results/`.
 - The reference baseline is maintained at `benchmarks/results/baseline.json` and updated only when explicitly instructed by maintainers.

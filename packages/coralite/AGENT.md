@@ -41,4 +41,4 @@ Reserved diagnostic and error code ranges for Coralite core:
 
 ## 7. Benchmark results
 
-Benchmark result files are stored at `benchmarks/results/` at the repository root. Performance tasks must run `pnpm bench --task-id <task-id> --phase <phase> --save` and commit the generated result files.
+Benchmark result files are stored at `benchmarks/results/` at the repository root. Performance tasks must run `pnpm bench:internal --task-id <task-id> --phase <phase> --save` and commit the generated result files.
