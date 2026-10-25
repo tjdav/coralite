@@ -422,4 +422,69 @@ describe('Client Async Getters Suite', () => {
     // After async getter resolves, bodyText returns resolved upper-case string
     assert.strictEqual(el._state.bodyText, 'CORALITE CODEBASE')
   })
+
+  it('two sync getters reading same async getter both see resolved value', async () => {
+    const options = {
+      componentId: 'two-sync-getters-comp',
+      defaultValues: { val: 'hello' },
+      getters: {
+        async uppercase ({ state }) {
+          await new Promise(r => setTimeout(r, 20))
+          return state.val.toUpperCase()
+        },
+        syncOne ({ state }) {
+          return state.uppercase ? `One: ${state.uppercase}` : 'One: pending'
+        },
+        syncTwo ({ state }) {
+          return state.uppercase ? `Two: ${state.uppercase}` : 'Two: pending'
+        }
+      }
+    }
+
+    const tag = 'two-sync-getters-' + Math.random().toString(36).slice(2, 8)
+    const CompClass = createCoraliteClass(options)
+    customElements.define(tag, CompClass)
+
+    const el = document.createElement(tag)
+    document.body.appendChild(el)
+
+    assert.strictEqual(el._state.syncOne, 'One: pending')
+    assert.strictEqual(el._state.syncTwo, 'Two: pending')
+
+    await new Promise(r => setTimeout(r, 40))
+
+    assert.strictEqual(el._state.syncOne, 'One: HELLO')
+    assert.strictEqual(el._state.syncTwo, 'Two: HELLO')
+  })
+
+  it('sync getter returns server preview before async resolves, resolved value after', async () => {
+    const options = {
+      componentId: 'preview-transition-comp',
+      defaultValues: { title: 'Coralite Framework' },
+      getters: {
+        async fetchedTitle ({ state }) {
+          await new Promise(r => setTimeout(r, 20))
+          return state.title.toUpperCase()
+        },
+        displayTitle ({ state }) {
+          return state.fetchedTitle ?? state.title.slice(0, 8)
+        }
+      }
+    }
+
+    const tag = 'preview-transition-' + Math.random().toString(36).slice(2, 8)
+    const CompClass = createCoraliteClass(options)
+    customElements.define(tag, CompClass)
+
+    const el = document.createElement(tag)
+    document.body.appendChild(el)
+
+    // Intermediate state check before resolution: fallback preview
+    assert.strictEqual(el._state.displayTitle, 'Coralite')
+
+    await new Promise(r => setTimeout(r, 40))
+
+    // Final state check after resolution: resolved value
+    assert.strictEqual(el._state.displayTitle, 'CORALITE FRAMEWORK')
+  })
 })

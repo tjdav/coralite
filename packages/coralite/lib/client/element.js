@@ -1641,6 +1641,9 @@ export class CoraliteElement extends BaseElement {
     }
     for (const [key, getter] of Object.entries(options.getters || {})) {
       if (isAsyncFunction(getter)) {
+        if (!this._signals.has(key)) {
+          this._signals.set(key, createSignal(undefined))
+        }
         Object.defineProperty(target, key, {
           get: () => {
             return this._evalAsyncGetter(key, getter, target, options, getRef)
@@ -1835,6 +1838,10 @@ export class CoraliteElement extends BaseElement {
         deps: new Set()
       }
       this._asyncGetterCache.set(key, entry)
+    }
+
+    if (this._signals && this._signals.has(key)) {
+      this._signals.get(key).value
     }
 
     if (this._collectingDependencies) {
