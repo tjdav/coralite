@@ -20,7 +20,8 @@ export function parseIgnoreDirectives (context) {
         ignoredSymbols.add(sym)
         ignoredSymbols.add(sym.toLowerCase())
         ignoredSymbols.add(sym.toUpperCase())
-        if (sym.toUpperCase().startsWith('A10') || sym.toUpperCase().startsWith('CORALITE-A10')) {
+        if (sym.toUpperCase().startsWith('A10') || sym.toUpperCase().startsWith('CORALITE-A10') ||
+            sym.toUpperCase().startsWith('W5') || sym.toUpperCase().startsWith('CORALITE-W5')) {
           const short = sym.toUpperCase().replace(/^CORALITE-/, '')
           ignoredSymbols.add(short)
           ignoredSymbols.add(`CORALITE-${short}`)

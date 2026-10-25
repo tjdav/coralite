@@ -226,6 +226,44 @@ export function validateTemplate (context) {
                 }))
               } else {
                 context.templateId = rawId
+
+                const isInternal = Boolean(
+                  filePath && (
+                    filePath.includes('lib/plugins/') ||
+                    filePath.includes('/plugins/') ||
+                    filePath.includes('\\plugins\\') ||
+                    filePath.includes('node_modules/') ||
+                    filePath.includes('node_modules\\')
+                  )
+                )
+                if (rawId !== 'c-token' && !isInternal && !isDiagnosticIgnored('CORALITE-W501', context)) {
+                  let prefix = null
+                  let message = null
+                  if (rawId.startsWith('coralite-')) {
+                    prefix = 'coralite-'
+                    message = `Component tag "${rawId}" uses the reserved "coralite-" prefix. Use a project-specific prefix like "site-" or "ui-" instead.`
+                  } else if (rawId.startsWith('c-')) {
+                    prefix = 'c-'
+                    message = `Component tag "${rawId}" uses the reserved "c-" prefix. Use a project-specific prefix like "ui-" or a custom scope instead.`
+                  } else if (rawId.startsWith('router-')) {
+                    prefix = 'router-'
+                    message = `Component tag "${rawId}" uses the reserved "router-" prefix. Use a project-specific prefix like "app-" or a custom scope instead.`
+                  }
+
+                  if (prefix && message) {
+                    const loc = getLocForSubstring(sourceCode, rawId, templateSearchOffset)
+                    diagnostics.push(createDiagnostic({
+                      code: 'CORALITE-W501',
+                      severity: 'warning',
+                      message,
+                      filePath,
+                      line: loc.line,
+                      column: loc.column,
+                      sourceCode,
+                      cause: `Component custom element tag names starting with "${prefix}" are reserved for Coralite core components and official plugins.`
+                    }))
+                  }
+                }
               }
 
               checkAttribs(attribs, templateSearchOffset)
