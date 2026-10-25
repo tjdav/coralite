@@ -62,7 +62,7 @@ describe('CORALITE-W501 Reserved Prefix Validator Pass', () => {
   test('does not fire CORALITE-W501 for c-token element', async () => {
     const code = '<template id="c-token"><span>token</span></template>'
     const { validateTemplate } = await import('../../../../../lib/server/validator/passes/template.js')
-    const { createValidationContext } = await import('../../../../../lib/validator/context.js')
+    const { createValidationContext } = await import('../../../../../lib/server/validator/context.js')
 
     const context = createValidationContext(code, '/app/src/components/c-token.html')
     validateTemplate(context)
@@ -82,7 +82,7 @@ describe('CORALITE-W501 Reserved Prefix Validator Pass', () => {
   test('does not fire CORALITE-W501 on framework-internal components', async () => {
     const code = '<template id="router-outlet"><div><slot></slot></div></template>'
     const { validateTemplate } = await import('../../../../../lib/server/validator/passes/template.js')
-    const { createValidationContext } = await import('../../../../../lib/validator/context.js')
+    const { createValidationContext } = await import('../../../../../lib/server/validator/context.js')
 
     const context = createValidationContext(code, '/app/packages/coralite/lib/plugins/router/outlet.html')
     validateTemplate(context)

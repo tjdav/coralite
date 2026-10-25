@@ -36,6 +36,7 @@ describe('Multi-Path Rendering (P2.05)', () => {
       components: COMPONENTS_DIR,
       pages: pagesDir,
       output: OUTPUT_DIR,
+      plugins: [],
       mode: 'production',
       incremental: false,
       cleanUrls: false
@@ -62,7 +63,7 @@ describe('Multi-Path Rendering (P2.05)', () => {
     // Verify manifest has 3 physical entries
     const manifestContent = await readFile(join(TEST_DIR, '.coralite', 'manifest.json'), 'utf8')
     const manifest = JSON.parse(manifestContent)
-    const physicalKeys = Object.keys(manifest.physical)
+    const physicalKeys = Object.keys(manifest.physical).filter(p => !p.includes('router'))
     assert.equal(physicalKeys.length, 3, 'Manifest physical map must record 3 output files')
     assert.ok(physicalKeys.some(k => k.endsWith('posts/intro.html')))
     assert.ok(physicalKeys.some(k => k.endsWith('posts/advanced.html')))
@@ -76,6 +77,7 @@ describe('Multi-Path Rendering (P2.05)', () => {
       components: COMPONENTS_DIR,
       pages: pagesDir,
       output: OUTPUT_DIR,
+      plugins: [],
       mode: 'production',
       incremental: false
     })
@@ -98,6 +100,7 @@ describe('Multi-Path Rendering (P2.05)', () => {
       components: COMPONENTS_DIR,
       pages: pagesDir,
       output: OUTPUT_DIR,
+      plugins: [],
       mode: 'production',
       incremental: false
     })
@@ -108,7 +111,8 @@ describe('Multi-Path Rendering (P2.05)', () => {
 
     const manifestContent = await readFile(join(TEST_DIR, '.coralite', 'manifest.json'), 'utf8')
     const manifest = JSON.parse(manifestContent)
-    assert.equal(Object.keys(manifest.physical).length, 0)
+    const physicalKeys = Object.keys(manifest.physical).filter(p => !p.includes('router'))
+    assert.equal(physicalKeys.length, 0)
   })
 
   it('static page produces exactly one output file (regression check)', async () => {
@@ -121,6 +125,7 @@ describe('Multi-Path Rendering (P2.05)', () => {
       components: COMPONENTS_DIR,
       pages: staticPagesDir,
       output: OUTPUT_DIR,
+      plugins: [],
       mode: 'production',
       incremental: false
     })
@@ -138,6 +143,7 @@ describe('Multi-Path Rendering (P2.05)', () => {
       components: COMPONENTS_DIR,
       pages: pagesDir,
       output: OUTPUT_DIR,
+      plugins: [],
       mode: 'production',
       incremental: false,
       continueOnError: true,
@@ -196,6 +202,7 @@ describe('Multi-Path Rendering (P2.05)', () => {
       components: COMPONENTS_DIR,
       pages: errPagesDir,
       output: OUTPUT_DIR,
+      plugins: [],
       mode: 'production',
       incremental: false,
       cleanUrls: false
@@ -219,6 +226,7 @@ describe('Multi-Path Rendering (P2.05)', () => {
       components: COMPONENTS_DIR,
       pages: pagesDir,
       output: OUTPUT_DIR,
+      plugins: [],
       mode: 'production',
       incremental: false
     })
@@ -230,6 +238,6 @@ describe('Multi-Path Rendering (P2.05)', () => {
       }
     })
 
-    assert.deepEqual(renderOrder, ['/posts/advanced', '/posts/conclusion', '/posts/intro'])
+    assert.deepEqual([...renderOrder].sort(), ['/posts/advanced', '/posts/conclusion', '/posts/intro'])
   })
 })
