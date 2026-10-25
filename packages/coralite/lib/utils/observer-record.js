@@ -397,6 +397,9 @@ export class ObserverRecord {
       }
     } catch (err) {
       console.error('Coralite Observer Error:', err)
+      if (el && el._cascadeBreakerTripped) {
+        throw err
+      }
     } finally {
       el._isExecutingObserver = wasExecuting
       el._activeObserverRecord = prevRecord

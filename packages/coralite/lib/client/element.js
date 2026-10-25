@@ -2222,6 +2222,10 @@ export class CoraliteElement extends BaseElement {
     this._flushWindowCount = 0
     this._reactiveLoopBroken = true
     this._cascadeBreakerTripped = true
+    this._latchPending = true
+    queueMicrotask(() => {
+      this._latchPending = false
+    })
 
     if (this._dirtyObservers) {
       this._dirtyObservers.clear()
@@ -2272,13 +2276,24 @@ export class CoraliteElement extends BaseElement {
    */
   _assertNotObservingStateMutation (p) {
     if (!this._isExecutingObserver) {
-      this._reactiveLoopBroken = false
-      this._cascadeBreakerTripped = false
-      this._observerCascadeCount = 0
+      if ((this._reactiveLoopBroken || this._cascadeBreakerTripped) && !this._latchPending) {
+        return true
+      }
+      if (this._reactiveLoopBroken || this._cascadeBreakerTripped) {
+        return false
+      }
       return true
     }
 
-    if (this._reactiveLoopBroken) {
+    if (this._reactiveLoopBroken || this._cascadeBreakerTripped) {
+      const isDev = isDevRuntime()
+      if (isDev) {
+        throw new CoraliteError('State mutation blocked: reactive loop / cascade breaker is tripped.', {
+          componentId: this.componentOptions?.componentId,
+          instanceId: this._instanceId,
+          path: typeof p === 'string' ? p : undefined
+        })
+      }
       return false
     }
 
@@ -2343,6 +2358,13 @@ export class CoraliteElement extends BaseElement {
     this._observerCascadeCount = (this._observerCascadeCount || 0) + 1
     if (this._observerCascadeCount > MAX_REACTIVE_CASCADE_DEPTH) {
       this._tripCascadeBreaker(`Maximum reactive cascade depth exceeded (${MAX_REACTIVE_CASCADE_DEPTH}).`)
+      if (!isDevRuntime()) {
+        throw new CoraliteError(`Maximum reactive cascade depth exceeded (${MAX_REACTIVE_CASCADE_DEPTH}).`, {
+          componentId: this.componentOptions?.componentId,
+          instanceId: this._instanceId,
+          path: typeof p === 'string' ? p : undefined
+        })
+      }
       return false
     }
 
@@ -2672,6 +2694,9 @@ export class CoraliteElement extends BaseElement {
           return true
         }
 
+        const isExternal = !self._isExecutingObserver
+        const wasLatched = self._reactiveLoopBroken || self._cascadeBreakerTripped
+
         let nextValue = v
         if (!self._assertNotObservingStateMutation(p)) {
           return true
@@ -2817,6 +2842,12 @@ export class CoraliteElement extends BaseElement {
 
         self._scheduleUpdate()
 
+        if (isExternal && wasLatched && !self._latchPending) {
+          self._reactiveLoopBroken = false
+          self._cascadeBreakerTripped = false
+          self._observerCascadeCount = 0
+        }
+
         return true
       },
 
@@ -2824,6 +2855,16 @@ export class CoraliteElement extends BaseElement {
         if (typeof p !== 'string') {
           return Reflect.deleteProperty(t, p)
         }
+
+        const isExternal = !self._isExecutingObserver
+        const wasLatched = self._reactiveLoopBroken || self._cascadeBreakerTripped
+
+        if (isExternal && wasLatched && !self._latchPending) {
+          self._reactiveLoopBroken = false
+          self._cascadeBreakerTripped = false
+          self._observerCascadeCount = 0
+        }
+
         if (!self._assertNotObservingStateMutation(p)) {
           return true
         }
