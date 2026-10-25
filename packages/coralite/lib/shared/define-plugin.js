@@ -374,7 +374,7 @@ export function definePlugin (options = {}) {
     const instanceServer = resolvedServer
       ? {
         ...resolvedServer,
-        name: resolvedServer.name || instanceName,
+        name: server?.name || instanceName,
         config: { ...valuesByBlock.serverConfig }
       }
       : undefined
