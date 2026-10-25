@@ -2223,16 +2223,6 @@ export class CoraliteElement extends BaseElement {
     this._reactiveLoopBroken = true
     this._cascadeBreakerTripped = true
 
-    if (!this._latchMacrotaskPending) {
-      this._latchMacrotaskPending = true
-      setTimeout(() => {
-        this._reactiveLoopBroken = false
-        this._cascadeBreakerTripped = false
-        this._latchMacrotaskPending = false
-        this._observerCascadeCount = 0
-      }, 0)
-    }
-
     if (this._dirtyObservers) {
       this._dirtyObservers.clear()
     }
@@ -2281,13 +2271,15 @@ export class CoraliteElement extends BaseElement {
    *
    */
   _assertNotObservingStateMutation (p) {
-    if (this._reactiveLoopBroken) {
-      return false
-    }
-
     if (!this._isExecutingObserver) {
+      this._reactiveLoopBroken = false
+      this._cascadeBreakerTripped = false
       this._observerCascadeCount = 0
       return true
+    }
+
+    if (this._reactiveLoopBroken) {
+      return false
     }
 
     const strP = typeof p === 'string' ? p : String(p)
@@ -2450,7 +2442,7 @@ export class CoraliteElement extends BaseElement {
             return Reflect.set(t, p, v)
           }
           const currentTopKey = topKey || p
-          if (!self._assertNotObservingStateMutation(currentTopKey)) {
+          if (!self._assertNotObservingStateMutation('errors') || !self._assertNotObservingStateMutation(currentTopKey)) {
             return true
           }
           const oldValue = t[p]
@@ -2482,7 +2474,7 @@ export class CoraliteElement extends BaseElement {
             return Reflect.deleteProperty(t, p)
           }
           const currentTopKey = topKey || p
-          if (!self._assertNotObservingStateMutation(currentTopKey)) {
+          if (!self._assertNotObservingStateMutation('errors') || !self._assertNotObservingStateMutation(currentTopKey)) {
             return true
           }
           const hasProp = Object.prototype.hasOwnProperty.call(t, p)
