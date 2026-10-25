@@ -25,7 +25,7 @@ describe('coralite check type-checker integration', () => {
 
   it('coralite check --no-types skips the type-check pass', async () => {
     try {
-      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', path.join(fixturesDir, 'type-error.html'), '--no-types', '--no-interactive'])
+      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', path.join(fixturesDir, 'type-error.html'), '--no-types', '--no-interactive', '--pages=false', '--plugins=false'])
       // type-error.html has a TS error but valid AST, so with --no-types it passes
     } catch (err) {
       assert.fail(`Expected exit code 0 when --no-types skips type check, but got: ${err.message}`)
