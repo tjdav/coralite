@@ -333,6 +333,7 @@ export default [
       '**/dist/',
       '**/bench/',
       '**/benchmarks/',
+      '**/.bench-cache/',
       '**/.history/',
       '**/playwright-report/',
       '**/.coralite/',

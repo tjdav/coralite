@@ -27,7 +27,7 @@ Coralite maintains two complementary benchmark tracks:
 | :--- | :--- | :--- |
 | `02-bundle-hydration` | *No direct external equivalent* | Measures bundle JS byte size (raw/gzip) and hydration timing. |
 | `04-internal` | `js-framework-benchmark` (`jfb`) | DOM reactivity metrics (create, replace, update, swap, clear, memory). |
-| `05-stress-lifecycle` | `lumeland-benchmark` | SSG build throughput and static site generation scale tests. |
+| `05-stress-lifecycle` | `lumeland-benchmark` (`lumeland`) | SSG build throughput and static site generation scale tests. |
 
 ---
 
@@ -94,15 +94,19 @@ pnpm bench:internal --task-id <task-id> --phase after
 ### Running External Benchmarks
 
 ```bash
-# Run all registered external adapters (or specific adapter e.g. jfb)
-pnpm bench:external jfb
+# Run all registered external adapters (or specific adapter e.g. jfb, lumeland)
+pnpm bench:external lumeland
 
 # Wipe cached clones and re-clone external repos
-pnpm bench:external jfb --clean
+pnpm bench:external lumeland --clean
 
 # Run and save results JSON to benchmarks/results/external/
-pnpm bench:external jfb --save
+pnpm bench:external lumeland --save
 ```
+
+#### Registered External Adapters
+- **js-framework-benchmark** (`jfb`) — DOM reactivity comparison using Playwright.
+- **lumeland-benchmark** (`lumeland`) — SSG build-time comparison against other static site generators. Runs Deno harness. Requires Deno installed. CI cost: 1–5 min.
 
 ---
 
