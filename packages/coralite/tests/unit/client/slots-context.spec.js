@@ -317,7 +317,7 @@ describe('Isomorphic slots Helper Context ({ slots })', () => {
     assert.equal(secondSignal.aborted, false)
   })
 
-  it('preserves cached slots helper and getter contexts during synchronous DOM reparenting', () => {
+  it('invalidates cached slots helper and getter contexts during synchronous DOM reparenting', () => {
     const options = {
       componentId: 'test-reparenting-cache',
       templateHTML: '<div><slot></slot></div>',
@@ -349,8 +349,10 @@ describe('Isomorphic slots Helper Context ({ slots })', () => {
     document.body.removeChild(el)
     container.appendChild(el)
 
-    assert.equal(el._slotsHelper, slotsHelperBefore)
-    assert.equal(el._getterContexts, getterContextsBefore)
+    // Cached slots helper and getter context map are invalidated on re-attachment
+    assert.ok(el._slotsHelper)
+    assert.notEqual(el._slotsHelper, slotsHelperBefore)
+    assert.equal(getterContextsBefore.size, 0)
     assert.equal(el._state.info, 0)
   })
 
@@ -358,8 +360,12 @@ describe('Isomorphic slots Helper Context ({ slots })', () => {
     const options = {
       componentId: 'test-teardown-reconnect',
       templateHTML: '<div><slot></slot></div>',
+      defaultValues: { count: 0 },
       getters: {
-        valGetter: (ctx) => ctx.slots.has('default')
+        valGetter: ({ state, slots }) => {
+          state.count
+          return slots.has('default')
+        }
       }
     }
 
@@ -386,9 +392,11 @@ describe('Isomorphic slots Helper Context ({ slots })', () => {
     assert.equal(el._getterContexts, null)
 
     // Re-attach to DOM and verify clean re-initialization
+    document.body.appendChild(el)
     const p = document.createElement('p')
     el.appendChild(p)
-    document.body.appendChild(el)
+    el._reconcileLightDOM()
+    el._state.count++
 
     assert.equal(el._state.valGetter, true)
     assert.ok(el._slotsHelper)

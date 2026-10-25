@@ -23,9 +23,18 @@ describe('Getters Context ({ root, refs, signal })', () => {
   it('provides root in client getters context', () => {
     const options = {
       componentId: 'test-root-getter',
+      attributes: {
+        active: {
+          type: Boolean,
+          default: false
+        }
+      },
       getters: {
         tagName: ({ root }) => (root ? root.tagName.toLowerCase() : null),
-        hasAttr: ({ root }) => (root ? root.hasAttribute('active') : false)
+        hasAttr: ({ root, state }) => {
+          state.active
+          return root ? root.hasAttribute('active') : false
+        }
       }
     }
 
@@ -127,10 +136,22 @@ describe('Getters Context ({ root, refs, signal })', () => {
     const el = document.createElement(testTag)
     document.body.appendChild(el)
 
-    const res = await el._state.asyncData
-    assert.equal(res, 'resolved')
+    // Reading state property initiates background async getter execution
+    const syncVal = el._state.asyncData
+    assert.equal(syncVal, undefined)
     assert.ok(capturedSignal)
     assert.equal(capturedSignal.aborted, false)
+
+    // Await async getter resolution
+    await Promise.resolve()
+    await Promise.resolve()
+
+    assert.equal(el._signals.get('asyncData').value, 'resolved')
+
+    // Detach component and verify signal cancellation
+    document.body.removeChild(el)
+    await Promise.resolve()
+    assert.equal(capturedSignal.aborted, true)
   })
 
   it('evaluates getters with single context object parameter ({ state })', () => {
