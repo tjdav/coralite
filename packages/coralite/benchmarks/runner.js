@@ -7,9 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { printTerminalResults, writeJSONResults, writeMarkdownResults } from './utils/reporter.js'
 import { triggerGC } from './utils/memory.js'
 import { compareAgainstBaseline, DEFAULT_BASELINE_PATH } from './utils/regression.js'
-import { runDomReactivitySuite } from './suites/01-dom-reactivity/bench.js'
 import { runBundleHydrationSuite } from './suites/02-bundle-hydration/bench.js'
-import { runSSRThroughputSuite } from './suites/03-ssr-throughput/bench.js'
 import { runInternalSuite } from './suites/04-internal/bench.js'
 import { runStressLifecycleSuite } from './suites/05-stress-lifecycle/bench.js'
 
@@ -89,7 +87,7 @@ Usage:
 
 Options:
   --help, -h          Display formatted CLI usage and exit
-  --suite=<name>, -s  Run a specific benchmark suite (dom-reactivity, bundle-hydration, ssr-throughput, internal, stress, or all [default: all])
+  --suite=<name>, -s  Run a specific benchmark suite (bundle-hydration, internal, stress, or all [default: all])
   --task-id=<id>      Identifier for the result file (default: adhoc)
   --phase=<phase>     Phase of run: before, after, baseline (default: after)
   --save              Write results to benchmarks/results/<task-id>.json
@@ -98,7 +96,6 @@ Options:
   --warn-only         Print regression warnings without exiting with code 1
   --save-baseline     Save current run results to baselines/baseline.json
   --iterations=<n>, -i Set iteration count per test (default: 9)
-  --rows=<n>, -r      Set row count for DOM reactivity suite (default: 1000)
 `)
 }
 
@@ -154,22 +151,9 @@ function getCommitHash () {
  * @returns {Object} Schema-compliant result object.
  */
 function formatTaskResults (resultsData, taskId, phase) {
-  const domRaw = resultsData.suites?.['dom-reactivity']?.coralite
   const bundleRaw = resultsData.suites?.['bundle-hydration']?.coraliteDynamic
-  const ssrRaw = resultsData.suites?.ssrThroughput
 
   const results = {}
-
-  if (domRaw) {
-    results['dom-reactivity'] = {
-      create1k: domRaw.create1k,
-      replace1k: domRaw.replace1k,
-      update10th: domRaw.update10th,
-      swapRows: domRaw.swapRows,
-      clear: domRaw.clear,
-      heapMB: domRaw.heapMB
-    }
-  }
 
   if (bundleRaw) {
     results['bundle-hydration'] = {
@@ -177,23 +161,6 @@ function formatTaskResults (resultsData, taskId, phase) {
       gzipJsKb: bundleRaw.gzipKB,
       hydrationMs: bundleRaw.hydrationMS,
       ttiMs: bundleRaw.ttiMS
-    }
-  }
-
-  if (ssrRaw) {
-    results.ssrThroughput = {
-      100: {
-        durationMs: ssrRaw['100_pages']?.totalDurationMS,
-        throughputPagesPerSec: ssrRaw['100_pages']?.pagesPerSec
-      },
-      1000: {
-        durationMs: ssrRaw['1000_pages']?.totalDurationMS,
-        throughputPagesPerSec: ssrRaw['1000_pages']?.pagesPerSec
-      },
-      10000: {
-        durationMs: ssrRaw['10000_pages']?.totalDurationMS,
-        throughputPagesPerSec: ssrRaw['10000_pages']?.pagesPerSec
-      }
     }
   }
 
@@ -233,7 +200,7 @@ async function main () {
   }
 
   const selectedSuite = flags.suite.toLowerCase()
-  const VALID_SUITES = ['all', 'dom-reactivity', 'dom', 'bundle-hydration', 'bundle', 'hydration', 'ssr-throughput', 'ssr', 'internal', 'stress', 'lifecycle']
+  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle']
 
   if (!VALID_SUITES.includes(selectedSuite)) {
     console.error(`\n❌ Error: Unknown suite "${flags.suite}".`)
@@ -241,26 +208,11 @@ async function main () {
     process.exit(1)
   }
 
-  if (selectedSuite === 'all' || selectedSuite === 'dom-reactivity' || selectedSuite === 'dom') {
-    const domResults = await runDomReactivitySuite({
-      iterations: flags.iterations,
-      rows: flags.rows
-    })
-    resultsData.suites['dom-reactivity'] = domResults
-    triggerGC()
-  }
-
   if (selectedSuite === 'all' || selectedSuite === 'bundle-hydration' || selectedSuite === 'bundle' || selectedSuite === 'hydration') {
     const bundleResults = await runBundleHydrationSuite({
       iterations: flags.iterations
     })
     resultsData.suites['bundle-hydration'] = bundleResults
-    triggerGC()
-  }
-
-  if (selectedSuite === 'all' || selectedSuite === 'ssr-throughput' || selectedSuite === 'ssr') {
-    const ssrResults = await runSSRThroughputSuite()
-    resultsData.suites.ssrThroughput = ssrResults
     triggerGC()
   }
 

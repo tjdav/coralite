@@ -1,8 +1,10 @@
 # Coralite Performance Benchmarks
 
-Last updated: 2026-10-23T17:10:10.673Z
+> **Note:** The 01-dom-reactivity and 03-ssr-throughput suites were removed in favor of external benchmark harnesses (see `benchmarks/js-framework-benchmark/` and `benchmarks/lumeland-benchmark/`). Results below are historical.
 
-**Environment:** Node v24.16.0 (linux x64)
+Last updated: 2026-10-25T14:32:34.737Z
+
+**Environment:** Node v22.22.1 (linux x64)
 
 ### dom-reactivity
 
@@ -39,14 +41,14 @@ Last updated: 2026-10-23T17:10:10.673Z
 
 | Benchmark | Ops/Sec | Avg Latency (ns) | Speedup |
 | --- | --- | --- | --- |
-| Coralite Token Replace (textNode) | 15636651 | 64 | 1 |
-| Native String.prototype.replace (regex) | 11123740 | 89.9 | 0.71 |
-| Coralite Token Replace (attribute) | 13882078 | 72 | 0.89 |
-| Coralite Read-Only Proxy (Deep Read) | 4863689 | 205.6 | 1 |
-| Standard Flat Object Read (Deep Read) | 2315777711 | 0.4 | 476.14 |
-| Eager Recursive Proxy (Deep Read) | 5689084 | 175.8 | 1.17 |
-| Optimized Object.setPrototypeOf AST Element Creation | 1688517 | 592.2 | 1 |
-| Legacy Object.defineProperties AST Element Creation | 1029808 | 971.1 | 0.61 |
+| Coralite Token Replace (textNode) | 5656758 | 176.8 | 1 |
+| Native String.prototype.replace (regex) | 4039810 | 247.5 | 0.71 |
+| Coralite Token Replace (attribute) | 5630631 | 177.6 | 1 |
+| Coralite Read-Only Proxy (Deep Read) | 1931707 | 517.7 | 1 |
+| Standard Flat Object Read (Deep Read) | 799015283 | 1.3 | 413.63 |
+| Eager Recursive Proxy (Deep Read) | 2300387 | 434.7 | 1.19 |
+| Optimized Object.setPrototypeOf AST Element Creation | 2916495 | 342.9 | 1 |
+| Legacy Object.defineProperties AST Element Creation | 414326 | 2413.6 | 0.14 |
 
 
 ### Stress & Lifecycle: Selective Hydration & Island Scaling
@@ -82,5 +84,5 @@ To reproduce these benchmarks on your machine:
 pnpm install
 
 # 2. Run all benchmark suites
-pnpm bench
+pnpm bench:internal
 ```

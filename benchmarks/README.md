@@ -62,7 +62,7 @@ Performance tasks execute benchmark runs before and after changes and commit the
 Before making code modifications, record the baseline state for the task:
 
 ```bash
-pnpm bench --task-id <task-id> --phase before --save
+pnpm bench:internal --task-id <task-id> --phase before --save
 ```
 
 This writes or updates `benchmarks/results/<task-id>.json` with `phase: "before"`.
@@ -72,7 +72,7 @@ This writes or updates `benchmarks/results/<task-id>.json` with `phase: "before"
 After applying performance optimizations, record the new measurements:
 
 ```bash
-pnpm bench --task-id <task-id> --phase after --save
+pnpm bench:internal --task-id <task-id> --phase after --save
 ```
 
 This writes `benchmarks/results/<task-id>.json` with `phase: "after"`.
@@ -82,7 +82,7 @@ This writes `benchmarks/results/<task-id>.json` with `phase: "after"`.
 To inspect benchmark results without modifying saved files, omit the `--save` flag:
 
 ```bash
-pnpm bench --task-id <task-id> --phase after
+pnpm bench:internal --task-id <task-id> --phase after
 ```
 
 ---
@@ -99,7 +99,7 @@ pnpm bench --task-id <task-id> --phase after
 - Updating Baseline:
 
 ```bash
-pnpm bench --task-id baseline --phase baseline --save
+pnpm bench:internal --task-id baseline --phase baseline --save
 ```
 
 The baseline file is updated only when maintainers explicitly establish a new global reference point, not during individual task runs.
