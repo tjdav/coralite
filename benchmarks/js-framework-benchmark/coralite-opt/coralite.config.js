@@ -1,10 +1,14 @@
 import { defineConfig } from 'coralite'
+import { lists } from 'coralite/plugins/lists'
 
 export default defineConfig({
   output: 'dist',
   components: 'components',
   pages: 'pages',
-  externalStyles: ['/css/currentStyle.css'],
+  base: './',
+  baseURL: './',
   reconcile: 'minimal',
-  compilerOptimizations: 'all'
+  compilerOptimizations: 'all',
+  plugins: [lists()],
+  externalStyles: ['/css/currentStyle.css']
 })

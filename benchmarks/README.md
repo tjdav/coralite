@@ -1,19 +1,42 @@
-# Coralite Benchmark Results Infrastructure
+# Coralite Benchmark Infrastructure
 
-This directory contains committed benchmark result files for Coralite performance tasks and reference baselines.
+This directory contains committed benchmark result files, external benchmark runner infrastructure, and baselines for Coralite performance tracking.
 
-## Location & File Naming
+## Two Benchmark Tracks
 
-All performance task results and baselines are saved in `benchmarks/results/`:
+Coralite maintains two complementary benchmark tracks:
 
-- `benchmarks/results/baseline.json` — Reference performance baseline from main commit.
-- `benchmarks/results/<task-id>.json` — Task-specific benchmark results (e.g. `p3-04.json`).
+1. **Internal Track** (`pnpm bench:internal`)
+   - **Location:** `packages/coralite/benchmarks/`
+   - **Execution Time:** ~30 seconds
+   - **Scope:** Fast local regression checks covering bundle hydration, internal micro-benchmarks, and stress lifecycle operations.
+   - **Usage:** Executed before and after performance tasks (Phase 3 tasks). Results saved to `benchmarks/results/<task-id>.json`.
+
+2. **External Track** (`pnpm bench:external`)
+   - **Location:** `benchmarks/external/`
+   - **Execution Time:** ~5–15 minutes
+   - **Scope:** Canonical external harness validation comparing Coralite against industry benchmarks.
+   - **Caching:** Clones external repositories into `.bench-cache/` (gitignored, cached across runs). First run includes clone & install (~2–5 min); subsequent warm runs take ~1 min.
+   - **Usage:** Executed prior to major releases. Results saved to `benchmarks/results/external/<adapter>-<YYYY-MM-DD>.json` when invoked with `--save`.
 
 ---
 
-## Result File Schema
+## Suite Coverage Comparison
 
-Each result file follows this JSON structure:
+| Internal Suite | External Benchmark Equivalent | Description |
+| :--- | :--- | :--- |
+| `02-bundle-hydration` | *No direct external equivalent* | Measures bundle JS byte size (raw/gzip) and hydration timing. |
+| `04-internal` | `js-framework-benchmark` (`jfb`) | DOM reactivity metrics (create, replace, update, swap, clear, memory). |
+| `05-stress-lifecycle` | `lumeland-benchmark` | SSG build throughput and static site generation scale tests. |
+
+---
+
+## Internal Results File Schema
+
+All internal task results and reference baselines are saved in `benchmarks/results/`:
+
+- `benchmarks/results/baseline.json` — Reference performance baseline from main commit.
+- `benchmarks/results/<task-id>.json` — Task-specific benchmark results (e.g. `p3-04.json`).
 
 ```json
 {
@@ -55,34 +78,30 @@ Each result file follows this JSON structure:
 
 ## Invocation & Workflow
 
-Performance tasks execute benchmark runs before and after changes and commit their result files.
-
-### 1. Before Changes
-
-Before making code modifications, record the baseline state for the task:
+### Running Internal Benchmarks
 
 ```bash
+# Record baseline before changes
 pnpm bench:internal --task-id <task-id> --phase before --save
-```
 
-This writes or updates `benchmarks/results/<task-id>.json` with `phase: "before"`.
-
-### 2. After Changes
-
-After applying performance optimizations, record the new measurements:
-
-```bash
+# Record measurements after changes
 pnpm bench:internal --task-id <task-id> --phase after --save
+
+# Inspect without saving
+pnpm bench:internal --task-id <task-id> --phase after
 ```
 
-This writes `benchmarks/results/<task-id>.json` with `phase: "after"`.
-
-### 3. Printing Results to stdout
-
-To inspect benchmark results without modifying saved files, omit the `--save` flag:
+### Running External Benchmarks
 
 ```bash
-pnpm bench:internal --task-id <task-id> --phase after
+# Run all registered external adapters (or specific adapter e.g. jfb)
+pnpm bench:external jfb
+
+# Wipe cached clones and re-clone external repos
+pnpm bench:external jfb --clean
+
+# Run and save results JSON to benchmarks/results/external/
+pnpm bench:external jfb --save
 ```
 
 ---

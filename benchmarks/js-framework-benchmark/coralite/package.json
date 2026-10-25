@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "js-framework-benchmark": {
+    "frameworkVersion": "1.0.0",
+    "customURL": "/dist",
+    "language": "JavaScript"
+  },
   "scripts": {
     "build-prod": "coralite build",
     "dev": "coralite dev"

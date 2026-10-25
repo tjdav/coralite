@@ -185,3 +185,5 @@ Performance tasks (Phase 3 tasks) must record and commit benchmark results.
 - Results are saved to `benchmarks/results/<task-id>.json`.
 - Performance task PRs must commit their `before` and `after` benchmark result files to `benchmarks/results/`.
 - The reference baseline is maintained at `benchmarks/results/baseline.json` and updated only when explicitly instructed by maintainers.
+
+**External benchmark verification:** Before release, run `pnpm bench:external` to validate against the canonical external harnesses. This clones the external repos into `.bench-cache/` (gitignored) on first run, and caches across subsequent runs. Results are written to `benchmarks/results/external/` when invoked with `--save`. See `benchmarks/README.md` for the internal-vs-external split.
