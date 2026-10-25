@@ -18,7 +18,8 @@ const CACHE_DIR = path.join(ROOT, '.bench-cache')
 const RESULTS_DIR = path.join(ROOT, 'benchmarks/results/external')
 
 const ADAPTERS = {
-  jfb: () => import('./adapters/js-framework-benchmark.js').then(m => m.default)
+  jfb: () => import('./adapters/js-framework-benchmark.js').then(m => m.default),
+  lumeland: () => import('./adapters/lumeland.js').then(m => m.default)
 }
 
 /**
@@ -42,6 +43,7 @@ async function main () {
 
 Adapters:
   jfb               js-framework-benchmark
+  lumeland          lumeland-benchmark
 
 Options:
   --clean           Remove existing cached clone before running

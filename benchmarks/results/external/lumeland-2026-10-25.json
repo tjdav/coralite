@@ -1,0 +1,12 @@
+{
+  "adapter": "lumeland",
+  "timestamp": "2026-10-25T18:20:26.763Z",
+  "pages": 1000,
+  "runs": 10,
+  "results": [
+    {
+      "name": "coralite",
+      "seconds": 1.427
+    }
+  ]
+}
