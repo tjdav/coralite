@@ -80,6 +80,9 @@ playwright/.cache/
 /blob-report/
 /playwright/.cache/
 
+# External benchmark harnesses (cloned on first bench:external run)
+.bench-cache/
+
 # Debugging files
 *.heapprofile
 .bench-reports/

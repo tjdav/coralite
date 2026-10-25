@@ -8,6 +8,27 @@ export const buildOptions = {
       in: './lib/index.js',
       out: 'lib/index'
     },
+    // Built-in Plugins
+    {
+      in: './plugins/index.js',
+      out: 'plugins/index'
+    },
+    {
+      in: './plugins/router.js',
+      out: 'plugins/router'
+    },
+    {
+      in: './plugins/lists.js',
+      out: 'plugins/lists'
+    },
+    {
+      in: './plugins/metadata.js',
+      out: 'plugins/metadata'
+    },
+    {
+      in: './plugins/static-assets.js',
+      out: 'plugins/static-assets'
+    },
     {
       in: './lib/client/element.js',
       out: 'lib/coralite-element'
