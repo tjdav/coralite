@@ -54,17 +54,29 @@ describe('Async Getter Dependency Tracking', () => {
     const el = document.createElement(testTag)
     document.body.appendChild(el)
 
-    // Wait for initial async getter evaluation
+    // Wait for initial async getter evaluation and resolution
     await new Promise(resolve => setTimeout(resolve, 30))
 
-    // Mutate post-await dependency
+    assert.equal(observerCalls, 1, 'Initial async getter resolution triggers observer')
+    assert.equal(lastNewVal, 'feed:tech:recent', 'Observer receives initial resolution')
+
+    // Mutate post-await dependency (filter)
     el._state.filter = 'popular'
+
+    // Wait to confirm post-await mutation does NOT trigger re-evaluation
+    await new Promise(resolve => setTimeout(resolve, 30))
+
+    assert.equal(observerCalls, 1, 'Observer should NOT be invoked when post-await dependency changes')
+    assert.equal(lastNewVal, 'feed:tech:recent', 'Value remains unchanged on post-await mutation')
+
+    // Mutate pre-await dependency (topic)
+    el._state.topic = 'science'
 
     // Wait for async getter resolution
     await new Promise(resolve => setTimeout(resolve, 30))
 
-    assert.ok(observerCalls >= 1, 'Observer callback should be invoked when post-await dependency changes')
-    assert.equal(lastNewVal, 'feed:tech:popular', 'Observer receives updated post-await resolution')
+    assert.equal(observerCalls, 2, 'Observer should be invoked when pre-await dependency changes')
+    assert.equal(lastNewVal, 'feed:science:popular', 'Observer receives updated resolution incorporating pre-await dependency change')
   })
 
   it('Resolved Value Delivery to Observer', async () => {
@@ -103,17 +115,21 @@ describe('Async Getter Dependency Tracking', () => {
     // Wait for initial resolution
     await new Promise(resolve => setTimeout(resolve, 30))
 
+    // Initial resolution delivers first value
+    assert.equal(receivedValues.length, 1, 'Observer runs once on initial resolution')
+    assert.equal(receivedValues[0].newVal, 10, 'Initial newVal is primitive resolved value')
+
     // Trigger state change
     el._state.count = 2
 
     // Wait for resolution
     await new Promise(resolve => setTimeout(resolve, 30))
 
-    assert.equal(receivedValues.length, 1, 'Observer should run once on state change')
-    assert.notEqual(typeof receivedValues[0].newVal?.then, 'function', 'newVal must not be a Promise')
-    assert.notEqual(typeof receivedValues[0].oldVal?.then, 'function', 'oldVal must not be a Promise')
-    assert.equal(receivedValues[0].newVal, 20, 'newVal must be the resolved primitive value')
-    assert.equal(receivedValues[0].oldVal, 10, 'oldVal must be the previous resolved primitive value')
+    assert.equal(receivedValues.length, 2, 'Observer runs a second time on state change resolution')
+    assert.notEqual(typeof receivedValues[1].newVal?.then, 'function', 'newVal must not be a Promise')
+    assert.notEqual(typeof receivedValues[1].oldVal?.then, 'function', 'oldVal must not be a Promise')
+    assert.equal(receivedValues[1].newVal, 20, 'newVal must be the resolved primitive value')
+    assert.equal(receivedValues[1].oldVal, 10, 'oldVal must be the previous resolved primitive value')
   })
 
   it('Multiple Interleaved Async Getters Isolation', async () => {
@@ -158,21 +174,24 @@ describe('Async Getter Dependency Tracking', () => {
     // Wait for both initial getters to settle
     await new Promise(resolve => setTimeout(resolve, 60))
 
+    assert.equal(slowCalls.length, 1, 'slow observer fired on initial resolution')
+    assert.equal(otherCalls.length, 1, 'other observer fired on initial resolution')
+
     // Mutate only oy (should trigger ONLY other)
     el._state.oy = 'other-updated'
     await new Promise(resolve => setTimeout(resolve, 30))
 
-    assert.equal(slowCalls.length, 0, 'Mutating oy should NOT trigger slow observer')
-    assert.equal(otherCalls.length, 1, 'Mutating oy triggers other observer')
-    assert.equal(otherCalls[0], 'other:other-updated')
+    assert.equal(slowCalls.length, 1, 'Mutating oy should NOT re-trigger slow observer')
+    assert.equal(otherCalls.length, 2, 'Mutating oy triggers other observer')
+    assert.equal(otherCalls[1], 'other:other-updated')
 
     // Mutate only sx (should trigger ONLY slow)
     el._state.sx = 'slow-updated'
     await new Promise(resolve => setTimeout(resolve, 60))
 
-    assert.equal(slowCalls.length, 1, 'Mutating sx triggers slow observer')
-    assert.equal(slowCalls[0], 'slow:slow-updated')
-    assert.equal(otherCalls.length, 1, 'other observer is not re-triggered when sx mutates')
+    assert.equal(slowCalls.length, 2, 'Mutating sx triggers slow observer')
+    assert.equal(slowCalls[1], 'slow:slow-updated')
+    assert.equal(otherCalls.length, 2, 'other observer is not re-triggered when sx mutates')
   })
 
   it('4. Nested Getter Dependency Propagation (Probe P5, M1)', async () => {
@@ -188,8 +207,8 @@ describe('Async Getter Dependency Tracking', () => {
           return state.base * 2
         },
         async outer ({ state }) {
-          await new Promise(resolve => setTimeout(resolve, 15))
           const doubled = state.inner
+          await new Promise(resolve => setTimeout(resolve, 15))
           return `outer:${doubled}`
         }
       },
@@ -213,11 +232,14 @@ describe('Async Getter Dependency Tracking', () => {
     // Wait for initial outer resolution
     await new Promise(resolve => setTimeout(resolve, 30))
 
+    assert.equal(outerCalls, 1, 'Initial outer resolution fires observer')
+    assert.equal(lastOuterVal, 'outer:10')
+
     // Mutate inner getter dependency (base)
     el._state.base = 10
     await new Promise(resolve => setTimeout(resolve, 30))
 
-    assert.ok(outerCalls >= 1, 'Mutating base must trigger outer async getter observer via nested inner dependency propagation')
+    assert.equal(outerCalls, 2, 'Mutating base must trigger outer async getter observer via nested inner dependency propagation')
     assert.equal(lastOuterVal, 'outer:20')
   })
 
@@ -277,7 +299,7 @@ describe('Async Getter Dependency Tracking', () => {
       getters: {
         async search ({ state }) {
           const q = state.query
-          const delay = q === 'v1' ? 50 : 10
+          const delay = q === 'v1-slow' ? 50 : 10
           await new Promise(resolve => setTimeout(resolve, delay))
           return `result:${q}`
         }
@@ -297,17 +319,20 @@ describe('Async Getter Dependency Tracking', () => {
     document.body.appendChild(el)
 
     // Wait for initial v1 setup
-    await new Promise(resolve => setTimeout(resolve, 60))
+    await new Promise(resolve => setTimeout(resolve, 30))
 
-    // Trigger rapid updates: set query to v1-new (slow), then query to v2-fast (fast)
-    el._state.query = 'v1'
+    assert.equal(observerValues.length, 1, 'Initial query resolution invokes observer')
+    assert.equal(observerValues[0], 'result:v1')
+
+    // Trigger rapid updates: set query to v1-slow (slow), then query to v2 (fast)
+    el._state.query = 'v1-slow'
     el._state.query = 'v2'
 
     // Wait for both to complete
     await new Promise(resolve => setTimeout(resolve, 80))
 
-    assert.equal(observerValues.length, 1, 'Only the latest valid resolution should invoke the observer callback')
-    assert.equal(observerValues[0], 'result:v2', 'Stale slower resolution (v1) must be invalidated and discarded')
+    assert.equal(observerValues.length, 2, 'Observer should receive initial resolution and latest valid resolution')
+    assert.equal(observerValues[1], 'result:v2', 'Stale slower resolution (v1-slow) must be invalidated and discarded')
   })
 
   it('Disconnection and Rejection Resilience', async () => {
@@ -367,7 +392,7 @@ describe('Async Getter Dependency Tracking', () => {
       el._state.mode = 'error'
       await new Promise(resolve => setTimeout(resolve, 20))
       assert.ok(consoleErrors.length >= 1, 'Unexpected errors must be logged to console.error')
-      assert.ok(consoleErrors[0].includes('Coralite Async Getter Error:'), 'Error message contains expected prefix')
+      assert.ok(consoleErrors[0].includes('[Coralite] Async getter "data" failed:'), 'Error message contains expected prefix')
 
       // Reset and test Disconnection mid-flight
       consoleErrors = []
@@ -380,5 +405,55 @@ describe('Async Getter Dependency Tracking', () => {
     } finally {
       console.error = originalConsoleError
     }
+  })
+
+  it('Explicit Guard: P1.11 pre- vs post-await dependency tracking and observer notifications', async () => {
+    const observerLog = []
+
+    const options = {
+      componentId: 'test-p111-guard',
+      templateHTML: '<div></div>',
+      defaultValues: { preKey: 'A', postKey: 'X' },
+      getters: {
+        async asyncGetter ({ state }) {
+          const pre = state.preKey
+          await new Promise(r => setTimeout(r, 15))
+          const post = state.postKey
+          return `res:${pre}:${post}`
+        }
+      },
+      client ({ observe }) {
+        observe('asyncGetter', (newVal, oldVal) => {
+          observerLog.push({ newVal, oldVal })
+        })
+      }
+    }
+
+    const testTag = 'test-p111-guard'
+    const ElementClass = createCoraliteClass(options)
+    if (!customElements.get(testTag)) {
+      customElements.define(testTag, ElementClass)
+    }
+
+    const el = document.createElement(testTag)
+    document.body.appendChild(el)
+
+    await new Promise(r => setTimeout(r, 30))
+
+    assert.equal(observerLog.length, 1, 'Initial async getter resolution delivers first notification')
+    assert.deepEqual(observerLog[0], { newVal: 'res:A:X', oldVal: undefined })
+
+    // Post-await read mutation: must NOT trigger re-evaluation or observer
+    el._state.postKey = 'Y'
+    await new Promise(r => setTimeout(r, 30))
+
+    assert.equal(observerLog.length, 1, 'Post-await mutation does not trigger getter re-evaluation or observer')
+
+    // Pre-await read mutation: MUST trigger re-evaluation and observer notification
+    el._state.preKey = 'B'
+    await new Promise(r => setTimeout(r, 30))
+
+    assert.equal(observerLog.length, 2, 'Pre-await mutation triggers getter re-evaluation and observer notification')
+    assert.deepEqual(observerLog[1], { newVal: 'res:B:Y', oldVal: 'res:A:X' })
   })
 })
