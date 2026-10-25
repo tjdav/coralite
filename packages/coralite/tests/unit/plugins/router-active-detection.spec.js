@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { rm, writeFile, mkdir } from 'node:fs/promises'
 import createCoralite from '../../../lib/server/create.js'
 import { routerPlugin } from '../../../plugins/router.js'
@@ -81,8 +82,8 @@ describe('Router Active Detection (PERF-02b)', () => {
   it('router is active when any component uses <router-outlet>', async () => {
     const app = await createCoralite({
       root: process.cwd(),
-      components: path.resolve('packages/coralite/tests/fixtures/router-app/components'),
-      pages: path.resolve('packages/coralite/tests/fixtures/router-app/pages'),
+      components: fileURLToPath(new URL('../../fixtures/router-app/components', import.meta.url)),
+      pages: fileURLToPath(new URL('../../fixtures/router-app/pages', import.meta.url)),
       plugins: [],
       mode: 'testing'
     })

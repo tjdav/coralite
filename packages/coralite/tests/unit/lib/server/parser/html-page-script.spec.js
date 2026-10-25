@@ -177,8 +177,9 @@ describe('html.js (extractPageScript)', () => {
     assert.strictEqual(staticResult.blocks, null)
 
     const bareExportsContent = await readFile(resolve(fixturesDir, 'bare-exports.html'), 'utf8')
+    const bareExportsStripped = bareExportsContent.replace(/<!--\s*coralite-ignore\s+E108\s*-->/g, '')
     assert.throws(
-      () => extractPageScript(bareExportsContent),
+      () => extractPageScript(bareExportsStripped),
       (err) => err.code === 'CORALITE-E108'
     )
 
