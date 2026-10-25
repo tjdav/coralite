@@ -2,12 +2,13 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { parseModule } from '../../../../lib/server/utils/parse.js'
 import { transformNode } from '../../../../lib/server/parser/html.js'
 import { CoraliteError } from '../../../../lib/shared/errors.js'
 
-const fixturesDir = join(process.cwd(), 'packages/coralite/tests/fixtures/components')
+const fixturesDir = fileURLToPath(new URL('../../../fixtures/components', import.meta.url))
 
 function readFixture (filename) {
   return readFileSync(join(fixturesDir, filename), 'utf8')
