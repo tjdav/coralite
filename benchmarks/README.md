@@ -1,128 +1,76 @@
-# Coralite Benchmark Infrastructure
+# Coralite Benchmarks
 
-This directory contains committed benchmark result files, external benchmark runner infrastructure, and baselines for Coralite performance tracking.
+Coralite has two benchmark tracks: **internal** (fast local regression checks) and **external** (canonical harness runs used for release validation).
 
-## Two Benchmark Tracks
+## Internal — `pnpm bench:internal`
 
-Coralite maintains two complementary benchmark tracks:
+Fast local checks (~30–60s) for regressions during development. Runs the surviving suites in `packages/coralite/benchmarks/`:
 
-1. **Internal Track** (`pnpm bench:internal`)
-   - **Location:** `packages/coralite/benchmarks/`
-   - **Execution Time:** ~30 seconds
-   - **Scope:** Fast local regression checks covering bundle hydration, internal micro-benchmarks, and stress lifecycle operations.
-   - **Usage:** Executed before and after performance tasks (Phase 3 tasks). Results saved to `benchmarks/results/<task-id>.json`.
+- **`02-bundle-hydration`** — bundle size (raw + gzipped) and client hydration time
+- **`04-internal`** — micro-benchmarks via mitata (AST interpolation, Lazy Proxy, AST DOM creation)
+- **`05-stress-lifecycle`** — selective hydration island scaling, state streaming, mount/unmount lifecycle
 
-2. **External Track** (`pnpm bench:external`)
-   - **Location:** `benchmarks/external/`
-   - **Execution Time:** ~5–15 minutes
-   - **Scope:** Canonical external harness validation comparing Coralite against industry benchmarks.
-   - **Caching:** Clones external repositories into `.bench-cache/` (gitignored, cached across runs). First run includes clone & install (~2–5 min); subsequent warm runs take ~1 min.
-   - **Usage:** Executed prior to major releases. Results saved to `benchmarks/results/external/<adapter>-<YYYY-MM-DD>.json` when invoked with `--save`.
+Used per Phase 3 tasks (see `AGENTS.md`). Writes results to `benchmarks/results/<task-id>.json` when run with `--task-id` and `--save`.
 
----
+### Suites removed in rc.6
 
-## Suite Coverage Comparison
+Two suites were removed because their coverage is now provided by external harnesses:
 
-| Internal Suite | External Benchmark Equivalent | Description |
+- ~~`01-dom-reactivity`~~ — replaced by `benchmarks/js-framework-benchmark/` (external harness)
+- ~~`03-ssr-throughput`~~ — partially covered by `benchmarks/lumeland-benchmark/` (external harness)
+
+Historical results for these suites remain in `benchmarks/results/` (see [Historical results](#historical-results)).
+
+## External — `pnpm bench:external`
+
+Canonical harness runs against external benchmark repos. Clones each harness into `.bench-cache/` (gitignored) on first run, then caches across subsequent runs.
+
+```sh
+pnpm bench:external              # run all registered adapters
+pnpm bench:external jfb          # run only js-framework-benchmark
+pnpm bench:external lumeland     # run only lumeland-benchmark
+pnpm bench:external --clean      # wipe .bench-cache/ and re-clone
+pnpm bench:external --save       # write results to benchmarks/results/external/
+```
+
+**First run is slow** (clone + install ~2–5 min). Subsequent runs are ~1 min (cache hit). `.bench-cache/` is gitignored — not committed.
+
+### Registered adapters
+
+- **`jfb`** — js-framework-benchmark. Runs the canonical js-framework-benchmark harness in `krausest/js-framework-benchmark`.
+- **`lumeland`** — lumeland-benchmark. Runs the Deno-based SSG build-time harness in `lumeland/benchmark`.
+
+### jsbenchmarks submission status
+
+`jsbenchmarks` is not registered as an external adapter in `benchmarks/external/runner.js`. A submission-ready copy exists at `benchmarks/jsbenchmarks/coralite/` for manual testing or submission to `jsbenchmarks.com`.
+
+## Coverage matrix
+
+Which internal suite is covered by which external harness:
+
+| Internal suite | Covered externally? | External benchmark |
 | :--- | :--- | :--- |
-| `02-bundle-hydration` | *No direct external equivalent* | Measures bundle JS byte size (raw/gzip) and hydration timing. |
-| `04-internal` | `js-framework-benchmark` (`jfb`) | DOM reactivity metrics (create, replace, update, swap, clear, memory). |
-| `05-stress-lifecycle` | `lumeland-benchmark` (`lumeland`) | SSG build throughput and static site generation scale tests. |
+| 02-bundle-hydration | ❌ No | — |
+| 04-internal | ❌ No | — |
+| 05-stress-lifecycle | ❌ No | — |
+| *(removed)* 01-dom-reactivity | ✅ Yes | `js-framework-benchmark` |
+| *(removed)* 03-ssr-throughput | ⚠️ Partial | `lumeland-benchmark` (SSG build time only) |
 
----
+**Bundle size, hydration time, micro-benchmark cost, and lifecycle memory** are only measurable via `pnpm bench:internal`. The external harnesses measure DOM reactivity and SSG build time, not these.
 
-## Internal Results File Schema
+## Historical results
 
-All internal task results and reference baselines are saved in `benchmarks/results/`:
+**`benchmarks/results/`** — task-scoped results per the Phase 3 protocol in `AGENTS.md`. Contains `baseline.json` (canonical reference) and `p3-04` through `p3-07` before/after result files from the rc.6 development cycle.
 
-- `benchmarks/results/baseline.json` — Reference performance baseline from main commit.
-- `benchmarks/results/<task-id>.json` — Task-specific benchmark results (e.g. `p3-04.json`).
+**`benchmarks/results/external/`** — external harness runs. Files named `<adapter>-<YYYY-MM-DD>.json`. Produced by `pnpm bench:external --save`.
 
-```json
-{
-  "taskId": "p3-04",
-  "phase": "before",
-  "commit": "abc1234",
-  "runAt": "2026-10-14T12:00:00.000Z",
-  "machine": {
-    "cpu": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
-    "cores": 8,
-    "os": "Linux 6.8.0",
-    "nodeVersion": "v22.22.2"
-  },
-  "results": {
-    "dom-reactivity": {
-      "create1k": 28.4,
-      "replace1k": 34.3,
-      "update10th": 7.9,
-      "swapRows": 2.9,
-      "clear": 3.0,
-      "heapMB": 1.56
-    },
-    "bundle-hydration": {
-      "rawJsKb": 64.9,
-      "gzipJsKb": 17.2,
-      "hydrationMs": 2.3,
-      "ttiMs": 61.88
-    },
-    "ssrThroughput": {
-      "100": { "durationMs": 106.5, "throughputPagesPerSec": 939 },
-      "1000": { "durationMs": 683.3, "throughputPagesPerSec": 1463.5 },
-      "10000": { "durationMs": 5465.7, "throughputPagesPerSec": 1829.6 }
-    }
-  }
-}
-```
+## Submission copies
 
----
+The following directories contain submission-ready copies for external benchmark repos. They are structured to be dropped into the external harness's expected paths.
 
-## Invocation & Workflow
+- **`js-framework-benchmark/coralite/`** — drop into `frameworks/keyed/coralite/` in `krausest/js-framework-benchmark`
+- **`js-framework-benchmark/coralite-opt/`** — drop into `frameworks/keyed/coralite-opt/`
+- **`lumeland-benchmark/coralite/`** — drop into `ssg/coralite/` in `lumeland/benchmark`
+- **`jsbenchmarks/coralite/`** — drop into `benchmarks/coralite/` for `jsbenchmarks.com`
 
-### Running Internal Benchmarks
-
-```bash
-# Record baseline before changes
-pnpm bench:internal --task-id <task-id> --phase before --save
-
-# Record measurements after changes
-pnpm bench:internal --task-id <task-id> --phase after --save
-
-# Inspect without saving
-pnpm bench:internal --task-id <task-id> --phase after
-```
-
-### Running External Benchmarks
-
-```bash
-# Run all registered external adapters (or specific adapter e.g. jfb, lumeland)
-pnpm bench:external lumeland
-
-# Wipe cached clones and re-clone external repos
-pnpm bench:external lumeland --clean
-
-# Run and save results JSON to benchmarks/results/external/
-pnpm bench:external lumeland --save
-```
-
-#### Registered External Adapters
-- **js-framework-benchmark** (`jfb`) — DOM reactivity comparison using Playwright.
-- **lumeland-benchmark** (`lumeland`) — SSG build-time comparison against other static site generators. Runs Deno harness. Requires Deno installed. CI cost: 1–5 min.
-
----
-
-## Interpretation Caveat
-
-> **Important:** Benchmark measurements are highly dependent on machine hardware, CPU frequency scaling, operating system, and Node runtime version. Results are only directly comparable when captured on the **same physical or virtual machine**. Always perform before and after runs on the same environment.
-
----
-
-## Reference Baseline Management
-
-- Canonical Baseline Location: `benchmarks/results/baseline.json`
-- Updating Baseline:
-
-```bash
-pnpm bench:internal --task-id baseline --phase baseline --save
-```
-
-The baseline file is updated only when maintainers explicitly establish a new global reference point, not during individual task runs.
+See each copy's `README.md` (if present) or the adapter's `submissionInstructions` for the full submission flow.
