@@ -2205,8 +2205,81 @@ export class CoraliteElement extends BaseElement {
    * @returns {boolean} True if the mutation is permitted; false if aborted.
    * @protected
    */
+  /**
+   * Trips the circuit breaker when an infinite reactivity loop is detected.
+   * @param {string} reason - Description of why the circuit breaker tripped.
+   * @protected
+   */
+  _tripCascadeBreaker (reason) {
+    this._consecutiveFlushCount = 0
+    this._flushWindowCount = 0
+    this._reactiveLoopBroken = true
+    this._cascadeBreakerTripped = true
+
+    if (!this._latchMacrotaskPending) {
+      this._latchMacrotaskPending = true
+      setTimeout(() => {
+        this._reactiveLoopBroken = false
+        this._cascadeBreakerTripped = false
+        this._latchMacrotaskPending = false
+        this._observerCascadeCount = 0
+      }, 0)
+    }
+
+    if (this._dirtyObservers) {
+      this._dirtyObservers.clear()
+    }
+
+    if (this._needsDOMUpdate) {
+      try {
+        this._updateDOM()
+      } catch {
+        // ignore render error during emergency latch
+      }
+    }
+
+    const err = new CoraliteError(
+      `${reason} This indicates an infinite reactivity loop where an observer or getter cyclically mutates state. ` +
+      `Ensure observe() callbacks and getters do not mutate state properties they depend on.`,
+      {
+        componentId: this.componentOptions?.componentId,
+        instanceId: this._instanceId
+      }
+    )
+
+    console.error('Coralite Reactive Cascade Error:', err)
+    let CustomEventCtor = null
+    if (typeof window !== 'undefined' && window.CustomEvent) {
+      CustomEventCtor = window.CustomEvent
+    } else if (typeof CustomEvent !== 'undefined') {
+      CustomEventCtor = CustomEvent
+    }
+
+    if (CustomEventCtor && typeof this.dispatchEvent === 'function') {
+      this.dispatchEvent(new CustomEventCtor('coralite-error', {
+        bubbles: true,
+        composed: true,
+        detail: { error: err }
+      }))
+    }
+
+    /** @type {any} */
+    const self = this
+    if (typeof self.emit === 'function') {
+      self.emit('coralite-error', { error: err })
+    }
+  }
+
+  /**
+   *
+   */
   _assertNotObservingStateMutation (p) {
+    if (this._reactiveLoopBroken) {
+      return false
+    }
+
     if (!this._isExecutingObserver) {
+      this._observerCascadeCount = 0
       return true
     }
 
@@ -2233,14 +2306,6 @@ export class CoraliteElement extends BaseElement {
     }
 
     if (isDirectCycle) {
-      if (isDev) {
-        throw new CoraliteError(msg, {
-          componentId: this.componentOptions?.componentId,
-          instanceId: this._instanceId,
-          path: typeof p === 'string' ? p : undefined
-        })
-      }
-
       const err = new CoraliteError(msg, {
         componentId: this.componentOptions?.componentId,
         instanceId: this._instanceId,
@@ -2269,6 +2334,16 @@ export class CoraliteElement extends BaseElement {
       if (typeof self.emit === 'function') {
         self.emit('coralite-error', { error: err })
       }
+
+      if (isDev) {
+        throw err
+      }
+      return false
+    }
+
+    this._observerCascadeCount = (this._observerCascadeCount || 0) + 1
+    if (this._observerCascadeCount > MAX_REACTIVE_CASCADE_DEPTH) {
+      this._tripCascadeBreaker(`Maximum reactive cascade depth exceeded (${MAX_REACTIVE_CASCADE_DEPTH}).`)
       return false
     }
 
@@ -2367,15 +2442,14 @@ export class CoraliteElement extends BaseElement {
           if (typeof p !== 'string') {
             return Reflect.set(t, p, v)
           }
-          if (!self._assertNotObservingStateMutation(p)) {
+          const currentTopKey = topKey || p
+          if (!self._assertNotObservingStateMutation(currentTopKey)) {
             return true
           }
           const oldValue = t[p]
           if (oldValue === v) {
             return true
           }
-
-          const currentTopKey = topKey || p
           const camelTop = kebabToCamel(currentTopKey)
           const kebabTop = camelToKebab(camelTop)
 
@@ -2400,7 +2474,8 @@ export class CoraliteElement extends BaseElement {
           if (typeof p !== 'string') {
             return Reflect.deleteProperty(t, p)
           }
-          if (!self._assertNotObservingStateMutation(p)) {
+          const currentTopKey = topKey || p
+          if (!self._assertNotObservingStateMutation(currentTopKey)) {
             return true
           }
           const hasProp = Object.prototype.hasOwnProperty.call(t, p)
@@ -2412,7 +2487,6 @@ export class CoraliteElement extends BaseElement {
 
           const deleted = Reflect.deleteProperty(t, p)
           if (deleted) {
-            const currentTopKey = topKey || p
             const camelTop = kebabToCamel(currentTopKey)
             const kebabTop = camelToKebab(camelTop)
 
@@ -3101,66 +3175,10 @@ export class CoraliteElement extends BaseElement {
       const exceedsRate = this._flushWindowCount > MAX_FLUSHES_PER_WINDOW
 
       if (exceedsDepth || exceedsRate) {
-        this._consecutiveFlushCount = 0
-        this._flushWindowCount = 0
-        this._reactiveLoopBroken = true
-        this._cascadeBreakerTripped = true
-
-        if (!this._latchMacrotaskPending) {
-          this._latchMacrotaskPending = true
-          setTimeout(() => {
-            this._reactiveLoopBroken = false
-            this._cascadeBreakerTripped = false
-            this._latchMacrotaskPending = false
-          }, 0)
-        }
-
-        if (this._dirtyObservers) {
-          this._dirtyObservers.clear()
-        }
-
-        if (this._needsDOMUpdate) {
-          try {
-            this._updateDOM()
-          } catch {
-            // ignore render error during emergency latch
-          }
-        }
-
         const reason = exceedsDepth
           ? `Maximum reactive cascade depth exceeded (${MAX_REACTIVE_CASCADE_DEPTH}).`
           : `Maximum reactive flush rate exceeded (${MAX_FLUSHES_PER_WINDOW} flushes in ${FLUSH_WINDOW_MS}ms).`
-
-        const err = new CoraliteError(
-          `${reason} This indicates an infinite reactivity loop where an observer or getter cyclically mutates state. ` +
-          `Ensure observe() callbacks and getters do not mutate state properties they depend on.`,
-          {
-            componentId: this.componentOptions?.componentId,
-            instanceId: this._instanceId
-          }
-        )
-
-        console.error('Coralite Reactive Cascade Error:', err)
-        let CustomEventCtor = null
-        if (typeof window !== 'undefined' && window.CustomEvent) {
-          CustomEventCtor = window.CustomEvent
-        } else if (typeof CustomEvent !== 'undefined') {
-          CustomEventCtor = CustomEvent
-        }
-
-        if (CustomEventCtor && typeof this.dispatchEvent === 'function') {
-          this.dispatchEvent(new CustomEventCtor('coralite-error', {
-            bubbles: true,
-            composed: true,
-            detail: { error: err }
-          }))
-        }
-
-        /** @type {any} */
-        const self = this
-        if (typeof self.emit === 'function') {
-          self.emit('coralite-error', { error: err })
-        }
+        this._tripCascadeBreaker(reason)
         aborted = true
         return
       }
