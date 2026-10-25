@@ -19,7 +19,8 @@ const RESULTS_DIR = path.join(ROOT, 'benchmarks/results/external')
 
 const ADAPTERS = {
   jfb: () => import('./adapters/js-framework-benchmark.js').then(m => m.default),
-  lumeland: () => import('./adapters/lumeland.js').then(m => m.default)
+  lumeland: () => import('./adapters/lumeland.js').then(m => m.default),
+  jsbenchmarks: () => import('./adapters/jsbenchmarks.js').then(m => m.default)
 }
 
 /**
@@ -74,6 +75,31 @@ Options:
     const adapter = await getAdapter()
 
     log('runner', `Starting external benchmark adapter '${adapter.name}'...`)
+
+    if (adapter.mode === 'submission-only') {
+      log('validate', `Executing submission-prep validation for ${adapter.name}...`)
+      const res = await adapter.validate(ROOT, (tag, msg) => log(tag, msg))
+
+      for (const check of res.checks) {
+        if (check.pass) {
+          log('validate', `  ✓ ${check.name}`)
+        } else {
+          log('validate', `  ✗ ${check.name}: ${check.error}`)
+        }
+      }
+
+      if (adapter.submissionInstructions) {
+        log('instructions', adapter.submissionInstructions)
+      }
+
+      if (!res.valid) {
+        log('error', `Validation failed for submission-only adapter '${adapter.name}'.`)
+        process.exit(1)
+      }
+
+      log('runner', `Adapter '${adapter.name}' (submission-only) validation passed.`)
+      continue
+    }
 
     const cloneDir = adapter.cloneDir(CACHE_DIR)
 

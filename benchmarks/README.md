@@ -107,6 +107,7 @@ pnpm bench:external lumeland --save
 #### Registered External Adapters
 - **js-framework-benchmark** (`jfb`) — DOM reactivity comparison using Playwright.
 - **lumeland-benchmark** (`lumeland`) — SSG build-time comparison against other static site generators. Runs Deno harness. Requires Deno installed. CI cost: 1–5 min.
+- **jsbenchmarks.com** (`jsbenchmarks`) — Submission-prep validator only. Validates structure of local submission copy at `benchmarks/jsbenchmarks/coralite/` and outputs submission instructions; does not run an external harness directly.
 
 ---
 
