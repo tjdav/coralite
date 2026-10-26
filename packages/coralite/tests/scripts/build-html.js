@@ -9,6 +9,60 @@ import { consumerClientPlugin } from '../fixtures/plugins/consumer-client-plugin
 import { hookTestPlugin } from '../fixtures/plugins/hook-test-plugin.js'
 import { configTypesPlugin } from '../fixtures/plugins/config-types-plugin.js'
 
+/**
+ * Fixtures that intentionally fail to build — the failure IS the test.
+ * Each entry is a page path relative to tests/fixtures/pages/, with the
+ * `.html` or `/index.html` suffix stripped.
+ *
+ * Organized by category. If a fixture in this list starts passing, the
+ * build will warn about a stale entry — remove it from this list.
+ *
+ * Adding a new test that intentionally fails to build? Add it here.
+ */
+const EXPECTED_BUILD_FAILURES = new Set([
+  // Error-boundary tests: fixture server() or getters intentionally throw
+  'no-on-error',
+  'on-error-string',
+  'on-error-getter-throws',
+  'on-error-template-state',
+  'on-error-throws',
+  'on-error-void',
+  'redirect/invalid-status',
+  'redirect/invalid-to',
+  'multi-path/error-handling/fail',
+
+  // Path-validation tests: fixture paths() intentionally throws or returns invalid shape
+  'with-paths-invalid',
+  'with-paths-throwing',
+  'with-paths',
+  'with-define-page',
+  'route-serialization',
+  'with-paths-async',
+  'codemod/expected-both',
+  'codemod/expected-paths-only',
+  'dedup/cross-source-duplicate',
+  'dedup/same-source-duplicate',
+
+  // Bare-export tests: fixture intentionally uses deprecated page export shape
+  'bare-exports',
+  'codemod/before-ignore-pragma'
+])
+
+/**
+ * Normalize a failed-page path to a comparable key.
+ * - 'tests/fixtures/pages/on-error-string/index.html' → 'on-error-string'
+ * - 'tests/fixtures/pages/bare-exports.html' → 'bare-exports'
+ * - 'tests/fixtures/pages/codemod/expected-both.html' → 'codemod/expected-both'
+ *
+ * Adapt to the actual shape of p.path in failedPages (Phase 0 Q1).
+ */
+function normalizeFailedPageKey (pathOrData) {
+  const raw = typeof pathOrData === 'string' ? pathOrData : (pathOrData.pathname ?? pathOrData.path ?? '')
+  return raw
+    .replace(/^tests\/fixtures\/pages\//, '')
+    .replace(/(\/index)?\.html$/, '')
+}
+
 const args = process.argv.slice(2)
 const modeArg = args.find(arg => arg === '--mode')
 const mode = modeArg ? args[args.indexOf(modeArg) + 1] : 'development'
@@ -71,13 +125,58 @@ const coralite = await createCoralite({
 try {
   await coralite.save()
   console.log(`Coralite testing build HTML complete (mode: ${mode}, output: ${output})`)
-} catch (error) {
-  if (error.pagePath && error.pagePath.includes('error-handling')) {
-    console.log('Ignoring expected error in test fixtures build:', error.message)
-  } else {
-    console.error(error)
-    process.exit(1)
+} catch (err) {
+  if (!err.failedPages || !Array.isArray(err.failedPages)) {
+    // Not a page-failure error — re-throw immediately
+    throw err
   }
+
+  const expectedFailures = []
+  const realFailures = []
+  for (const page of err.failedPages) {
+    const key = normalizeFailedPageKey(page.path)
+    if (EXPECTED_BUILD_FAILURES.has(key)) {
+      expectedFailures.push({
+        key,
+        page
+      })
+    } else {
+      realFailures.push({
+        key,
+        page
+      })
+    }
+  }
+
+  // Stale-manifest detection: manifest entries not present in failures
+  const failedKeys = new Set(err.failedPages.map(p => normalizeFailedPageKey(p.path)))
+  const staleEntries = [...EXPECTED_BUILD_FAILURES].filter(k => !failedKeys.has(k))
+
+  if (staleEntries.length > 0) {
+    console.warn(`[CORALITE-WARN] Expected-failure manifest has ${staleEntries.length} stale entries (fixtures now pass):`)
+    for (const entry of staleEntries) {
+      console.warn(`  - ${entry}  (remove from EXPECTED_BUILD_FAILURES)`)
+    }
+  }
+
+  if (expectedFailures.length > 0) {
+    console.log(`[CORALITE-INFO] ${expectedFailures.length} expected failure(s) — see EXPECTED_BUILD_FAILURES manifest:`)
+    for (const { key } of expectedFailures) {
+      console.log(`  ✓ ${key}`)
+    }
+  }
+
+  if (realFailures.length > 0) {
+    console.error(`[CORALITE-ERR] Build failed with ${realFailures.length} unexpected page(s):`)
+    for (const { key, page } of realFailures) {
+      const msg = page.error?.message ?? String(page.error)
+      console.error(`  ✗ ${key}: ${msg}`)
+    }
+    console.error(`\n${realFailures.length} unexpected failure(s). Fix or add to EXPECTED_BUILD_FAILURES if intentional.`)
+    throw err
+  }
+
+  console.log(`\n[CORALITE-INFO] Build completed with ${expectedFailures.length} expected failure(s), 0 unexpected.`)
 }
 
 const listsApp = await createCoralite({
