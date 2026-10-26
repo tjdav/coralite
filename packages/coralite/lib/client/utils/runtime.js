@@ -34,6 +34,22 @@ export function generateClientRuntime ({
 
   return `
 (async () => {
+  window.__coralite_instanceCounters = Object.assign(
+    {},
+    window.__coralite_instanceCounters || {},
+    ${instanceCounters}
+  );
+  window.__coralite_hydration__ = Object.assign(
+    {},
+    window.__coralite_hydration__ || {},
+    ${hydrationData}
+  );
+  window.__coralite_page_config__ = Object.assign(
+    {},
+    window.__coralite_page_config__ || {},
+    ${pageConfig}
+  );
+
   const [
     { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, initPlugins, setupPageRuntime },
     { default: componentManifest }
@@ -42,9 +58,6 @@ export function generateClientRuntime ({
     import('${base}assets/js/manifest.js')
   ]);
 
-  window.__coralite_instanceCounters = window.__coralite_instanceCounters || ${instanceCounters};
-  window.__coralite_hydration__ = window.__coralite_hydration__ || ${hydrationData};
-  window.__coralite_page_config__ = window.__coralite_page_config__ || ${pageConfig};
   window.__coralite__ = window.__coralite__ || {};
   window.__coralite__.reconcile = window.__coralite__.reconcile || ${JSON.stringify(reconcile)};
   if (!window.__coralite__.hydrationStore) {

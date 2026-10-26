@@ -15,7 +15,8 @@ describe('Live hydration store', () => {
       mode: 'development'
     })
 
-    assert.ok(runtimeCode.includes('window.__coralite_hydration__ = window.__coralite_hydration__ || {"comp-1":{"count":10}};'))
+    assert.ok(runtimeCode.includes('window.__coralite_hydration__ = Object.assign('))
+    assert.ok(runtimeCode.includes('{"comp-1":{"count":10}}'))
   })
 
   it('_setupState reads from window.__coralite_hydration__ at component init time', () => {
