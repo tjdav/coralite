@@ -11,13 +11,9 @@ let PAGES_DIR
 let OUTPUT_DIR
 
 function parseHydrationPayload (html) {
-  const prefix = 'window.__coralite_hydration__ = window.__coralite_hydration__ || '
-  const startIdx = html.indexOf(prefix)
-  assert.notEqual(startIdx, -1, 'Hydration payload assignment should be found in HTML')
-  const jsonStart = startIdx + prefix.length
-  const jsonEnd = html.indexOf(';\n  window.__coralite_page_config__', jsonStart)
-  const jsonStr = html.slice(jsonStart, jsonEnd !== -1 ? jsonEnd : html.indexOf(';', jsonStart))
-  return Function(`return ${jsonStr}`)()
+  const match = html.match(/window\.__coralite_hydration__\s*=\s*Object\.assign\(\s*\{\},\s*window\.__coralite_hydration__\s*\|\|\s*\{\},\s*(\{[\s\S]*?\})\s*\);/)
+  assert.ok(match, 'Hydration payload assignment should be found in HTML')
+  return Function(`return ${match[1]}`)()
 }
 
 describe('Hydration Payload viewTransitions Serialization', () => {

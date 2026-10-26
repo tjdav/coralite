@@ -74,10 +74,10 @@ describe('Route Hydration Payload Serialization', () => {
     assert.equal(results.length, 1)
 
     const html = results[0].content
-    assert.ok(html.includes('window.__coralite_hydration__ = window.__coralite_hydration__ ||'))
+    assert.ok(html.includes('window.__coralite_hydration__ = Object.assign('))
 
     // Extract serialized hydration payload from generated HTML
-    const match = html.match(/window\.__coralite_hydration__\s*=\s*window\.__coralite_hydration__\s*\|\|\s*(\{[\s\S]*?\});/)
+    const match = html.match(/window\.__coralite_hydration__\s*=\s*Object\.assign\(\s*\{\},\s*window\.__coralite_hydration__\s*\|\|\s*\{\},\s*(\{[\s\S]*?\})\s*\);/)
     assert.ok(match, 'Hydration payload script should be found')
 
     const payload = Function(`return ${match[1]}`)()
@@ -140,7 +140,7 @@ describe('Route Hydration Payload Serialization', () => {
     assert.equal(results.length, 1)
 
     const html = results[0].content
-    const match = html.match(/window\.__coralite_hydration__\s*=\s*window\.__coralite_hydration__\s*\|\|\s*(\{[\s\S]*?\});/)
+    const match = html.match(/window\.__coralite_hydration__\s*=\s*Object\.assign\(\s*\{\},\s*window\.__coralite_hydration__\s*\|\|\s*\{\},\s*(\{[\s\S]*?\})\s*\);/)
     assert.ok(match, 'Hydration payload script should be found')
 
     const payload = Function(`return ${match[1]}`)()
