@@ -46,18 +46,24 @@
   </section>
 
   <script type="module">
-    document.getElementById('mount-imperative-btn').addEventListener('click', () => {
-      const card = document.createElement('scoped-host-card')
-      card.id = 'imperative-card'
-      card.classList.add('active')
-      document.getElementById('imperative-mount').appendChild(card)
-    })
+    import { definePage } from 'coralite'
 
-    document.getElementById('mount-nested-imperative-btn').addEventListener('click', () => {
-      const child = document.createElement('scoped-nested-child')
-      child.id = 'imperative-nested-child'
-      const parent = document.getElementById('nested-parent')
-      parent.appendChild(child)
+    export default definePage({
+      client () {
+        document.getElementById('mount-imperative-btn').addEventListener('click', () => {
+          const card = document.createElement('scoped-host-card')
+          card.id = 'imperative-card'
+          card.classList.add('active')
+          document.getElementById('imperative-mount').appendChild(card)
+        })
+
+        document.getElementById('mount-nested-imperative-btn').addEventListener('click', () => {
+          const child = document.createElement('scoped-nested-child')
+          child.id = 'imperative-nested-child'
+          const parent = document.getElementById('nested-parent')
+          parent.appendChild(child)
+        })
+      }
     })
   </script>
 </body>
