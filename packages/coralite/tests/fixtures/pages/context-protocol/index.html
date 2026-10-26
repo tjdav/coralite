@@ -24,11 +24,17 @@
   <button id="btn-reparent">Reparent Child 1</button>
 
   <script type="module">
-    document.getElementById('btn-reparent')?.addEventListener('click', () => {
-      const providerB = document.getElementById('provider-b')
-      const child1 = document.getElementById('child-1')
-      if (providerB && child1) {
-        providerB.appendChild(child1)
+    import { definePage } from 'coralite'
+
+    export default definePage({
+      client () {
+        document.getElementById('btn-reparent')?.addEventListener('click', () => {
+          const providerB = document.getElementById('provider-b')
+          const child1 = document.getElementById('child-1')
+          if (providerB && child1) {
+            providerB.appendChild(child1)
+          }
+        })
       }
     })
   </script>
