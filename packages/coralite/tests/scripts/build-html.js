@@ -72,7 +72,7 @@ try {
   await coralite.save()
   console.log(`Coralite testing build HTML complete (mode: ${mode}, output: ${output})`)
 } catch (error) {
-  if ((error.pagePath && error.pagePath.includes('error-handling')) || (error.message && error.message.includes('Exact route collision detected'))) {
+  if (error.pagePath && error.pagePath.includes('error-handling')) {
     console.log('Ignoring expected error in test fixtures build:', error.message)
   } else {
     console.error(error)
