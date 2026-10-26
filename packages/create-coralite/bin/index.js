@@ -30,6 +30,9 @@ program
   .version(pkg.version)
 
 program
+  .argument('[project-directory...]', 'target project directory')
+
+program
   .addOption(
     new Option('-o, --output <name>', 'target project directory').default('')
   )
@@ -76,6 +79,12 @@ program
 
 program.parse()
 
+if (program.args.length > 1) {
+  console.error(`\n✗ Unexpected additional argument: ${program.args[1]}`)
+  process.exit(1)
+}
+
+const positionalTarget = program.args[0] || ''
 const options = program.opts()
 const cwd = process.cwd()
 const { magenta, cyan } = colours
@@ -101,7 +110,7 @@ async function createProject () {
   checkNodeVersion(pkg.engines?.node, process.env.TEST_NODE_VERSION || process.version)
 
   const argTemplate = options.template
-  let target = options.output
+  let target = positionalTarget || options.output
   let template = argTemplate
   const pkgInfo = extractPackageInfoFromUserAgent(process.env.npm_config_user_agent)
 
@@ -132,7 +141,7 @@ async function createProject () {
   }
   // get project name and target directory
   if (target) {
-    target = formatTargetDir(options.output)
+    target = formatTargetDir(target)
   } else {
     const projectName = await prompts.text({
       message: 'Project name:',
@@ -319,10 +328,10 @@ async function createProject () {
 
   if (pkgManager === 'yarn') {
     doneMessage += '\n  yarn'
-    doneMessage += '\n  yarn start'
+    doneMessage += '\n  yarn dev'
   } else {
     doneMessage += `\n  ${pkgManager} install`
-    doneMessage += `\n  ${pkgManager} run start`
+    doneMessage += `\n  ${pkgManager} run dev`
   }
 
   prompts.outro(doneMessage)

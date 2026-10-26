@@ -1,4 +1,26 @@
-# Coralite v1.0.0-rc.6
+# Coralite Release Notes
+
+## 1.0.0-rc.7
+
+**⚠️ Supersedes 1.0.0-rc.6 — required upgrade.**
+
+`coralite@1.0.0-rc.6` shipped without `plugins/router/outlet.html` in the npm tarball, causing every fresh `npx create-coralite@latest` project to fail on `npm run dev` with:
+
+```
+Error: ENOENT: no such file or directory, open '.../node_modules/coralite/dist/lib/router/outlet.html'
+```
+
+rc.7 fixes this by inlining the router-outlet component — no filesystem dependency, no possibility of the file being missing from the tarball. It also:
+
+- Enhances the smoke test to exercise the packed artifact end-to-end (`npm pack` → `npm install` → `createCoralite()`), preventing this class of bug
+- Fixes the scaffold's "Done" message (`npm run dev` instead of `npm run start`)
+- Adds positional-argument support to `create-coralite` (`npx create-coralite@latest my-project`)
+
+**Upgrade if you installed 1.0.0-rc.6:** run `npm install coralite@1.0.0-rc.7` in your project. No source changes required.
+
+**Deprecation:** `coralite@1.0.0-rc.6` and `create-coralite@1.0.0-rc.6` are deprecated on npm with a message pointing to rc.7.
+
+## 1.0.0-rc.6
 
 This release candidate marks a massive architectural shift for Coralite, moving from a Proxy-based reactivity model to a signal-based model, and consolidating the developer experience into a single `coralite` package.
 
