@@ -8,7 +8,9 @@
   <h1>Lists Basic Test Page</h1>
   <ul id="item-list"></ul>
 
-  <script type="coralite/page">
+  <script type="module">
+    import { definePage } from 'coralite'
+
     export default definePage({
       client ({ refs, lists }) {
         const store = lists.createStore({

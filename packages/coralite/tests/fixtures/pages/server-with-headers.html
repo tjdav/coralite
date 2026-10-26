@@ -2,7 +2,9 @@
 <html>
   <head>
     <title>Page with headers</title>
-    <script>
+    <script type="module">
+      import { definePage } from 'coralite'
+
       export default definePage({
         server() {
           console.log(headers)

@@ -45,7 +45,10 @@ const EXPECTED_BUILD_FAILURES = new Set([
 
   // Bare-export tests: fixture intentionally uses deprecated page export shape
   'bare-exports',
-  'codemod/before-ignore-pragma'
+  'codemod/before-ignore-pragma',
+
+  // Validator tests: fixture intentionally triggers CORALITE-E401
+  'server-with-headers'
 ])
 
 /**
