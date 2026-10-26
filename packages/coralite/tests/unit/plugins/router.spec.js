@@ -43,6 +43,8 @@ describe('Router Plugin Skeleton', () => {
     assert.strictEqual(routerPlugin.server.components.length, 1)
     const componentItem = routerPlugin.server.components[0]
     assert.ok(componentItem && componentItem.path)
+    assert.strictEqual(componentItem.virtual, true)
+    assert.strictEqual(componentItem.content, '<template id="router-outlet"><slot></slot></template>')
     assert.strictEqual(componentItem.path.filename, 'outlet.html')
   })
 })

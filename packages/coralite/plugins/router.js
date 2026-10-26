@@ -2,8 +2,8 @@ import { definePlugin } from '../lib/server/plugin/define.js'
 import { createCoraliteElement, relinkChildren } from '../lib/server/utils/dom.js'
 import { findHeadAndBody } from '../lib/server/utils/render.js'
 import { isDevRuntime } from '../lib/utils/dev-mode.js'
-import { fileURLToPath } from 'node:url'
-import { existsSync } from 'node:fs'
+
+const OUTLET_CONTENT = '<template id="router-outlet"><slot></slot></template>'
 
 /**
  * Checks if the router is active in the application based on explicit plugin registration
@@ -76,22 +76,6 @@ function isRouterActive (app, outletAttr, pageComponent) {
 
   app._routerActiveCache = false
   return false
-}
-
-/**
- * Resolves the absolute path to the router outlet component template.
- * @returns {string} Path to outlet.html
- */
-function getOutletComponentPath () {
-  const directPath = fileURLToPath(new URL('./router/outlet.html', import.meta.url))
-  if (existsSync(directPath)) {
-    return directPath
-  }
-  const bundledPath = fileURLToPath(new URL('../../plugins/router/outlet.html', import.meta.url))
-  if (existsSync(bundledPath)) {
-    return bundledPath
-  }
-  return directPath
 }
 
 /**
@@ -264,7 +248,15 @@ export const routerPlugin = definePlugin({
 
   server: {
     components: [
-      getOutletComponentPath()
+      {
+        virtual: true,
+        content: OUTLET_CONTENT,
+        path: {
+          pathname: 'virtual:router-outlet/outlet.html',
+          filename: 'outlet.html',
+          dirname: 'virtual:router-outlet'
+        }
+      }
     ],
 
     onBeforePageRender ({ component, config, app }) {
