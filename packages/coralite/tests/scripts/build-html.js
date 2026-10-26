@@ -40,6 +40,8 @@ const EXPECTED_BUILD_FAILURES = new Set([
   'with-paths-async',
   'codemod/expected-both',
   'codemod/expected-paths-only',
+  // Codemod output tests: expected transform artifacts, not runnable pages
+  'codemod/expected-with-imports',
   'dedup/cross-source-duplicate',
   'dedup/same-source-duplicate',
 
