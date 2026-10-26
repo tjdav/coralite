@@ -413,7 +413,10 @@ describe('Async Getter Dependency Tracking', () => {
     const options = {
       componentId: 'test-p111-guard',
       templateHTML: '<div></div>',
-      defaultValues: { preKey: 'A', postKey: 'X' },
+      defaultValues: {
+        preKey: 'A',
+        postKey: 'X'
+      },
       getters: {
         async asyncGetter ({ state }) {
           const pre = state.preKey
@@ -424,7 +427,10 @@ describe('Async Getter Dependency Tracking', () => {
       },
       client ({ observe }) {
         observe('asyncGetter', (newVal, oldVal) => {
-          observerLog.push({ newVal, oldVal })
+          observerLog.push({
+            newVal,
+            oldVal
+          })
         })
       }
     }
@@ -441,7 +447,10 @@ describe('Async Getter Dependency Tracking', () => {
     await new Promise(r => setTimeout(r, 30))
 
     assert.equal(observerLog.length, 1, 'Initial async getter resolution delivers first notification')
-    assert.deepEqual(observerLog[0], { newVal: 'res:A:X', oldVal: undefined })
+    assert.deepEqual(observerLog[0], {
+      newVal: 'res:A:X',
+      oldVal: undefined
+    })
 
     // Post-await read mutation: must NOT trigger re-evaluation or observer
     el._state.postKey = 'Y'
@@ -454,6 +463,9 @@ describe('Async Getter Dependency Tracking', () => {
     await new Promise(r => setTimeout(r, 30))
 
     assert.equal(observerLog.length, 2, 'Pre-await mutation triggers getter re-evaluation and observer notification')
-    assert.deepEqual(observerLog[1], { newVal: 'res:B:Y', oldVal: 'res:A:X' })
+    assert.deepEqual(observerLog[1], {
+      newVal: 'res:B:Y',
+      oldVal: 'res:A:X'
+    })
   })
 })
