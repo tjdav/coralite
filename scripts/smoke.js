@@ -142,19 +142,24 @@ try {
     }
     console.log('CLI verification passed.')
 
-    // Verify Import
-    console.log('Verifying Library Import...')
+    // Verify Import & Instantiation
+    console.log('Verifying Library Import & Instantiation...')
+    mkdirSync(join(TEMP_DIR, 'pages'), { recursive: true })
+    mkdirSync(join(TEMP_DIR, 'components'), { recursive: true })
     const testScriptPath = join(TEMP_DIR, 'test-import.mjs')
     const testScriptContent = `
         import { createCoralite } from 'coralite';
         console.log('Import successful:', typeof createCoralite);
+        const app = await createCoralite({ pages: './pages', components: './components' });
+        if (!app) throw new Error('createCoralite returned undefined');
+        console.log('SMOKE OK: createCoralite() instantiated without error');
       `
     writeFileSync(testScriptPath, testScriptContent)
     const importOutput = execSync(`node "${testScriptPath}"`, { cwd: TEMP_DIR }).toString()
-    if (!importOutput.includes('Import successful')) {
-      throw new Error('Library import verification failed')
+    if (!importOutput.includes('Import successful') || !importOutput.includes('SMOKE OK')) {
+      throw new Error('Library import & instantiation verification failed')
     }
-    console.log('Library import verification passed.')
+    console.log('Library import & instantiation verification passed.')
   } else if (targetPackageName === 'create-coralite') {
     console.log('Verifying CLI...')
     const cliPath = join(TEMP_DIR, 'node_modules', '.bin', binName)
