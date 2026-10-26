@@ -2757,6 +2757,16 @@ export function createRenderer ({
     let anyComponentChanged = false
 
     const componentCheckResults = await Promise.all(allComponents.map(async (component) => {
+      if (component.virtual) {
+        if (!newManifest.virtual) {
+          newManifest.virtual = {}
+        }
+        newManifest.virtual[component.path.pathname] = { cacheKey: component.cacheKey }
+        return {
+          component,
+          isStale: !component.result
+        }
+      }
       const prevMeta = manifest.physical[component.path.pathname]
       const { changed, metadata } = await checkFileChange(component.path.pathname, prevMeta)
       newManifest.physical[component.path.pathname] = metadata

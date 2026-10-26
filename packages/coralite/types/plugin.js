@@ -294,7 +294,7 @@
  * @property {string} [name] - The name of the server plugin
  * @property {any} [config] - Plugin configuration object
  * @property {CoralitePluginExportFunction} [context] - Symmetrical context function
- * @property {(HTMLData | string)[]} [components] - Array of loaded component data
+ * @property {(Partial<HTMLData> | string)[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted

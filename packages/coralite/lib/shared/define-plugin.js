@@ -143,12 +143,12 @@ function validateNonEmptyString (value, paramName) {
 }
 
 /**
- * Validates that a value is an array of strings (or empty array)
+ * Validates that a value is an array of strings or component objects (or empty array)
  * @param {*} value - Value to validate
  * @param {string} paramName - Parameter name for error messages
- * @throws {Error} If value is defined but not an array of strings
+ * @throws {Error} If value is defined but not an array of strings or objects
  */
-function validateStringArray (value, paramName) {
+function validateComponentArray (value, paramName) {
   if (!Array.isArray(value)) {
     throw new CoraliteError(
       `Coralite plugin validation failed: "${paramName}" must be an array, received ${typeof value}`
@@ -156,9 +156,10 @@ function validateStringArray (value, paramName) {
   }
 
   for (let i = 0; i < value.length; i++) {
-    if (typeof value[i] !== 'string') {
+    const item = value[i]
+    if (typeof item !== 'string' && (typeof item !== 'object' || item === null)) {
       throw new CoraliteError(
-        `Coralite plugin validation failed: "${paramName}[${i}]" must be a string, received ${typeof value[i]}`
+        `Coralite plugin validation failed: "${paramName}[${i}]" must be a string or object, received ${typeof item}`
       )
     }
   }
@@ -194,7 +195,7 @@ function processComponents (path) {
 
 /**
  * Creates a new Coralite plugin instance based on provided configuration options.
- * @param {Partial<CoralitePlugin & { config?: Record<string, any>, server?: { config?: Record<string, any>, components?: string[] }, client?: { config?: Record<string, any> } }>} [options={}] - Plugin configuration object
+ * @param {Partial<CoralitePlugin & { config?: Record<string, any>, server?: { config?: Record<string, any>, components?: (Partial<HTMLData> | string)[] }, client?: { config?: Record<string, any> } }>} [options={}] - Plugin configuration object
  * @returns {CoralitePlugin} A configured plugin instance ready to be registered with Coralite
  */
 export function definePlugin (options = {}) {
@@ -299,12 +300,16 @@ export function definePlugin (options = {}) {
     }
 
     if (resolvedServer.components) {
-      validateStringArray(resolvedServer.components, 'server.components')
+      validateComponentArray(resolvedServer.components, 'server.components')
 
       const componentHTMLData = []
       try {
-        for (const path of resolvedServer.components) {
-          componentHTMLData.push(processComponents(path))
+        for (const pathOrComp of resolvedServer.components) {
+          if (typeof pathOrComp === 'string') {
+            componentHTMLData.push(processComponents(pathOrComp))
+          } else {
+            componentHTMLData.push(pathOrComp)
+          }
         }
         // @ts-ignore
         resolvedServer.components = componentHTMLData
