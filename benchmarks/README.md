@@ -48,13 +48,10 @@ pnpm bench:external --save       # write results to benchmarks/results/external/
 
 Which internal suite is covered by which external harness:
 
-| Internal suite | Covered externally? | External benchmark |
-| :--- | :--- | :--- |
-| 02-bundle-hydration | ❌ No | — |
-| 04-internal | ❌ No | — |
-| 05-stress-lifecycle | ❌ No | — |
-| *(removed)* 01-dom-reactivity | ✅ Yes | `js-framework-benchmark` |
-| *(removed)* 03-ssr-throughput | ⚠️ Partial | `lumeland-benchmark` (SSG build time only) |
+#### Registered External Adapters
+- **js-framework-benchmark** (`jfb`) — DOM reactivity comparison using Playwright.
+- **lumeland-benchmark** (`lumeland`) — SSG build-time comparison against other static site generators. Runs Deno harness. Requires Deno installed. CI cost: 1–5 min.
+- **jsbenchmarks.com** (`jsbenchmarks`) — Submission-prep validator only. Validates structure of local submission copy at `benchmarks/jsbenchmarks/coralite/` and outputs submission instructions; does not run an external harness directly.
 
 **Bundle size, hydration time, micro-benchmark cost, and lifecycle memory** are only measurable via `pnpm bench:internal`. The external harnesses measure DOM reactivity and SSG build time, not these.
 
