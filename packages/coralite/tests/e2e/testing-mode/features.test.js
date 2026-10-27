@@ -22,6 +22,7 @@ test.describe('Testing Mode Features', () => {
 
   test('should expose window.__coralite_test__ API in testing mode', async ({ page }) => {
     await page.goto('/')
+    await page.waitForFunction(() => window.__coralite_test__?.ready !== undefined)
     await page.evaluate(() => window.__coralite_test__.ready)
 
     const isTestApiDefined = await page.evaluate(() => typeof window.__coralite_test__ === 'object')
