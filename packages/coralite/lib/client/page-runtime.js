@@ -2,6 +2,8 @@ import { createReadOnlyProxy, normalizeStyleKey, isAsyncFunction, createCombined
 import { isDevRuntime } from '../utils/dev-mode.js'
 import { CoraliteError } from '../shared/errors.js'
 
+/** @import { CoraliteGlobalThis } from '../../types/globals.js' */
+
 /**
  * Initializes client-side reactivity, style bindings, getters, observers,
  * and client() controller execution for Coralite pages on document.documentElement.
@@ -298,7 +300,8 @@ export async function setupPageRuntime (pageConfig) {
 
   const clientFn = parseFn(pageConfig.client)
   if (typeof clientFn === 'function') {
-    const win = /** @type {any} */ (typeof window !== 'undefined' ? window : {})
+    /** @type {CoraliteGlobalThis} */
+    const win = typeof window !== 'undefined' ? window : globalThis
     const routerCtx = win.__coralite_router__
 
     const context = {

@@ -14,9 +14,11 @@ describe('setupPageRuntime plugin contexts', () => {
 
   it('page client receives router context when active', async () => {
     const mockRouter = {
-      navigate: () => {},
+      navigate: () => {
+      },
       current: () => ({ path: '/' }),
-      beforeEach: () => {}
+      beforeEach: () => {
+      }
     }
 
     /** @type {any} */
@@ -27,7 +29,10 @@ describe('setupPageRuntime plugin contexts', () => {
 
     await setupPageRuntime({
       client ({ router, state }) {
-        receivedCtx = { router, state }
+        receivedCtx = {
+          router,
+          state
+        }
       }
     })
 
