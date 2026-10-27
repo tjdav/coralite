@@ -298,7 +298,12 @@ export async function setupPageRuntime (pageConfig) {
 
   const clientFn = parseFn(pageConfig.client)
   if (typeof clientFn === 'function') {
+    // Merge plugin contexts if available
+    const pluginContexts = (typeof window !== 'undefined' && (window.__coralite_plugins__ || window.__coralite_plugin_contexts__)) || {}
+
     const context = {
+      ...pluginContexts,
+      ...(typeof window !== 'undefined' && window.__coralite_router__ ? { router: window.__coralite_router__ } : {}),
       state: stateProxy,
       route: routeObj,
       root: rootEl,
