@@ -218,10 +218,6 @@ export const routerPlugin = definePlugin({
 
   client: {
     init ({ config, runtime }) {
-      if (typeof window === 'undefined') {
-        return
-      }
-
       function updateHead (doc) {
         const newTitle = doc.querySelector('title')
         if (newTitle) {
@@ -261,7 +257,7 @@ export const routerPlugin = definePlugin({
         }
       }
 
-      async function performSwap (outlet, newOutlet, doc, runtime, signal) {
+      async function performSwap (outlet, newOutlet, doc, signal) {
         if (signal && signal.aborted) {
           return false
         }
@@ -437,9 +433,8 @@ export const routerPlugin = definePlugin({
           }
 
           let didSwap = false
-          /** @type {any} */
-          const win = window
-          const activeVT = win.__coralite_hydration__?.viewTransitions ?? win.__coralite_router__?.viewTransitions ?? false
+          // @ts-ignore
+          const activeVT = window.__coralite_hydration__?.viewTransitions ?? window.__coralite_router__?.viewTransitions ?? false
           const shouldAnimate =
             activeVT === true &&
             typeof document.startViewTransition === 'function' &&
@@ -451,7 +446,7 @@ export const routerPlugin = definePlugin({
                 if (signal.aborted) {
                   return
                 }
-                didSwap = await performSwap(outlet, newOutlet, doc, runtime, signal)
+                didSwap = await performSwap(outlet, newOutlet, doc, signal)
               })
               await transition.finished
             } catch (err) {
@@ -462,11 +457,11 @@ export const routerPlugin = definePlugin({
                 return
               }
               if (!didSwap) {
-                didSwap = await performSwap(outlet, newOutlet, doc, runtime, signal)
+                didSwap = await performSwap(outlet, newOutlet, doc, signal)
               }
             }
           } else {
-            didSwap = await performSwap(outlet, newOutlet, doc, runtime, signal)
+            didSwap = await performSwap(outlet, newOutlet, doc, signal)
           }
 
           if (typeof runtime.upgrade === 'function') {
@@ -498,14 +493,14 @@ export const routerPlugin = definePlugin({
         }
       }
 
-      /** @type {Object} */
-      const win = typeof window !== 'undefined' ? window : {}
-      win.__coralite_router__ = {
+      //@ts-ignore
+      window.__coralite_router__ = {
         navigate,
         current: () => ({ path: window.location ? window.location.pathname : '/' }),
         beforeEach,
         get viewTransitions () {
-          return win.__coralite_hydration__?.viewTransitions ?? false
+          //@ts-ignore
+          return window.__coralite_hydration__?.viewTransitions ?? false
         }
       }
 
@@ -567,23 +562,20 @@ export const routerPlugin = definePlugin({
 
     context: (_pluginContext) => (_instanceContext) => ({
       navigate: (path, options) => {
-        /** @type {any} */
-        const win = typeof window !== 'undefined' ? window : {}
-        const router = win.__coralite_router__
+        // @ts-ignore
+        const router = window.__coralite_router__
         if (router && typeof router.navigate === 'function') {
           return router.navigate(path, options)
         }
       },
       current: () => {
-        /** @type {any} */
-        const win = typeof window !== 'undefined' ? window : {}
-        const router = win.__coralite_router__
+        // @ts-ignore
+        const router = window.__coralite_router__
         return router ? router.current() : { path: typeof window !== 'undefined' && window.location ? window.location.pathname : '/' }
       },
       beforeEach: (guard) => {
-        /** @type {any} */
-        const win = typeof window !== 'undefined' ? window : {}
-        const router = win.__coralite_router__
+        // @ts-ignore
+        const router = window.__coralite_router__
         if (router && typeof router.beforeEach === 'function') {
           return router.beforeEach(guard)
         }
