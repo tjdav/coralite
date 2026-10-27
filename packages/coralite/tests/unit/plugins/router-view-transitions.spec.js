@@ -161,6 +161,31 @@ describe('Router Plugin View Transitions Unit Tests', () => {
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-vt-child'], 'Outlet swapped')
   })
 
+  it('reads viewTransitions dynamically at navigate time', async () => {
+    mockWindow.__coralite_hydration__ = { viewTransitions: false }
+    let vtCalled = 0
+    mockDom.startViewTransition = (cb) => {
+      vtCalled++
+      const callbackPromise = cb()
+      return {
+        finished: callbackPromise
+      }
+    }
+
+    const pluginInstance = routerPlugin()
+    pluginInstance.client.init({
+      config: pluginInstance.config,
+      runtime: mockRuntime
+    })
+
+    mockWindow.__coralite_hydration__.viewTransitions = true
+
+    await mockWindow.__coralite_router__.navigate('/vt-page')
+
+    assert.strictEqual(vtCalled, 1, 'startViewTransition was called after viewTransitions updated to true')
+    assert.deepStrictEqual(mockOutlet.childNodes, ['new-vt-child'], 'Outlet swapped')
+  })
+
   it('bypasses startViewTransition when viewTransitions false', async () => {
     mockWindow.__coralite_hydration__ = { viewTransitions: false }
     let vtCalled = 0
