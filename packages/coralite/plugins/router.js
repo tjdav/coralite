@@ -180,54 +180,6 @@ function wrapBodyInOutlet (component, outletAttr, app) {
   relinkChildren(body)
 }
 
-function updateHead (doc) {
-  const newTitle = doc.querySelector('title')
-  if (newTitle) {
-    document.title = newTitle.textContent
-  }
-
-  const currentMetas = document.head.querySelectorAll('meta[name], meta[property]')
-  const newMetas = doc.head.querySelectorAll('meta[name], meta[property]')
-
-  const newMetaMap = new Map()
-  for (let i = 0; i < newMetas.length; i++) {
-    const meta = newMetas[i]
-    const key = meta.getAttribute('name') || meta.getAttribute('property')
-    if (key) {
-      newMetaMap.set(key, meta)
-    }
-  }
-
-  for (let i = 0; i < currentMetas.length; i++) {
-    const meta = currentMetas[i]
-    const key = meta.getAttribute('name') || meta.getAttribute('property')
-    if (key) {
-      if (!newMetaMap.has(key)) {
-        meta.remove()
-      }
-    }
-  }
-
-  for (const [key, newMeta] of newMetaMap.entries()) {
-    const existing = document.head.querySelector(`meta[name="${key}"], meta[property="${key}"]`)
-    if (existing) {
-      existing.setAttribute('content', newMeta.getAttribute('content') || '')
-    } else {
-      const clone = newMeta.cloneNode(true)
-      document.head.appendChild(clone)
-    }
-  }
-}
-
-async function performSwap (outlet, newOutlet, doc, runtime, signal) {
-  if (signal && signal.aborted) {
-    return false
-  }
-  outlet.replaceChildren(...newOutlet.childNodes)
-  updateHead(doc)
-  return true
-}
-
 export const routerPlugin = definePlugin({
   name: 'router',
 
@@ -268,6 +220,54 @@ export const routerPlugin = definePlugin({
     init ({ config, runtime }) {
       if (typeof window === 'undefined') {
         return
+      }
+
+      function updateHead (doc) {
+        const newTitle = doc.querySelector('title')
+        if (newTitle) {
+          document.title = newTitle.textContent
+        }
+
+        const currentMetas = document.head.querySelectorAll('meta[name], meta[property]')
+        const newMetas = doc.head.querySelectorAll('meta[name], meta[property]')
+
+        const newMetaMap = new Map()
+        for (let i = 0; i < newMetas.length; i++) {
+          const meta = newMetas[i]
+          const key = meta.getAttribute('name') || meta.getAttribute('property')
+          if (key) {
+            newMetaMap.set(key, meta)
+          }
+        }
+
+        for (let i = 0; i < currentMetas.length; i++) {
+          const meta = currentMetas[i]
+          const key = meta.getAttribute('name') || meta.getAttribute('property')
+          if (key) {
+            if (!newMetaMap.has(key)) {
+              meta.remove()
+            }
+          }
+        }
+
+        for (const [key, newMeta] of newMetaMap.entries()) {
+          const existing = document.head.querySelector(`meta[name="${key}"], meta[property="${key}"]`)
+          if (existing) {
+            existing.setAttribute('content', newMeta.getAttribute('content') || '')
+          } else {
+            const clone = newMeta.cloneNode(true)
+            document.head.appendChild(clone)
+          }
+        }
+      }
+
+      async function performSwap (outlet, newOutlet, doc, runtime, signal) {
+        if (signal && signal.aborted) {
+          return false
+        }
+        outlet.replaceChildren(...newOutlet.childNodes)
+        updateHead(doc)
+        return true
       }
 
       function prefersReducedMotion () {
