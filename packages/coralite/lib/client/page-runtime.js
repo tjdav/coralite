@@ -298,7 +298,11 @@ export async function setupPageRuntime (pageConfig) {
 
   const clientFn = parseFn(pageConfig.client)
   if (typeof clientFn === 'function') {
+    const win = /** @type {any} */ (typeof window !== 'undefined' ? window : {})
+    const routerCtx = win.__coralite_router__
+
     const context = {
+      ...(routerCtx ? { router: routerCtx } : {}),
       state: stateProxy,
       route: routeObj,
       root: rootEl,
