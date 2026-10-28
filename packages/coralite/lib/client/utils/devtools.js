@@ -134,7 +134,7 @@ export function setupDevTools () {
     })
 
     // @ts-ignore
-    if (currentMode === 'testing' && typeof window !== 'undefined' && !window.__coralite_test__) {
+    if (currentMode === 'testing' && typeof window !== 'undefined') {
       const testAPI = {
         get ready () {
           return getReadyPromise()
@@ -222,12 +222,18 @@ export function setupDevTools () {
         }
       }
 
-      Object.defineProperty(window, '__coralite_test__', {
-        value: testAPI,
-        writable: false,
-        configurable: true,
-        enumerable: false
-      })
+      /** @type {import('../../../types/globals.js').CoraliteGlobalThis} */
+      const win = window
+      if (win.__coralite_test__) {
+        Object.defineProperties(win.__coralite_test__, Object.getOwnPropertyDescriptors(testAPI))
+      } else {
+        Object.defineProperty(window, '__coralite_test__', {
+          value: testAPI,
+          writable: false,
+          configurable: true,
+          enumerable: false
+        })
+      }
     }
   }
 }
