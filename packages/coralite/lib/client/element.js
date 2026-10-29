@@ -3520,6 +3520,13 @@ export class CoraliteElement extends BaseElement {
           options: this.componentOptions
         })
       }
+
+      // @ts-ignore
+      if (window.__coralite__ && window.__coralite__.lifecycle) {
+        // @ts-ignore
+        window.__coralite__.lifecycle._markInstanceRendered(this)
+      }
+
       return
     }
 
