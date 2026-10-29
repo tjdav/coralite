@@ -448,7 +448,11 @@ export const routerPlugin = definePlugin({
                 }
                 didSwap = await performSwap(outlet, newOutlet, doc, signal)
               })
-              await transition.finished
+              if (transition.finished) {
+                transition.finished.catch(() => {
+                })
+              }
+              await transition.updateCallbackDone
             } catch (err) {
               if (err && typeof err === 'object' && 'name' in err && err.name === 'AbortError') {
                 return

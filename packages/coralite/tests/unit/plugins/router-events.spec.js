@@ -374,9 +374,11 @@ describe('Router Plugin Events Unit Tests', () => {
     }
 
     globalThis.document.startViewTransition = (cb) => {
+      const callbackPromise = cb()
       return {
+        updateCallbackDone: callbackPromise,
         finished: (async () => {
-          await cb()
+          await callbackPromise
           throw new Error('Animation error after swap')
         })()
       }
@@ -400,16 +402,18 @@ describe('Router Plugin Events Unit Tests', () => {
     let callbackRan = false
     let isFirst = true
     globalThis.document.startViewTransition = (cb) => {
+      const p = (async () => {
+        if (isFirst) {
+          isFirst = false
+          // Simulate second navigation aborting the first one before cb runs
+          mockWindow.__coralite_router__.navigate('/fast')
+        }
+        await cb()
+        callbackRan = true
+      })()
       return {
-        finished: (async () => {
-          if (isFirst) {
-            isFirst = false
-            // Simulate second navigation aborting the first one before cb runs
-            mockWindow.__coralite_router__.navigate('/fast')
-          }
-          await cb()
-          callbackRan = true
-        })()
+        updateCallbackDone: p,
+        finished: p
       }
     }
 
