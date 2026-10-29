@@ -6,6 +6,19 @@ test.describe('SPA Router', () => {
     await page.waitForFunction(() => window.__shellHydrated__ === true)
   })
 
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => {
+      // Restore native startViewTransition if test 51 mocked it
+      if (document.hasOwnProperty('startViewTransition')) {
+        delete document.startViewTransition
+      }
+      // Reset viewTransitions flag
+      if (window.__coralite_hydration__) {
+        delete window.__coralite_hydration__.viewTransitions
+      }
+    })
+  })
+
   test('navigates without full page reload and preserves client state', async ({ page }) => {
     await page.click('#increment')
     await expect(page.locator('#counter-display')).toHaveText('1')
@@ -55,8 +68,12 @@ test.describe('SPA Router', () => {
       window.__vtCallCount = 0
       document.startViewTransition = (cb) => {
         window.__vtCallCount++
-        const res = cb ? cb() : null
-        return { finished: Promise.resolve(res) }
+        const res = Promise.resolve().then(() => cb ? cb() : null)
+        return {
+          updateCallbackDone: res,
+          finished: res,
+          ready: res
+        }
       }
     })
 
