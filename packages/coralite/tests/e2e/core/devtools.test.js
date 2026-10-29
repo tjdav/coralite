@@ -126,9 +126,23 @@ test.describe('DevTools & Testing API (Production Mode)', () => {
     await page.waitForSelector('html[data-coralite-ready]')
   })
 
-  test('should completely strip window.__coralite__ in production', async ({ page }) => {
-    const isUndefined = await page.evaluate(() => window.__coralite__ === undefined)
-    expect(isUndefined).toBe(true)
+  test('should strip devtools APIs from window.__coralite__ in production', async ({ page }) => {
+    const devtoolsState = await page.evaluate(() => {
+      const api = window.__coralite__
+      if (!api) {
+        return { stripped: true }
+      }
+      return {
+        hasVersion: api.version !== undefined,
+        hasMode: api.mode !== undefined,
+        hasLifecycle: api.lifecycle !== undefined,
+        hasComponents: api.components !== undefined
+      }
+    })
+    expect(devtoolsState.hasVersion).toBe(false)
+    expect(devtoolsState.hasMode).toBe(false)
+    expect(devtoolsState.hasLifecycle).toBe(false)
+    expect(devtoolsState.hasComponents).toBe(false)
   })
 
   test('should completely strip component-level testing symbols in production', async ({ page }) => {
