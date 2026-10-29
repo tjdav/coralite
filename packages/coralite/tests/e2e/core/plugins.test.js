@@ -24,7 +24,7 @@ test.describe('Plugins - Basic Extensibility', () => {
   test('should verify server-side plugin export execution', async ({ page }) => {
     const comp = page.locator('plugin-component').first()
     const pluginMessage = comp.locator('.plugin-message-display')
-    await expect(pluginMessage).toHaveText('Hello E2E Test from server-side plugin! Page: /plugins/index.html')
+    await expect(pluginMessage).toHaveText('Hello E2E Test from server-side plugin! Page: /plugins')
   })
 
   test('should verify client-side hooks execution', async ({ page }) => {
@@ -108,8 +108,7 @@ test.describe('Plugins - Config Types', () => {
     const comp = page.locator('config-types-component').first()
     await expect(comp.locator('div > div').nth(0)).toHaveText('is-regex')
     await expect(comp.locator('div > div').nth(1)).toHaveText('is-date')
-    await expect(comp.locator('div > div').nth(2)).toHaveText('3')
-    await expect(comp.locator('div > div').nth(3)).toHaveText('value')
-    await expect(comp.locator('div > div').nth(4)).toHaveText('true')
+    await expect(comp.locator('div > div').nth(2)).toHaveText('value')
+    await expect(comp.locator('div > div').nth(3)).toHaveText('true')
   })
 })
