@@ -1,4 +1,5 @@
 <template id="chat-timeline">
+  <style>.chat-msg { height: 30px; }</style>
   <div class="chat-container" style="height: 300px; overflow-y: auto;" ref="container"></div>
   <button id="add-msg" ref="addMsg">Send Message</button>
 </template>
@@ -9,7 +10,7 @@
     client({ refs, lists, signal }) {
       const store = lists.createStore({ key: 'id', initial: [
         { id: 1, text: 'Message 1' },
-        { id: 2, text: 'Message 2' }
+        { id: 2, text: 'Message 2' }, ...Array.from({length: 15}, (_, i) => ({ id: i + 3, text: `Message ${i + 3}` }))
       ] })
 
       lists.bind({

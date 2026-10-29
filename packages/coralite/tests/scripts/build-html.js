@@ -188,6 +188,7 @@ const listsApp = await createCoralite({
   components: 'tests/fixtures/lists-app/components',
   pages: 'tests/fixtures/lists-app/pages',
   output: `${output}/lists-app`,
+  baseURL: '/lists-app/',
   mode,
   cleanUrls: true
 })
