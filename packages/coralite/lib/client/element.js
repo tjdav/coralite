@@ -320,6 +320,13 @@ export class CoraliteElement extends BaseElement {
     this._stylesEvaluated = false
 
     /**
+     * Whether initial DOM rendering pass has completed.
+     * @type {boolean}
+     * @protected
+     */
+    this._hasRenderedOnce = false
+
+    /**
      * Unique template token keys across all bindings, pre-computed in
      * `_setupBindings` (static for the lifetime of the binding set).
      * @type {string[]}
@@ -1326,6 +1333,7 @@ export class CoraliteElement extends BaseElement {
     this._styleDeps = null
     this._changedStateKeys = null
     this._stylesEvaluated = false
+    this._hasRenderedOnce = false
     this._requiredTokens = []
     this._evaluatedTokens = {}
     this._cachedOwnSlots = null
@@ -3462,28 +3470,37 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
+    const isFirstRender = !this._hasRenderedOnce
+    this._hasRenderedOnce = true
+
     if (this._updaters && this.componentOptions?.compilerOptimizations !== 'none') {
       const changedKeys = this._changedStateKeys
-      if (changedKeys && changedKeys.size > 0) {
-        const allDirtyKeys = new Set(changedKeys)
-        if (this._getterDeps) {
-          for (const [getterKey, deps] of this._getterDeps) {
-            for (const key of changedKeys) {
-              if (deps.has(key)) {
-                allDirtyKeys.add(getterKey)
-                break
+      if (isFirstRender || (changedKeys && changedKeys.size > 0)) {
+        let keysToRun
+        if (isFirstRender) {
+          keysToRun = Object.keys(this._updaters || {})
+        } else {
+          const allDirtyKeys = new Set(changedKeys)
+          if (this._getterDeps) {
+            for (const [getterKey, deps] of this._getterDeps) {
+              for (const key of changedKeys) {
+                if (deps.has(key)) {
+                  allDirtyKeys.add(getterKey)
+                  break
+                }
               }
             }
           }
-        }
-        if (this.componentOptions.getters) {
-          for (const getterKey of Object.keys(this.componentOptions.getters)) {
-            if (!this._getterDeps || !this._getterDeps.has(getterKey)) {
-              allDirtyKeys.add(getterKey)
+          if (this.componentOptions.getters) {
+            for (const getterKey of Object.keys(this.componentOptions.getters)) {
+              if (!this._getterDeps || !this._getterDeps.has(getterKey)) {
+                allDirtyKeys.add(getterKey)
+              }
             }
           }
+          keysToRun = allDirtyKeys
         }
-        for (const key of allDirtyKeys) {
+        for (const key of keysToRun) {
           const updater = this._updaters[key]
           if (updater) {
             updater.call(this)
