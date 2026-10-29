@@ -15,10 +15,7 @@ jspm_packages
 
 
 # Coralite development artifacts
-.coralite-dev/
-.coralite-prod/
-.coralite-testing/
-.coralite-router-dev/
+.coralite-*
 website/.coralite/components
 website/.coralite/css
 packages/coralite/llms.txt
