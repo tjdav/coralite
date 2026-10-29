@@ -2918,78 +2918,43 @@ export class CoraliteElement extends BaseElement {
         return null
       }
 
-      // Only real Coralite components own a slot-index space; plain and foreign elements do not.
-      const isComponentBoundary = node !== this && Boolean(node.componentOptions || node._instanceId || (node.hasAttribute && node.hasAttribute('data-cid') && (node.componentOptions || node._instanceId !== undefined)))
+      if (node !== this && typeof node.querySelectorAll === 'function') {
+        const candidates = node.querySelectorAll(`[data-coralite-slot-index="${index}"]`)
+        let foundNode = null
+        for (const cand of candidates) {
+          // Reject candidates owned by a deeper Coralite component boundary.
+          /** @type {any} */
+          let parent = cand.parentElement
+          while (parent && parent !== node) {
+            const isDeeperBoundary = Boolean(parent.componentOptions || parent._instanceId !== undefined || (parent.hasAttribute && parent.hasAttribute('data-cid')))
 
-      // Distinguish between Coralite components (which use slot indexing) and foreign boundaries (which don't)
-      const isCoraliteComponent = node !== this && Boolean(node.componentOptions || node._instanceId)
-      const isForeignBoundary = node !== this && !isCoraliteComponent && (node.hasAttribute && node.hasAttribute('data-cid') && (node.componentOptions || node._instanceId !== undefined))
-
-      if (isComponentBoundary) {
-        // Coralite components must use slot-index resolution; foreign boundaries can fallback to positional
-        if (isCoraliteComponent) {
-          const candidates = node.querySelectorAll(`[data-coralite-slot-index="${index}"]`)
-          let foundNode = null
-          for (const cand of candidates) {
-            // Reject candidates owned by a deeper Coralite component boundary.
-            /** @type {any} */
-            let parent = cand.parentElement
-            while (parent && parent !== node) {
-              const isDeeperBoundary = Boolean(parent.componentOptions || parent._instanceId || (parent.hasAttribute && parent.hasAttribute('data-cid') && (parent.componentOptions || parent._instanceId !== undefined)))
-
-              if (isDeeperBoundary) {
-                break
-              }
-              parent = parent.parentElement
-            }
-
-            if (parent === node) {
-              foundNode = cand
+            if (isDeeperBoundary) {
               break
             }
+            parent = parent.parentElement
           }
 
-          if (!foundNode) {
-            return null
+          if (parent === node) {
+            foundNode = cand
+            break
           }
-          // @ts-ignore
-          node = foundNode
-          continue
-        } else if (isForeignBoundary) {
-          // Foreign boundary: try slot-index first (in case slotted content exists), then fallback to positional
-          const candidates = node.querySelectorAll(`[data-coralite-slot-index="${index}"]`)
-          let foundNode = null
-          for (const cand of candidates) {
-            // Reject candidates owned by a deeper Coralite component boundary.
-            /** @type {any} */
-            let parent = cand.parentElement
-            while (parent && parent !== node) {
-              const isDeeperBoundary = Boolean(parent.componentOptions || parent._instanceId || (parent.hasAttribute && parent.hasAttribute('data-cid') && (parent.componentOptions || parent._instanceId !== undefined)))
+        }
 
-              if (isDeeperBoundary) {
-                break
-              }
-              parent = parent.parentElement
-            }
-            if (parent === node) {
-              foundNode = cand
-              break
-            }
-          }
-          if (!foundNode) {
-            // Fallback: for foreign boundaries without slot-indexed children, use positional traversal
-            // @ts-ignore
-            node = node.childNodes[index]
-            continue
-          }
+        if (foundNode) {
           // @ts-ignore
           node = foundNode
           continue
         }
       }
 
+      const isCoraliteComponent = node !== this && Boolean(node.componentOptions || node._instanceId !== undefined)
+      if (isCoraliteComponent) {
+        return null
+      }
+
+      // Plain or foreign element traversal: positional
       // @ts-ignore
-      node = node.childNodes[index]
+      node = node.childNodes ? (node.childNodes[index] || null) : null
     }
 
     return node
@@ -3044,7 +3009,33 @@ export class CoraliteElement extends BaseElement {
         for (const childIdxStr in currentTree.children) {
           const idx = parseInt(childIdxStr, 10)
           const subTree = currentTree.children[childIdxStr]
-          const childNode = children[idx]
+          let childNode = null
+
+          if (node !== this && typeof node.querySelectorAll === 'function') {
+            const candidates = node.querySelectorAll(`[data-coralite-slot-index="${idx}"]`)
+            for (const cand of candidates) {
+              let parent = cand.parentElement
+              while (parent && parent !== node) {
+                const isDeeper = Boolean(parent.componentOptions || parent._instanceId !== undefined || (parent.hasAttribute && parent.hasAttribute('data-cid')))
+                if (isDeeper) {
+                  break
+                }
+                parent = parent.parentElement
+              }
+              if (parent === node) {
+                childNode = cand
+                break
+              }
+            }
+          }
+
+          if (!childNode) {
+            const isCoraliteComponent = node !== this && Boolean(node.componentOptions || node._instanceId !== undefined)
+            if (!isCoraliteComponent) {
+              childNode = children[idx]
+            }
+          }
+
           if (childNode && subTree) {
             walk(childNode, subTree)
           }

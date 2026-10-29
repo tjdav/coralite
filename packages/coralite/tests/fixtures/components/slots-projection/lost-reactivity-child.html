@@ -7,19 +7,10 @@
 <script type="module">
   import { defineComponent } from 'coralite'
 
-  export default defineComponent({
-    slots: {
-      default: (nodes) => {
-        if (!nodes || nodes.length === 0) {
-          return undefined
-        }
-        return nodes.map(n => {
-          if (typeof n.cloneNode === 'function') {
-            return n.cloneNode(true)
-          }
-          return n
-        })
-      }
-    }
-  })
+  /*
+   * Standard pass-through slot without node cloning.
+   * Slot transformers that clone nodes (n.cloneNode(true)) detach reactivity
+   * because parent token bindings remain attached to the original disconnected node.
+   */
+  export default defineComponent({})
 </script>
