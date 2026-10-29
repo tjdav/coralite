@@ -145,6 +145,7 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       vtCalled++
       const callbackPromise = cb()
       return {
+        updateCallbackDone: callbackPromise,
         finished: callbackPromise
       }
     }
@@ -168,6 +169,7 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       vtCalled++
       const callbackPromise = cb()
       return {
+        updateCallbackDone: callbackPromise,
         finished: callbackPromise
       }
     }
@@ -191,7 +193,11 @@ describe('Router Plugin View Transitions Unit Tests', () => {
     let vtCalled = 0
     mockDom.startViewTransition = (cb) => {
       vtCalled++
-      return { finished: cb() }
+      const p = cb()
+      return {
+        updateCallbackDone: p,
+        finished: p
+      }
     }
 
     const pluginInstance = routerPlugin()
@@ -226,7 +232,11 @@ describe('Router Plugin View Transitions Unit Tests', () => {
     let vtCalled = 0
     mockDom.startViewTransition = (cb) => {
       vtCalled++
-      return { finished: cb() }
+      const p = cb()
+      return {
+        updateCallbackDone: p,
+        finished: p
+      }
     }
 
     globalThis.matchMedia = (query) => {
@@ -248,13 +258,13 @@ describe('Router Plugin View Transitions Unit Tests', () => {
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-vt-child'], 'Outlet swapped sync')
   })
 
-  it('awaits transition.finished before upgrading components', async () => {
+  it('awaits transition.updateCallbackDone before upgrading components', async () => {
     mockWindow.__coralite_hydration__ = { viewTransitions: true }
     const sequence = []
 
-    let resolveFinished
-    const finishedPromise = new Promise(resolve => {
-      resolveFinished = resolve
+    let resolveDone
+    const donePromise = new Promise(resolve => {
+      resolveDone = resolve
     })
 
     let vtStartedResolve
@@ -267,9 +277,10 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       vtStartedResolve()
       cb()
       return {
-        finished: finishedPromise.then(() => {
-          sequence.push('vt-finished')
-        })
+        updateCallbackDone: donePromise.then(() => {
+          sequence.push('vt-callback-done')
+        }),
+        finished: donePromise
       }
     }
 
@@ -289,19 +300,19 @@ describe('Router Plugin View Transitions Unit Tests', () => {
     await vtStartedPromise
     assert.deepStrictEqual(sequence, ['vt-start'], 'Transition started, upgrade not called yet')
 
-    resolveFinished()
+    resolveDone()
     await navPromise
 
-    assert.deepStrictEqual(sequence, ['vt-start', 'vt-finished', 'upgrade'], 'Upgrade called after transition.finished')
+    assert.deepStrictEqual(sequence, ['vt-start', 'vt-callback-done', 'upgrade'], 'Upgrade called after transition.updateCallbackDone')
   })
 
-  it('dispatches coralite:navigated after transition finishes', async () => {
+  it('dispatches coralite:navigated after transition callback completes', async () => {
     mockWindow.__coralite_hydration__ = { viewTransitions: true }
     const sequence = []
 
-    let resolveFinished
-    const finishedPromise = new Promise(resolve => {
-      resolveFinished = resolve
+    let resolveDone
+    const donePromise = new Promise(resolve => {
+      resolveDone = resolve
     })
 
     let vtStartedResolve
@@ -314,9 +325,10 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       vtStartedResolve()
       cb()
       return {
-        finished: finishedPromise.then(() => {
-          sequence.push('vt-finished')
-        })
+        updateCallbackDone: donePromise.then(() => {
+          sequence.push('vt-callback-done')
+        }),
+        finished: donePromise
       }
     }
 
@@ -341,9 +353,9 @@ describe('Router Plugin View Transitions Unit Tests', () => {
     await vtStartedPromise
     assert.deepStrictEqual(sequence, ['vt-start'], 'Transition started, event not dispatched yet')
 
-    resolveFinished()
+    resolveDone()
     await navPromise
 
-    assert.ok(sequence.indexOf('coralite:navigated') > sequence.indexOf('vt-finished'), 'coralite:navigated dispatched after transition finishes')
+    assert.ok(sequence.indexOf('coralite:navigated') > sequence.indexOf('vt-callback-done'), 'coralite:navigated dispatched after transition callback completes')
   })
 })
