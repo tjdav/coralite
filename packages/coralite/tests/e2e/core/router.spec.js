@@ -71,7 +71,10 @@ test.describe('SPA Router', () => {
     await page.evaluate(() => {
       window.__coralite_hydration__ = window.__coralite_hydration__ || {}
       window.__coralite_hydration__.viewTransitions = true
-      delete document.startViewTransition
+      Object.defineProperty(document, 'startViewTransition', {
+        configurable: true,
+        value: undefined
+      })
       window.__navigatedFired = false
       window.addEventListener('coralite:navigated', () => {
         window.__navigatedFired = true
