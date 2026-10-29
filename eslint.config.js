@@ -341,6 +341,7 @@ export default [
       '**/.coralite-dev/',
       '**/.coralite-prod/',
       '**/.coralite-router-dev/',
+      '**/.coralite-router-prod/',
       '**/tests/fixtures/**'
     ]
   }
