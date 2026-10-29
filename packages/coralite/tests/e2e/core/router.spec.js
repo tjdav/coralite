@@ -55,6 +55,7 @@ test.describe('SPA Router', () => {
 
     await page.click('#link-about')
     await expect(page).toHaveURL('/about')
+    await expect(page.locator('#page-title')).toHaveText('About Page')
 
     const events = await page.evaluate(() => window.__navEvents)
     expect(events).toContain('navigating:/about')
@@ -68,7 +69,7 @@ test.describe('SPA Router', () => {
       window.__vtCallCount = 0
       document.startViewTransition = (cb) => {
         window.__vtCallCount++
-        const res = Promise.resolve().then(() => cb ? cb() : null)
+        const res = Promise.resolve().then(() => (cb ? cb() : null))
         return {
           updateCallbackDone: res,
           finished: res,
@@ -79,6 +80,7 @@ test.describe('SPA Router', () => {
 
     await page.click('#link-about')
     await expect(page).toHaveURL('/about')
+    await expect(page.locator('#page-title')).toHaveText('About Page')
 
     const count = await page.evaluate(() => window.__vtCallCount)
     expect(count).toBe(1)
