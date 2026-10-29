@@ -1,7 +1,7 @@
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { ScriptManager } from '../../../../lib/server/script-manager.js'
+import { ScriptManager, generateCompiledUpdaters } from '../../../../lib/server/script-manager.js'
 
 describe('Compiler - Per-Token Updaters', () => {
   it('emits _updaters on component definition when compilerOptimizations is "all"', async () => {
@@ -27,6 +27,18 @@ describe('Compiler - Per-Token Updaters', () => {
     } finally {
       await sm.disposeContext()
     }
+  })
+
+  it('compiled updater reads dynamic getters via _state when raw state value is a function', () => {
+    const hydrationMap = {
+      tokenBindings: { disableSubmit: [0] },
+      texts: [{
+        type: 'text',
+        isSingleToken: true
+      }]
+    }
+    const code = generateCompiledUpdaters(hydrationMap, new Set())
+    assert.strictEqual(code.includes('typeof _rawValue === \'function\' ? this._state["disableSubmit"] : _rawValue'), true)
   })
 
   it('emits _updaters: null when compilerOptimizations is "none"', async () => {

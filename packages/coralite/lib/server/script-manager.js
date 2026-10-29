@@ -192,7 +192,7 @@ export function hasMultipleTagInSingleParent (nodes, tag) {
 export function generateTokenUpdaterCode (binding, bindingIndex, tokenKey, isGetter) {
   const readState = isGetter
     ? `const value = this._state[${JSON.stringify(tokenKey)}]`
-    : `const value = this._stateRaw[${JSON.stringify(tokenKey)}]`
+    : `const _rawValue = this._stateRaw[${JSON.stringify(tokenKey)}]\n    const value = typeof _rawValue === 'function' ? this._state[${JSON.stringify(tokenKey)}] : _rawValue`
 
   const bindingRef = `const binding = this._bindings[${bindingIndex}]`
   const nodeRef = 'const node = binding.node'
