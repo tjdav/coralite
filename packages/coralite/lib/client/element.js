@@ -2919,11 +2919,11 @@ export class CoraliteElement extends BaseElement {
       }
 
       // Only real Coralite components own a slot-index space; plain and foreign elements do not.
-      const isComponentBoundary = node !== this && Boolean(node.componentOptions || node._instanceId || (node.hasAttribute && node.hasAttribute('data-cid')))
+      const isComponentBoundary = node !== this && Boolean(node.componentOptions || node._instanceId || (node.hasAttribute && node.hasAttribute('data-cid') && (node.componentOptions || node._instanceId !== undefined)))
 
-      // Distinguish between Coralite components (which use slot indexing) and foreign boundaries (which don't)isComponentBoundary
+      // Distinguish between Coralite components (which use slot indexing) and foreign boundaries (which don't)
       const isCoraliteComponent = node !== this && Boolean(node.componentOptions || node._instanceId)
-      const isForeignBoundary = node !== this && !isCoraliteComponent && (node.hasAttribute && node.hasAttribute('data-cid'))
+      const isForeignBoundary = node !== this && !isCoraliteComponent && (node.hasAttribute && node.hasAttribute('data-cid') && (node.componentOptions || node._instanceId !== undefined))
 
       if (isComponentBoundary) {
         // Coralite components must use slot-index resolution; foreign boundaries can fallback to positional
@@ -2935,7 +2935,7 @@ export class CoraliteElement extends BaseElement {
             /** @type {any} */
             let parent = cand.parentElement
             while (parent && parent !== node) {
-              const isDeeperBoundary = Boolean(parent.componentOptions || parent._instanceId || (parent.hasAttribute && parent.hasAttribute('data-cid')))
+              const isDeeperBoundary = Boolean(parent.componentOptions || parent._instanceId || (parent.hasAttribute && parent.hasAttribute('data-cid') && (parent.componentOptions || parent._instanceId !== undefined)))
 
               if (isDeeperBoundary) {
                 break
@@ -2964,7 +2964,7 @@ export class CoraliteElement extends BaseElement {
             /** @type {any} */
             let parent = cand.parentElement
             while (parent && parent !== node) {
-              const isDeeperBoundary = Boolean(parent.componentOptions || parent._instanceId || (parent.hasAttribute && parent.hasAttribute('data-cid')))
+              const isDeeperBoundary = Boolean(parent.componentOptions || parent._instanceId || (parent.hasAttribute && parent.hasAttribute('data-cid') && (parent.componentOptions || parent._instanceId !== undefined)))
 
               if (isDeeperBoundary) {
                 break

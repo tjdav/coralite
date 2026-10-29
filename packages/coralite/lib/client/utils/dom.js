@@ -16,7 +16,8 @@ export function getEnclosingComponent (element) {
       return parent
     }
 
-    if (parent.hasAttribute && parent.hasAttribute('data-cid')) {
+    if (parent.hasAttribute && parent.hasAttribute('data-cid') &&
+        (parent.componentOptions || parent._instanceId !== undefined)) {
       return parent
     }
 
@@ -45,7 +46,7 @@ export function isOwnedByComponent (candidate, instanceId, hostElement) {
   }
 
   const enc = getEnclosingComponent(candidate)
-  return enc === hostElement || (enc && enc.getAttribute && enc.getAttribute('data-cid') === instanceId)
+  return enc === hostElement || (enc && enc.getAttribute && enc.getAttribute('data-cid') === instanceId && (enc.componentOptions || enc._instanceId !== undefined))
 }
 
 /**
