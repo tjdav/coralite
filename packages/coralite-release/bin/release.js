@@ -234,7 +234,7 @@ program
             },
             {
               value: '__CORE_STACK__',
-              label: '📦 Core stack (coralite → coralite-scripts → create-coralite)'
+              label: '📦 Core stack (coralite → create-coralite)'
             },
             {
               value: '__MULTISELECT__',
@@ -252,7 +252,7 @@ program
         if (selectionType === '__ALL__') {
           selectedNames = sortedPublishable.map(p => p.name)
         } else if (selectionType === '__CORE_STACK__') {
-          selectedNames = ['coralite', 'coralite-scripts', 'create-coralite']
+          selectedNames = ['coralite', 'create-coralite']
         } else if (selectionType === '__MULTISELECT__') {
           const chosen = await prompts.multiselect({
             message: 'Select packages to release:',
