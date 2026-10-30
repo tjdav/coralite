@@ -3,16 +3,16 @@ import { execSync, spawn } from 'node:child_process'
 import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path, { join } from 'node:path'
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 
 const templates = ['css', 'scss']
 
 for (const templateName of templates) {
-  test.describe(`create-coralite template: ${templateName}`, () => {
+  test.describe.serial(`create-coralite template: ${templateName}`, () => {
     let tempDir
     let projectPath
     let serverProcess
-    const port = templateName === 'css' ? 3003 : 3004
+    const port = templateName === 'css' ? 3041 : 3042
 
     test.beforeAll(async () => {
       const cliPath = join(process.cwd(), 'bin/index.js')
@@ -25,8 +25,7 @@ for (const templateName of templates) {
       const projectName = `test-app-${templateName}`
       projectPath = join(tempDir, projectName)
 
-      // Scaffold template
-      execSync(`node "${cliPath}" -o "${projectName}" --template ${templateName}`, {
+      execSync(`node "${cliPath}" -o "${projectName}" --template ${templateName} --no-ai`, {
         cwd: tempDir,
         stdio: 'pipe'
       })
@@ -35,25 +34,18 @@ for (const templateName of templates) {
         throw new Error(`Scaffolded directory ${projectPath} does not exist`)
       }
 
-      // Resolve workspace dependencies directly via file: links
       const repoRoot = path.resolve(process.cwd(), '../..')
       const coralitePkgPath = path.join(repoRoot, 'packages/coralite')
-      const scriptsPkgPath = path.join(repoRoot, 'packages/coralite-scripts')
 
-      // Update package.json in scaffolded project to use workspace file: dependencies
       const pkgJsonPath = join(projectPath, 'package.json')
       const pkgJson = JSON.parse(await readFile(pkgJsonPath, 'utf8'))
 
       const relativeCoralitePath = path.relative(projectPath, coralitePkgPath).split(path.sep).join('/')
-      const relativeScriptsPath = path.relative(projectPath, scriptsPkgPath).split(path.sep).join('/')
-
       pkgJson.devDependencies = pkgJson.devDependencies || {}
-      pkgJson.devDependencies['coralite'] = 'file:' + relativeCoralitePath
-      pkgJson.devDependencies['coralite-scripts'] = 'file:' + relativeScriptsPath
+      pkgJson.devDependencies.coralite = 'file:' + relativeCoralitePath
 
       await writeFile(pkgJsonPath, JSON.stringify(pkgJson, null, 2))
 
-      // Update coralite.config.js to use custom port
       const configPath = join(projectPath, 'coralite.config.js')
       let configContent = await readFile(configPath, 'utf8')
       configContent = configContent.replace(
@@ -62,49 +54,10 @@ for (const templateName of templates) {
       )
       await writeFile(configPath, configContent)
 
-      // Install dependencies using fast npm-offline fallback/cache
       execSync('npm install --prefer-offline --no-audit --no-fund', {
         cwd: projectPath,
         stdio: 'pipe'
       })
-
-      // Spawn dev server directly via node to ensure clean termination
-      let serverLogs = ''
-      const scriptsBin = join(projectPath, 'node_modules/coralite-scripts/bin/index.js')
-      serverProcess = spawn(process.execPath, [scriptsBin, 'dev'], {
-        cwd: projectPath,
-        env: {
-          ...process.env,
-          NODE_OPTIONS: '--experimental-vm-modules --experimental-import-meta-resolve'
-        }
-      })
-
-      serverProcess.stdout?.on('data', chunk => {
-        serverLogs += chunk.toString()
-      })
-      serverProcess.stderr?.on('data', chunk => {
-        serverLogs += chunk.toString()
-      })
-
-      // Wait for server to respond
-      const serverUrl = `http://localhost:${port}`
-      let ready = false
-      for (let i = 0; i < 40; i++) {
-        try {
-          const res = await fetch(serverUrl)
-          if (res.ok) {
-            ready = true
-            break
-          }
-        } catch {
-          // Retry
-        }
-        await new Promise(r => setTimeout(r, 500))
-      }
-
-      if (!ready) {
-        throw new Error(`Dev server failed to start at ${serverUrl}. Server logs:\n${serverLogs}`)
-      }
     })
 
     test.afterAll(async () => {
@@ -120,10 +73,74 @@ for (const templateName of templates) {
       await new Promise(r => setTimeout(r, 1000))
     })
 
-    test('should render all declarative components, preload confetti library on mount, and handle counter interaction', async ({ page }) => {
-      const serverUrl = `http://localhost:${port}`
+    test('should pass validation check with zero errors and zero warnings', async () => {
+      const checkOutput = execSync('npm run check', {
+        cwd: projectPath,
+        encoding: 'utf8',
+        stdio: 'pipe'
+      })
 
-      // Listen for top-level dynamic HTTPS ESM import of canvas-confetti library during hydration
+      expect(checkOutput).toContain('0 error(s)')
+      expect(checkOutput).toContain('0 warning(s)')
+    })
+
+    test('should build production static output in dist directory', async () => {
+      execSync('npm run build', {
+        cwd: projectPath,
+        encoding: 'utf8',
+        stdio: 'pipe'
+      })
+
+      const distDir = join(projectPath, 'dist')
+      expect(existsSync(distDir)).toBe(true)
+
+      const distFiles = readdirSync(distDir)
+      expect(distFiles).toContain('index.html')
+      expect(distFiles).toContain('assets')
+      expect(distFiles).toContain('favicon.ico')
+
+      const indexHtml = await readFile(join(distDir, 'index.html'), 'utf8')
+      expect(indexHtml).toContain('<site-counter')
+      expect(indexHtml).toContain('<site-card')
+      expect(indexHtml).toContain('<site-footer')
+    })
+
+    test('should serve interactive application with working hydration and reactivity in dev mode', async ({ page }) => {
+      let serverLogs = ''
+      const coraliteBin = join(projectPath, 'node_modules/coralite/bin/coralite.js')
+      serverProcess = spawn(process.execPath, [coraliteBin, 'dev'], {
+        cwd: projectPath,
+        env: {
+          ...process.env,
+          NODE_OPTIONS: '--experimental-vm-modules --experimental-import-meta-resolve'
+        }
+      })
+
+      serverProcess.stdout?.on('data', chunk => {
+        serverLogs += chunk.toString()
+      })
+      serverProcess.stderr?.on('data', chunk => {
+        serverLogs += chunk.toString()
+      })
+
+      const serverUrl = `http://localhost:${port}`
+      let ready = false
+      for (let i = 0; i < 40; i++) {
+        try {
+          const res = await fetch(serverUrl)
+          if (res.ok) {
+            ready = true
+            break
+          }
+        } catch {
+        }
+        await new Promise(r => setTimeout(r, 500))
+      }
+
+      if (!ready) {
+        throw new Error(`Dev server failed to start at ${serverUrl}. Server logs:\n${serverLogs}`)
+      }
+
       const confettiResponsePromise = page.waitForResponse(
         res => res.url().includes('canvas-confetti') && res.status() === 200,
         { timeout: 15000 }
@@ -131,36 +148,29 @@ for (const templateName of templates) {
 
       await page.goto(serverUrl)
 
-      // Assert confetti library was pre-fetched successfully on client mount
       const confettiResponse = await confettiResponsePromise
       expect(confettiResponse.ok()).toBe(true)
 
-      // Verify all declarative components exist and are rendered in the DOM
-      const counterComponent = page.locator('coralite-counter')
-      const cardComponent = page.locator('coralite-card')
-      const footerComponent = page.locator('coralite-footer')
+      const counterComponent = page.locator('site-counter')
+      const cardComponent = page.locator('site-card')
+      const footerComponent = page.locator('site-footer')
 
       await expect(counterComponent).toBeVisible()
       await expect(cardComponent).toBeVisible()
       await expect(footerComponent).toBeVisible()
 
-      // Verify footer rendered capitalized name via attribute transform and dynamic year getter
       const currentYear = new Date().getFullYear().toString()
       await expect(footerComponent).toContainText(`Made with Coralite © ${currentYear}`)
 
-      // Verify initial counter button state
       const countBtn = counterComponent.locator('button')
       await expect(countBtn).toBeVisible()
       await expect(countBtn).toHaveText(/Count is 0/)
 
-      // Wait for counter component custom element definition and async client lifecycle
-      await page.waitForFunction(() => Boolean(customElements.get('coralite-counter')))
-      await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 200)))
+      await page.waitForFunction(() => Boolean(customElements.get('site-counter')))
+      await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 300)))
 
-      // Click count button
       await countBtn.click()
 
-      // Assert count state incremented to 1
       await expect(countBtn).toHaveText(/Count is 1/)
     })
   })

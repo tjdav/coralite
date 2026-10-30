@@ -35,8 +35,8 @@ When writing, refactoring, or generating code for Coralite:
    - `server({ state })` runs exclusively during SSR / build time in Node.js and is stripped from browser bundles. It MUST return an object to hydrate client state.
    - `client({ state, ... })` runs strictly in the browser. It cannot access outer module-scope variables, top-level static imports, or server packages.
 6. **MUST pass `{ signal }` to all browser event listeners**: Always bind DOM events inside `client()` using the lifecycle signal: `el.addEventListener('click', fn, { signal })`. This ensures automatic cleanup when components disconnect, preventing memory leaks.
-7. **MUST destructure the getter context (`CORALITE-E105`)**: Getters receive a single unified context object `({ state, root, refs, slots, signal })`. You MUST destructure parameters (e.g., `({ state }) => state.count`). Authoring `(state) => state.count` binds the context object itself to `state`, causing properties to evaluate to `undefined`.
-8. **MUST keep `style` getters synchronous (`CORALITE-E303`)**: Functions in the `style` block receive `state` directly: `(state) => ...` (NOT a context object). They must be strictly synchronous and return a string, number, or nullish value. Returning a `Promise` throws an error.
+7. **MUST destructure getter, style, and slot contexts (`CORALITE-E105`)**: Getters, style functions, and slot functions receive a single unified context object (`({ state, ... })` for getters/style; `({ nodes, state, ... })` for slots). You MUST destructure parameters (e.g., `({ state }) => state.count`). Authoring `(state) => state.count` binds the context object itself to `state`, causing properties to evaluate to `undefined`.
+8. **MUST keep `style` getters synchronous (`CORALITE-E303`)**: Functions in the `style` block receive a destructured context `({ state }) => ...`. They must be strictly synchronous and return a string, number, or nullish value. Returning a `Promise` throws an error.
 9. **MUST NEVER mutate state inside `observe()` (`CORALITE-E302`)**: `observe(prop, callback)` is exclusively for syncing with external subsystems (WebGL, imperative DOM, forms). Mutating reactive state inside an observer causes infinite reactive loops and triggers diagnostic `CORALITE-E302`.
 10. **MUST use `emit()` instead of `root.dispatchEvent`**: `emit(name, detail, options)` automatically defaults to `{ bubbles: true, composed: true }`, which is required to cross custom element boundaries.
 11. **MUST restrict attributes to primitives (`CORALITE-E101`)**: Attribute schemas only support `String`, `Number`, and `Boolean`. `Array` and `Object` are not supported as attribute types.
@@ -187,15 +187,15 @@ getters: {
 
 ### Style Getters (Dynamic CSS)
 
-- Functions receive `state` directly: `(state) => ...` (NOT destructured)
-- Synchronous only
+- **MUST destructure context**: `({ state }) => ...` (`CORALITE-E105`)
+- Synchronous only (`CORALITE-E303`)
 - Return string, number, or nullish
 
 ```js
 style: {
-  '--primary': (state) => state.active ? '#0066ff' : '#666',
-  '--padding': (state) => `${state.padding}px`,
-  '--display': (state) => state.visible ? 'block' : 'none'
+  '--primary': ({ state }) => state.active ? '#0066ff' : '#666',
+  '--padding': ({ state }) => `${state.padding}px`,
+  '--display': ({ state }) => state.visible ? 'block' : 'none'
 }
 ```
 
@@ -314,18 +314,17 @@ client({ state, observe, signal }) {
 
 ### Slot Content Transformation (`slots` option)
 
-Transform slot content at build/server time:
+Transform slot content using a single destructured context `({ nodes, state }) => ...`:
 
 ```js
 slots: {
-  default (content) {
+  default ({ nodes }) {
     // Filter out whitespace-only text nodes
-    if (typeof window !== 'undefined') return  // SSR only
-    return content.filter(n => n.type !== 'text' || n.data.trim())
+    return nodes.filter(n => n.type !== 'text' || n.data.trim())
   },
-  header (content) {
+  header ({ nodes }) {
     // Transform named slot content
-    return content
+    return nodes
   }
 }
 ```
@@ -426,12 +425,13 @@ Avoid structural chains like `page.locator('counter-card > div > button:nth-chil
 | `CORALITE-E101` | Non-primitive (`Array` or `Object`) in `attributes` | Retrieve complex data via `server()` or pass individual primitive attributes |
 | `CORALITE-E102` | `required: true` combined with `default` | Remove `default` if the attribute is strictly required |
 | `CORALITE-E103` | Asynchronous attribute `transform` or `validate` | Make transform and validate functions synchronous |
-| `CORALITE-E105` | Non-destructured getter parameter: `(state) => ...` | Destructure context: `({ state }) => state.property` |
+| `CORALITE-E105` | Non-destructured getter, style, or slot parameter: `(state) => ...` | Destructure context: `({ state }) => state.property` or `({ nodes, state }) => nodes` |
 | `CORALITE-E201` | Non-flat identifier expression in `<template>` | Replace `{{ a + b }}` with a getter `computedSum: ({ state }) => state.a + state.b` |
 | `CORALITE-E203` | Inline event attribute (e.g. `onclick="..."`) in template | Use template `ref="btn"` and bind in `client()` via `refs('btn').addEventListener(..., { signal })` |
 | `CORALITE-E301` | Module-scope static import referenced inside `client()` | Use dynamic `await import(...)` inside `client()` |
 | `CORALITE-E302` | State mutated inside `observe()` callback | Mutate state in event handlers or compute values via `getters`. `observe()` is for external DOM side-effects only |
-| `CORALITE-E303` | Asynchronous getter function in `style` block | Make the style function synchronous: `'--color': (state) => state.color` |
+| `CORALITE-E303` | Asynchronous getter function in `style` block | Make the style function synchronous: `'--color': ({ state }) => state.color` |
+| `CORALITE-W501` | Reserved prefix (`coralite-`, `c-`, `router-`) in `<template id>` | Use a project-specific prefix like `site-`, `ui-`, or `app-` instead |
 | `CORALITE-PAGE-201` | Page script querying component internals | Communicate across component boundaries using declarative attributes, standard DOM events, or W3C contexts |
 
 ---

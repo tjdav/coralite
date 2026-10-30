@@ -7,7 +7,7 @@ A Coralite project.
 Start the development server:
 
 ```bash
-pnpm start
+pnpm dev
 ```
 
 Build for production:

@@ -135,24 +135,25 @@ client({ state, observe, signal }) {
 
 ### `slots` (optional)
 - Transform slot content at build/server time
+- **MUST destructure context**: `({ nodes, state }) => ...` (`CORALITE-E105`)
 
 ```js
 slots: {
-  default (content) {
+  default ({ nodes }) {
     // Filter out whitespace-only text nodes
-    return content.filter(n => n.type !== 'text' || n.data.trim())
+    return nodes.filter(n => n.type !== 'text' || n.data.trim())
   }
 }
 ```
 
 ### `style` (dynamic CSS)
-- Functions receive `state` directly: `(state) => ...`
-- Synchronous only
+- **MUST destructure context**: `({ state }) => ...` (`CORALITE-E105`)
+- Synchronous only (`CORALITE-E303`)
 - Return string, number, or nullish
 
 ```js
 style: {
-  '--primary-color': (state) => state.count > 5 ? 'green' : 'blue'
+  '--primary-color': ({ state }) => state.count > 5 ? 'green' : 'blue'
 }
 ```
 

@@ -12,7 +12,8 @@ All source is `.js` (ESM). No `.ts`, `.tsx`, `.jsx`, or `.mjs` in the source tre
 - Templates use flat `{{ token }}` only. No expressions, dot notation, or function calls.
 - No inline event handlers. Bind in `client()` with `refs()` + `{ signal }`.
 - Getter signature: `({ state, route, ... })`. Must destructure.
-- Style function signature: `(state) => ...`. Direct, not destructured.
+- Style function signature: `({ state }) => ...`. Must destructure.
+- Slots function signature: `({ nodes, state }) => ...`. Must destructure.
 
 ### Style and script placement
 

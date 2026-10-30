@@ -24,7 +24,7 @@ Top-level imports are for `define*` functions and isomorphic helpers used by
 
 ## Workflow
 
-- `pnpm start` — development server
+- `pnpm dev` — development server
 - `pnpm build` — production build
 - `pnpm check` — validate components, pages, plugins
 - `pnpm fix` — auto-fix validation errors

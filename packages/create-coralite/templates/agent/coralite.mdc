@@ -79,21 +79,21 @@ Every Coralite component is a single `.html` file with this structure:
 
 ### `slots` (optional)
 - Transform slot content at build/server time
-- Receives `(content, state)` parameters
-- Return processed content array or null to skip
+- **MUST destructure context**: `({ nodes, state }) => ...` (`CORALITE-E105`)
+- Return processed node array or null to skip
 
 ```js
 slots: {
-  default (content) {
+  default ({ nodes }) {
     // Transform default slot content
-    return content.filter(node => node.type !== 'text' || node.data.trim())
+    return nodes.filter(node => node.type !== 'text' || node.data.trim())
   }
 }
 ```
 
 ### `style` (dynamic styles)
-- Functions receive `state` directly: `(state) => ...`
-- Synchronous only — no async functions
+- **MUST destructure context**: `({ state }) => ...` (`CORALITE-E105`)
+- Synchronous only — no async functions (`CORALITE-E303`)
 - Return string, number, or nullish
 
 ## Style Section Rules

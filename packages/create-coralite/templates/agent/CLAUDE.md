@@ -40,7 +40,7 @@ Refer to `AGENTS.md` for full architectural details. Quick summary for Claude Co
       refs('action').addEventListener('click', handleClick, { signal })
     },
     style: {
-      '--accent-color': (state) => state.count > 5 ? 'green' : 'blue'
+      '--accent-color': ({ state }) => state.count > 5 ? 'green' : 'blue'
     }
   })
 </script>
@@ -65,7 +65,7 @@ Refer to `AGENTS.md` for full architectural details. Quick summary for Claude Co
 
 ## Commands
 
-- `npm start` — Start development server
+- `npm run dev` — Start development server
 - `npm run build` — Build production site
 - `npx coralite check` — Validate components, plugins, and pages
 - `npx coralite fix` — Auto-fix safe component issues
