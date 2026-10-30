@@ -130,4 +130,39 @@ test.describe('SPA Router', () => {
 
     expect(consoleErrors).toEqual([])
   })
+
+  test('navigates to explicit router-outlet page and preserves client state', async ({ page }) => {
+    await page.click('#increment')
+    await expect(page.locator('#counter-display')).toHaveText('1')
+
+    await page.click('#link-outlet-element')
+    await expect(page).toHaveURL('/outlet-element')
+    await expect(page.locator('#page-title')).toHaveText('Outlet Element Page')
+    await expect(page.locator('#outlet-content')).toHaveText('Rendered via virtual router-outlet component')
+
+    await expect(page.locator('#counter-display')).toHaveText('1')
+    const isHydrated = await page.evaluate(() => window.__shellHydrated__)
+    expect(isHydrated).toBe(true)
+  })
+
+  test('direct landing on router-outlet renders virtual component and supports outgoing SPA navigation', async ({ page }) => {
+    await page.goto('/outlet-element')
+    await expect(page.locator('router-outlet')).toBeVisible()
+    await expect(page.locator('#page-title')).toHaveText('Outlet Element Page')
+    await expect(page.locator('#outlet-content')).toHaveText('Rendered via virtual router-outlet component')
+
+    await page.click('#link-about')
+    await expect(page).toHaveURL('/about')
+    await expect(page.locator('#page-title')).toHaveText('About Page')
+  })
+
+  test('direct landing on auto-wrapped page renders router-outlet and navigates via SPA', async ({ page }) => {
+    await page.goto('/auto-wrap')
+    await expect(page.locator('router-outlet[data-router-outlet]')).toBeVisible()
+    await expect(page.locator('#page-title')).toHaveText('Auto Wrap Page')
+
+    await page.click('#link-about')
+    await expect(page).toHaveURL('/about')
+    await expect(page.locator('#page-title')).toHaveText('About Page')
+  })
 })
