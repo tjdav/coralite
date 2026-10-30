@@ -18,7 +18,7 @@ import { applyComponentFixes } from '#lib/server/component/fixer.js'
 import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/server/plugin/validator.js'
 import { applyPluginFixes } from '#lib/server/plugin/fixer.js'
 import { applyPageFixes } from '#lib/server/page/fixer.js'
-import { validatePagesDir, formatPageValidationReport } from '#lib/server/page/validator.js'
+import { validatePagesDir, formatPageValidationReport, collectKnownComponents } from '#lib/server/page/validator.js'
 import { typeCheck } from '#lib/server/type-checker/index.js'
 import { discoverHtmlFiles } from '#lib/server/utils/html.js'
 import {
@@ -366,42 +366,7 @@ async function main () {
           }
 
           if (pageDir && existsSync(pageDir)) {
-            const knownComponents = new Map()
-            if (compReport && compReport.components) {
-              for (const c of compReport.components) {
-                const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
-                if (name) {
-                  knownComponents.set(name, {
-                    attributes: c.defined?.attributes ? c.defined.attributes.reduce((acc, curr) => ({
-                      ...acc,
-                      [curr]: {}
-                    }), {}) : {},
-                    slots: c.defined?.slots || []
-                  })
-                }
-              }
-            }
-
-            if (config?.plugins && Array.isArray(config.plugins)) {
-              for (const plugin of config.plugins) {
-                if (plugin?.components) {
-                  const pComps = Array.isArray(plugin.components) ? plugin.components : [plugin.components]
-                  for (const pComp of pComps) {
-                    if (typeof pComp === 'string') {
-                      knownComponents.set(pComp.toLowerCase(), {
-                        attributes: {},
-                        slots: []
-                      })
-                    } else if (pComp && typeof pComp === 'object' && pComp.tag) {
-                      knownComponents.set(pComp.tag.toLowerCase(), {
-                        attributes: {},
-                        slots: []
-                      })
-                    }
-                  }
-                }
-              }
-            }
+            const knownComponents = collectKnownComponents(compReport, config?.plugins)
             pageReport = await validatePagesDir(pageDir, {
               knownComponents,
               ignoreAttributes: config?.ignoreByAttribute,
@@ -787,10 +752,11 @@ async function main () {
 
         let totalFixesCount = 0
         const modifiedFiles = []
+        let compReport = null
 
         // Fix Components
         if (compDir && existsSync(compDir)) {
-          const compReport = await validateComponentsDir(compDir)
+          compReport = await validateComponentsDir(compDir)
 
           await Promise.all(
             compReport.components.map(async (compRes) => {
@@ -823,7 +789,13 @@ async function main () {
 
         // Fix Pages
         if (pageDir && existsSync(pageDir)) {
-          const pageReport = await validatePagesDir(pageDir)
+          const knownComponents = collectKnownComponents(compReport, config?.plugins)
+          const pageReport = await validatePagesDir(pageDir, {
+            knownComponents,
+            ignoreAttributes: config?.ignoreByAttribute,
+            skipRenderByAttribute: config?.skipRenderByAttribute,
+            ignoreTags: config?.ignoreTags
+          })
 
           await Promise.all(
             pageReport.pages.map(async (pageRes) => {
@@ -1261,45 +1233,11 @@ async function main () {
       }
 
       try {
-        const knownComponents = new Map()
+        let compReport = null
         if (compDir && existsSync(compDir)) {
-          const compReport = await validateComponentsDir(compDir)
-          if (compReport && compReport.components) {
-            for (const c of compReport.components) {
-              const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
-              if (name) {
-                knownComponents.set(name, {
-                  attributes: c.defined?.attributes ? c.defined.attributes.reduce((acc, curr) => ({
-                    ...acc,
-                    [curr]: {}
-                  }), {}) : {},
-                  slots: c.defined?.slots || []
-                })
-              }
-            }
-          }
+          compReport = await validateComponentsDir(compDir)
         }
-
-        if (config?.plugins && Array.isArray(config.plugins)) {
-          for (const plugin of config.plugins) {
-            if (plugin?.components) {
-              const pComps = Array.isArray(plugin.components) ? plugin.components : [plugin.components]
-              for (const pComp of pComps) {
-                if (typeof pComp === 'string') {
-                  knownComponents.set(pComp.toLowerCase(), {
-                    attributes: {},
-                    slots: []
-                  })
-                } else if (pComp && typeof pComp === 'object' && pComp.tag) {
-                  knownComponents.set(pComp.tag.toLowerCase(), {
-                    attributes: {},
-                    slots: []
-                  })
-                }
-              }
-            }
-          }
-        }
+        const knownComponents = collectKnownComponents(compReport, config?.plugins)
 
         const pageReport = await validatePagesDir(pageDir, {
           knownComponents,

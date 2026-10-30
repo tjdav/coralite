@@ -3,6 +3,7 @@
  * @property {string[]} getters - Defined getter names
  * @property {string[]} serverProps - Properties returned from server block
  * @property {string[]} attributes - Defined attribute schema keys
+ * @property {Record<string, { required?: boolean }>} [attributeSchemas] - Defined attribute schemas
  * @property {string[]} refs - Element ref names in template
  * @property {string[]} [imports] - Top level imported symbols
  * @property {string[]} [slots] - Defined slot names

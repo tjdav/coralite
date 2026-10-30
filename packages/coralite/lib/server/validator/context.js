@@ -34,6 +34,7 @@ export function createValidationContext (sourceCode, filePath = '') {
     templateElements: [],
     diagnostics: [],
     definedAttributes: new Set(),
+    attributeSchemas: new Map(),
     definedServerProps: new Set(),
     definedStateProps: new Set(),
     hasStateBlock: false,

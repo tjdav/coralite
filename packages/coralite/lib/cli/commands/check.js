@@ -9,7 +9,8 @@ import {
   formatPluginValidationReport,
   validatePagesDir,
   formatPageValidationReport,
-  normalizeErrorCodes
+  normalizeErrorCodes,
+  collectKnownComponents
 } from 'coralite'
 
 /**
@@ -173,55 +174,7 @@ export async function checkCommand (config, options = {}, logger = null) {
   const fullPageDir = resolveTargetDir(pageDir, cwd)
 
   if (fullPageDir) {
-    const knownComponents = new Map()
-    if (compReport && compReport.components) {
-      for (const c of compReport.components) {
-        if (c.filePath) {
-          const name = c.filePath.split('/').pop().replace(/\.(html|js)$/, '')
-          let attributesObj = {}
-          if (c.defined && Array.isArray(c.defined.attributes)) {
-            attributesObj = c.defined.attributes.reduce((acc, curr) => {
-              acc[curr] = {}
-              return acc
-            }, {})
-          }
-          knownComponents.set(name, {
-            attributes: attributesObj,
-            slots: c.defined?.slots || []
-          })
-        }
-      }
-    }
-    if (config && Array.isArray(config.plugins)) {
-      for (const rawPlugin of config.plugins) {
-        /** @type {any} */
-        const resolvedPlugin = rawPlugin
-        const plugin = typeof resolvedPlugin === 'function' ? resolvedPlugin() : resolvedPlugin
-        const pluginComps = plugin?.server?.components
-        if (Array.isArray(pluginComps)) {
-          for (const item of pluginComps) {
-            let compName = null
-            if (typeof item === 'string') {
-              compName = item.split('/').pop().replace(/\.(html|js)$/, '')
-            } else if (item && typeof item === 'object') {
-              if (item.name) {
-                compName = item.name
-              } else if (item.path?.filename) {
-                compName = item.path.filename.replace(/\.(html|js)$/, '')
-              } else if (typeof item.path === 'string') {
-                compName = item.path.split('/').pop().replace(/\.(html|js)$/, '')
-              }
-            }
-            if (compName && !knownComponents.has(compName)) {
-              knownComponents.set(compName, {
-                attributes: {},
-                slots: ['default']
-              })
-            }
-          }
-        }
-      }
-    }
+    const knownComponents = collectKnownComponents(compReport, config?.plugins)
     pageReport = await validatePagesDir(fullPageDir, {
       knownComponents,
       ignoreAttributes: config?.ignoreByAttribute,

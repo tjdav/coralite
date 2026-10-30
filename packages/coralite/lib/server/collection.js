@@ -89,6 +89,24 @@ function CoraliteCollection (options = { rootDir: '' }) {
 CoraliteCollection.prototype.setItem = async function (value) {
   const item = typeof value === 'string' ? await this._loadByPath(value) : value
 
+  /** @type {any} */
+  const anyItem = item
+  if (anyItem && typeof anyItem === 'object' && anyItem.virtual && !anyItem.path) {
+    let id = anyItem.name || anyItem.tag
+    if (!id && typeof anyItem.content === 'string') {
+      const match = anyItem.content.match(/<template\s+[^>]*id=["']([^"']+)["']/i)
+      if (match) {
+        id = match[1]
+      }
+    }
+    id = id || 'virtual-component'
+    anyItem.path = {
+      pathname: `virtual:${id}/${id}.html`,
+      filename: `${id}.html`,
+      dirname: `virtual:${id}`
+    }
+  }
+
   if (!item || !item.path) {
     throw new CoraliteError('Valid HTMLData object must be provided')
   }

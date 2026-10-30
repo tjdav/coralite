@@ -6,7 +6,9 @@ import { tmpdir } from 'node:os'
 import {
   validatePageSource,
   validatePagesDir,
-  formatPageValidationReport
+  formatPageValidationReport,
+  collectPluginComponents,
+  collectKnownComponents
 } from '../../../lib/server/page/validator.js'
 
 describe('Coralite Page Validator (page-validator.js)', () => {
@@ -133,6 +135,49 @@ describe('Coralite Page Validator (page-validator.js)', () => {
       assert.ok(durationMs < 2000, `Validation should complete instantly (took ${durationMs}ms)`)
       assert.equal(result.valid, true)
     })
+
+    it('recognizes router-outlet automatically without requiring explicit knownComponents registration', () => {
+      const source = `
+        <router-outlet>
+          <div>Default page content</div>
+        </router-outlet>
+      `
+      const result = validatePageSource(source)
+      assert.equal(result.valid, true)
+      assert.equal(result.diagnostics.length, 0)
+    })
+
+    it('recognizes virtual components declared in plugins via options.plugins', () => {
+      const mockPlugin = {
+        name: 'chart-plugin',
+        server: {
+          components: [
+            {
+              virtual: true,
+              content: `<template id="chart-widget">
+  <div><slot></slot></div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>`
+            }
+          ]
+        }
+      }
+
+      const source = `
+        <chart-widget>
+          <span>Line chart</span>
+        </chart-widget>
+      `
+      const result = validatePageSource(source, {
+        plugins: [mockPlugin]
+      })
+
+      assert.equal(result.valid, true)
+      assert.equal(result.diagnostics.length, 0)
+    })
   })
 
   describe('CORALITE-PAGE-102: Missing Required Attribute', () => {
@@ -184,6 +229,51 @@ describe('Coralite Page Validator (page-validator.js)', () => {
 
       assert.equal(result.valid, true)
       assert.equal(result.diagnostics.length, 0)
+    })
+
+    it('validates required attributes on virtual components registered by plugins', () => {
+      const mockPlugin = {
+        name: 'chart-plugin',
+        server: {
+          components: [
+            {
+              virtual: true,
+              content: `<template id="chart-widget">
+  <div><slot></slot></div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      type: {
+        type: String,
+        required: true
+      }
+    }
+  })
+</script>`
+            }
+          ]
+        }
+      }
+
+      const invalidSource = '<chart-widget><span>Missing type</span></chart-widget>'
+      const invalidResult = validatePageSource(invalidSource, {
+        plugins: [mockPlugin]
+      })
+
+      assert.equal(invalidResult.valid, false)
+      const error = invalidResult.diagnostics.find(d => d.code === 'CORALITE-PAGE-102')
+      assert.ok(error)
+      assert.equal(error.message, "Missing required attribute 'type' on <chart-widget>.")
+
+      const validSource = '<chart-widget type="bar"><span>Has type</span></chart-widget>'
+      const validResult = validatePageSource(validSource, {
+        plugins: [mockPlugin]
+      })
+
+      assert.equal(validResult.valid, true)
+      assert.equal(validResult.diagnostics.length, 0)
     })
   })
 
@@ -434,6 +524,69 @@ describe('Coralite Page Validator (page-validator.js)', () => {
         recursive: true,
         force: true
       })
+    })
+  })
+
+  describe('collectPluginComponents & collectKnownComponents', () => {
+    it('collectPluginComponents includes core routerPlugin components by default', () => {
+      const components = collectPluginComponents()
+      assert.ok(components.has('router-outlet'))
+      const outlet = components.get('router-outlet')
+      assert.ok(outlet.slots.includes('default'))
+    })
+
+    it('collectKnownComponents combines component directory report and user plugins', () => {
+      const compReport = {
+        components: [
+          {
+            componentTag: 'profile-badge',
+            defined: {
+              attributeSchemas: {
+                role: { required: true }
+              },
+              slots: ['avatar']
+            }
+          }
+        ]
+      }
+
+      const mockUserPlugin = {
+        name: 'custom-ui',
+        server: {
+          components: [
+            {
+              virtual: true,
+              content: `<template id="custom-modal">
+  <div class="modal"><slot name="header"></slot></div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      open: {
+        type: Boolean,
+        required: true
+      }
+    },
+    slots: {
+      header: ({ nodes }) => nodes
+    }
+  })
+</script>`
+            }
+          ]
+        }
+      }
+
+      const known = collectKnownComponents(compReport, [mockUserPlugin])
+
+      assert.ok(known.has('router-outlet'), 'Should have core router-outlet')
+      assert.ok(known.has('profile-badge'), 'Should have directory component')
+      assert.ok(known.has('custom-modal'), 'Should have virtual component from user plugin')
+
+      const modal = known.get('custom-modal')
+      assert.ok(modal.attributes.open.required, 'custom-modal should preserve required attribute schema')
+      assert.ok(modal.slots.includes('header'), 'custom-modal should preserve slot names')
     })
   })
 })

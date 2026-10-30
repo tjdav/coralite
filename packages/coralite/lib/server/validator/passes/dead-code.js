@@ -376,6 +376,7 @@ export function collectDeadCode (context) {
       getters: Array.from(definedGetters),
       serverProps: Array.from(definedServerProps),
       attributes: Array.from(definedAttributes),
+      attributeSchemas: Object.fromEntries(context.attributeSchemas || []),
       refs: Array.from(templateRefs.keys()),
       imports: Array.from(topLevelImports.keys()),
       slots: Array.from(definedSlots)

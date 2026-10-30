@@ -16,6 +16,7 @@ export function validateAttributes (context) {
     configProps,
     definedAttributes,
     attributeLocations,
+    attributeSchemas,
     diagnostics,
     filePath,
     scriptStartLine,
@@ -151,6 +152,14 @@ export function validateAttributes (context) {
           }
         }))
       }
+
+      attributeSchemas.set(attrName, {
+        required: hasRequiredTrue
+      })
+    } else {
+      attributeSchemas.set(attrName, {
+        required: false
+      })
     }
   }
 }

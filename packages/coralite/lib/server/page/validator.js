@@ -16,6 +16,9 @@ import {
   validateServerBlock,
   validateDefensiveGuards
 } from '../validator/index.js'
+import { validateComponentSource } from '../component/validator.js'
+import { routerPlugin } from '../../../plugins/router.js'
+import { listsPlugin } from '../../../plugins/lists.js'
 
 /**
  * @import {
@@ -92,12 +95,144 @@ function findClosestTag (unknownTag, knownTags) {
 
 
 /**
+ * Extracts component definitions from a single plugin.
+ *
+ * @param {any} rawPlugin - Plugin object or factory function
+ * @param {Map<string, { attributes: Record<string, any>, slots: string[] }>} targetMap - Destination map
+ */
+function extractComponentsFromPlugin (rawPlugin, targetMap) {
+  if (!rawPlugin) {
+    return
+  }
+  const plugin = typeof rawPlugin === 'function' ? rawPlugin() : rawPlugin
+  const components = plugin?.server?.components || plugin?.components
+  if (!Array.isArray(components)) {
+    return
+  }
+
+  for (const item of components) {
+    if (!item) {
+      continue
+    }
+
+    if (typeof item === 'string') {
+      const name = item.split('/').pop().replace(/\.(html|js)$/, '').toLowerCase()
+      if (name && !targetMap.has(name)) {
+        targetMap.set(name, {
+          attributes: {},
+          slots: ['default']
+        })
+      }
+      continue
+    }
+
+    if (typeof item === 'object') {
+      if (typeof item.content === 'string') {
+        const parsed = validateComponentSource(item.content, item.path?.pathname || 'virtual')
+        let tag = ''
+        if (parsed.componentTag) {
+          tag = parsed.componentTag.toLowerCase()
+        } else if (item.tag) {
+          tag = String(item.tag).toLowerCase()
+        } else if (item.name) {
+          tag = String(item.name).toLowerCase()
+        } else if (item.path?.filename) {
+          tag = item.path.filename.replace(/\.(html|js)$/, '').toLowerCase()
+        }
+        if (tag) {
+          const attrSchemas = parsed.defined?.attributeSchemas || {}
+          const slots = parsed.defined?.slots || ['default']
+          targetMap.set(tag, {
+            attributes: attrSchemas,
+            slots: slots.length > 0 ? slots : ['default']
+          })
+        }
+      } else if (item.tag || item.name) {
+        const tag = String(item.tag || item.name).toLowerCase()
+        targetMap.set(tag, {
+          attributes: item.attributes || {},
+          slots: Array.isArray(item.slots) ? item.slots : ['default']
+        })
+      } else if (item.path?.filename) {
+        const tag = item.path.filename.replace(/\.(html|js)$/, '').toLowerCase()
+        targetMap.set(tag, {
+          attributes: item.attributes || {},
+          slots: Array.isArray(item.slots) ? item.slots : ['default']
+        })
+      }
+    }
+  }
+}
+
+let cachedCoreComponents = null
+
+/**
+ * Extracts component definitions registered by plugins (virtual templates and file paths).
+ *
+ * @param {Array<any>} [userPlugins=[]] - User-configured plugins from config
+ * @returns {Map<string, { attributes: Record<string, any>, slots: string[] }>} Map of component tags to schemas
+ */
+export function collectPluginComponents (userPlugins = []) {
+  const componentMap = new Map()
+
+  if (!cachedCoreComponents) {
+    cachedCoreComponents = new Map()
+    const corePlugins = [routerPlugin, listsPlugin]
+    for (const rawPlugin of corePlugins) {
+      extractComponentsFromPlugin(rawPlugin, cachedCoreComponents)
+    }
+  }
+
+  for (const [key, val] of cachedCoreComponents.entries()) {
+    componentMap.set(key, val)
+  }
+
+  if (Array.isArray(userPlugins)) {
+    for (const rawPlugin of userPlugins) {
+      extractComponentsFromPlugin(rawPlugin, componentMap)
+    }
+  }
+
+  return componentMap
+}
+
+/**
+ * Collects all known component definitions combining physical directory components and plugin virtual components.
+ *
+ * @param {Object|null} [compReport=null] - Report from validateComponentsDir
+ * @param {Array<any>} [userPlugins=[]] - User plugins from config
+ * @returns {Map<string, { attributes: Record<string, any>, slots: string[] }>} Combined map of known component tags to schemas
+ */
+export function collectKnownComponents (compReport = null, userPlugins = []) {
+  const knownComponents = collectPluginComponents(userPlugins)
+
+  if (compReport && Array.isArray(compReport.components)) {
+    for (const c of compReport.components) {
+      const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
+      if (name) {
+        const attrSchemas = c.defined?.attributeSchemas || (c.defined?.attributes ? c.defined.attributes.reduce((acc, curr) => {
+          acc[curr] = {}
+          return acc
+        }, {}) : {})
+        knownComponents.set(name.toLowerCase(), {
+          attributes: attrSchemas,
+          slots: c.defined?.slots || []
+        })
+      }
+    }
+  }
+
+  return knownComponents
+}
+
+/**
  * Validates a page HTML document source code against known component schemas and encapsulation rules.
  *
  * @param {string} sourceCode - Raw HTML page source code
  * @param {Object} [options={}] - Validation options
  * @param {string} [options.filePath=''] - File path for diagnostics
  * @param {Map<string, Object>|Record<string, Object>} [options.knownComponents] - Map or object of registered component definitions
+ * @param {Array<any>} [options.plugins] - Active plugins for component resolution
  * @param {Array<string|Attribute>|Set<string>|string} [options.ignoreByAttribute] - Attributes that bypass custom element tag checks
  * @param {string[]|Set<string>|string} [options.ignoreAttributes] - Attributes that bypass custom element tag checks
  * @param {string[]|Set<string>|string} [options.skipRenderByAttribute] - Alias for ignoreAttributes
@@ -113,6 +248,11 @@ export function validatePageSource (sourceCode, options = {}) {
 
   // Normalize knownComponents map
   const knownMap = new Map()
+  const pluginComps = collectPluginComponents(options.plugins)
+  for (const [pKey, pVal] of pluginComps.entries()) {
+    knownMap.set(pKey, pVal)
+  }
+
   if (options.knownComponents) {
     const entries = options.knownComponents instanceof Map
       ? options.knownComponents.entries()
@@ -123,13 +263,6 @@ export function validatePageSource (sourceCode, options = {}) {
       const normKey = camelToKebab(cleanKey)
       knownMap.set(normKey, val)
     }
-  }
-
-  if (!knownMap.has('router-outlet')) {
-    knownMap.set('router-outlet', {
-      attributes: {},
-      slots: ['default']
-    })
   }
 
   let rawIgnoreConfig = options.ignoreByAttribute || options.ignoreAttributes || options.skipRenderByAttribute

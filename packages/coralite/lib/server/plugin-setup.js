@@ -265,7 +265,24 @@ export async function setupPlugins ({
         serverGlobalContext[serverName] = contextResult
       }
       if (plugin.server.components) {
-        plugin.server.components.forEach(c => plugins.components.push(c))
+        plugin.server.components.forEach(c => {
+          if (c && typeof c === 'object' && c.virtual && !c.path) {
+            let id = c.name || c.tag
+            if (!id && typeof c.content === 'string') {
+              const match = c.content.match(/<template\s+[^>]*id=["']([^"']+)["']/i)
+              if (match) {
+                id = match[1]
+              }
+            }
+            id = id || 'virtual-component'
+            c.path = {
+              pathname: `virtual:${id}/${id}.html`,
+              filename: `${id}.html`,
+              dirname: `virtual:${id}`
+            }
+          }
+          plugins.components.push(c)
+        })
       }
       const wrapHook = (hook) => {
         const wrapped = (ctx) => {

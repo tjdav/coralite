@@ -84,13 +84,32 @@ describe('packaged tarball consumer smoke test', () => {
     }, null, 2)
     await writeFile(join(consumerDir, 'package.json'), packageJsonContent, 'utf8')
 
-    const configContent = `import { defineConfig } from 'coralite'
+    const configContent = `import { defineConfig, definePlugin } from 'coralite'
+
+const myVirtualPlugin = definePlugin({
+  name: 'my-virtual-plugin',
+  server: {
+    components: [
+      {
+        virtual: true,
+        content: \`<template id="custom-badge">
+  <span class="badge"><slot></slot></span>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>\`
+      }
+    ]
+  }
+})
 
 export default defineConfig({
   output: 'dist',
   components: 'src/components',
   pages: 'src/pages',
-  cleanUrls: true
+  cleanUrls: true,
+  plugins: [myVirtualPlugin]
 })
 `
     await writeFile(join(consumerDir, 'coralite.config.js'), configContent, 'utf8')
@@ -115,6 +134,7 @@ export default defineConfig({
 <body>
   <app-shell>
     <h2>Home Page</h2>
+    <custom-badge>Virtual Tag</custom-badge>
     <a href="/second">Go to second</a>
   </app-shell>
 </body>
@@ -149,6 +169,12 @@ export default defineConfig({
       'router-outlet should not be flagged as unknown custom element'
     )
 
+    assert.strictEqual(
+      checkOutput.includes('Unknown custom element tag "<custom-badge>"'),
+      false,
+      'custom-badge from user plugin should not be flagged as unknown custom element'
+    )
+
     const buildOutput = execFileSync(process.execPath, [cliEntry, 'build'], {
       cwd: consumerDir,
       encoding: 'utf8',
@@ -164,6 +190,8 @@ export default defineConfig({
     const distIndex = await readFile(join(consumerDir, 'dist', 'index.html'), 'utf8')
     assert.ok(distIndex.includes('data-router-outlet'), 'dist/index.html should render data-router-outlet')
     assert.ok(distIndex.includes('Home Page'), 'dist/index.html should render Home Page content')
+    assert.ok(distIndex.includes('class="badge"'), 'dist/index.html should render custom-badge template')
+    assert.ok(distIndex.includes('Virtual Tag'), 'dist/index.html should render Virtual Tag content')
 
     const distSecond = await readFile(join(consumerDir, 'dist', 'second', 'index.html'), 'utf8')
     assert.ok(distSecond.includes('router-outlet'), 'dist/second/index.html should render router-outlet')
