@@ -56,6 +56,9 @@ export function toCode (code) {
  * @param {string} dest - The destination directory path to copy to
  */
 export async function copyDirectory (src, dest) {
+  if (!fs.existsSync(src)) {
+    return
+  }
   await cp(src, dest, { recursive: true })
 }
 

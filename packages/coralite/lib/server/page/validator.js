@@ -125,6 +125,13 @@ export function validatePageSource (sourceCode, options = {}) {
     }
   }
 
+  if (!knownMap.has('router-outlet')) {
+    knownMap.set('router-outlet', {
+      attributes: {},
+      slots: ['default']
+    })
+  }
+
   let rawIgnoreConfig = options.ignoreByAttribute || options.ignoreAttributes || options.skipRenderByAttribute
   if (typeof rawIgnoreConfig === 'string') {
     rawIgnoreConfig = [rawIgnoreConfig]

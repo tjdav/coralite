@@ -227,7 +227,7 @@ export async function buildCommand (config, options, logger = null) {
 
     const publicDir = config.public
 
-    if (publicDir) {
+    if (publicDir && existsSync(publicDir)) {
       if (!options.verbose) {
         spinner = createSpinner('Copying public directory...').start()
       }

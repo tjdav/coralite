@@ -192,6 +192,36 @@ export async function checkCommand (config, options = {}, logger = null) {
         }
       }
     }
+    if (config && Array.isArray(config.plugins)) {
+      for (const rawPlugin of config.plugins) {
+        /** @type {any} */
+        const resolvedPlugin = rawPlugin
+        const plugin = typeof resolvedPlugin === 'function' ? resolvedPlugin() : resolvedPlugin
+        const pluginComps = plugin?.server?.components
+        if (Array.isArray(pluginComps)) {
+          for (const item of pluginComps) {
+            let compName = null
+            if (typeof item === 'string') {
+              compName = item.split('/').pop().replace(/\.(html|js)$/, '')
+            } else if (item && typeof item === 'object') {
+              if (item.name) {
+                compName = item.name
+              } else if (item.path?.filename) {
+                compName = item.path.filename.replace(/\.(html|js)$/, '')
+              } else if (typeof item.path === 'string') {
+                compName = item.path.split('/').pop().replace(/\.(html|js)$/, '')
+              }
+            }
+            if (compName && !knownComponents.has(compName)) {
+              knownComponents.set(compName, {
+                attributes: {},
+                slots: ['default']
+              })
+            }
+          }
+        }
+      }
+    }
     pageReport = await validatePagesDir(fullPageDir, {
       knownComponents,
       ignoreAttributes: config?.ignoreByAttribute,
