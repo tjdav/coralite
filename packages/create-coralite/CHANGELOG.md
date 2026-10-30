@@ -1,5 +1,37 @@
 # Changelog
 
+## v1.0.0-rc.8
+
+> Comparing `create-coralite-v1.0.0-rc.5` to `HEAD`
+
+**Summary:** 13 commits
+
+### ✨ Features
+
+- encapsulate Node experimental flags in coralite CLI (cli) ([bca2333](https://codeberg.org/tjdavid/coralite/commit/bca23338522c4af0b26720c5a67d2159b913ae33))
+- scaffold AGENTS.md, add Node check, improve README (create-coralite) ([a539395](https://codeberg.org/tjdavid/coralite/commit/a5393950cc97b55840159f6e670ae0ba2a622326))
+- scaffold AGENTS.md, add Node check, improve README (create-coralite) ([cd3a862](https://codeberg.org/tjdavid/coralite/commit/cd3a862aa5ee1395cc2a82a7d1f3f29e8c58e83e))
+- add config schema declaration and validation (plugin) ([e3d82f6](https://codeberg.org/tjdavid/coralite/commit/e3d82f61e08536ebcd22bdda28f7059c42f0719d))
+- expand and correct agent rule templates (create-coralite) ([97944ac](https://codeberg.org/tjdavid/coralite/commit/97944acd3301f86575a6fb0fa0b26ef615215b71))
+- add AI assistant rule generator and --agent mode (create-coralite) ([cd22de9](https://codeberg.org/tjdavid/coralite/commit/cd22de9f0c2b7572f11c1b0127bbfa951d3d48b9))
+
+### 🐛 Bug Fixes
+
+- align template components and docs with best practices (create-coralite) ([248ed08](https://codeberg.org/tjdavid/coralite/commit/248ed08d8b3139db18ea2443c49b1d511263d505))
+- support remote URL imports natively without TS2307 errors (type-checker) ([ee4a9b6](https://codeberg.org/tjdavid/coralite/commit/ee4a9b61fc25a22a713d029f98558c73a7195c31))
+- resolve final release gate blockers for rc.6 ([78b34cd](https://codeberg.org/tjdavid/coralite/commit/78b34cd8e566e366e7f2c4c8b95744ef43aac6a5))
+
+### 🧹 Chores
+
+- prepare v1.0.0-rc.6 release (release) ([e0e9456](https://codeberg.org/tjdavid/coralite/commit/e0e9456646a276ca0fd29c2824c688fb5e26635c))
+- fix source and runtime lint errors ([e77cee9](https://codeberg.org/tjdavid/coralite/commit/e77cee92584a103035004817743024aa8737db9f))
+
+### 🔨 Other Changes
+
+- release(coralite): version 1.0.0-rc.8 ([93d2c12](https://codeberg.org/tjdavid/coralite/commit/93d2c12bd243a3f3b01ee72740461d903eec15d5))
+- I have prepared the v1.0.0-rc.7 release (superseding broken rc.6): ([16adb87](https://codeberg.org/tjdavid/coralite/commit/16adb873247ff8cdbcc3f94ee3b34c3a41bb5621))
+
+
 ## v1.0.0-rc.6
 
 ### Features
