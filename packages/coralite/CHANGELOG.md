@@ -1,5 +1,76 @@
 # Changelog
 
+## v1.0.0-rc.8
+
+> Comparing `coralite-v1.0.0-rc.7` to `HEAD`
+
+**Summary:** 41 commits, 8 pull requests
+
+### 🐛 Bug Fixes
+
+- generalize virtual and plugin component resolution (validator) ([fab98a0](https://codeberg.org/tjdavid/coralite/commit/fab98a0d9a055886ae50ccd53969a26173df3d76))
+- skip missing public dir, recognize router-outlet, and add pack smoke test (cli) ([310133a](https://codeberg.org/tjdavid/coralite/commit/310133a6319880ca2735e1b69bc39a4c9d521850))
+- support remote URL imports natively without TS2307 errors (type-checker) ([ee4a9b6](https://codeberg.org/tjdavid/coralite/commit/ee4a9b61fc25a22a713d029f98558c73a7195c31))
+- resolve slot-indexed bindings in single-pass traversal and element path (E2E-16) (component) ([3accb70](https://codeberg.org/tjdavid/coralite/commit/3accb708ea1abd4048614bb2a6b82d797c35d33d))
+- ref resolution across foreign custom element boundaries (E2E-15) (client) ([d66a9ce](https://codeberg.org/tjdavid/coralite/commit/d66a9ceb6d3eb6a81f96f96362275de57b387bc7))
+- resolve lifecycle.rendered from compiled updater path (E2E-17) (client) ([4af349c](https://codeberg.org/tjdavid/coralite/commit/4af349caa55f904a097556aba734778cec2d3568))
+- run updaters on initial render pass for imperative components (client) ([e34bb4f](https://codeberg.org/tjdavid/coralite/commit/e34bb4ff2c3be02b1c60b72f2159fc68bd77ad5e))
+- await transition.updateCallbackDone instead of transition.finished (router) ([f5529cc](https://codeberg.org/tjdavid/coralite/commit/f5529ccafa97a47b22838b803d3f1729f5cbb8c2))
+- add baseURL to lists-app fixture build config (E2E-10) (tests) ([963e1fa](https://codeberg.org/tjdavid/coralite/commit/963e1faf081bb4f511a3985478ebadd4f10a8855))
+- testing-mode .ready property (E2E-6) (client) ([c2a90fa](https://codeberg.org/tjdavid/coralite/commit/c2a90fa61772ea9c8592e44a5307a69aaaa7211f))
+- remove defensive window checks in client context (router) ([5ac4062](https://codeberg.org/tjdavid/coralite/commit/5ac4062e17b6edb6aa60403b01c2a73a537e28e2))
+- move performSwap inside client.init — fix serialization (E2E-7) (router) ([d10dc85](https://codeberg.org/tjdavid/coralite/commit/d10dc851b97c473eaadc3a6715c2868373b09292))
+- navigate() pipeline — VT gate + outlet swap (E2E-5) (router) ([62ca789](https://codeberg.org/tjdavid/coralite/commit/62ca78984f44a69ada680d337d8362d93ef38f89))
+- inject plugin contexts into setupPageRuntime (E2E-4) (client) ([6dea371](https://codeberg.org/tjdavid/coralite/commit/6dea371cebb1e01736972c43410419fb639e2de2))
+- move hydration data assignment before async runtime imports (client) ([adbe35c](https://codeberg.org/tjdavid/coralite/commit/adbe35c5c0c64b63dbfe8e0f0970493ad25b3ae0))
+- delete duplicate fixture files and remove build collision error swallow (tests) ([da8fcec](https://codeberg.org/tjdavid/coralite/commit/da8fcec8de22d4002962a5d12b5edbad97127e64))
+- inline outlet as virtual component — eliminate ENOENT (REL-001a) (router) ([ef780a4](https://codeberg.org/tjdavid/coralite/commit/ef780a449eff9caeb86a2474756240fcc92afdee))
+
+### ✅ Tests
+
+- add e2e coverage for virtual outlet component and auto-wrapping (router) ([6853cd9](https://codeberg.org/tjdavid/coralite/commit/6853cd97a04db5482d7ce254d2d726ad0d7cc0f3))
+- scope check-types tests to component domain with pages and plugins disabled (type-checker) ([1b564b3](https://codeberg.org/tjdavid/coralite/commit/1b564b31d2532b8e70fb2bed4bcfa242ea642355))
+- assert devtools inspection APIs stripped in production mode (E2E-18) (test) ([9bf9458](https://codeberg.org/tjdavid/coralite/commit/9bf94581940b4f1e1da47fb2c64c5b3f25e5d0b1))
+- canonicalize style placement in nested-ref fixture (E2E-15) (component) ([cdfcc16](https://codeberg.org/tjdavid/coralite/commit/cdfcc16e4d00cb7103d3ff5b9c4ddee7965a0f6e))
+- await navigation swap in router spec (E2E-19) (router) ([8ef4e7b](https://codeberg.org/tjdavid/coralite/commit/8ef4e7b9b11a95fc8852be7d266efa0ab3f101d0))
+- fix router VT state leak and complete startViewTransition mock (E2E-19) ([759d128](https://codeberg.org/tjdavid/coralite/commit/759d128c1b6d9297bc8efb4dedf9dbaa46642039))
+- fix plugin E2E assertions for clean URLs and fixture shape (E2E-14) ([ff09998](https://codeberg.org/tjdavid/coralite/commit/ff0999853777d107a081ad5e9b8e8bbb44581358))
+- shadow document.startViewTransition on instance (router) ([fd48611](https://codeberg.org/tjdavid/coralite/commit/fd48611fc78bdef0854a160ea261e568b05d23cb))
+- wrap top-level browser APIs in client() (E2E-2) (fixtures) ([cbe61b5](https://codeberg.org/tjdavid/coralite/commit/cbe61b5dfd4475eb665ad45151fdccf3961788b2))
+- add missing definePage imports (E2E-C-fix) (fixtures) ([6271548](https://codeberg.org/tjdavid/coralite/commit/6271548a80f67aaa7fc0742dd0c21ca347e5263c))
+- resolve codemod/expected-with-imports failure (E2E-D) (fixtures) ([5321a2b](https://codeberg.org/tjdavid/coralite/commit/5321a2b0982d3b389cab3775f9c06c2dfb03c0e1))
+- expected-failures manifest separates intentional fixtures from real bugs (E2E-A) (build) ([12b3ea7](https://codeberg.org/tjdavid/coralite/commit/12b3ea7e32138471721d39c4b2e66044bf1acc6a))
+
+### 📦 Build System
+
+- add prepack hook, include plugins in files, and update release checks (release) ([4396127](https://codeberg.org/tjdavid/coralite/commit/439612739c81d9fec2d7de93e0ad98bf2ef0bb7a))
+
+### 🔨 Other Changes
+
+- Merge pull request #189 from tjdav/jules-4335750748941847411-4993eda9 ([#189](https://codeberg.org/tjdavid/coralite/pulls/189)) ([d1f66b9](https://codeberg.org/tjdavid/coralite/commit/d1f66b97a510ab11bd7a63e3301c8c49b529627a))
+- Merge pull request #188 from tjdav/jules-16619259610152010077-5384acba ([#188](https://codeberg.org/tjdavid/coralite/pulls/188)) ([468734c](https://codeberg.org/tjdavid/coralite/commit/468734c7152ba4ff3a71d14371b9868780eda85e))
+- Merge pull request #187 from tjdav/jules-18150671229542047381-216ac682 ([#187](https://codeberg.org/tjdavid/coralite/pulls/187)) ([2f761a3](https://codeberg.org/tjdavid/coralite/commit/2f761a3552e0c589a7cfd47ca18cff077876384c))
+- Merge pull request #184 from tjdav/jules-11565391920899301331-bd876ba2 ([#184](https://codeberg.org/tjdavid/coralite/pulls/184)) ([4a2f688](https://codeberg.org/tjdavid/coralite/commit/4a2f6888a739e688cf8dd80e61ec9b9dc100664a))
+- Fix(compiler): read dynamic getters via _state in compiled updaters ([6a89657](https://codeberg.org/tjdavid/coralite/commit/6a89657dc049fe1c6eb96887580b338bf7cedcc8))
+- Merge pull request #183 from tjdav/e2e-11-vt-finished-hang-9034151600085175816 ([#183](https://codeberg.org/tjdavid/coralite/pulls/183)) ([e325fa4](https://codeberg.org/tjdavid/coralite/commit/e325fa49dd2de050d914312e52659a15d443e01a))
+- Merge pull request #182 from tjdav/e2e-10-lists-app-base-url-5176250194040427635 ([#182](https://codeberg.org/tjdavid/coralite/pulls/182)) ([0fed8c4](https://codeberg.org/tjdavid/coralite/commit/0fed8c4a48fbb84818973c058b2aa6e8d7d406e2))
+- types: add JSDoc globals typedefs and adopt in page-runtime (TYPES-A) ([ff50545](https://codeberg.org/tjdavid/coralite/commit/ff5054521f6de2f8b1aa8cf6e7483c9fdaaf8c5a))
+- Merge pull request #173 from tjdav/fix-wrap-browser-apis-e2e-2-5391471885642229360 ([#173](https://codeberg.org/tjdavid/coralite/pulls/173)) ([e7e5e4c](https://codeberg.org/tjdavid/coralite/commit/e7e5e4c0cc46260301dd888e878e4cab9567c23c))
+- Merge pull request #172 from tjdav/test-fixtures-define-page-imports-13389635911413951525 ([#172](https://codeberg.org/tjdavid/coralite/pulls/172)) ([b3d4eaf](https://codeberg.org/tjdavid/coralite/commit/b3d4eafe5d5673594d772318d3e976c4883fed8a))
+- I have prepared the v1.0.0-rc.7 release (superseding broken rc.6): ([16adb87](https://codeberg.org/tjdavid/coralite/commit/16adb873247ff8cdbcc3f94ee3b34c3a41bb5621))
+
+### 🔗 Pull Requests
+
+- [#172](https://codeberg.org/tjdavid/coralite/pull/172)
+- [#173](https://codeberg.org/tjdavid/coralite/pull/173)
+- [#182](https://codeberg.org/tjdavid/coralite/pull/182)
+- [#183](https://codeberg.org/tjdavid/coralite/pull/183)
+- [#184](https://codeberg.org/tjdavid/coralite/pull/184)
+- [#187](https://codeberg.org/tjdavid/coralite/pull/187)
+- [#188](https://codeberg.org/tjdavid/coralite/pull/188)
+- [#189](https://codeberg.org/tjdavid/coralite/pull/189)
+
+
 ## v1.0.0-rc.6
 
 ### Features
