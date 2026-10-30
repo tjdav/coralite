@@ -13,7 +13,7 @@ const fixturesDir = path.resolve(__dirname, '../../fixtures/check-types')
 describe('coralite check type-checker integration', () => {
   it('coralite check (default) runs both AST and type-check passes', async () => {
     try {
-      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', fixturesDir, '--no-interactive'])
+      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', fixturesDir, '--no-interactive', '--pages=false', '--plugins=false'])
       assert.fail('Expected command to exit with non-zero code due to errors')
     } catch (err) {
       assert.notEqual(err.code, 0)
@@ -34,7 +34,7 @@ describe('coralite check type-checker integration', () => {
 
   it('coralite check --types-only skips the AST passes', async () => {
     try {
-      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', path.join(fixturesDir, 'ast-error.html'), '--types-only', '--format', 'json', '--no-interactive'])
+      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', path.join(fixturesDir, 'ast-error.html'), '--types-only', '--format', 'json', '--no-interactive', '--pages=false', '--plugins=false'])
       assert.fail('Expected command to exit with non-zero code due to TS error')
     } catch (err) {
       assert.notEqual(err.code, 0)
@@ -51,7 +51,7 @@ describe('coralite check type-checker integration', () => {
 
   it('coralite check --no-types --types-only exits with code 1 and error message', async () => {
     try {
-      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '--no-types', '--types-only', '--no-interactive'])
+      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '--no-types', '--types-only', '--no-interactive', '--pages=false', '--plugins=false'])
       assert.fail('Expected command to exit with code 1')
     } catch (err) {
       assert.equal(err.code, 1)
@@ -61,7 +61,7 @@ describe('coralite check type-checker integration', () => {
 
   it('component with a type error produces diagnostic with TS#### code, filePath, line, column, and source: type-checker', async () => {
     try {
-      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', path.join(fixturesDir, 'type-error.html'), '--format', 'json', '--no-interactive'])
+      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', path.join(fixturesDir, 'type-error.html'), '--format', 'json', '--no-interactive', '--pages=false', '--plugins=false'])
       assert.fail('Expected command to exit with non-zero code')
     } catch (err) {
       const json = JSON.parse(err.stdout)
@@ -79,7 +79,7 @@ describe('coralite check type-checker integration', () => {
 
   it('component with AST error and type error produces both diagnostics in merged output', async () => {
     try {
-      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', path.join(fixturesDir, 'ast-error.html'), '--format', 'json', '--no-interactive'])
+      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', path.join(fixturesDir, 'ast-error.html'), '--format', 'json', '--no-interactive', '--pages=false', '--plugins=false'])
       assert.fail('Expected command to exit with non-zero code')
     } catch (err) {
       const json = JSON.parse(err.stdout)
@@ -93,7 +93,7 @@ describe('coralite check type-checker integration', () => {
 
   it('--error-code TS2322 filters to type errors only', async () => {
     try {
-      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', fixturesDir, '-e', 'TS2322', '--format', 'json', '--no-interactive'])
+      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', fixturesDir, '-e', 'TS2322', '--format', 'json', '--no-interactive', '--pages=false', '--plugins=false'])
       assert.fail('Expected command to exit with non-zero code')
     } catch (err) {
       const json = JSON.parse(err.stdout)
@@ -107,7 +107,7 @@ describe('coralite check type-checker integration', () => {
 
   it('--error-code E203 filters to AST errors only', async () => {
     try {
-      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', fixturesDir, '-e', 'E203', '--format', 'json', '--no-interactive'])
+      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', fixturesDir, '-e', 'E203', '--format', 'json', '--no-interactive', '--pages=false', '--plugins=false'])
       assert.fail('Expected command to exit with non-zero code')
     } catch (err) {
       const json = JSON.parse(err.stdout)
@@ -122,7 +122,7 @@ describe('coralite check type-checker integration', () => {
 
   it('--status failed includes files with type errors', async () => {
     try {
-      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', fixturesDir, '--status', 'failed', '--format', 'json', '--no-interactive'])
+      await execFileAsync('node', ['--conditions=development', coraliteBin, 'check', '-c', fixturesDir, '--status', 'failed', '--format', 'json', '--no-interactive', '--pages=false', '--plugins=false'])
       assert.fail('Expected command to exit with non-zero code')
     } catch (err) {
       const json = JSON.parse(err.stdout)
