@@ -100,4 +100,12 @@ describe('typeCheck', () => {
     assert.ok(filesInDiagnostics.includes(errorFile2))
     assert.ok(!filesInDiagnostics.includes(okFile))
   })
+
+  it('returns zero diagnostics for a component with remote URL imports in client()', async () => {
+    const file = path.join(fixturesDir, 'url-import-ok.html')
+    const result = await typeCheck([file])
+
+    assert.strictEqual(result.skipped, false)
+    assert.deepStrictEqual(result.diagnostics, [])
+  })
 })

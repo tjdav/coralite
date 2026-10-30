@@ -131,12 +131,29 @@ export async function typeCheck (files, options = {}) {
     return virtualName
   })
 
+  const ambientUrlFile = path.join(cwd, '__coralite_ambient_urls__.d.ts')
+  const ambientUrlContent = [
+    "declare module 'https://*' {",
+    '  const content: any;',
+    '  export default content;',
+    '  export = content;',
+    '}',
+    "declare module 'http://*' {",
+    '  const content: any;',
+    '  export default content;',
+    '  export = content;',
+    '}'
+  ].join('\n')
+
   // Create compiler host mapping virtual .html.ts files to source script blocks
   const host = ts.createCompilerHost(compilerOptions)
   const originalGetSourceFile = host.getSourceFile
   const originalFileExists = host.fileExists
 
   host.fileExists = (fileName) => {
+    if (fileName === ambientUrlFile) {
+      return true
+    }
     if (targetMap.has(fileName)) {
       const realFilePath = targetMap.get(fileName)
       return originalFileExists(realFilePath)
@@ -145,6 +162,9 @@ export async function typeCheck (files, options = {}) {
   }
 
   host.getSourceFile = (fileName, languageVersionOrOptions, onError, shouldCreateNewSourceFile) => {
+    if (fileName === ambientUrlFile) {
+      return ts.createSourceFile(fileName, ambientUrlContent, languageVersionOrOptions, true, ts.ScriptKind.TS)
+    }
     if (targetMap.has(fileName)) {
       const realFilePath = targetMap.get(fileName)
       if (originalFileExists(realFilePath)) {
@@ -174,7 +194,7 @@ export async function typeCheck (files, options = {}) {
     : ts.createProgram
 
   const program = createProgram({
-    rootNames: virtualRootNames,
+    rootNames: [...virtualRootNames, ambientUrlFile],
     options: compilerOptions,
     host
   })
@@ -209,6 +229,10 @@ export async function typeCheck (files, options = {}) {
       const message = typeof diag.messageText === 'string'
         ? diag.messageText
         : ts.flattenDiagnosticMessageText(diag.messageText, '\n')
+
+      if (diag.code === 2307 && (message.includes("'http://") || message.includes("'https://"))) {
+        continue
+      }
 
       diagnostics.push({
         file: realFilePath,

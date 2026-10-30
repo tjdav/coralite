@@ -1,0 +1,16 @@
+<template id="url-import-ok">
+  <div>
+    <button ref="btn">Click</button>
+  </div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  async client () {
+    const { default: confetti } = await import('https://esm.sh/canvas-confetti@latest')
+    confetti()
+  }
+})
+</script>

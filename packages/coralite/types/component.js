@@ -163,11 +163,13 @@
  * Context passed to reactive slot builders.
  * @template {Record<string, any>} [TState=Record<string, any>]
  * @typedef {Object} CoraliteSlotBuilderContext
- * @property {string} name - The slot name being rendered.
+ * @property {string} [name] - The slot name being rendered.
+ * @property {any[]} [nodes] - Projected slot content nodes.
  * @property {TState} state - Reactive state proxy.
- * @property {HTMLElement|null} root - Host element.
- * @property {(id: string) => HTMLElement|null} refs - Ref resolver.
+ * @property {HTMLElement|null} [root] - Host element.
+ * @property {(id: string) => HTMLElement|null} [refs] - Ref resolver.
  * @property {AbortSignal} signal - Lifecycle abort signal.
+ * @property {boolean} [isServer] - True during SSR.
  */
 
 /**
@@ -176,6 +178,15 @@
  * @callback CoraliteComputedSlotFunction
  * @param {CoraliteSlotBuilderContext<TState>} context - Slot builder context.
  * @returns {any}
+ */
+
+/**
+ * Context passed to reactive style functions.
+ * @template {Record<string, any>} [TState=Record<string, any>]
+ * @typedef {Object} CoraliteStyleContext
+ * @property {Readonly<TState>} state - Read-only reactive state proxy.
+ * @property {boolean} isServer - True during SSR, false on client.
+ * @property {AbortSignal} signal - Lifecycle abort signal.
  */
 
 /**
@@ -204,7 +215,7 @@
  * @property {Map<any, any> | Record<string | symbol, any>} [provide] - W3C context provider map or object.
  * @property {string[] | Record<string, any>} [consume] - W3C context consumer declaration.
  * @property {Record<string, CoraliteComputedSlotFunction<TState> | CoraliteModuleSlotFunction>} [slots] - Reactive slot builders or slot transform functions.
- * @property {Record<string, ((state: TState) => any) | string | number>} [style] - Reactive style definitions and CSS custom properties.
+ * @property {Record<string, ((context: CoraliteStyleContext<TState>) => any) | string | number>} [style] - Reactive style definitions and CSS custom properties.
  * @property {boolean} [formAssociated] - Enables Form-Associated Custom Element (FACE) behavior.
  * @property {'full' | 'minimal'} [reconcile] - Reconcile mode ('full' | 'minimal').
  * @property {(item: any) => any} [key] - Optional item key extractor function for list reconciliation.
