@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.0.0-rc.9
+
+> Comparing `create-coralite-v1.0.0-rc.8` to `HEAD`
+
+**Summary:** 2 commits
+
+### ✨ Features
+
+- migrate starter templates to named exports (create-coralite) ([1ace6bf](https://codeberg.org/tjdavid/coralite/commit/1ace6bf356dfc42ccb2aa9a245ff86a0c4a3120f))
+
+### 🔨 Other Changes
+
+- release(coralite): version 1.0.0-rc.9 ([2ad293f](https://codeberg.org/tjdavid/coralite/commit/2ad293f61464ce760eff34cc0244aae550c6c16c))
+
+
 ## v1.0.0-rc.8
 
 > Comparing `create-coralite-v1.0.0-rc.5` to `HEAD`
