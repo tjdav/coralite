@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.0.0-rc.9
+
+> Comparing `coralite-v1.0.0-rc.8` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- add named exports support and modernize documentation (component) ([a9f921f](https://codeberg.org/tjdavid/coralite/commit/a9f921f4986684d34df0c6f0a74a608252dba121))
+
+
 ## v1.0.0-rc.8
 
 > Comparing `coralite-v1.0.0-rc.7` to `HEAD`
