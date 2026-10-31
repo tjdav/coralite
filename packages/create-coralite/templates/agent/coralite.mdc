@@ -16,17 +16,13 @@ Every Coralite component is a single `.html` file with this structure:
 </template>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
+  export const attributes = { ... }
+  export const getters = { ... }
+  export const style = { ... }
+  export const slots = { ... } // optional - transform slot content
 
-  export default defineComponent({
-    attributes: { ... },
-    state: { ... },
-    getters: { ... },
-    slots: { ... },       // optional - transform slot content
-    server({ state }) { ... },
-    client({ state, refs, signal, emit, observe, slots, root }) { ... },
-    style: { ... }
-  })
+  export function server ({ state }) { ... }
+  export function client ({ state, refs, signal, emit, observe, slots, root }) { ... }
 </script>
 
 <style>

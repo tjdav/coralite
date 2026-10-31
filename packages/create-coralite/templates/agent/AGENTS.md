@@ -27,7 +27,7 @@
 
 When writing, refactoring, or generating code for Coralite:
 
-1. **MUST use `defineComponent`**: Never generate class-based Web Components (`class X extends HTMLElement`) and never invoke `customElements.define()` manually. Always export `defineComponent({ ... })` imported from `'coralite'`.
+1. **MUST use Named Exports for Components**: Component `<script type="module">` blocks must declare behavior using standard top-level named exports (`export function`, `export const`). Handlers use `export function` (`server`, `client`, `onError`). Declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`). Never author new components with `class extends HTMLElement` or legacy `defineComponent({ ... })` (retained strictly for backward compatibility). Pages use `export default definePage({ ... })`.
 2. **MUST author components in `.html`**: Components are authored strictly as single `.html` files in `src/components/<tag-name>.html` containing `<template id="<tag-name>">`, optional `<style>`, and optional `<script type="module">`. Never create `.js`, `.jsx`, `.tsx`, or `.vue` component files.
 3. **MUST keep templates "dumb" (flat tokens only)**: Templates strictly support flat identifier interpolations: `{{ propertyName }}`. Never write expressions (`{{ a + b }}`), function calls (`{{ format(x) }}`), negations (`{{ !flag }}`), loops (`v-for`, `*ngFor`), conditionals (`if="..."`), or dot-notation (`{{ user.name }}`). Lift all logic into synchronous `getters`.
 4. **MUST NEVER use inline event handlers (`CORALITE-E203`)**: Never put `onclick="..."`, `onsubmit="..."`, or `@click` attributes in `<template>` markup. All events must be wired inside `client()` using `refs()`.
@@ -55,17 +55,13 @@ Every Coralite component is a single `.html` file:
 </template>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
+  export const attributes = { ... }
+  export const getters = { ... }
+  export const style = { ... }
+  export const slots = { ... } // optional - transform slot content
 
-  export default defineComponent({
-    attributes: { ... },
-    state: { ... },
-    getters: { ... },
-    slots: { ... },       // optional - transform slot content
-    server({ state }) { ... },
-    client({ state, refs, signal, emit, observe, slots, root }) { ... },
-    style: { ... }
-  })
+  export function server ({ state }) { ... }
+  export function client ({ state, refs, signal, emit, observe, slots, root }) { ... }
 </script>
 
 <style>
@@ -78,14 +74,13 @@ Every Coralite component is a single `.html` file:
 | Section | Purpose | Runtime |
 |---------|---------|---------|
 | `<template>` | Declarative markup with flat tokens | Both (compiled) |
-| `attributes` | External input schema (primitives only) | Both |
-| `state` | Reactive internal state | Both |
-| `getters` | Derived/computed values | Both |
-| `slots` | Slot content transformation | Server/build |
-| `server()` | SSR/build-time initialization | Node.js only (stripped) |
-| `client()` | Browser runtime logic & event binding | Browser only |
+| `attributes` | External input schema (`export const attributes = { ... }`) | Both |
+| `getters` | Derived/computed values (`export const getters = { ... }`) | Both |
+| `slots` | Slot content transformation (`export const slots = { ... }`) | Server/build |
+| `server()` | SSR/build-time initialization (`export function server(ctx)`) | Node.js only (stripped) |
+| `client()` | Browser runtime logic & event binding (`export function client(ctx)`) | Browser only |
 | `<style>` | Static component styles | Both |
-| `style` | Dynamic CSS custom properties | Both |
+| `style` | Dynamic CSS custom properties (`export const style = { ... }`) | Both |
 
 ---
 
@@ -136,12 +131,10 @@ Templates do not support `if`, `v-for`, `*ngFor`, or similar constructs. Use get
 </template>
 
 <script type="module">
-  export default defineComponent({
-    getters: {
-      itemDisplay: ({ state }) => 
-        state.items.length > 0 ? state.items[0].name : 'Empty'
-    }
-  })
+  export const getters = {
+    itemDisplay: ({ state }) => 
+      state.items.length > 0 ? state.items[0].name : 'Empty'
+  }
 </script>
 ```
 

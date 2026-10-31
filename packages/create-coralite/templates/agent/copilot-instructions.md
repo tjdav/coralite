@@ -12,17 +12,13 @@ Every component is a single `.html` file:
 </template>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
+  export const attributes = { ... }
+  export const getters = { ... }
+  export const style = { ... }
+  export const slots = { ... } // optional - transform slot content
 
-  export default defineComponent({
-    attributes: { ... },
-    state: { ... },
-    getters: { ... },
-    slots: { ... },       // optional - transform slot content
-    server({ state }) { ... },
-    client({ state, refs, signal, emit, observe, slots, root }) { ... },
-    style: { ... }
-  })
+  export function server ({ state }) { ... }
+  export function client ({ state, refs, signal, emit, observe, slots, root }) { ... }
 </script>
 
 <style>
@@ -53,10 +49,12 @@ Every component is a single `.html` file:
 
 ## 3. Component Definition
 
-### `defineComponent({ ... })`
-- Always use `defineComponent` from `'coralite'`
+### Named Exports
+- Always use top-level named exports (`export function`, `export const`)
+- Handlers use `export function` (`server`, `client`, `onError`)
+- Declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`)
 - Never use `class X extends HTMLElement` or `customElements.define()`
-- Export as default export
+- The legacy `defineComponent` wrapper is retained strictly for backward compatibility
 
 ### `attributes`
 - Only primitives: `String`, `Number`, `Boolean`

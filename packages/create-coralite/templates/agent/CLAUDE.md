@@ -14,35 +14,32 @@ Refer to `AGENTS.md` for full architectural details. Quick summary for Claude Co
 </template>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
+  export const attributes = {
+    title: { type: String, default: 'Title' },
+    description: { type: String, default: '' }
+  }
 
-  export default defineComponent({
-    attributes: {
-      title: { type: String, default: 'Title' },
-      description: { type: String, default: '' }
-    },
-    state: {
-      count: 0
-    },
-    getters: {
-      displayCount: ({ state }) => `Count: ${state.count}`
-    },
-    server({ state }) {
-      // SSR/build-time only — can use Node.js APIs
-      return { ...state }
-    },
-    client({ state, refs, signal, emit }) {
-      const handleClick = () => {
-        state.count++
-        emit('count-changed', { count: state.count })
-      }
+  export const getters = {
+    displayCount: ({ state }) => `Count: ${state.count}`
+  }
 
-      refs('action').addEventListener('click', handleClick, { signal })
-    },
-    style: {
-      '--accent-color': ({ state }) => state.count > 5 ? 'green' : 'blue'
+  export const style = {
+    '--accent-color': ({ state }) => (state.count > 5 ? 'green' : 'blue')
+  }
+
+  export function server ({ state }) {
+    // SSR/build-time only — can use Node.js APIs
+    return { count: 0, ...state }
+  }
+
+  export function client ({ state, refs, signal, emit }) {
+    const handleClick = () => {
+      state.count++
+      emit('count-changed', { count: state.count })
     }
-  })
+
+    refs('action').addEventListener('click', handleClick, { signal })
+  }
 </script>
 
 <style>

@@ -4,7 +4,10 @@ Read this file before starting any task in this project.
 
 ## Authoring pattern
 
-- Components and pages are defined with `defineComponent` and `definePage`.
+- Components use top-level named exports (`export function`, `export const`). Legacy `defineComponent` is retained for backwards compatibility.
+- Pages use `definePage` (`export default definePage({ ... })`).
+- Handlers use `export function` (`server`, `client`, `onError`).
+- Declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`).
 - Templates use flat `{{ token }}` placeholders. No expressions, dot notation, or function calls.
 - No inline event handlers. Bind in `client()` with `refs()` + `{ signal }`.
 - Getter signature: `({ state }) => value`.

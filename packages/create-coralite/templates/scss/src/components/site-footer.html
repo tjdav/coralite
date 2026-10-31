@@ -14,21 +14,17 @@
 </style>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    // Declare component attributes with automatic type coercion, defaults, and transformation
-    attributes: {
-      name: {
-        type: String,
-        // Synchronously transform and format attribute values before state application
-        transform: (val) => (val ? val.trim().charAt(0).toUpperCase() + val.trim().slice(1) : 'Coralite')
-      }
-    },
-
-    // Pure computed getters for derived or dynamic values
-    getters: {
-      year: () => new Date().getFullYear()
+  // Declare component attributes with automatic type coercion, defaults, and transformation
+  export const attributes = {
+    name: {
+      type: String,
+      // Synchronously transform and format attribute values before state application
+      transform: (val) => (val ? val.trim().charAt(0).toUpperCase() + val.trim().slice(1) : 'Coralite')
     }
-  })
+  }
+
+  // Pure computed getters for derived or dynamic values
+  export const getters = {
+    year: () => new Date().getFullYear()
+  }
 </script>
