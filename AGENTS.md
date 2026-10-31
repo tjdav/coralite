@@ -8,7 +8,9 @@ All source is `.js` (ESM). No `.ts`, `.tsx`, `.jsx`, or `.mjs` in the source tre
 
 ## 2. Authoring pattern
 
-- Use `defineComponent`, `definePage`, `definePlugin`. Never bare objects.
+- **Components**: Use top-level named exports (`export function`, `export const`). Never use `defineComponent` for new components (`defineComponent` is retained strictly for legacy backwards compatibility).
+- **Pages and Plugins**: Use `definePage` and `definePlugin` (`export default definePage({...})` and `export default definePlugin({...})`). Never bare objects.
+- **Component export form rule**: Handlers use `export function` (`server`, `client`, `onError`). Configuration declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`). Extra/helper exports are ignored by the compiler and preserved in module scope.
 - Templates use flat `{{ token }}` only. No expressions, dot notation, or function calls.
 - No inline event handlers. Bind in `client()` with `refs()` + `{ signal }`.
 - Getter signature: `({ state, route, ... })`. Must destructure.
@@ -25,8 +27,11 @@ All source is `.js` (ESM). No `.ts`, `.tsx`, `.jsx`, or `.mjs` in the source tre
 </template>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
-  export default defineComponent({})
+  export const attributes = {}
+
+  export async function client ({ refs, signal }) {
+    // client-side logic
+  }
 </script>
 
 <style>
@@ -42,8 +47,11 @@ is also accepted and normalized to the canonical form by the parser:
   <style>:host { display: block }</style>
   <div>...</div>
   <script type="module">
-    import { defineComponent } from 'coralite'
-    export default defineComponent({})
+    export const attributes = {}
+
+    export async function client ({ refs, signal }) {
+      // client-side logic
+    }
   </script>
 </template>
 ```
@@ -53,7 +61,7 @@ use whichever form you prefer in generated code.
 
 ## 3. Import rule
 
-Top-level imports reserved for `define*` functions and modules used by isomorphic code (getters, style, slots). Modules used by `server()`, `client()`, or `paths()` are loaded with `await import()` inside the block.
+Top-level imports are reserved for `definePage` / `definePlugin` and modules used by isomorphic code (getters, style, slots). Modules used by `server()`, `client()`, or `paths()` are loaded with `await import()` inside the block. Components author logic via named exports and do not import `defineComponent`.
 
 ## 4. Serialization boundary
 

@@ -1,3 +1,4 @@
+<!-- coralite-ignore E108 -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -109,9 +110,23 @@
 
     <coralite-heading level="2" text="Dynamic Components"></coralite-heading>
 
-    <p>While static components are great for simple layouts, modern web development often requires more power. When your component needs data fetching, reactive state, or client-side interactivity, you must create a <strong>Dynamic Component</strong>.</p>
+    <p>While static components are great for simple layouts, modern web development often requires more power. When your component needs data fetching, reactive state, or client-side interactivity, you create a <strong>Dynamic Component</strong>.</p>
 
-    <p>Dynamic components are powered by the <code>defineComponent</code> plugin. They follow the <strong>Smart State, Dumb Template</strong> philosophy, where logic is strictly separated into five isolated blocks.</p>
+    <p>Dynamic components use standard JavaScript top-level <strong>Named Exports</strong> inside a <code>&lt;script type="module"&gt;</code> block. They follow the <strong>Smart State, Dumb Template</strong> philosophy, where component logic is cleanly declared through dedicated export functions and constants.</p>
+
+    <coralite-alert type="tip">
+      <strong>✨ Modern Syntax & Compatibility</strong>
+      <p>
+        Coralite components declare behavior using top-level named exports:
+      </p>
+      <ul>
+        <li><strong>Handler Functions:</strong> <code>export function server(ctx)</code>, <code>export function client(ctx)</code>, <code>export function onError(ctx)</code></li>
+        <li><strong>Declarations:</strong> <code>export const attributes = {}</code>, <code>export const getters = {}</code>, <code>export const style = {}</code>, <code>export const slots = {}</code>, <code>export const provide = ...</code>, <code>export const consume = ...</code>, <code>export const formControl = true</code>, <code>export const listStrategy = ...</code></li>
+      </ul>
+      <p>
+        <strong>defineComponent Compatibility:</strong> The legacy <code>export default defineComponent({ ... })</code> syntax remains fully supported for existing components. If both are present, <code>defineComponent</code> takes precedence. Note that <code>definePage</code> and <code>definePlugin</code> continue to use their respective <code>export default define*</code> wrappers.
+      </p>
+    </coralite-alert>
 
     <coralite-alert type="warning">
       <strong>⚠️ Warning: Host Tags & display: contents</strong>
@@ -125,7 +140,7 @@
 
     <coralite-heading level="3" text="Upgrading a Component"></coralite-heading>
 
-    <p>To turn a static component into a dynamic one, append a <code>&lt;script type="module"&gt;</code> tag below your <code>&lt;template&gt;</code> and export <code>defineComponent</code>.</p>
+    <p>To turn a static component into a dynamic one, append a <code>&lt;script type="module"&gt;</code> tag below your <code>&lt;template&gt;</code> and export the component behaviors.</p>
 
     <coralite-code-html>
       <template id="my-dynamic-component">
@@ -134,28 +149,29 @@
 
       <!-- The addition of this script block makes it dynamic -->
       <script type="module">
-        import { defineComponent } from 'coralite'
+        export const attributes = {
+          // ...
+        }
 
-        export default defineComponent({
-          attributes: {
-            // ...
-          },
-          async server () {
-            // ...
-          },
-          getters: {
-            //...
-          },
-          style: {
-            // ...
-          },
-          slots: {
-            //...
-          },
-          client: () => {
-            // ...
-          }
-        })
+        export async function server () {
+          // ...
+        }
+
+        export const getters = {
+          // ...
+        }
+
+        export const style = {
+          // ...
+        }
+
+        export const slots = {
+          // ...
+        }
+
+        export async function client () {
+          // ...
+        }
       </script>
     </coralite-code-html>
 
@@ -165,9 +181,9 @@
 
     <coralite-heading level="4" text="1. Attributes (Inputs)"></coralite-heading>
     <p>Attributes are the "props" of your component. Coralite supports type coercion, enum validation (<code>values</code> / array shorthand), mandatory requirements (<code>required: true</code>), synchronous transformations (<code>transform</code>), and custom validation predicates (<code>validate</code>).</p>
-    <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data. For full details on the 6-step attribute execution pipeline, see the <a href="../reference/define-component.html#1-attributes">defineComponent API Reference</a>.</p>
+    <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data. For full details on the 6-step attribute execution pipeline, see the <a href="../reference/define-component.html#1-attributes">Component API Reference</a>.</p>
     <coralite-code-highlight language="javascript">
-attributes: {
+export const attributes = {
   // Type shorthand & array shorthand (allowed enum values)
   expanded: Boolean,
   variant: ['primary', 'secondary', 'danger'],
@@ -185,9 +201,9 @@ attributes: {
     </coralite-code-highlight>
 
     <coralite-heading level="4" text="6. OnError (Component Error Boundary)"></coralite-heading>
-    <p>The <code>onError</code> block provides component-level fault isolation for production rendering. If server data fetching, derived getters, or slot processing throws an error during SSR, <code>onError</code> catches the failure and renders fallback UI with <code>noHydration: true</code> and stripped <code>data-cid</code> hydration tokens.</p>
+    <p>The <code>onError</code> function provides component-level fault isolation for production rendering. If server data fetching, derived getters, or slot processing throws an error during SSR, <code>onError</code> catches the failure and renders fallback UI with <code>noHydration: true</code> and stripped <code>data-cid</code> hydration tokens.</p>
     <coralite-code-highlight language="javascript">
-onError({ error, state }) {
+export function onError ({ error, state }) {
   return {
     template: '<div class="fallback"><p>{{ message }}</p></div>',
     state: { message: 'Content temporarily unavailable' }
@@ -196,35 +212,35 @@ onError({ error, state }) {
     </coralite-code-highlight>
 
     <coralite-heading level="4" text="2. Server (Server-Side Logic)"></coralite-heading>
-    <p>The <code>server</code> block runs strictly on the server during build-time. It's the place for database queries or API calls. See the <a href="./ssr.html#the-server-block">SSR Guide</a> for more details.</p>
+    <p>The <code>server</code> function runs strictly on the server during build-time. It's the place for database queries or API calls. External dependencies should be loaded via dynamic <code>await import()</code>. See the <a href="./ssr.html#the-server-block">SSR Guide</a> for more details.</p>
     <coralite-code-highlight language="javascript">
-async server({ myPlugin }) {
+export async function server ({ myPlugin }) {
   const posts = await db.getPosts();
   return { posts, pluginData: myPlugin.data };
 }
     </coralite-code-highlight>
 
     <coralite-heading level="4" text="3. Getters (Derived State)"></coralite-heading>
-    <p>Getters calculate state based on other state. They are pure, synchronous, and reactive.</p>
+    <p>Getters calculate state based on other state. They are pure, synchronous, and reactive, receiving a destructured context object <code>({ state, root, refs, slots, signal })</code>.</p>
     <coralite-code-highlight language="javascript">
-getters: {
+export const getters = {
   postCount: ({ state }) => state.posts.length
 }
     </coralite-code-highlight>
 
     <coralite-heading level="4" text="4. Style (Reactive CSS Properties)"></coralite-heading>
-    <p>The <code>style</code> block allows you to declaratively bind reactive CSS variables (CSS Custom Properties) and standard inline CSS properties directly to the component's host custom element tag.</p>
+    <p>The <code>style</code> declaration allows you to declaratively bind reactive CSS variables (CSS Custom Properties) and standard inline CSS properties directly to the component's host custom element tag. Style functions receive <code>state</code> directly and must be synchronous.</p>
     <coralite-code-highlight language="javascript">
-style: {
+export const style = {
   '--accent-color': (state) => state.theme === 'dark' ? '#38bdf8' : '#0284c7',
   opacity: (state) => state.isVisible ? 1 : 0
 }
     </coralite-code-highlight>
 
     <coralite-heading level="4" text="5. Slots (Light DOM Transformation)"></coralite-heading>
-    <p>The <code>slots</code> block allows you to intercept and transform the Light DOM nodes passed to your component before they are rendered.</p>
+    <p>The <code>slots</code> declaration allows you to intercept and transform the Light DOM nodes passed to your component before they are rendered.</p>
     <coralite-code-highlight language="javascript">
-slots: {
+export const slots = {
   default: (nodes, state) => {
     // Wrap all nodes in a div if count is even
     if (state.count % 2 === 0) {
@@ -246,9 +262,9 @@ slots: {
     </coralite-code-html>
 
     <coralite-heading level="4" text="6. Client (Client Controller)"></coralite-heading>
-    <p>The <code>client</code> block is where interactivity lives. It runs in the browser and has full read/write access to state, as well as access to element references (`refs`), state observation (`observe`), custom event dispatching (`emit`), and render completion synchronization (`updateComplete`).</p>
+    <p>The <code>client</code> function is where interactivity lives. It runs in the browser and has full read/write access to state, as well as access to element references (<code>refs</code>), state observation (<code>observe</code>), custom event dispatching (<code>emit</code>), and render completion synchronization (<code>updateComplete</code>). Because <code>client</code> runs in the browser, any external modules must be imported using dynamic <code>await import()</code>.</p>
     <coralite-code-highlight language="javascript">
-client: async ({ state, signal, refs, observe, emit, updateComplete }) => {
+export async function client ({ state, signal, refs, observe, emit, updateComplete }) {
   // 'my-btn' matches the ref="my-btn" in the template above
   const btn = refs('my-btn');
   
@@ -264,7 +280,7 @@ client: async ({ state, signal, refs, observe, emit, updateComplete }) => {
 
     <p>Web Components often need to participate in native HTML forms—submitting values in <code>FormData</code>, participating in constraint validation, resetting on form reset, and responding when disabled by a parent <code>&lt;fieldset disabled&gt;</code>. Coralite makes this effortless with first-class, standard-aligned <strong>Form-Associated Custom Elements</strong> support.</p>
 
-    <p>To enable form association, set <code>formAssociated: true</code> in <code>defineComponent</code>:</p>
+    <p>To enable form association, export <code>formControl = true</code> (legacy: <code>formAssociated: true</code>):</p>
 
     <coralite-code-html>
       <template id="custom-text-input">
@@ -276,48 +292,46 @@ client: async ({ state, signal, refs, observe, emit, updateComplete }) => {
       </template>
 
       <script type="module">
-        import { defineComponent } from 'coralite'
+        // Enables native ElementInternals & form participation
+        export const formControl = true
 
-        export default defineComponent({
-          // Enables native ElementInternals & form participation
-          formAssociated: true,
-          attributes: {
-            name: String,
-            label: String,
-            placeholder: {
-              type: String,
-              default: ''
-            },
-            value: {
-              type: String,
-              default: '',
-              validate: (val) => (!val || val.length >= 2) || 'Must be at least 2 characters'
-            },
-            disabled: Boolean
+        export const attributes = {
+          name: String,
+          label: String,
+          placeholder: {
+            type: String,
+            default: ''
           },
-          client: ({ state, refs, signal, onFormReset, onFormDisabled }) => {
-            const input = refs('inputEl')
+          value: {
+            type: String,
+            default: '',
+            validate: (val) => (!val || val.length >= 2) || 'Must be at least 2 characters'
+          },
+          disabled: Boolean
+        }
 
-            // Update state on user input (automatically syncs form submission value & validity)
-            input.addEventListener('input', (e) => {
-              state.value = e.target.value
-            }, { signal })
+        export function client ({ state, refs, signal, onFormReset, onFormDisabled }) {
+          const input = refs('inputEl')
 
-            // React to form reset events (state.value automatically reverts to default)
-            onFormReset(() => {
-              console.log('Custom input reset to initial value')
-            })
+          // Update state on user input (automatically syncs form submission value & validity)
+          input.addEventListener('input', (e) => {
+            state.value = e.target.value
+          }, { signal })
 
-            // React to <fieldset disabled> or form-level disabled changes
-            onFormDisabled((disabled) => {
-              console.log('Disabled status changed:', disabled)
-            })
-          }
-        })
+          // React to form reset events (state.value automatically reverts to default)
+          onFormReset(() => {
+            console.log('Custom input reset to initial value')
+          })
+
+          // React to <fieldset disabled> or form-level disabled changes
+          onFormDisabled((disabled) => {
+            console.log('Disabled status changed:', disabled)
+          })
+        }
       </script>
     </coralite-code-html>
 
-    <p>When <code>formAssociated: true</code> is active:</p>
+    <p>When <code>formControl: true</code> is active:</p>
     <ul>
       <li><strong>Form Value Auto-Sync:</strong> Any mutation to <code>state.value</code> automatically calls <code>internals.setFormValue(value)</code>. Form submissions and <code>new FormData(form)</code> seamlessly pick up the component's value.</li>
       <li><strong>Automatic Validity Bridge:</strong> Attribute schema validation errors on <code>value</code> automatically invoke <code>internals.setValidity()</code> and anchor validation popups to the internal input element.</li>
@@ -347,7 +361,7 @@ client: async ({ state, signal, refs, observe, emit, updateComplete }) => {
 
     <ul>
       <li><strong>Keep Templates Simple:</strong> Templates should only contain HTML and <code>{{ token }}</code> placeholders. Avoid complex logic in HTML.</li>
-      <li><strong>Boolean & ARIA Attribute Toggling:</strong> Native HTML boolean attributes (43 standard attributes) and <code>aria-*</code> attributes are automatically added or removed when bound to single state tokens. Learn more in the <a href="../reference/define-component.html#native-html-boolean-attributes--wai-aria-auto-removal">defineComponent Reference</a>.</li>
+      <li><strong>Boolean & ARIA Attribute Toggling:</strong> Native HTML boolean attributes (43 standard attributes) and <code>aria-*</code> attributes are automatically added or removed when bound to single state tokens. Learn more in the <a href="../reference/define-component.html#native-html-boolean-attributes--wai-aria-auto-removal">Component API Reference</a>.</li>
       <li><strong>Prefer Primitives for Attributes:</strong> Only pass Strings, Numbers, and Booleans via attributes. Use <code>server</code> for complex objects.</li>
       <li><strong>Clean Up with AbortSignal:</strong> Always pass the <code>signal</code> to <code>addEventListener</code> or <code>fetch</code> inside your <code>client</code> to prevent memory leaks.</li>
     </ul>
@@ -365,7 +379,7 @@ client: async ({ state, signal, refs, observe, emit, updateComplete }) => {
 
     <hr>
 
-    <p>For detailed API signatures, see the <a href="/docs/reference/define-component.html">defineComponent API Reference</a>.</p>
+    <p>For detailed API signatures, see the <a href="/docs/reference/define-component.html">Component API Reference</a>.</p>
 
   </main>
   <coralite-footer></coralite-footer>

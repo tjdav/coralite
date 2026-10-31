@@ -164,18 +164,19 @@ export function parseScriptAST (context) {
 
       for (const node of ast.body) {
         if (node.type === 'ExportNamedDeclaration') {
+          const isComponent = context.sourceCode.includes('<template')
           if (node.declaration) {
             if (node.declaration.type === 'VariableDeclaration') {
               for (const decl of node.declaration.declarations) {
                 if (decl.id && decl.id.type === 'Identifier') {
-                  if (decl.id.name === 'paths' || decl.id.name === 'server') {
+                  if (decl.id.name === 'paths' || (!isComponent && decl.id.name === 'server')) {
                     hasBarePageExports = true
                     bareExportLoc = decl.loc
                   }
                 }
               }
             } else if (node.declaration.type === 'FunctionDeclaration') {
-              if (node.declaration.id && (node.declaration.id.name === 'paths' || node.declaration.id.name === 'server')) {
+              if (node.declaration.id && (node.declaration.id.name === 'paths' || (!isComponent && node.declaration.id.name === 'server'))) {
                 hasBarePageExports = true
                 bareExportLoc = node.declaration.id.loc
               }
@@ -189,7 +190,7 @@ export function parseScriptAST (context) {
               } else if (spec.local) {
                 exportedName = spec.local.type === 'Identifier' ? spec.local.name : String(spec.local.value)
               }
-              if (exportedName === 'paths' || exportedName === 'server') {
+              if (exportedName === 'paths' || (!isComponent && exportedName === 'server')) {
                 hasBarePageExports = true
                 bareExportLoc = spec.loc
               }
@@ -219,6 +220,208 @@ export function parseScriptAST (context) {
         } else if (node.type === 'ClassDeclaration') {
           if (node.id && node.id.type === 'Identifier') {
             extractPatternBindings(node.id, topLevelImports, false, 'local')
+          }
+        }
+      }
+    }
+
+    const processComponentProperty = (keyName, prop) => {
+      if (keyName === 'formAssociated' || keyName === 'formControl') {
+        if (!prop.value || prop.value.type !== 'Literal' || typeof prop.value.value !== 'boolean') {
+          const targetNode = prop.value || prop
+          const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
+          const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
+          context.diagnostics.push(createDiagnostic({
+            code: 'CORALITE-E107',
+            severity: 'error',
+            message: `Component option '${keyName}' must be a boolean.`,
+            filePath: context.filePath,
+            line,
+            column,
+            sourceCode: context.sourceCode,
+            cause: `'${keyName}' option must be a boolean literal (true or false).`
+          }))
+        }
+      }
+
+      if (keyName === 'listStrategy') {
+        if (prop.value && prop.value.type === 'Literal') {
+          if (prop.value.value !== 'full' && prop.value.value !== 'minimal') {
+            const targetNode = prop.value || prop
+            const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
+            const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
+            context.diagnostics.push(createDiagnostic({
+              code: 'CORALITE-E107',
+              severity: 'error',
+              message: "Component option 'listStrategy' must be 'full', 'minimal', or an object.",
+              filePath: context.filePath,
+              line,
+              column,
+              sourceCode: context.sourceCode,
+              cause: "'listStrategy' must be 'full', 'minimal', or an object with mode and key."
+            }))
+          }
+        }
+      }
+
+      if (keyName === 'onError') {
+        const val = prop.value
+        const isValidFn = val && (val.type === 'FunctionExpression' || val.type === 'ArrowFunctionExpression' || val.type === 'FunctionDeclaration' || val.type === 'Identifier')
+        if (!isValidFn) {
+          const targetNode = prop.value || prop
+          const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
+          const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
+          context.diagnostics.push(createDiagnostic({
+            code: 'CORALITE-E107',
+            severity: 'error',
+            message: "Component option 'onError' must be a function.",
+            filePath: context.filePath,
+            line,
+            column,
+            sourceCode: context.sourceCode,
+            cause: "'onError' error boundary option must be a function."
+          }))
+        }
+      }
+
+      if (TOP_LEVEL_CONFIG_KEYS.has(keyName)) {
+        collectTopLevelImportsOutsideClient(prop.value)
+      }
+
+      if (keyName === 'state') {
+        context.hasStateBlock = true
+        if (prop.value && prop.value.type === 'ObjectExpression') {
+          for (const sProp of prop.value.properties) {
+            if (sProp.type === 'Property') {
+              if (sProp.computed) {
+                context.hasUnresolvableState = true
+              } else {
+                const sName = getPropKeyName(sProp)
+                if (sName) {
+                  context.definedStateProps.add(sName)
+                  context.definedStateProps.add(kebabToCamel(sName))
+                } else {
+                  context.hasUnresolvableState = true
+                }
+              }
+            } else {
+              context.hasUnresolvableState = true
+            }
+          }
+        } else {
+          context.hasUnresolvableState = true
+        }
+      }
+
+      if (keyName === 'attributes' && prop.value && prop.value.type === 'ObjectExpression') {
+        for (const attrProp of prop.value.properties) {
+          if (attrProp.type === 'Property') {
+            const attrName = getPropKeyName(attrProp)
+            if (attrName) {
+              definedAttributes.add(attrName)
+              definedAttributes.add(kebabToCamel(attrName))
+            }
+          }
+        }
+      }
+
+      if (keyName === 'consume' && prop.value) {
+        if (prop.value.type === 'ArrayExpression') {
+          for (const el of prop.value.elements) {
+            if (el && el.type === 'Literal' && typeof el.value === 'string') {
+              const keyStr = el.value
+              const camelKey = kebabToCamel(keyStr)
+              definedConsumedKeys.add(keyStr)
+              definedConsumedKeys.add(camelKey)
+              definedServerProps.add(keyStr)
+              definedServerProps.add(camelKey)
+            }
+          }
+        } else if (prop.value.type === 'ObjectExpression') {
+          for (const cProp of prop.value.properties) {
+            if (cProp.type === 'Property') {
+              const cKey = getPropKeyName(cProp)
+              if (cKey) {
+                const camelKey = kebabToCamel(cKey)
+                definedConsumedKeys.add(cKey)
+                definedConsumedKeys.add(camelKey)
+                definedServerProps.add(cKey)
+                definedServerProps.add(camelKey)
+              }
+            }
+          }
+        }
+      }
+
+      if (keyName === 'server') {
+        context.hasServerBlock = true
+        if (
+          prop.value &&
+          (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression' || prop.value.type === 'FunctionDeclaration')
+        ) {
+          let hasReturn = false
+          walkJS(prop.value.body, {
+            ReturnStatement (retNode) {
+              hasReturn = true
+              if (retNode.argument && retNode.argument.type === 'ObjectExpression') {
+                for (const retProp of retNode.argument.properties) {
+                  if (retProp.type === 'Property') {
+                    if (retProp.computed) {
+                      context.hasUnresolvableServer = true
+                    } else {
+                      const propName = getPropKeyName(retProp)
+                      if (propName) {
+                        definedServerProps.add(propName)
+                        definedServerProps.add(kebabToCamel(propName))
+                        const targetNode = retProp.key || retProp
+                        serverPropLocations.set(propName, {
+                          line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+                          column: targetNode.loc ? targetNode.loc.start.column + 1 : 1
+                        })
+                      } else {
+                        context.hasUnresolvableServer = true
+                      }
+                    }
+                  } else {
+                    context.hasUnresolvableServer = true
+                  }
+                }
+              } else {
+                context.hasUnresolvableServer = true
+              }
+            }
+          })
+          if (!hasReturn) {
+            context.hasUnresolvableServer = true
+          }
+        } else {
+          context.hasUnresolvableServer = true
+        }
+      }
+
+      if (keyName === 'getters' && prop.value && prop.value.type === 'ObjectExpression') {
+        for (const getterProp of prop.value.properties) {
+          if (getterProp.type === 'Property') {
+            const gName = getPropKeyName(getterProp)
+            if (gName) {
+              definedGetters.add(gName)
+              const targetNode = getterProp.key || getterProp
+              getterLocations.set(gName, {
+                line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+                column: targetNode.loc ? targetNode.loc.start.column + 1 : 1
+              })
+            }
+          }
+        }
+      }
+
+      if (keyName === 'slots' && prop.value && prop.value.type === 'ObjectExpression') {
+        for (const slotProp of prop.value.properties) {
+          if (slotProp.type === 'Property') {
+            const slotName = getPropKeyName(slotProp)
+            if (slotName) {
+              definedSlots.add(slotName)
+            }
           }
         }
       }
@@ -277,30 +480,7 @@ export function parseScriptAST (context) {
               }))
             }
 
-            if (keyName === 'state') {
-              context.hasStateBlock = true
-              if (prop.value && prop.value.type === 'ObjectExpression') {
-                for (const sProp of prop.value.properties) {
-                  if (sProp.type === 'Property') {
-                    if (sProp.computed) {
-                      context.hasUnresolvableState = true
-                    } else {
-                      const sName = getPropKeyName(sProp)
-                      if (sName) {
-                        context.definedStateProps.add(sName)
-                        context.definedStateProps.add(kebabToCamel(sName))
-                      } else {
-                        context.hasUnresolvableState = true
-                      }
-                    }
-                  } else {
-                    context.hasUnresolvableState = true
-                  }
-                }
-              } else {
-                context.hasUnresolvableState = true
-              }
-            }
+
 
             if (keyName === 'server') {
               context.hasServerBlock = true
@@ -348,21 +528,6 @@ export function parseScriptAST (context) {
               }
             }
 
-            if (keyName === 'getters' && prop.value.type === 'ObjectExpression') {
-              for (const getterProp of prop.value.properties) {
-                if (getterProp.type === 'Property') {
-                  const gName = getPropKeyName(getterProp)
-                  if (gName) {
-                    definedGetters.add(gName)
-                    const targetNode = getterProp.key || getterProp
-                    getterLocations.set(gName, {
-                      line: targetNode.loc.start.line + scriptStartLine,
-                      column: targetNode.loc.start.column + 1
-                    })
-                  }
-                }
-              }
-            }
           }
         }
 
@@ -408,189 +573,144 @@ export function parseScriptAST (context) {
               }))
             }
 
-            if (keyName === 'formAssociated') {
-              if (!prop.value || prop.value.type !== 'Literal' || typeof prop.value.value !== 'boolean') {
-                const targetNode = prop.value || prop
-                const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
-                const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
-                context.diagnostics.push(createDiagnostic({
-                  code: 'CORALITE-E107',
-                  severity: 'error',
-                  message: "Component option 'formAssociated' must be a boolean.",
-                  filePath: context.filePath,
-                  line,
-                  column,
-                  sourceCode: context.sourceCode,
-                  cause: "'formAssociated' option must be a boolean literal (true or false)."
-                }))
-              }
-            }
+            processComponentProperty(keyName, prop)
+          }
+        }
+      }
+    })
 
-            if (keyName === 'onError') {
-              const val = prop.value
-              const isValidFn = val && (val.type === 'FunctionExpression' || val.type === 'ArrowFunctionExpression' || val.type === 'Identifier')
-              if (!isValidFn) {
-                const targetNode = prop.value || prop
-                const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
-                const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
-                context.diagnostics.push(createDiagnostic({
-                  code: 'CORALITE-E107',
-                  severity: 'error',
-                  message: "Component option 'onError' must be a function.",
-                  filePath: context.filePath,
-                  line,
-                  column,
-                  sourceCode: context.sourceCode,
-                  cause: "'onError' error boundary option must be a function."
-                }))
-              }
+    if (!context.configObj && ast && Array.isArray(ast.body)) {
+      const topLevelBindings = new Map()
+      for (const node of ast.body) {
+        if (node.type === 'VariableDeclaration') {
+          for (const decl of node.declarations) {
+            if (decl.id?.type === 'Identifier' && decl.init) {
+              topLevelBindings.set(decl.id.name, {
+                node: decl.init,
+                kind: node.kind,
+                loc: decl.loc
+              })
             }
+          }
+        } else if (node.type === 'FunctionDeclaration' && node.id?.name) {
+          topLevelBindings.set(node.id.name, {
+            node,
+            kind: 'function',
+            loc: node.loc
+          })
+        }
+      }
 
-            if (TOP_LEVEL_CONFIG_KEYS.has(keyName)) {
-              collectTopLevelImportsOutsideClient(prop.value)
-            }
-
-            if (keyName === 'state') {
-              context.hasStateBlock = true
-              if (prop.value && prop.value.type === 'ObjectExpression') {
-                for (const sProp of prop.value.properties) {
-                  if (sProp.type === 'Property') {
-                    if (sProp.computed) {
-                      context.hasUnresolvableState = true
-                    } else {
-                      const sName = getPropKeyName(sProp)
-                      if (sName) {
-                        context.definedStateProps.add(sName)
-                        context.definedStateProps.add(kebabToCamel(sName))
-                      } else {
-                        context.hasUnresolvableState = true
-                      }
-                    }
-                  } else {
-                    context.hasUnresolvableState = true
-                  }
+      for (const node of ast.body) {
+        if (node.type === 'ExportNamedDeclaration') {
+          if (node.declaration) {
+            if (node.declaration.type === 'FunctionDeclaration') {
+              const exportName = node.declaration.id?.name
+              if (exportName && ALLOWED_COMPONENT_CONFIG_KEYS.has(exportName)) {
+                if (exportName !== 'server' && exportName !== 'client' && exportName !== 'onError') {
+                  const targetNode = node.declaration.id || node.declaration
+                  context.diagnostics.push(createDiagnostic({
+                    code: 'CORALITE-E107',
+                    severity: 'error',
+                    message: `Component declaration "${exportName}" must use "export const", not "export function".`,
+                    filePath: context.filePath,
+                    line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+                    column: targetNode.loc ? targetNode.loc.start.column + 1 : 1,
+                    sourceCode: context.sourceCode,
+                    cause: `Declaration data "${exportName}" must be declared using export const.`
+                  }))
                 }
-              } else {
-                context.hasUnresolvableState = true
-              }
-            }
-
-            if (keyName === 'attributes' && prop.value.type === 'ObjectExpression') {
-              for (const attrProp of prop.value.properties) {
-                if (attrProp.type === 'Property') {
-                  const attrName = getPropKeyName(attrProp)
-                  if (attrName) {
-                    definedAttributes.add(attrName)
-                    definedAttributes.add(kebabToCamel(attrName))
-                  }
+                const prop = {
+                  type: 'Property',
+                  key: node.declaration.id,
+                  value: node.declaration,
+                  loc: node.declaration.loc,
+                  kind: 'init'
                 }
+                context.configProps.set(exportName, prop)
+                processComponentProperty(exportName, prop)
               }
-            }
-
-            if (keyName === 'consume') {
-              if (prop.value.type === 'ArrayExpression') {
-                for (const el of prop.value.elements) {
-                  if (el && el.type === 'Literal' && typeof el.value === 'string') {
-                    const keyStr = el.value
-                    const camelKey = kebabToCamel(keyStr)
-                    definedConsumedKeys.add(keyStr)
-                    definedConsumedKeys.add(camelKey)
-                    definedServerProps.add(keyStr)
-                    definedServerProps.add(camelKey)
+            } else if (node.declaration.type === 'VariableDeclaration') {
+              for (const decl of node.declaration.declarations) {
+                const exportName = decl.id?.type === 'Identifier' ? decl.id.name : null
+                if (exportName && ALLOWED_COMPONENT_CONFIG_KEYS.has(exportName)) {
+                  if (exportName === 'server' || exportName === 'client' || exportName === 'onError') {
+                    const targetNode = decl.id || decl
+                    context.diagnostics.push(createDiagnostic({
+                      code: 'CORALITE-E107',
+                      severity: 'error',
+                      message: `Component handler "${exportName}" must use "export function", not "export const".`,
+                      filePath: context.filePath,
+                      line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+                      column: targetNode.loc ? targetNode.loc.start.column + 1 : 1,
+                      sourceCode: context.sourceCode,
+                      cause: `Handler function "${exportName}" must be declared using export function.`
+                    }))
+                  } else if (node.declaration.kind !== 'const') {
+                    const targetNode = decl.id || decl
+                    context.diagnostics.push(createDiagnostic({
+                      code: 'CORALITE-E107',
+                      severity: 'error',
+                      message: `Component declaration "${exportName}" must use "export const".`,
+                      filePath: context.filePath,
+                      line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+                      column: targetNode.loc ? targetNode.loc.start.column + 1 : 1,
+                      sourceCode: context.sourceCode,
+                      cause: `Declaration data "${exportName}" must be declared using export const.`
+                    }))
                   }
-                }
-              } else if (prop.value.type === 'ObjectExpression') {
-                for (const cProp of prop.value.properties) {
-                  if (cProp.type === 'Property') {
-                    const cKey = getPropKeyName(cProp)
-                    if (cKey) {
-                      const camelKey = kebabToCamel(cKey)
-                      definedConsumedKeys.add(cKey)
-                      definedConsumedKeys.add(camelKey)
-                      definedServerProps.add(cKey)
-                      definedServerProps.add(camelKey)
-                    }
+                  const prop = {
+                    type: 'Property',
+                    key: decl.id,
+                    value: decl.init,
+                    loc: decl.loc,
+                    kind: 'init'
                   }
+                  context.configProps.set(exportName, prop)
+                  processComponentProperty(exportName, prop)
                 }
               }
             }
-
-            if (keyName === 'server') {
-              context.hasServerBlock = true
-              if (
-                prop.value &&
-                (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression')
-              ) {
-                let hasReturn = false
-                walkJS(prop.value.body, {
-                  ReturnStatement (retNode) {
-                    hasReturn = true
-                    if (retNode.argument && retNode.argument.type === 'ObjectExpression') {
-                      for (const retProp of retNode.argument.properties) {
-                        if (retProp.type === 'Property') {
-                          if (retProp.computed) {
-                            context.hasUnresolvableServer = true
-                          } else {
-                            const propName = getPropKeyName(retProp)
-                            if (propName) {
-                              definedServerProps.add(propName)
-                              definedServerProps.add(kebabToCamel(propName))
-                              const targetNode = retProp.key || retProp
-                              serverPropLocations.set(propName, {
-                                line: targetNode.loc.start.line + scriptStartLine,
-                                column: targetNode.loc.start.column + 1
-                              })
-                            } else {
-                              context.hasUnresolvableServer = true
-                            }
-                          }
-                        } else {
-                          context.hasUnresolvableServer = true
-                        }
-                      }
-                    } else {
-                      context.hasUnresolvableServer = true
-                    }
-                  }
-                })
-                if (!hasReturn) {
-                  context.hasUnresolvableServer = true
-                }
-              } else {
-                context.hasUnresolvableServer = true
+          } else if (node.specifiers) {
+            for (const spec of node.specifiers) {
+              let exportName = ''
+              if (spec.exported?.type === 'Identifier') {
+                exportName = spec.exported.name
+              } else if (spec.exported?.value) {
+                exportName = String(spec.exported.value)
               }
-            }
-
-            if (keyName === 'getters' && prop.value.type === 'ObjectExpression') {
-              for (const getterProp of prop.value.properties) {
-                if (getterProp.type === 'Property') {
-                  const gName = getPropKeyName(getterProp)
-                  if (gName) {
-                    definedGetters.add(gName)
-                    const targetNode = getterProp.key || getterProp
-                    getterLocations.set(gName, {
-                      line: targetNode.loc.start.line + scriptStartLine,
-                      column: targetNode.loc.start.column + 1
-                    })
-                  }
+              if (exportName && ALLOWED_COMPONENT_CONFIG_KEYS.has(exportName)) {
+                let localName = ''
+                if (spec.local?.type === 'Identifier') {
+                  localName = spec.local.name
+                } else if (spec.local?.value) {
+                  localName = String(spec.local.value)
                 }
-              }
-            }
-
-            if (keyName === 'slots' && prop.value.type === 'ObjectExpression') {
-              for (const slotProp of prop.value.properties) {
-                if (slotProp.type === 'Property') {
-                  const slotName = getPropKeyName(slotProp)
-                  if (slotName) {
-                    definedSlots.add(slotName)
+                const target = topLevelBindings.get(localName)
+                if (target) {
+                  const prop = {
+                    type: 'Property',
+                    key: spec.exported || spec.local,
+                    value: target.node,
+                    loc: spec.loc,
+                    kind: 'init'
                   }
+                  context.configProps.set(exportName, prop)
+                  processComponentProperty(exportName, prop)
                 }
               }
             }
           }
         }
       }
-    })
+
+      if (context.configProps.size > 0) {
+        context.configObj = {
+          type: 'ObjectExpression',
+          properties: Array.from(context.configProps.values())
+        }
+      }
+    }
 
     if (hasBarePageExports && !hasDefinePageCall) {
       const line = bareExportLoc ? bareExportLoc.start.line + scriptStartLine : scriptStartLine + 1

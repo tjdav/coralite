@@ -28,7 +28,75 @@ export function applySlotsFixes (ast, scriptContent) {
   const replacements = []
   const fixesApplied = []
 
+  const processSlotsObj = (slotsObj) => {
+    if (!slotsObj || slotsObj.type !== 'ObjectExpression') {
+      return
+    }
+    for (const prop of slotsObj.properties) {
+      if (prop.type !== 'Property') {
+        continue
+      }
+      const fnVal = prop.value
+      if (
+        fnVal &&
+        (fnVal.type === 'FunctionExpression' || fnVal.type === 'ArrowFunctionExpression')
+      ) {
+        const params = fnVal.params || []
+        if (params.length === 2) {
+          const p0 = params[0]
+          const p1 = params[1]
+
+          if (
+            p0.type === 'Identifier' &&
+            (p0.name === 'nodes' || p0.name === 'content') &&
+            p1.type === 'ObjectPattern' &&
+            p0.range &&
+            p1.range
+          ) {
+            const p0Name = p0.name
+            const [p1Start, p1End] = p1.range
+            const inner = scriptContent.slice(p1Start + 1, p1End - 1).trim()
+
+            let hasP0Key = false
+            for (const innerProp of p1.properties || []) {
+              const k = getPropKeyName(innerProp)
+              if (k === p0Name) {
+                hasP0Key = true
+                break
+              }
+            }
+
+            let newParamStr = ''
+            if (hasP0Key) {
+              newParamStr = `{ ${inner} }`
+            } else if (inner) {
+              newParamStr = `{ ${p0Name}, ${inner} }`
+            } else {
+              newParamStr = `{ ${p0Name} }`
+            }
+
+            replacements.push({
+              start: p0.range[0],
+              end: p1.range[1],
+              replacement: newParamStr,
+              description: `Rewrite slots function parameters to destructured context (${newParamStr})`
+            })
+          }
+        }
+      }
+    }
+  }
+
   walkAncestorJS(ast, {
+    ExportNamedDeclaration (node) {
+      if (node.declaration && node.declaration.type === 'VariableDeclaration') {
+        for (const decl of node.declaration.declarations) {
+          if (decl.id?.type === 'Identifier' && decl.id.name === 'slots' && decl.init?.type === 'ObjectExpression') {
+            processSlotsObj(decl.init)
+          }
+        }
+      }
+    },
     CallExpression (node) {
       if (
         node.callee.type === 'Identifier' &&
@@ -40,59 +108,7 @@ export function applySlotsFixes (ast, scriptContent) {
         const slotsProp = configObj.properties.find(p => getPropKeyName(p) === 'slots')
 
         if (slotsProp && slotsProp.type === 'Property' && slotsProp.value.type === 'ObjectExpression') {
-          for (const prop of slotsProp.value.properties) {
-            if (prop.type !== 'Property') {
-              continue
-            }
-            const fnVal = prop.value
-            if (
-              fnVal &&
-              (fnVal.type === 'FunctionExpression' || fnVal.type === 'ArrowFunctionExpression')
-            ) {
-              const params = fnVal.params || []
-              if (params.length === 2) {
-                const p0 = params[0]
-                const p1 = params[1]
-
-                if (
-                  p0.type === 'Identifier' &&
-                  (p0.name === 'nodes' || p0.name === 'content') &&
-                  p1.type === 'ObjectPattern' &&
-                  p0.range &&
-                  p1.range
-                ) {
-                  const p0Name = p0.name
-                  const [p1Start, p1End] = p1.range
-                  const inner = scriptContent.slice(p1Start + 1, p1End - 1).trim()
-
-                  let hasP0Key = false
-                  for (const innerProp of p1.properties || []) {
-                    const k = getPropKeyName(innerProp)
-                    if (k === p0Name) {
-                      hasP0Key = true
-                      break
-                    }
-                  }
-
-                  let newParamStr = ''
-                  if (hasP0Key) {
-                    newParamStr = `{ ${inner} }`
-                  } else if (inner) {
-                    newParamStr = `{ ${p0Name}, ${inner} }`
-                  } else {
-                    newParamStr = `{ ${p0Name} }`
-                  }
-
-                  replacements.push({
-                    start: p0.range[0],
-                    end: p1.range[1],
-                    replacement: newParamStr,
-                    description: `Rewrite slots function parameters to destructured context (${newParamStr})`
-                  })
-                }
-              }
-            }
-          }
+          processSlotsObj(slotsProp.value)
         }
       }
     }

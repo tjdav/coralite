@@ -136,6 +136,9 @@ function createClientSlotsHelper (element) {
  * @typedef {Object} CoraliteComponentOptions
  * @property {string} componentId - The unique identifier for the component.
  * @property {boolean} [formAssociated] - Whether element is form-associated custom element.
+ * @property {boolean} [formControl] - Whether element is a form control.
+ * @property {any} [listStrategy] - Array reconciliation strategy.
+ * @property {string} [reconcile] - Legacy reconciliation strategy.
  * @property {boolean} [useTemplateCloning] - Whether template cloning is enabled for this component.
  * @property {string} [compilerOptimizations] - Compiler optimization mode ('all' | 'none').
  * @property {Object|null} [_bindingTree] - Tree representation of binding paths for single-pass resolution.
@@ -3805,13 +3808,14 @@ export class CoraliteElement extends BaseElement {
         const proc = typeof process !== 'undefined' ? process : null
         /** @type {any} */
         const compOpts = this?.componentOptions
-        const reconcileMode = compOpts?.reconcile ||
-          win?.__coralite__?.reconcile ||
-          proc?.env?.CORALITE_RECONCILE ||
+        const rawStrategy = compOpts?.listStrategy || compOpts?.reconcile ||
+          win?.__coralite__?.listStrategy || win?.__coralite__?.reconcile ||
+          proc?.env?.CORALITE_LIST_STRATEGY || proc?.env?.CORALITE_RECONCILE ||
           'full'
+        const reconcileMode = typeof rawStrategy === 'string' ? rawStrategy : (rawStrategy?.mode || 'full')
 
         if (reconcileMode === 'minimal' && Array.isArray(oldVal) && Array.isArray(newVal)) {
-          const keyFn = compOpts?.key
+          const keyFn = (typeof rawStrategy === 'object' && rawStrategy?.key) || compOpts?.key
           const pattern = detectListPattern(oldVal, newVal, keyFn)
           if (pattern) {
             const applied = applyListPattern(this, key, pattern)
@@ -5004,7 +5008,7 @@ export class CoraliteElement extends BaseElement {
  * @returns {typeof CoraliteElement} A new CoraliteElement subclass.
  */
 export function createCoraliteClass (options, contextGetter = null, hooks = {}, hydrationData = null) {
-  const isFormAssociated = Boolean(options.formAssociated)
+  const isFormAssociated = Boolean(options.formControl ?? options.formAssociated)
 
   return class extends CoraliteElement {
     static formAssociated = isFormAssociated

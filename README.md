@@ -6,7 +6,7 @@ It leverages standard web technologies—HTML modules, Custom Elements, and stan
 
 ## Key Features
 
-* **True Native Web Components (Without the Boilerplate)**: Abandon the verbose `class extends HTMLElement` syntax. Coralite uses a clean, ergonomic `defineComponent` flat-options API (`attributes`, `server`, `getters`, `client`) that outputs true native Custom Elements.
+* **True Native Web Components (Without the Boilerplate)**: Abandon the verbose `class extends HTMLElement` syntax and wrapper boilerplate. Coralite components use standard top-level ES module named exports (`export function`, `export const`) outputting true native Custom Elements.
 * **Scoped CSS without Shadow DOM**: Shadow DOM notoriously breaks global CSS systems and creates accessibility barriers. Coralite completely bypasses this by using compiler-generated instance identifiers to perfectly scope your CSS in the Light DOM.
 * **Isomorphism Built-In (The Vanishing `server` Block)**: Fetch database or API records in the `server()` block during SSR. Coralite automatically serializes that data, hydrates it seamlessly into a unified reactive state on the client, and safely strips the `server()` code entirely from your browser bundle.
 * **Opt-Out Hydration**: For purely static sections, simply append the `no-hydration` attribute to your HTML tag. Coralite will render it on the server but skip client-side hydration completely, keeping your JavaScript bundle incredibly lean.

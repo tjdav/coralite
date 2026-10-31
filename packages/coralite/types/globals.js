@@ -25,6 +25,7 @@
  *
  * @typedef {Object} CoraliteRuntime
  * @property {any} [reconcile]
+ * @property {any} [listStrategy]
  * @property {any} [hydrationStore]
  * @property {(tag: string) => Promise<any>} [loadComponent]
  * @property {(el: Element) => Promise<void>} [upgrade]

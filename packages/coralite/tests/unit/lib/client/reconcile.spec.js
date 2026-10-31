@@ -265,5 +265,106 @@ describe('Reconcile List Patterns', () => {
 
       el.remove()
     })
+
+    it('listStrategy: minimal shorthand performs swap and bypasses observer', async () => {
+      const tagName = 'test-list-strat-' + Math.random().toString(36).substring(2, 9)
+      const ComponentClass = createCoraliteClass({
+        componentId: tagName,
+        listStrategy: 'minimal',
+        defaultValues: {
+          items: [
+            {
+              id: 1,
+              text: 'First'
+            },
+            {
+              id: 2,
+              text: 'Second'
+            },
+            {
+              id: 3,
+              text: 'Third'
+            }
+          ]
+        },
+        templateHTML: '<div ref="list"><div class="row" data-id="1">First</div><div class="row" data-id="2">Second</div><div class="row" data-id="3">Third</div></div>',
+        hydrationMap: {
+          refs: [{ name: 'list' }]
+        },
+        client ({ state, observe }) {
+          state.observerCount = 0
+          observe('items', () => {
+            state.observerCount++
+          })
+        }
+      })
+      customElements.define(tagName, ComponentClass)
+      const el = document.createElement(tagName)
+      document.body.appendChild(el)
+      await el.updateComplete
+
+      const listContainer = el.querySelector('[ref="list"]') || el.firstElementChild
+      const currentItems = el._state.items
+      // Swap items
+      el._state.items = [currentItems[1], currentItems[0], currentItems[2]]
+      await el.updateComplete
+
+      assert.strictEqual(listContainer.children[0].getAttribute('data-id'), '2')
+      assert.strictEqual(listContainer.children[1].getAttribute('data-id'), '1')
+      assert.strictEqual(el._state.observerCount, 0)
+      el.remove()
+    })
+
+    it('listStrategy: object form with custom key extractor', async () => {
+      const tagName = 'test-list-strat-key-' + Math.random().toString(36).substring(2, 9)
+      const ComponentClass = createCoraliteClass({
+        componentId: tagName,
+        listStrategy: {
+          mode: 'minimal',
+          key: (item) => item.uuid
+        },
+        defaultValues: {
+          items: [
+            {
+              uuid: 'u1',
+              text: 'First'
+            },
+            {
+              uuid: 'u2',
+              text: 'Second'
+            },
+            {
+              uuid: 'u3',
+              text: 'Third'
+            }
+          ]
+        },
+        templateHTML: '<div ref="list"><div class="row" data-id="u1">First</div><div class="row" data-id="u2">Second</div><div class="row" data-id="u3">Third</div></div>',
+        hydrationMap: {
+          refs: [{ name: 'list' }]
+        },
+        client ({ state, observe }) {
+          state.observerCount = 0
+          observe('items', () => {
+            state.observerCount++
+          })
+        }
+      })
+      customElements.define(tagName, ComponentClass)
+      const el = document.createElement(tagName)
+      document.body.appendChild(el)
+      await el.updateComplete
+
+      const listContainer = el.querySelector('[ref="list"]') || el.firstElementChild
+      const currentItems = el._state.items
+      // Swap items using custom uuid
+      el._state.items = [currentItems[1], currentItems[0], currentItems[2]]
+      await el.updateComplete
+
+      assert.strictEqual(listContainer.children[0].getAttribute('data-id'), 'u2')
+      assert.strictEqual(listContainer.children[1].getAttribute('data-id'), 'u1')
+      assert.strictEqual(el._state.observerCount, 0)
+      el.remove()
+    })
   })
 })

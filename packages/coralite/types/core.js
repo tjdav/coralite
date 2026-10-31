@@ -168,6 +168,7 @@
  * @property {boolean} [incremental=true] - Whether to skip rebuilding unchanged pages and components.
  * @property {'signal' | 'proxy'} [reactivity='signal'] - Reactivity mode.
  * @property {'full' | 'minimal'} [reconcile='full'] - Reconcile mode.
+ * @property {'full' | 'minimal'} [listStrategy='full'] - Reconciliation strategy.
  * @property {string} [projectRoot] - The root directory of the project.
  * @property {CoralitePath} [path] - Internal path mapping.
  * @property {{ port?: number, host?: string }} [server] - Script-specific server options.

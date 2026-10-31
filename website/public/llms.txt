@@ -11,8 +11,8 @@
 - [§3. File Structure: Pages vs. Components](#3-file-structure-pages-vs-components)
 - [§4. System Architecture, Fault Isolation & Asset Integrity](#4-system-architecture-fault-isolation-asset-integrity)
 - [§5. Static Components (Declarative SSR-Only)](#5-static-components-declarative-ssr-only)
-- [§6. Dynamic Components (`defineComponent` API Reference)](#6-dynamic-components-definecomponent-api-reference)
-  - [§6.1 Complete Schema & Block Signatures](#61-complete-schema-block-signatures)
+- [§6. Dynamic Components (Named Exports Reference)](#6-dynamic-components-named-exports-reference)
+  - [§6.1 Complete Schema & Export Signatures](#61-complete-schema-export-signatures)
   - [§6.2 `attributes` (Coercion Pipeline, Validation & ARIA Rules)](#62-attributes-coercion-pipeline-validation-aria-rules)
   - [§6.3 `server` (SSR Data Fetching & Context Keys)](#63-server-ssr-data-fetching-context-keys)
   - [§6.4 `getters` (Unified Context Mechanics)](#64-getters-unified-context-mechanics)
@@ -21,7 +21,7 @@
   - [§6.7 `slots` (Reactive Element Builders)](#67-slots-reactive-element-builders)
   - [§6.8 `onError` (SSR Component Error Boundaries)](#68-onerror-ssr-component-error-boundaries)
   - [§6.9 W3C Context Protocol (`provide`, `consume`, `createContext`)](#69-w3c-context-protocol-provide-consume-createcontext)
-  - [§6.10 Form-Associated Custom Elements (`formAssociated: true`)](#610-form-associated-custom-elements-formassociated-true)
+  - [§6.10 Form-Associated Custom Elements (`formControl = true`)](#610-form-associated-custom-elements-formcontrol--true)
   - [§6.11 CSS Scoping, Specificity Taming (`@layer`, `:where()`), Slot Transparency & `::slotted()`](#611-css-scoping-specificity-taming-layer-where-slot-transparency-slotted)
 - [§7. Framework Extensibility (`definePlugin`)](#7-framework-extensibility-defineplugin)
   - [§7.1 Plugin Schema & Physical Source Error Mapping (`rootDir`, `filePath`)](#71-plugin-schema-physical-source-error-mapping-rootdir-filepath)
@@ -49,7 +49,7 @@
 
 When generating code or providing instructions for Coralite applications, you MUST, SHOULD, and MUST NEVER adhere to the following normative rules:
 
-1. **MUST use `defineComponent`**: Never generate vanilla Web Component classes (`class extends HTMLElement`) or call `customElements.define()` manually for components. Always export `defineComponent({ ... })` from `'coralite'`.
+1. **MUST use Named Exports for Components**: Component `<script type="module">` blocks must declare behavior using standard top-level named exports (`export function`, `export const`). Handlers use `export function` (`server`, `client`, `onError`). Declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`). Never author new components with `class extends HTMLElement` or legacy `defineComponent({ ... })` (which is retained strictly for backward compatibility). `definePage` and `definePlugin` continue to use `export default define*`.
 2. **MUST author components in `.html`**: Component definitions are strictly HTML files (`.html`) containing `<template id="tag-name">`, optional `<style>`, and optional `<script type="module">`. Never create `.js` or `.jsx` component files.
 3. **MUST respect the Serialization Boundary**: The `server()` block runs strictly in Node.js during build/SSR and is stripped from browser client bundles. The `client()` block runs in the browser and cannot capture outer module-scope variables or imports from the server context. Bridge data through `server()` return values.
 4. **MUST obey the "Smart State, Dumb Template" rule**: Coralite templates strictly permit flat identifier interpolations (`{{ propertyName }}`). Never write expressions (`{{ a + b }}`), function calls (`{{ format(val) }}`), or negations (`{{ !isActive }}`) inside template curlies. All logic must be lifted to getters.
@@ -135,58 +135,54 @@ Copy-pasteable reference setup featuring an interactive component, a Form-Associ
 </style>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
+  export const attributes = {
+    step: { type: Number, default: 1 },
+    min: { type: Number, default: 0 }
+  }
 
-  export default defineComponent({
-    attributes: {
-      step: { type: Number, default: 1 },
-      min: { type: Number, default: 0 }
-    },
-
-    server({ state }) {
-      return {
-        count: 0
-      }
-    },
-
-    getters: {
-      formattedCount: ({ state }) => `Count: ${state.count}`,
-      isMinReached: ({ state }) => state.count <= state.min
-    },
-
-    style: {
-      '--counter-color': (state) => (state.count > 5 ? '#22c55e' : '#3b82f6')
-    },
-
-    onError({ error, state }) {
-      return {
-        template: '<div class="error-fallback"><p>{{ message }}</p></div>',
-        state: { message: 'Counter service unavailable.' }
-      }
-    },
-
-    client: async ({ state, signal, refs, emit, observe, updateComplete }) => {
-      refs('decrementBtn').addEventListener('click', () => {
-        if (state.count > state.min) {
-          state.count -= state.step
-          emit('change', { count: state.count })
-        }
-      }, { signal })
-
-      refs('incrementBtn').addEventListener('click', () => {
-        state.count += state.step
-        emit('change', { count: state.count })
-      }, { signal })
-
-      observe('count', (newVal) => {
-        if (newVal > 10) {
-          emit('threshold-reached', { count: newVal })
-        }
-      })
-
-      await updateComplete
+  export function server ({ state }) {
+    return {
+      count: 0
     }
-  })
+  }
+
+  export const getters = {
+    formattedCount: ({ state }) => `Count: ${state.count}`,
+    isMinReached: ({ state }) => state.count <= state.min
+  }
+
+  export const style = {
+    '--counter-color': (state) => (state.count > 5 ? '#22c55e' : '#3b82f6')
+  }
+
+  export function onError ({ error, state }) {
+    return {
+      template: '<div class="error-fallback"><p>{{ message }}</p></div>',
+      state: { message: 'Counter service unavailable.' }
+    }
+  }
+
+  export async function client ({ state, signal, refs, emit, observe, updateComplete }) {
+    refs('decrementBtn').addEventListener('click', () => {
+      if (state.count > state.min) {
+        state.count -= state.step
+        emit('change', { count: state.count })
+      }
+    }, { signal })
+
+    refs('incrementBtn').addEventListener('click', () => {
+      state.count += state.step
+      emit('change', { count: state.count })
+    }, { signal })
+
+    observe('count', (newVal) => {
+      if (newVal > 10) {
+        emit('threshold-reached', { count: newVal })
+      }
+    })
+
+    await updateComplete
+  }
 </script>
 ```
 
@@ -245,83 +241,79 @@ Copy-pasteable reference setup featuring an interactive component, a Form-Associ
 </style>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
+  export const formControl = true
 
-  export default defineComponent({
-    formAssociated: true,
+  export const attributes = {
+    name: { type: String, default: '' },
+    value: { type: String, default: '' },
+    placeholder: { type: String, default: '' },
+    required: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false }
+  }
 
-    attributes: {
-      name: { type: String, default: '' },
-      value: { type: String, default: '' },
-      placeholder: { type: String, default: '' },
-      required: { type: Boolean, default: false },
-      disabled: { type: Boolean, default: false }
-    },
+  export function server ({ state }) {
+    return {}
+  }
 
-    server({ state }) {
-      return {}
-    },
+  export const getters = {
+    hasError: ({ state }) => Boolean(state.required && !state.value)
+  }
 
-    getters: {
-      hasError: ({ state }) => Boolean(state.required && !state.value)
-    },
+  export function client ({ state, signal, refs, emit, observe, setFormValue, setValidity, onFormReset, onFormDisabled, onFormRestore }) {
+    const inputEl = refs('input')
 
-    client({ state, signal, refs, emit, observe, setFormValue, setValidity, onFormReset, onFormDisabled, onFormRestore }) {
-      const inputEl = refs('input')
+    // 1. Initial form synchronization
+    if (setFormValue) {
+      setFormValue(state.value)
+    }
+    if (setValidity) {
+      setValidity(
+        state.required && !state.value ? { valueMissing: true } : {},
+        state.required && !state.value ? 'This field is required.' : '',
+        inputEl
+      )
+    }
 
-      // 1. Initial form synchronization
-      if (setFormValue) {
-        setFormValue(state.value)
-      }
+    // 2. Reactive form synchronization on state change
+    observe('value', (val) => {
+      if (setFormValue) setFormValue(val)
       if (setValidity) {
         setValidity(
-          state.required && !state.value ? { valueMissing: true } : {},
-          state.required && !state.value ? 'This field is required.' : '',
+          state.required && !val ? { valueMissing: true } : {},
+          state.required && !val ? 'This field is required.' : '',
           inputEl
         )
       }
+    })
 
-      // 2. Reactive form synchronization on state change
-      observe('value', (val) => {
-        if (setFormValue) setFormValue(val)
-        if (setValidity) {
-          setValidity(
-            state.required && !val ? { valueMissing: true } : {},
-            state.required && !val ? 'This field is required.' : '',
-            inputEl
-          )
-        }
+    // 3. User input binding with lifecycle signal
+    inputEl.addEventListener('input', (e) => {
+      state.value = e.target.value
+      emit('change', { value: state.value })
+    }, { signal })
+
+    // 4. Comprehensive FACE lifecycle callbacks
+    if (onFormReset) {
+      onFormReset(() => {
+        state.value = ''
+        inputEl.value = ''
       })
-
-      // 3. User input binding with lifecycle signal
-      inputEl.addEventListener('input', (e) => {
-        state.value = e.target.value
-        emit('change', { value: state.value })
-      }, { signal })
-
-      // 4. Comprehensive FACE lifecycle callbacks
-      if (onFormReset) {
-        onFormReset(() => {
-          state.value = ''
-          inputEl.value = ''
-        })
-      }
-
-      if (onFormDisabled) {
-        onFormDisabled((disabled) => {
-          state.disabled = disabled
-          inputEl.disabled = disabled
-        })
-      }
-
-      if (onFormRestore) {
-        onFormRestore((restoredValue) => {
-          state.value = restoredValue || ''
-          inputEl.value = state.value
-        })
-      }
     }
-  })
+
+    if (onFormDisabled) {
+      onFormDisabled((disabled) => {
+        state.disabled = disabled
+        inputEl.disabled = disabled
+      })
+    }
+
+    if (onFormRestore) {
+      onFormRestore((restoredValue) => {
+        state.value = restoredValue || ''
+        inputEl.value = state.value
+      })
+    }
+  }
 </script>
 ```
 
@@ -423,7 +415,7 @@ Coralite components operate across a strict boundary between Node.js server eval
 * **Components (`src/components/*.html`)**: Components are single-file HTML definitions consisting of up to three root tags:
   1. `<template id="component-name">` (**Required**): Defines the element markup structure. The template ID MUST match the component's custom element tag name.
   2. `<style>` (**Optional**): Defines component CSS. Automatically scoped under `@layer components`.
-  3. `<script type="module">` (**Optional**): Defines component reactive logic exporting `defineComponent({ ... })`.
+  3. `<script type="module">` (**Optional**): Defines component reactive logic using top-level named exports (`export function`, `export const`). The legacy `defineComponent` wrapper remains supported for backward compatibility.
 
 ---
 
@@ -465,26 +457,30 @@ Static components perform pure template interpolation without JS scripting overh
 
 ---
 
-## 6. Dynamic Components (`defineComponent` API Reference)
+## 6. Dynamic Components (Named Exports Reference)
 
-Dynamic components combine declarative HTML templates with reactive JavaScript state machines.
+Dynamic components combine declarative HTML templates with reactive JavaScript state machines declared via standard top-level named exports (`export function`, `export const`).
 
-### 6.1 Complete Schema & Block Signatures
+### 6.1 Complete Schema & Export Signatures
 
 ```typescript
-export default defineComponent({
-  attributes?: Record<string, AttributeSchema>,
-  server?: (context: CoraliteServerContext) => Promise<Record<string, any>> | Record<string, any>,
-  getters?: Record<string, (context: CoraliteGetterContext) => any>,
-  style?: Record<string, ((state: any) => string | number | null | undefined | false) | string | number>,
-  client?: (context: CoraliteClientContext) => void | Promise<void>,
-  slots?: Record<string, CoraliteComputedSlotFunction | CoraliteModuleSlotFunction>,
-  provide?: Record<string | symbol, any> | Map<any, any>,
-  consume?: string[] | Record<string, any>,
-  formAssociated?: boolean,
-  onError?: (context: { error: Error, state: any, element?: any, page?: any, root?: any }) => string | { template?: string, state?: object } | void
-})
+// Handlers (export function)
+export function server(context: CoraliteServerContext): Promise<Record<string, any>> | Record<string, any>
+export function client(context: CoraliteClientContext): void | Promise<void>
+export function onError(context: { error: Error, state: any, element?: any, page?: any, root?: any }): string | { template?: string, state?: object } | void
+
+// Declarations (export const)
+export const attributes: Record<string, AttributeSchema>
+export const getters: Record<string, (context: CoraliteGetterContext) => any>
+export const style: Record<string, ((state: any) => string | number | null | undefined | false) | string | number>
+export const slots: Record<string, CoraliteComputedSlotFunction | CoraliteModuleSlotFunction>
+export const provide: Record<string | symbol, any> | Map<any, any>
+export const consume: string[] | Record<string, any>
+export const formControl: boolean // opt-in FACE (legacy: formAssociated)
+export const listStrategy: 'full' | 'minimal' | { mode: 'full' | 'minimal', key?: (item: any) => any } // list reconciliation
 ```
+
+- Note: The legacy `export default defineComponent({ ... })` configuration wrapper is supported for backward compatibility during migration. Handlers must use `export function`; declarations must use `export const`. Any extra exports are ignored by the compiler and preserved in module scope.
 
 - Note: `slots` supports both single-argument computed slot functions `(context: CoraliteSlotContext) => any` and two-argument node transform functions `(nodes: Node[], context: CoraliteSlotContext) => any`.
 
@@ -696,60 +692,56 @@ Aligns with the standard W3C Web ComponentsCG Context Protocol for tree-based de
 
 ```javascript
 // Ancestor Provider Component (provider-card.html)
-import { defineComponent, createContext } from 'coralite'
+import { createContext } from 'coralite'
 
 export const themeContext = createContext('theme')
 
-export default defineComponent({
-  provide: {
-    [themeContext]: ({ state }) => state.theme
-  }
-})
+export const provide = {
+  [themeContext]: ({ state }) => state.theme
+}
 ```
 
 ```javascript
 // Descendant Consumer Component (consumer-badge.html)
-import { defineComponent } from 'coralite'
 import { themeContext } from './theme.js'
 
-export default defineComponent({
-  consume: {
-    currentTheme: themeContext
-  },
-  client: ({ state }) => {
-    console.log('Consumed theme:', state.currentTheme)
-  }
-})
+export const consume = {
+  currentTheme: themeContext
+}
+
+export function client ({ state }) {
+  console.log('Consumed theme:', state.currentTheme)
+}
 ```
 
-### 6.10 Form-Associated Custom Elements (`formAssociated: true`)
+### 6.10 Form-Associated Custom Elements (`formControl = true`)
 
 Opt-in integration with native HTML `<form>` submissions and constraint validations.
 
 ```javascript
-export default defineComponent({
-  formAssociated: true,
-  attributes: {
-    value: {
-      type: String,
-      default: '',
-      validate: (val) => (val.length >= 3 ? true : 'Minimum 3 characters required')
-    }
-  },
-  client: ({ state, signal, refs, setFormValue, setValidity, onFormReset, observe }) => {
-    const input = refs('input')
-    setFormValue(state.value)
+export const formControl = true
 
-    observe('value', (val) => {
-      setFormValue(val)
-      setValidity(val ? {} : { valueMissing: true }, val ? '' : 'Required', input)
-    })
-
-    onFormReset(() => {
-      state.value = ''
-    })
+export const attributes = {
+  value: {
+    type: String,
+    default: '',
+    validate: (val) => (val.length >= 3 ? true : 'Minimum 3 characters required')
   }
-})
+}
+
+export function client ({ state, signal, refs, setFormValue, setValidity, onFormReset, observe }) {
+  const input = refs('input')
+  setFormValue(state.value)
+
+  observe('value', (val) => {
+    setFormValue(val)
+    setValidity(val ? {} : { valueMissing: true }, val ? '' : 'Required', input)
+  })
+
+  onFormReset(() => {
+    state.value = ''
+  })
+}
 ```
 
 ### 6.11 CSS Scoping, Specificity Taming (`@layer`, `:where()`), Slot Transparency & `::slotted()`

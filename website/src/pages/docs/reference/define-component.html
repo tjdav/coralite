@@ -2,84 +2,104 @@
 <html lang="en">
 
 <head>
-  <coralite-meta no-hydration title="defineComponent API Reference - Coralite Documentation"
-    description="Strict API signatures, arguments, and return types for the defineComponent core plugin."></coralite-meta>
+  <coralite-meta no-hydration title="Component API Reference (Named Exports & defineComponent) - Coralite Documentation"
+    description="Strict API signatures, arguments, and return types for Coralite Component Named Exports and defineComponent."></coralite-meta>
 </head>
 
 <body>
   <coralite-navbar></coralite-navbar>
 
   <main class="container content">
-    <h1 class="display">defineComponent API Reference</h1>
+    <h1 class="display">Component API Reference</h1>
 
-    <p>This document details the exact API signatures, options, and types for Coralite's core <code>defineComponent</code> plugin.</p>
+    <p>This document details the exact API signatures, options, and types for Coralite Web Components. Components author their behavior using top-level <strong>Named Exports</strong> in a <code>&lt;script type="module"&gt;</code> block. The legacy <code>defineComponent</code> wrapper function remains supported for backward compatibility.</p>
 
     <p><em>For a conceptual guide on how to use dynamic components, see the <a href="/docs/guide/components.html#dynamic-components">Components Guide</a>.</em></p>
 
-    <coralite-heading level="2" text="Signature"></coralite-heading>
+    <coralite-alert type="tip">
+      <strong>✨ Named Exports Migration Guide</strong>
+      <p>
+        Coralite components declare behaviors via top-level named exports:
+      </p>
+      <ul>
+        <li><strong>Handler Functions:</strong> <code>export function server(ctx)</code>, <code>export function client(ctx)</code>, <code>export function onError(ctx)</code></li>
+        <li><strong>Declarations:</strong> <code>export const attributes = {}</code>, <code>export const getters = {}</code>, <code>export const style = {}</code>, <code>export const slots = {}</code>, <code>export const provide = ...</code>, <code>export const consume = ...</code>, <code>export const formControl = true</code>, <code>export const listStrategy = ...</code></li>
+      </ul>
+      <p>
+        <strong>Renamed & Consolidated Keys:</strong>
+        <code>formAssociated</code> has been renamed to <code>formControl</code> (matching user mental model).
+        <code>reconcile</code> and <code>key</code> have been folded into <code>listStrategy</code>.
+        The unused <code>state</code> block has been removed.
+        Any auxiliary exports (e.g. helper functions or constants) are ignored by the compiler and preserved in module scope.
+      </p>
+      <p>
+        <strong>defineComponent Compatibility:</strong> The <code>export default defineComponent({ ... })</code> syntax continues to work seamlessly during the transition period. If a component file defines both, <code>defineComponent</code> takes precedence.
+      </p>
+    </coralite-alert>
 
-    <coralite-code-highlight language="typescript">
-function defineComponent(options: DefineComponentOptions): PluginDefinition
-    </coralite-code-highlight>
+    <coralite-heading level="2" text="Export Contract & Options"></coralite-heading>
 
-    <coralite-heading level="2" text="Options Object (DefineComponentOptions)"></coralite-heading>
-
-    <p>The <code>defineComponent</code> function accepts a single configuration object with the following isolated blocks. <strong>Note:</strong> All components MUST have a hyphen in their name (e.g., <code>&lt;my-component&gt;</code>).</p>
+    <p>The compiler recognizes the following 11 component export keys. <strong>Note:</strong> All components MUST have a hyphen in their name (e.g., <code>&lt;my-component&gt;</code>).</p>
 
     <coralite-table>
       <tr slot="head">
-        <th>Property</th>
-        <th>Type</th>
+        <th>Export / Option</th>
+        <th>Form &amp; Type</th>
         <th>Description</th>
       </tr>
       <tr slot="body">
         <td><code>attributes</code></td>
-        <td><code>Record&lt;string, AttributeSchema&gt;</code></td>
+        <td><code>export const attributes: Record&lt;string, AttributeSchema&gt;</code></td>
         <td>Defines and coerces HTML attributes into JS primitives.</td>
       </tr>
       <tr slot="body">
         <td><code>server</code></td>
-        <td><code>(context: CoraliteServerContext) => Promise&lt;Record&lt;string, any&gt;&gt;</code></td>
-        <td>A server-side async function for fetching initial state. Stripped from the client bundle. Formerly known as <code>data</code>.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>getters</code></td>
-        <td><code>Record&lt;string, (context: CoraliteGetterContext) => any&gt;</code></td>
-        <td>Pure functions for derived state. Receives single context object parameter <code>{ state, root, refs, signal }</code>.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>style</code></td>
-        <td><code>Record&lt;string, ((state: ReadonlyState) => string | number | null | undefined | false) | string | number&gt;</code></td>
-        <td>Declarative, reactive CSS properties and CSS Custom Properties (<code>--*</code>).</td>
+        <td><code>export function server(ctx: CoraliteServerContext): Promise&lt;Record&lt;string, any&gt;&gt; | Record&lt;string, any&gt;</code></td>
+        <td>Server-side async function for fetching initial state at build time. Stripped from client bundle.</td>
       </tr>
       <tr slot="body">
         <td><code>client</code></td>
-        <td><code>(context: CoraliteScriptContext) => void</code></td>
-        <td>The client-side controller. Receives a read/write state proxy. Formerly known as <code>script</code>.</td>
+        <td><code>export function client(ctx: CoraliteClientContext): void | Promise&lt;void&gt;</code></td>
+        <td>Client-side controller. Receives read/write state proxy, DOM refs, and reactive observers. External modules must be loaded with dynamic <code>await import()</code>.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>getters</code></td>
+        <td><code>export const getters: Record&lt;string, (ctx: CoraliteGetterContext) => any&gt;</code></td>
+        <td>Pure functions for derived state. Receives single context object parameter <code>{ state, root, refs, signal, ... }</code>. Must destructure context.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>style</code></td>
+        <td><code>export const style: Record&lt;string, ((state: ReadonlyState) => string | number | null | undefined | false) | string | number&gt;</code></td>
+        <td>Declarative, reactive CSS properties and CSS Custom Properties (<code>--*</code>). Functions receive <code>state</code> directly and must be synchronous.</td>
       </tr>
       <tr slot="body">
         <td><code>slots</code></td>
-        <td><code>Record&lt;string, CoraliteModuleSlotFunction&gt;</code></td>
+        <td><code>export const slots: Record&lt;string, CoraliteModuleSlotFunction&gt;</code></td>
         <td>Functions for processing and transforming slot content.</td>
       </tr>
       <tr slot="body">
-        <td><code>formAssociated</code></td>
-        <td><code>boolean</code></td>
+        <td><code>formControl</code><br><small>(legacy: <code>formAssociated</code>)</small></td>
+        <td><code>export const formControl = true</code></td>
         <td>Opt-in flag enabling Form-Associated Custom Elements (FACE). Attaches <code>ElementInternals</code> and integrates with standard HTML forms.</td>
       </tr>
       <tr slot="body">
+        <td><code>listStrategy</code><br><small>(legacy: <code>reconcile</code> / <code>key</code>)</small></td>
+        <td><code>export const listStrategy: 'full' | 'minimal' | { mode: 'full' | 'minimal', key?: (item: any) => any }</code></td>
+        <td>Array mutation reconciliation strategy. Controls full re-render vs minimal pattern-matched DOM operations.</td>
+      </tr>
+      <tr slot="body">
         <td><code>provide</code></td>
-        <td><code>Map&lt;any, any&gt; | Record&lt;string | symbol, any&gt;</code></td>
+        <td><code>export const provide: Map&lt;any, any&gt; | Record&lt;string | symbol, any&gt;</code></td>
         <td>W3C context provider map or object providing context down the DOM tree.</td>
       </tr>
       <tr slot="body">
         <td><code>consume</code></td>
-        <td><code>string[] | Record&lt;string, any&gt;</code></td>
+        <td><code>export const consume: string[] | Record&lt;string, any&gt;</code></td>
         <td>W3C context consumer declaration subscribing to context provided by an ancestor.</td>
       </tr>
       <tr slot="body">
         <td><code>onError</code></td>
-        <td><code>(context: { error: Error, state: Record&lt;string, any&gt;, element?: any, page?: any, root?: any }) => string | { template?: string, state?: Record&lt;string, any&gt; } | void</code></td>
+        <td><code>export function onError(ctx: { error: Error, state: Record&lt;string, any&gt;, element?: any, page?: any, root?: any }): string | { template?: string, state?: Record&lt;string, any&gt; } | void</code></td>
         <td>Component-level error boundary hook invoked on SSR rendering failures in production mode.</td>
       </tr>
     </coralite-table>
@@ -405,7 +425,7 @@ client: ({ state, signal, refs, observe, emit }) => {
       <tr slot="body">
         <td><code>internals</code></td>
         <td><code>ElementInternals | null</code></td>
-        <td>The native <code>ElementInternals</code> instance attached when <code>formAssociated: true</code> is configured (<code>null</code> otherwise).</td>
+        <td>The native <code>ElementInternals</code> instance attached when <code>formControl: true</code> (or legacy <code>formAssociated: true</code>) is configured (<code>null</code> otherwise).</td>
       </tr>
       <tr slot="body">
         <td><code>setFormValue</code></td>
@@ -499,38 +519,38 @@ slots: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="2" text="7. formAssociated (Form-Associated Custom Elements)"></coralite-heading>
-    <p>Coralite provides first-class, standard-aligned support for native Web Component <strong>Form-Associated Custom Elements (FACE)</strong>. By configuring <code>formAssociated: true</code> in <code>defineComponent</code>, your custom element integrates directly with standard HTML <code>&lt;form&gt;</code> submission, <code>FormData</code> extraction, constraint validation, form reset cycles, and <code>&lt;fieldset disabled&gt;</code> cascading with zero third-party dependencies.</p>
+    <span id="7-formassociated-form-associated-custom-elements"></span>
+    <coralite-heading level="2" text="7. formControl (Form-Associated Custom Elements)"></coralite-heading>
+    <p>Coralite provides first-class, standard-aligned support for native Web Component <strong>Form-Associated Custom Elements (FACE)</strong>. By exporting <code>formControl = true</code> (legacy: <code>formAssociated: true</code> in <code>defineComponent</code>), your custom element integrates directly with standard HTML <code>&lt;form&gt;</code> submission, <code>FormData</code> extraction, constraint validation, form reset cycles, and <code>&lt;fieldset disabled&gt;</code> cascading with zero third-party dependencies.</p>
 
     <coralite-code-highlight language="javascript">
-import { defineComponent } from 'coralite'
+// Enables FACE lifecycle and attachInternals()
+export const formControl = true
 
-export default defineComponent({
-  formAssociated: true, // Enables FACE lifecycle and attachInternals()
-  attributes: {
-    name: String,
-    value: {
-      type: String,
-      default: '',
-      validate: (val) => (!val || val.length >= 3) || 'Value must be at least 3 characters'
-    },
-    disabled: Boolean
+export const attributes = {
+  name: String,
+  value: {
+    type: String,
+    default: '',
+    validate: (val) => (!val || val.length >= 3) || 'Value must be at least 3 characters'
   },
-  client: ({ state, setFormValue, onFormReset, onFormDisabled }) => {
-    // 1. Form value automatically synchronizes with state.value
-    // Calling setFormValue(customVal) manually overrides default serialization if needed.
+  disabled: Boolean
+}
 
-    // 2. Form reset hook: restores initial attribute/default snapshots
-    onFormReset(() => {
-      console.log('Form was reset!')
-    })
+export function client ({ state, setFormValue, onFormReset, onFormDisabled }) {
+  // 1. Form value automatically synchronizes with state.value
+  // Calling setFormValue(customVal) manually overrides default serialization if needed.
 
-    // 3. Fieldset disabled cascading
-    onFormDisabled((disabled) => {
-      console.log('Fieldset disabled state changed to:', disabled)
-    })
-  }
-})
+  // 2. Form reset hook: restores initial attribute/default snapshots
+  onFormReset(() => {
+    console.log('Form was reset!')
+  })
+
+  // 3. Fieldset disabled cascading
+  onFormDisabled((disabled) => {
+    console.log('Fieldset disabled state changed to:', disabled)
+  })
+}
     </coralite-code-highlight>
 
     <coralite-heading level="3" text="Opt-in Policy & Zero Platform Pollution"></coralite-heading>
@@ -574,18 +594,39 @@ export default defineComponent({
     </ul>
 
     <coralite-heading level="2" text="8. onError (Component Error Boundary)"></coralite-heading>
-    <p>The <code>onError</code> block provides component-level fault isolation for production rendering. If component script evaluation, getter computation, slot rendering, or template processing throws an error during SSR in <code>mode: 'production'</code>, Coralite invokes <code>onError</code> to render fallback UI gracefully without destroying the host page.</p>
+    <p>The <code>onError</code> handler provides component-level fault isolation for production rendering. If component script evaluation, getter computation, slot rendering, or template processing throws an error during SSR in <code>mode: 'production'</code>, Coralite invokes <code>onError</code> to render fallback UI gracefully without destroying the host page.</p>
 
     <coralite-code-highlight language="javascript">
-onError({ error, state, element, page, root }) {
-    return {
-        template: '<div class="component-fallback"><p>{{ message }}</p></div>',
-        state: { message: 'Content temporarily unavailable' }
-    }
+export function onError ({ error, state, element, page, root }) {
+  return {
+    template: '<div class="component-fallback"><p>{{ message }}</p></div>',
+    state: { message: 'Content temporarily unavailable' }
+  }
 }
     </coralite-code-highlight>
 
     <p>When an object with <code>{ template, state }</code> is returned, the provided <code>state</code> properties are shallow-merged into the component state prior to parsing the fallback template string. Fallback HTML renders with <code>noHydration: true</code> and stripped <code>data-cid</code> hydration markers so browser clients do not attempt to hydrate failed SSR components. In development and testing modes (or if <code>onError</code> itself throws), errors bubble up to preserve immediate developer visibility and test assertion contracts.</p>
+
+    <coralite-heading level="2" text="9. listStrategy (Array Reconciliation)"></coralite-heading>
+    <p>The <code>listStrategy</code> export controls how array state changes are reconciled with the DOM. It replaces the former <code>reconcile</code> and <code>key</code> options from <code>defineComponent</code>.</p>
+
+    <p><strong>Modes:</strong></p>
+    <ul>
+      <li><code>'full'</code> (default): Performs full re-rendering of the list template whenever the array mutates. Same as omitting the export.</li>
+      <li><code>'minimal'</code>: Pattern-matches array operations (push, pop, shift, unshift, splice, swap, clear) and applies surgical, minimal DOM updates.</li>
+      <li><strong>Object form with key extractor:</strong> <code>{ mode: 'minimal', key: (item) => item.uuid }</code>. For collections where items don't have standard <code>id</code> or <code>key</code> properties, specify a custom key function.</li>
+    </ul>
+
+    <coralite-code-highlight language="javascript">
+// Shorthand minimal reconciliation
+export const listStrategy = 'minimal'
+
+// Object form with custom key extractor
+export const listStrategy = {
+  mode: 'minimal',
+  key: (item) => item.uuid
+}
+    </coralite-code-highlight>
 
   </main>
   <coralite-footer></coralite-footer>

@@ -17,7 +17,9 @@ export const ALLOWED_COMPONENT_CONFIG_KEYS = new Set([
   'consume',
   'client',
   'formAssociated',
+  'formControl',
   'reconcile',
+  'listStrategy',
   'key',
   'onError'
 ])
@@ -30,7 +32,9 @@ export const TOP_LEVEL_CONFIG_KEYS = new Set([
   'provide',
   'consume',
   'formAssociated',
+  'formControl',
   'reconcile',
+  'listStrategy',
   'key',
   'onError'
 ])

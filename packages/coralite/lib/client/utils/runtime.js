@@ -13,6 +13,7 @@
  * @param {string} [options.pageConfig='null'] - Serialized page configuration object.
  * @param {string} [options.mode='production'] - Build mode.
  * @param {'full' | 'minimal'} [options.reconcile='full'] - Reconcile mode.
+ * @param {'full' | 'minimal'} [options.listStrategy='full'] - List strategy.
  * @param {string} [options.instanceCounters='{}'] - Serialized instance counters map.
  * @param {string} [options.inlinedStyles='[]'] - Serialized inlined styles array.
  * @param {boolean} [options.preserveTestId=false] - Whether to preserve data-testid in production.
@@ -26,10 +27,12 @@ export function generateClientRuntime ({
   pageConfig = 'null',
   mode = 'production',
   reconcile = 'full',
+  listStrategy,
   instanceCounters = '{}',
   inlinedStyles = '[]',
   preserveTestId = false
 }) {
+  const effectiveStrategy = listStrategy || reconcile || 'full'
   const shouldStripTestId = mode === 'production' && !preserveTestId && process.env.CORALITE_PRESERVE_TESTID !== 'true'
 
   return `
@@ -59,7 +62,8 @@ export function generateClientRuntime ({
   ]);
 
   window.__coralite__ = window.__coralite__ || {};
-  window.__coralite__.reconcile = window.__coralite__.reconcile || ${JSON.stringify(reconcile)};
+  window.__coralite__.reconcile = window.__coralite__.reconcile || ${JSON.stringify(effectiveStrategy)};
+  window.__coralite__.listStrategy = window.__coralite__.listStrategy || ${JSON.stringify(effectiveStrategy)};
   if (!window.__coralite__.hydrationStore) {
     window.__coralite__.hydrationStore = {
       get() {

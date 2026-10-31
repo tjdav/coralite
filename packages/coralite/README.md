@@ -9,7 +9,7 @@ Coralite is a powerful **Isomorphic Web Component Framework** designed to build 
 Coralite stands out by actively fixing the most frustrating pain points of modern web development:
 
 * **True Native Web Components (Without the Boilerplate)**
-  Abandon verbose `class extends HTMLElement` boilerplate. Coralite uses a clean, ergonomic `defineComponent` flat-options API (`attributes`, `server`, `getters`, `style`, `client`, `slots`) that outputs true native Custom Elements.
+  Abandon verbose `class extends HTMLElement` and wrapper boilerplate. Coralite uses standard top-level named exports (`export function`, `export const`) outputting true native Custom Elements.
 * **Scoped CSS without Shadow DOM**
   Shadow DOM notoriously breaks global CSS systems and creates accessibility barriers. Coralite completely bypasses this by using compiler-generated instance identifiers to perfectly scope your CSS in the Light DOM.
 * **Isomorphism Built-In (The Vanishing `server` Block)**
@@ -135,9 +135,9 @@ export default defineConfig({
 
 ---
 
-## Building Components (`defineComponent`)
+## Building Components (Named Exports)
 
-Coralite components are single-file HTML modules containing a `<template>`, an optional `<style>`, and a `<script type="module">`.
+Coralite components are single-file HTML modules containing a `<template>`, an optional `<style>`, and a `<script type="module">`. Behavior is defined through top-level named exports (`export function`, `export const`).
 
 > Notice how the HTML template remains strictly declarative, reading flat properties from the unified state proxy, while all complex logic is pushed into the `getters` block.
 
@@ -169,55 +169,52 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
 </style>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
   import { userService } from './services.js'
 
-  export default defineComponent({
-    // ATTRIBUTES: Public API, coerced from HTML (String, Number, Boolean)
-    attributes: {
-      userId: { type: Number, default: 0 },
-      role: { type: String, default: 'Guest' },
-      theme: { type: String, default: 'light' }
-    },
+  // ATTRIBUTES: Public API, coerced from HTML (String, Number, Boolean)
+  export const attributes = {
+    userId: { type: Number, default: 0 },
+    role: { type: String, default: 'Guest' },
+    theme: { type: String, default: 'light' }
+  }
 
-    // SERVER: Async server-side initialization (Stripped from client bundle!)
-    async server({ state }) {
-      const user = await userService.getById(state.userId)
-      return {
-        firstName: user.firstName,
-        lastName: user.lastName,
-        loginCount: user.loginCount
-      }
-    },
-
-    // GETTERS: Pure, sync derived state mapping to the Dumb Template
-    getters: {
-      formatName: ({ state }) => `${state.firstName} ${state.lastName}`.trim(),
-      userMeta: ({ state }) => `Role: ${state.role} | ID: ${state.userId}`,
-      hideWarning: ({ state }) => state.loginCount < 50 // Logic stays out of HTML
-    },
-
-    // STYLE: Declarative reactive inline CSS and custom properties on host
-    style: {
-      '--accent-color': ({ state }) => state.theme === 'dark' ? '#38bdf8' : '#0284c7'
-    },
-
-    // SLOTS: Transform or build projected slot content
-    slots: {
-      default: (nodes, { state }) => nodes
-    },
-
-    // CLIENT: Client-side controller and side-effects
-    client({ state, refs, signal }) {
-      const titleEl = refs('title')
-
-      // Bind events with the 'signal' for automatic garbage collection
-      titleEl.addEventListener('click', () => {
-        // Direct mutations automatically trigger O(1) DOM updates
-        state.loginCount++
-      }, { signal }) 
+  // SERVER: Async server-side initialization (Stripped from client bundle!)
+  export async function server ({ state }) {
+    const user = await userService.getById(state.userId)
+    return {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      loginCount: user.loginCount
     }
-  })
+  }
+
+  // GETTERS: Pure, sync derived state mapping to the Dumb Template
+  export const getters = {
+    formatName: ({ state }) => `${state.firstName} ${state.lastName}`.trim(),
+    userMeta: ({ state }) => `Role: ${state.role} | ID: ${state.userId}`,
+    hideWarning: ({ state }) => state.loginCount < 50
+  }
+
+  // STYLE: Declarative reactive inline CSS and custom properties on host
+  export const style = {
+    '--accent-color': ({ state }) => state.theme === 'dark' ? '#38bdf8' : '#0284c7'
+  }
+
+  // SLOTS: Transform or build projected slot content
+  export const slots = {
+    default: (nodes) => nodes
+  }
+
+  // CLIENT: Client-side controller and side-effects
+  export function client ({ state, refs, signal }) {
+    const titleEl = refs('title')
+
+    // Bind events with the 'signal' for automatic garbage collection
+    titleEl.addEventListener('click', () => {
+      // Direct mutations automatically trigger O(1) DOM updates
+      state.loginCount++
+    }, { signal }) 
+  }
 </script>
 ```
 
@@ -301,24 +298,20 @@ Components access the injected APIs directly via destructuring in `server()` and
 
 ```html
 <script type="module">
-  import { defineComponent } from 'coralite'
+  // Sourced from server Phase 2 resolver
+  export async function server ({ telemetry, state }) {
+    telemetry.trackServerEvent('user_rendered', { userId: state.userId })
+    return {}
+  }
 
-  export default defineComponent({
-    async server({ telemetry, state }) {
-      // Sourced from server Phase 2 resolver
-      telemetry.trackServerEvent('user_rendered', { userId: state.userId })
-      return {}
-    },
+  // Sourced from client Phase 2 resolver
+  export function client ({ telemetry, state, signal }) {
+    telemetry.onEvent('cart:updated', (e) => {
+      console.log('Cart updated from component', e.detail.originTag)
+    })
 
-    client({ telemetry, state, signal }) {
-      // Sourced from client Phase 2 resolver
-      telemetry.onEvent('cart:updated', (e) => {
-        console.log('Cart updated from component', e.detail.originTag)
-      })
-
-      telemetry.emitEvent('item_viewed', { itemId: state.userId })
-    }
-  })
+    telemetry.emitEvent('item_viewed', { itemId: state.userId })
+  }
 </script>
 ```
 

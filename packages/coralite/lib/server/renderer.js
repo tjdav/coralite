@@ -528,7 +528,9 @@ export function createRenderer ({
         style: scriptMeta.style,
         provide: scriptMeta.provide,
         consume: scriptMeta.consume,
-        formAssociated: Boolean(scriptMeta.formAssociated),
+        formAssociated: Boolean(scriptMeta.formControl ?? scriptMeta.formAssociated),
+        formControl: Boolean(scriptMeta.formControl ?? scriptMeta.formAssociated),
+        listStrategy: scriptMeta.listStrategy || null,
         onError: scriptMeta.onError || null
       })
 
@@ -747,7 +749,9 @@ export function createRenderer ({
             style: scriptResult.__script__.style || {},
             provide: scriptResult.__script__.provide || {},
             consume: scriptResult.__script__.consume || null,
-            formAssociated: Boolean(scriptResult.__script__.formAssociated),
+            formAssociated: Boolean(scriptResult.__script__.formControl ?? scriptResult.__script__.formAssociated),
+            formControl: Boolean(scriptResult.__script__.formControl ?? scriptResult.__script__.formAssociated),
+            listStrategy: scriptResult.__script__.listStrategy || null,
             onError: scriptResult.__script__.onError || null
           })
 
@@ -2236,6 +2240,7 @@ export function createRenderer ({
         pageConfig: pageConfigObj ? serialize(pageConfigObj) : 'null',
         mode: normalizedOptions.mode,
         reconcile: normalizedOptions.reconcile,
+        listStrategy: normalizedOptions.listStrategy,
         instanceCounters: serialize(mappedSessionObject.instanceCounters || {}),
         inlinedStyles: serialize(inlinedStyles),
         preserveTestId: Boolean(normalizedOptions.preserveTestId || process.env.CORALITE_PRESERVE_TESTID === 'true')

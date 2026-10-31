@@ -203,6 +203,48 @@
  */
 
 /**
+ * Array reconciliation strategy for the component.
+ * Controls how list mutations (append, swap, remove, clear) are applied to the DOM.
+ *
+ * @typedef {'full' | 'minimal'} CoraliteListStrategyMode
+ */
+
+/**
+ * Full strategy form with custom key extractor.
+ *
+ * @typedef {Object} CoraliteListStrategyObject
+ * @property {CoraliteListStrategyMode} mode
+ * @property {(item: any) => any} [key] - Custom key extractor for items.
+ *   Falls back to `item.id`, then `item.key`, then strict identity.
+ */
+
+/**
+ * List reconciliation strategy — shorthand string or full object.
+ *
+ * @typedef {CoraliteListStrategyMode | CoraliteListStrategyObject} CoraliteListStrategy
+ */
+
+/**
+ * The valid named exports a component script may declare.
+ * Used by the parser to recognize component behavior blocks.
+ * Not referenced by user code.
+ *
+ * @template {Record<string, any>} [TState=Record<string, any>]
+ * @typedef {Object} CoraliteComponentExports
+ * @property {(context: CoraliteServerContext<TState> & TState & Record<string, any>) => Promise<Record<string, any> | void> | Record<string, any> | void} [server]
+ * @property {(context: CoraliteClientContext<TState> & Record<string, any>) => void | Promise<void>} [client]
+ * @property {CoraliteComponentErrorBoundary<TState>} [onError]
+ * @property {Record<string, (context: CoraliteGetterContext<TState>) => any>} [getters]
+ * @property {CoraliteAttributesDefinition} [attributes]
+ * @property {Record<string, ((context: CoraliteStyleContext<TState>) => any) | string | number>} [style]
+ * @property {Record<string, CoraliteComputedSlotFunction<TState> | CoraliteModuleSlotFunction>} [slots]
+ * @property {Map<any, any> | Record<string | symbol, any>} [provide]
+ * @property {string[] | Record<string, any>} [consume]
+ * @property {boolean} [formControl]
+ * @property {CoraliteListStrategy} [listStrategy]
+ */
+
+/**
  * Options for defineComponent.
  *
  * @template {Record<string, any>} [TState=Record<string, any>]
@@ -217,7 +259,9 @@
  * @property {Record<string, CoraliteComputedSlotFunction<TState> | CoraliteModuleSlotFunction>} [slots] - Reactive slot builders or slot transform functions.
  * @property {Record<string, ((context: CoraliteStyleContext<TState>) => any) | string | number>} [style] - Reactive style definitions and CSS custom properties.
  * @property {boolean} [formAssociated] - Enables Form-Associated Custom Element (FACE) behavior.
+ * @property {boolean} [formControl] - Enables Form-Associated Custom Element (FACE) behavior.
  * @property {'full' | 'minimal'} [reconcile] - Reconcile mode ('full' | 'minimal').
+ * @property {CoraliteListStrategy} [listStrategy] - Array reconciliation strategy.
  * @property {(item: any) => any} [key] - Optional item key extractor function for list reconciliation.
  * @property {CoraliteComponentErrorBoundary<TState>} [onError] - Error boundary hook for rendering fallback UI during SSR in production.
  */

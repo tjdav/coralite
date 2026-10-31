@@ -17,6 +17,20 @@ import { createStore, createServerStore } from '../utils/store.js'
 
 let SourceTextModuleCache = null
 
+export const RECOGNIZED_COMPONENT_EXPORTS = [
+  'server',
+  'client',
+  'onError',
+  'getters',
+  'attributes',
+  'style',
+  'slots',
+  'provide',
+  'consume',
+  'formControl',
+  'listStrategy'
+]
+
 const isValidIdentifier = (name) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
 
 /**
@@ -328,6 +342,20 @@ export async function evaluateDevelopment ({
     return script.namespace.default
   }
 
+  if (defineComponent) {
+    const namedExports = {}
+    let hasRecognizedExport = false
+    for (const key of RECOGNIZED_COMPONENT_EXPORTS) {
+      if (key in script.namespace && script.namespace[key] !== undefined) {
+        namedExports[key] = script.namespace[key]
+        hasRecognizedExport = true
+      }
+    }
+    if (hasRecognizedExport) {
+      return boundDefineComponent(namedExports)
+    }
+  }
+
   throw new CoraliteError(`Module "${module.id}" has no default export`, {
     componentId: module.id,
     filePath: moduleComponent.path.pathname
@@ -521,6 +549,20 @@ export async function evaluateProduction ({
   // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
   if (moduleMock.exports.default != null) {
     return moduleMock.exports.default
+  }
+
+  if (defineComponent) {
+    const namedExports = {}
+    let hasRecognizedExport = false
+    for (const key of RECOGNIZED_COMPONENT_EXPORTS) {
+      if (key in moduleMock.exports && moduleMock.exports[key] !== undefined) {
+        namedExports[key] = moduleMock.exports[key]
+        hasRecognizedExport = true
+      }
+    }
+    if (hasRecognizedExport) {
+      return defineComponent(namedExports, symmetricalContext)
+    }
   }
 
   throw new CoraliteError(`Module "${module.id}" has no default export`, {

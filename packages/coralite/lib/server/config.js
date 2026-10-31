@@ -116,6 +116,13 @@ export function defineConfig (options, { onError } = {}) {
     }
   }
 
+  if (options.listStrategy !== undefined) {
+    const validListStrategy = ['full', 'minimal']
+    if (!validListStrategy.includes(options.listStrategy)) {
+      throw new CoraliteError(`Invalid listStrategy mode: "${options.listStrategy}". Valid listStrategy modes are: ${validListStrategy.join(', ')}`)
+    }
+  }
+
   if (options.reconcile !== undefined) {
     const validReconcile = ['full', 'minimal']
     if (!validReconcile.includes(options.reconcile)) {
@@ -538,7 +545,8 @@ export function defineConfig (options, { onError } = {}) {
     incremental: options.incremental ?? true,
     reactivity: options.reactivity ?? 'signal',
     compilerOptimizations: options.compilerOptimizations ?? 'all',
-    reconcile: options.reconcile ?? (process.env.CORALITE_RECONCILE === 'minimal' ? 'minimal' : 'full'),
+    reconcile: options.listStrategy ?? options.reconcile ?? (process.env.CORALITE_RECONCILE === 'minimal' ? 'minimal' : 'full'),
+    listStrategy: options.listStrategy ?? options.reconcile ?? (process.env.CORALITE_RECONCILE === 'minimal' ? 'minimal' : 'full'),
     plugins: options.plugins ?? [],
     assets: options.assets ?? [],
     csp: options.csp ?? { enabled: false },

@@ -329,6 +329,12 @@ export default [
     }
   },
   {
+    files: ['**/*.html'],
+    rules: {
+      'jsdoc/require-jsdoc': 'off'
+    }
+  },
+  {
     ignores: [
       '**/dist/',
       '**/bench/',

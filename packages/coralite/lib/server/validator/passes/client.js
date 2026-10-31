@@ -33,7 +33,7 @@ export function validateClientBlock (context) {
   }
 
   const fnNode = clientProp.value
-  if (!fnNode || (fnNode.type !== 'FunctionExpression' && fnNode.type !== 'ArrowFunctionExpression')) {
+  if (!fnNode || (fnNode.type !== 'FunctionExpression' && fnNode.type !== 'ArrowFunctionExpression' && fnNode.type !== 'FunctionDeclaration')) {
     return
   }
 

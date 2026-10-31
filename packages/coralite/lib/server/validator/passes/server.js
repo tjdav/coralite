@@ -184,7 +184,7 @@ export function validateServerBlock (context) {
   }
 
   const fnNode = serverProp.value
-  if (fnNode && (fnNode.type === 'FunctionExpression' || fnNode.type === 'ArrowFunctionExpression')) {
+  if (fnNode && (fnNode.type === 'FunctionExpression' || fnNode.type === 'ArrowFunctionExpression' || fnNode.type === 'FunctionDeclaration')) {
     analyzeFunctionBlock(fnNode, stateReads, refsCalls, false, false, 0, false, true, context)
 
     // CORALITE-E401: HTTP context identifier check

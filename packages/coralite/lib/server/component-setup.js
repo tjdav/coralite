@@ -585,7 +585,7 @@ async function _processServerSlots (slots, state, root, context, app, module) {
 }
 
 function _finalizeScriptState (state, options, module) {
-  const { attributes, server, getters, slots, client, style, provide, consume, onError } = options
+  const { attributes, server, getters, slots, client, style, provide, consume, formAssociated, formControl, listStrategy, onError } = options
   const hasClient = typeof client === 'function'
   const hasSlots = slots && Object.keys(slots).length > 0
   const hasGetters = getters && Object.keys(getters).length > 0
@@ -596,8 +596,10 @@ function _finalizeScriptState (state, options, module) {
   const hasProvide = hasContextEntries(provide)
   const hasConsume = Boolean(consume)
   const hasOnError = typeof onError === 'function'
+  const hasFormControl = formControl !== undefined || formAssociated !== undefined
+  const hasListStrategy = Boolean(listStrategy)
 
-  if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume || hasOnError) {
+  if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume || hasOnError || hasFormControl || hasListStrategy) {
     const args = {}
     for (const key in state) {
       if (!Object.hasOwn(state, key) || key === '__script__') {
@@ -627,14 +629,46 @@ export function createComponentDefinition ({ app }) {
    * @returns {Promise<Object>}
    */
   return async (options, context) => {
-    const { attributes, server, getters, slots, style, provide, consume, formAssociated, onError } = options || {}
+    const {
+      attributes,
+      server,
+      getters,
+      slots,
+      style,
+      provide,
+      consume,
+      formAssociated,
+      formControl,
+      listStrategy,
+      reconcile,
+      key,
+      onError
+    } = options || {}
     const { state: initialState, module, root } = context
+
+    if (formControl !== undefined && typeof formControl !== 'boolean') {
+      throw new CoraliteError(`Component "${module.id}": option "formControl" must be a boolean. Received: ${typeof formControl}`, {
+        componentId: module.id,
+        filePath: module.path?.pathname
+      })
+    }
 
     if (formAssociated !== undefined && typeof formAssociated !== 'boolean') {
       throw new CoraliteError(`Component "${module.id}": option "formAssociated" must be a boolean. Received: ${typeof formAssociated}`, {
         componentId: module.id,
         filePath: module.path?.pathname
       })
+    }
+
+    if (listStrategy !== undefined) {
+      const isValidString = listStrategy === 'full' || listStrategy === 'minimal'
+      const isValidObject = typeof listStrategy === 'object' && listStrategy !== null && (listStrategy.mode === 'full' || listStrategy.mode === 'minimal') && (listStrategy.key === undefined || typeof listStrategy.key === 'function')
+      if (!isValidString && !isValidObject) {
+        throw new CoraliteError(`Component "${module.id}": option "listStrategy" must be 'full', 'minimal', or an object with mode and optional key extractor function. Received: ${typeof listStrategy}`, {
+          componentId: module.id,
+          filePath: module.path?.pathname
+        })
+      }
     }
 
     if (onError !== undefined && typeof onError !== 'function') {
@@ -655,18 +689,20 @@ export function createComponentDefinition ({ app }) {
         'provide',
         'consume',
         'formAssociated',
+        'formControl',
         'reconcile',
+        'listStrategy',
         'key',
         'onError'
       ])
-      for (const key of Object.keys(options)) {
-        if (!allowedKeys.has(key)) {
+      for (const optKey of Object.keys(options)) {
+        if (!allowedKeys.has(optKey)) {
           handleError({
             onErrorCallback: app?.onError,
             data: {
               level: 'WARN',
               type: 'unknown_option',
-              message: `Component "${module.id}" specifies unknown option "${key}". Valid options are: ${Array.from(allowedKeys).join(', ')}.`,
+              message: `Component "${module.id}" specifies unknown option "${optKey}". Valid options are: ${Array.from(allowedKeys).join(', ')}.`,
               componentId: module.id
             }
           })
@@ -679,9 +715,9 @@ export function createComponentDefinition ({ app }) {
     const state = Object.assign({}, initialState)
 
     const scriptDefaultValues = {}
-    for (const [key, schema] of Object.entries(normalizedAttributes)) {
+    for (const [attrKey, schema] of Object.entries(normalizedAttributes)) {
       if (schema.default !== undefined) {
-        scriptDefaultValues[key] = schema.default
+        scriptDefaultValues[attrKey] = schema.default
       }
     }
 
@@ -691,11 +727,22 @@ export function createComponentDefinition ({ app }) {
 
     _resolveContextConsumers(state, consume, context.contextFrames)
 
-    for (const key of Object.keys(normalizedAttributes)) {
-      const camelName = kebabToCamel(key)
+    for (const attrKey of Object.keys(normalizedAttributes)) {
+      const camelName = kebabToCamel(attrKey)
       const kebabName = camelToKebab(camelName)
       state['error_' + camelName] = ''
       state['error_' + kebabName] = ''
+    }
+
+    const isFormControl = formControl !== undefined ? Boolean(formControl) : Boolean(formAssociated)
+    let resolvedListStrategy = null
+    if (listStrategy !== undefined) {
+      resolvedListStrategy = listStrategy
+    } else if (reconcile || key) {
+      resolvedListStrategy = {
+        mode: reconcile || 'full',
+        ...(key ? { key } : {})
+      }
     }
 
     state.__script__ = {
@@ -707,7 +754,9 @@ export function createComponentDefinition ({ app }) {
       style: style || {},
       provide: provide || {},
       consume: consume || null,
-      formAssociated: Boolean(formAssociated),
+      formAssociated: isFormControl,
+      formControl: isFormControl,
+      listStrategy: resolvedListStrategy,
       onError: typeof onError === 'function' ? onError : null
     }
 
@@ -759,7 +808,9 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     defaultValues: {},
     getters: {},
     style: {},
-    formAssociated: false
+    formAssociated: false,
+    formControl: false,
+    listStrategy: null
   }
 
   const scriptObj = {
@@ -885,7 +936,9 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     style: scriptMeta.style,
     provide: scriptMeta.provide,
     consume: scriptMeta.consume,
-    formAssociated: Boolean(scriptMeta.formAssociated),
+    formAssociated: Boolean(scriptMeta.formControl ?? scriptMeta.formAssociated),
+    formControl: Boolean(scriptMeta.formControl ?? scriptMeta.formAssociated),
+    listStrategy: scriptMeta.listStrategy || null,
     onError: scriptMeta.onError || scriptObj.onError || null,
     override: true
   })

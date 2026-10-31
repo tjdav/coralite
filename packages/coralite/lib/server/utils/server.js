@@ -183,6 +183,144 @@ export function findAndExtractScript (code) {
     }
   }
 
+  const transformClientNode = (clientValue, clientMethod = false, keyLoc = null) => {
+    let startLine = clientValue.loc ? clientValue.loc.start.line - 1 : 0
+    let prefix = ''
+    let content = ''
+
+    const replacements = []
+    let instanceIdVar
+
+    if (clientValue.params && clientValue.params[0]) {
+      const param = clientValue.params[0]
+      if (param.type === 'Identifier') {
+        instanceIdVar = param.name + '.instanceId'
+      } else if (param.type === 'ObjectPattern') {
+        const idProp = param.properties.find(p => p.key?.type === 'Identifier' && p.key?.name === 'instanceId')
+        if (idProp) {
+          if (idProp.value.type === 'Identifier') {
+            instanceIdVar = idProp.value.name
+          }
+        } else {
+          instanceIdVar = '_coralite_instanceId'
+          replacements.push({
+            start: (param.start + 1) - clientValue.start,
+            end: (param.start + 1) - clientValue.start,
+            replacement: 'instanceId: _coralite_instanceId, '
+          })
+        }
+      }
+    } else if (clientMethod) {
+      instanceIdVar = 'this._instanceId'
+    }
+
+    let source = code.slice(clientValue.start, clientValue.end)
+    walkAncestorJS(clientValue, {
+      AssignmentExpression (assignNode, ancestorsInClient) {
+        if (
+          assignNode.left.type === 'MemberExpression' &&
+          assignNode.left.property.type === 'Identifier' &&
+          (assignNode.left.property.name === 'innerHTML' || assignNode.left.property.name === 'outerHTML')
+        ) {
+          findHTMLComponents(assignNode.right, ancestorsInClient)
+          replacements.push({
+            start: assignNode.right.start - clientValue.start,
+            end: assignNode.right.start - clientValue.start,
+            replacement: 'processHTML('
+          })
+          replacements.push({
+            start: assignNode.right.end - clientValue.start,
+            end: assignNode.right.end - clientValue.start,
+            replacement: `, ${instanceIdVar})`
+          })
+        }
+      },
+      CallExpression (callNode, ancestorsInClient) {
+        if (
+          callNode.callee &&
+          callNode.callee.type === 'MemberExpression' &&
+          callNode.callee.object &&
+          callNode.callee.object.type === 'Identifier' &&
+          callNode.callee.object.name === 'document' &&
+          callNode.callee.property &&
+          callNode.callee.property.type === 'Identifier' &&
+          callNode.callee.property.name === 'createElement'
+        ) {
+          const arg = callNode.arguments[0]
+          if (arg) {
+            const values = resolveStringValues(arg, ancestorsInClient)
+            let isCustom = false
+            for (const val of values) {
+              if (val.includes('-')) {
+                components.add(val)
+                isCustom = true
+              }
+            }
+
+            if (isCustom || (arg.type === 'Literal' && typeof arg.value === 'string' && arg.value.includes('-')) || arg.type !== 'Literal') {
+              replacements.push({
+                start: callNode.callee.start - clientValue.start,
+                end: callNode.callee.end - clientValue.start,
+                replacement: 'createCoraliteElement'
+              })
+            }
+          }
+        }
+
+        if (
+          callNode.callee &&
+          callNode.callee.type === 'MemberExpression' &&
+          callNode.callee.property &&
+          callNode.callee.property.type === 'Identifier' &&
+          callNode.callee.property.name === 'insertAdjacentHTML'
+        ) {
+          const arg = callNode.arguments[1]
+          if (arg) {
+            findHTMLComponents(arg, ancestorsInClient)
+            replacements.push({
+              start: arg.start - clientValue.start,
+              end: arg.start - clientValue.start,
+              replacement: 'processHTML('
+            })
+            replacements.push({
+              start: arg.end - clientValue.start,
+              end: arg.end - clientValue.start,
+              replacement: `, ${instanceIdVar})`
+            })
+          }
+        }
+      }
+    })
+
+    replacements.sort((a, b) => b.start - a.start)
+    for (const r of replacements) {
+      source = source.slice(0, r.start) + r.replacement + source.slice(r.end)
+    }
+
+    if (clientValue.type === 'ArrowFunctionExpression') {
+      content = prefix + source
+      startLine = clientValue.loc.start.line - 1
+    } else if (clientValue.type === 'FunctionExpression') {
+      if (clientMethod) {
+        const isAsync = clientValue.async
+        prefix += (isAsync ? 'async ' : '') + 'function client'
+        content = prefix + source
+        startLine = keyLoc ? keyLoc.start.line - 1 : clientValue.loc.start.line - 1
+      } else {
+        content = prefix + source
+        startLine = clientValue.loc.start.line - 1
+      }
+    } else if (clientValue.type === 'FunctionDeclaration') {
+      content = source
+      startLine = clientValue.loc.start.line - 1
+    }
+
+    return {
+      content,
+      lineOffset: startLine
+    }
+  }
+
   walkAncestorJS(ast, {
     AssignmentExpression (node, ancestors) {
       if (
@@ -251,167 +389,32 @@ export function findAndExtractScript (code) {
               prop.key && prop.key.type === 'Identifier' &&
               prop.key.name === 'consume'
           )
+          const listStrategyProp = firstArg.properties.find(
+            prop => prop.type === 'Property' &&
+              prop.key && prop.key.type === 'Identifier' &&
+              prop.key.name === 'listStrategy'
+          )
           const provideSource = (provideProp && provideProp.type === 'Property') ? code.slice(provideProp.value.start, provideProp.value.end) : null
           const consumeSource = (consumeProp && consumeProp.type === 'Property') ? code.slice(consumeProp.value.start, consumeProp.value.end) : null
+          const listStrategySource = (listStrategyProp && listStrategyProp.type === 'Property') ? code.slice(listStrategyProp.value.start, listStrategyProp.value.end) : null
 
           if (scriptProp && scriptProp.type === 'Property') {
-            const { value, method } = scriptProp
-            let startLine = value.loc.start.line - 1
-            let prefix = ''
-            let content = ''
-
-            /**
-             * Deterministically resolve the instance ID variable name for processHTML calls.
-             * Supports:
-             * - client({ id }) => id
-             * - client(context) => context.id
-             * - client() { ... } (Method shorthand) => this.instanceId
-             * Defaults to 'id' if no parameters are present and it's not a method.
-             */
-            // Collect all document.createElement calls within this client block for transformation
-            const replacements = []
-
-            let instanceIdVar
-            // @ts-ignore
-            if (value.params && value.params[0]) {
-              // @ts-ignore
-              const param = value.params[0]
-              if (param.type === 'Identifier') {
-                instanceIdVar = param.name + '.instanceId'
-              } else if (param.type === 'ObjectPattern') {
-                // @ts-ignore
-                const idProp = param.properties.find(p => p.key?.type === 'Identifier' && p.key?.name === 'instanceId')
-                if (idProp) {
-                  if (idProp.value.type === 'Identifier') {
-                    instanceIdVar = idProp.value.name
-                  }
-                } else {
-                  instanceIdVar = '_coralite_instanceId'
-                  replacements.push({
-                    start: (param.start + 1) - value.start,
-                    end: (param.start + 1) - value.start,
-                    replacement: 'instanceId: _coralite_instanceId, '
-                  })
-                }
-              }
-            } else if (method) {
-              instanceIdVar = 'this._instanceId'
-            }
-
-            // Get source slice
-            let source = code.slice(value.start, value.end)
-            walkAncestorJS(value, {
-              AssignmentExpression (assignNode, ancestorsInClient) {
-                if (
-                  assignNode.left.type === 'MemberExpression' &&
-                  assignNode.left.property.type === 'Identifier' &&
-                  (assignNode.left.property.name === 'innerHTML' || assignNode.left.property.name === 'outerHTML')
-                ) {
-                  findHTMLComponents(assignNode.right, [...ancestors, ...ancestorsInClient])
-                  replacements.push({
-                    start: assignNode.right.start - value.start,
-                    end: assignNode.right.start - value.start,
-                    replacement: 'processHTML('
-                  })
-                  replacements.push({
-                    start: assignNode.right.end - value.start,
-                    end: assignNode.right.end - value.start,
-                    replacement: `, ${instanceIdVar})`
-                  })
-                }
-              },
-              CallExpression (callNode, ancestorsInClient) {
-                const combinedAncestors = [...ancestors, ...ancestorsInClient]
-                if (
-                  callNode.callee &&
-                  callNode.callee.type === 'MemberExpression' &&
-                  callNode.callee.object &&
-                  callNode.callee.object.type === 'Identifier' &&
-                  callNode.callee.object.name === 'document' &&
-                  callNode.callee.property &&
-                  callNode.callee.property.type === 'Identifier' &&
-                  callNode.callee.property.name === 'createElement'
-                ) {
-                  const arg = callNode.arguments[0]
-                  if (arg) {
-                    const values = resolveStringValues(arg, combinedAncestors)
-                    let isCustom = false
-                    for (const val of values) {
-                      if (val.includes('-')) {
-                        components.add(val)
-                        isCustom = true
-                      }
-                    }
-
-                    if (isCustom || (arg.type === 'Literal' && typeof arg.value === 'string' && arg.value.includes('-')) || arg.type !== 'Literal') {
-                      replacements.push({
-                        start: callNode.callee.start - value.start,
-                        end: callNode.callee.end - value.start,
-                        replacement: 'createCoraliteElement'
-                      })
-                    }
-                  }
-                }
-
-                if (
-                  callNode.callee &&
-                  callNode.callee.type === 'MemberExpression' &&
-                  callNode.callee.property &&
-                  callNode.callee.property.type === 'Identifier' &&
-                  callNode.callee.property.name === 'insertAdjacentHTML'
-                ) {
-                  const arg = callNode.arguments[1]
-                  if (arg) {
-                    findHTMLComponents(arg, combinedAncestors)
-                    replacements.push({
-                      start: arg.start - value.start,
-                      end: arg.start - value.start,
-                      replacement: 'processHTML('
-                    })
-                    replacements.push({
-                      start: arg.end - value.start,
-                      end: arg.end - value.start,
-                      replacement: `, ${instanceIdVar})`
-                    })
-                  }
-                }
-              }
-            })
-
-            // Apply replacements from end to start to maintain offsets
-            replacements.sort((a, b) => b.start - a.start)
-            for (const r of replacements) {
-              source = source.slice(0, r.start) + r.replacement + source.slice(r.end)
-            }
-
-            if (value.type === 'ArrowFunctionExpression') {
-              content = prefix + source
-              startLine = value.loc.start.line - 1
-            } else if (value.type === 'FunctionExpression') {
-              if (method) {
-                const isAsync = value.async
-                prefix += (isAsync ? 'async ' : '') + 'function client'
-                content = prefix + source
-                startLine = scriptProp.key.loc.start.line - 1
-              } else {
-                content = prefix + source
-                startLine = value.loc.start.line - 1
-              }
-            }
-
+            const transformed = transformClientNode(scriptProp.value, scriptProp.method, scriptProp.key.loc)
             result = {
-              content,
-              lineOffset: startLine,
+              content: transformed.content,
+              lineOffset: transformed.lineOffset,
               provideSource,
               consumeSource,
+              listStrategySource,
               importStatements
             }
-          } else if (provideProp || consumeProp) {
+          } else if (provideProp || consumeProp || listStrategyProp) {
             result = {
               content: null,
               lineOffset: 0,
               provideSource,
               consumeSource,
+              listStrategySource,
               importStatements
             }
           }
@@ -433,6 +436,90 @@ export function findAndExtractScript (code) {
       }
     }
   })
+
+  if (!result && ast && Array.isArray(ast.body)) {
+    let clientNode = null
+    let provideSource = null
+    let consumeSource = null
+    let listStrategySource = null
+
+    const topLevelBindings = new Map()
+    for (const node of ast.body) {
+      if (node.type === 'VariableDeclaration') {
+        for (const decl of node.declarations) {
+          if (decl.id?.type === 'Identifier' && decl.init) {
+            topLevelBindings.set(decl.id.name, decl.init)
+          }
+        }
+      } else if (node.type === 'FunctionDeclaration' && node.id?.name) {
+        topLevelBindings.set(node.id.name, node)
+      }
+    }
+
+    for (const node of ast.body) {
+      if (node.type === 'ExportNamedDeclaration') {
+        if (node.declaration) {
+          if (node.declaration.type === 'FunctionDeclaration') {
+            if (node.declaration.id?.name === 'client') {
+              clientNode = node.declaration
+            }
+          } else if (node.declaration.type === 'VariableDeclaration') {
+            for (const decl of node.declaration.declarations) {
+              if (decl.id?.type === 'Identifier' && decl.init) {
+                if (decl.id.name === 'client') {
+                  clientNode = decl.init
+                } else if (decl.id.name === 'provide') {
+                  provideSource = code.slice(decl.init.start, decl.init.end)
+                } else if (decl.id.name === 'consume') {
+                  consumeSource = code.slice(decl.init.start, decl.init.end)
+                } else if (decl.id.name === 'listStrategy') {
+                  listStrategySource = code.slice(decl.init.start, decl.init.end)
+                }
+              }
+            }
+          }
+        } else if (node.specifiers) {
+          for (const spec of node.specifiers) {
+            const expName = spec.exported?.type === 'Identifier' ? spec.exported.name : spec.exported?.value
+            const localName = spec.local?.type === 'Identifier' ? spec.local.name : spec.local?.value
+            const target = topLevelBindings.get(localName)
+            if (target) {
+              if (expName === 'client') {
+                clientNode = target
+              } else if (expName === 'provide') {
+                provideSource = code.slice(target.start, target.end)
+              } else if (expName === 'consume') {
+                consumeSource = code.slice(target.start, target.end)
+              } else if (expName === 'listStrategy') {
+                listStrategySource = code.slice(target.start, target.end)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (clientNode) {
+      const transformed = transformClientNode(clientNode, false, null)
+      result = {
+        content: transformed.content,
+        lineOffset: transformed.lineOffset,
+        provideSource,
+        consumeSource,
+        listStrategySource,
+        importStatements
+      }
+    } else if (provideSource || consumeSource || listStrategySource) {
+      result = {
+        content: null,
+        lineOffset: 0,
+        provideSource,
+        consumeSource,
+        listStrategySource,
+        importStatements
+      }
+    }
+  }
 
   if (result) {
     result.components = Array.from(components)
@@ -517,6 +604,76 @@ export function extractComponentProperty (code, propertyName) {
       }
     }
   })
+
+  if (!result && ast && Array.isArray(ast.body)) {
+    const topLevelBindings = new Map()
+    for (const node of ast.body) {
+      if (node.type === 'VariableDeclaration') {
+        for (const decl of node.declarations) {
+          if (decl.id?.type === 'Identifier' && decl.init) {
+            topLevelBindings.set(decl.id.name, decl.init)
+          }
+        }
+      } else if (node.type === 'FunctionDeclaration' && node.id?.name) {
+        topLevelBindings.set(node.id.name, node)
+      }
+    }
+
+    for (const node of ast.body) {
+      if (node.type === 'ExportNamedDeclaration') {
+        if (node.declaration) {
+          if (node.declaration.type === 'FunctionDeclaration') {
+            if (node.declaration.id?.name === propertyName) {
+              result = {
+                content: code.slice(node.declaration.start, node.declaration.end),
+                lineOffset: node.declaration.loc ? node.declaration.loc.start.line - 1 : 0
+              }
+              break
+            }
+          } else if (node.declaration.type === 'VariableDeclaration') {
+            for (const decl of node.declaration.declarations) {
+              if (decl.id?.type === 'Identifier' && decl.id.name === propertyName && decl.init) {
+                const source = code.slice(decl.init.start, decl.init.end)
+                const content = (propertyName === 'server' && decl.init.type === 'ObjectExpression')
+                  ? `() => (${source})`
+                  : source
+                result = {
+                  content,
+                  lineOffset: decl.init.loc ? decl.init.loc.start.line - 1 : 0
+                }
+                break
+              }
+            }
+            if (result) {
+              break
+            }
+          }
+        } else if (node.specifiers) {
+          for (const spec of node.specifiers) {
+            const expName = spec.exported?.type === 'Identifier' ? spec.exported.name : spec.exported?.value
+            if (expName === propertyName) {
+              const localName = spec.local?.type === 'Identifier' ? spec.local.name : spec.local?.value
+              const target = topLevelBindings.get(localName)
+              if (target) {
+                const source = code.slice(target.start, target.end)
+                const content = (propertyName === 'server' && target.type === 'ObjectExpression')
+                  ? `() => (${source})`
+                  : source
+                result = {
+                  content,
+                  lineOffset: target.loc ? target.loc.start.line - 1 : 0
+                }
+                break
+              }
+            }
+          }
+          if (result) {
+            break
+          }
+        }
+      }
+    }
+  }
 
   return result
 }

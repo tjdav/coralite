@@ -475,6 +475,9 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
  * @param {Object} [options.provide={}] - Provided context definitions.
  * @param {Array|Object|null} [options.consume=null] - Consumed context keys.
  * @param {boolean} [options.formAssociated=false] - Whether the element is a form-associated custom element.
+ * @param {boolean} [options.formControl] - Whether the element is a form control.
+ * @param {string|object|null} [options.listStrategy=null] - List reconciliation strategy.
+ * @param {string|object|null} [options.reconcile=null] - Legacy reconciliation strategy.
  * @param {Function|null} [options.onError=null] - Error boundary hook callback.
  * @param {boolean} [options.override=false] - Whether to override existing component definition.
  * @param {boolean} [options.isRepeated=false] - Whether component is instantiated multiple times.
@@ -494,6 +497,9 @@ ScriptManager.prototype.registerComponent = function ({
   provide = {},
   consume = null,
   formAssociated = false,
+  formControl,
+  listStrategy = null,
+  reconcile = null,
   onError = null,
   override = false,
   isRepeated = false,
@@ -583,9 +589,19 @@ ScriptManager.prototype.registerComponent = function ({
     }
   }
 
-  if (formAssociated !== undefined) {
+  const resolvedFormControl = formControl !== undefined ? formControl : formAssociated
+  if (resolvedFormControl !== undefined) {
     if (isNew || override) {
-      target.formAssociated = Boolean(formAssociated)
+      target.formControl = Boolean(resolvedFormControl)
+      target.formAssociated = Boolean(resolvedFormControl)
+    }
+  }
+
+  const resolvedListStrategy = listStrategy ?? reconcile
+  if (resolvedListStrategy !== undefined && resolvedListStrategy !== null) {
+    if (isNew || override) {
+      target.listStrategy = resolvedListStrategy
+      target.reconcile = resolvedListStrategy
     }
   }
 
@@ -1024,7 +1040,10 @@ export default {
   style: (() => { const style = ${style}; return style; })(),
   provide: ${hasScript ? `componentModule_${alias}.provide || ` : ''}(() => { const provide = ${provide}; return provide; })(),
   consume: ${hasScript ? `componentModule_${alias}.consume || ` : ''}(() => { const consume = ${consume}; return consume; })(),
-  formAssociated: ${Boolean(sharedFn.formAssociated || sharedFn.script?.formAssociated)},
+  formAssociated: ${Boolean(sharedFn.formControl ?? sharedFn.script?.formControl ?? sharedFn.formAssociated ?? sharedFn.script?.formAssociated)},
+  formControl: ${Boolean(sharedFn.formControl ?? sharedFn.script?.formControl ?? sharedFn.formAssociated ?? sharedFn.script?.formAssociated)},
+  listStrategy: ${hasScript ? `componentModule_${alias}.listStrategy || ` : ''}${JSON.stringify(sharedFn.listStrategy ?? sharedFn.reconcile ?? null)},
+  reconcile: ${hasScript ? `componentModule_${alias}.listStrategy || ` : ''}${JSON.stringify(sharedFn.listStrategy ?? sharedFn.reconcile ?? null)},
   dependencies: ${dependencies},
   imports: {},
   client: ${hasScript ? `componentModule_${alias}.script` : 'null'},
@@ -1218,7 +1237,7 @@ export default {
               }
 
               let contents = ''
-              if (sharedFn.script && (sharedFn.script.content || sharedFn.script.provideSource || sharedFn.script.consumeSource)) {
+              if (sharedFn.script && (sharedFn.script.content || sharedFn.script.provideSource || sharedFn.script.consumeSource || sharedFn.script.listStrategySource)) {
                 const imports = sharedFn.script.importStatements || []
                 if (imports.length > 0) {
                   contents += imports.join('\n') + '\n\n'
@@ -1241,12 +1260,18 @@ export default {
                 } else {
                   contents += 'export const consume = undefined;\n'
                 }
+                if (sharedFn.script.listStrategySource) {
+                  contents += `export const listStrategy = ${sharedFn.script.listStrategySource};\n`
+                } else {
+                  contents += 'export const listStrategy = undefined;\n'
+                }
 
                 contents += 'export default script;\n'
               } else {
                 contents += 'export const script = null;\n'
                 contents += 'export const provide = undefined;\n'
                 contents += 'export const consume = undefined;\n'
+                contents += 'export const listStrategy = undefined;\n'
                 contents += 'export default null;\n'
               }
 
@@ -1441,7 +1466,7 @@ export default {
               const sharedFn = this.sharedFunctions[componentId]
               let contents = ''
 
-              if (sharedFn.script && (sharedFn.script.content || sharedFn.script.provideSource || sharedFn.script.consumeSource)) {
+              if (sharedFn.script && (sharedFn.script.content || sharedFn.script.provideSource || sharedFn.script.consumeSource || sharedFn.script.listStrategySource)) {
                 const imports = sharedFn.script.importStatements || []
                 if (imports.length > 0) {
                   contents += imports.join('\n') + '\n\n'
@@ -1464,12 +1489,18 @@ export default {
                 } else {
                   contents += 'export const consume = undefined;\n'
                 }
+                if (sharedFn.script.listStrategySource) {
+                  contents += `export const listStrategy = ${sharedFn.script.listStrategySource};\n`
+                } else {
+                  contents += 'export const listStrategy = undefined;\n'
+                }
 
                 contents += 'export default script;\n'
               } else {
                 contents += 'export const script = null;\n'
                 contents += 'export const provide = undefined;\n'
                 contents += 'export const consume = undefined;\n'
+                contents += 'export const listStrategy = undefined;\n'
                 contents += 'export default null;\n'
               }
 

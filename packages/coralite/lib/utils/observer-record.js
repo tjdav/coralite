@@ -353,13 +353,14 @@ export class ObserverRecord {
       /** @type {any} */
       const proc = typeof process !== 'undefined' ? process : null
 
-      const reconcileMode = el?.componentOptions?.reconcile ||
-        win?.__coralite__?.reconcile ||
-        proc?.env?.CORALITE_RECONCILE ||
+      const rawStrategy = el?.componentOptions?.listStrategy || el?.componentOptions?.reconcile ||
+        win?.__coralite__?.listStrategy || win?.__coralite__?.reconcile ||
+        proc?.env?.CORALITE_LIST_STRATEGY || proc?.env?.CORALITE_RECONCILE ||
         'full'
+      const reconcileMode = typeof rawStrategy === 'string' ? rawStrategy : (rawStrategy?.mode || 'full')
 
       if (reconcileMode === 'minimal' && Array.isArray(oldVal) && Array.isArray(newVal)) {
-        const keyFn = el?.componentOptions?.key
+        const keyFn = (typeof rawStrategy === 'object' && rawStrategy?.key) || el?.componentOptions?.key
         const pattern = detectListPattern(oldVal, newVal, keyFn)
         if (pattern) {
           const applied = applyListPattern(this.element, this.key, pattern)

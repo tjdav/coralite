@@ -21,6 +21,7 @@
  * @property {Object} [server] - Hydrated server data.
  * @property {string | null} [provideSource] - Provide definition source code.
  * @property {string | null} [consumeSource] - Consume definition source code.
+ * @property {string | null} [listStrategySource] - List strategy definition source code.
  * @property {string[]} [importStatements] - Module import statements.
  */
 

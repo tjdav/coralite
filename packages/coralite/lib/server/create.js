@@ -81,7 +81,9 @@ export async function createCoralite ({
   incremental = true,
   csp,
   cleanUrls = true,
-  viewTransitions = true
+  viewTransitions = true,
+  reconcile,
+  listStrategy
 }) {
   if (onError !== undefined && typeof onError !== 'function') {
     throw new CoraliteError('createCoralite requires "onError" option to be a function if provided')
@@ -147,7 +149,9 @@ export async function createCoralite ({
     incremental,
     csp,
     cleanUrls: effectiveCleanUrls,
-    viewTransitions
+    viewTransitions,
+    reconcile: listStrategy ?? reconcile ?? (process.env.CORALITE_RECONCILE === 'minimal' ? 'minimal' : 'full'),
+    listStrategy: listStrategy ?? reconcile ?? (process.env.CORALITE_RECONCILE === 'minimal' ? 'minimal' : 'full')
   }
 
   const trackedOutputFiles = new Set()

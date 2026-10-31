@@ -109,7 +109,7 @@ describe('CORALITE-E107: Unified define* entry point block validation', () => {
       assert.ok(e107)
       assert.strictEqual(
         e107.message,
-        'Unknown block "unknownProp" in defineComponent. Valid blocks are: attributes, server, getters, style, slots, provide, consume, client, formAssociated, reconcile, key, onError.'
+        'Unknown block "unknownProp" in defineComponent. Valid blocks are: attributes, server, getters, style, slots, provide, consume, client, formAssociated, formControl, reconcile, listStrategy, key, onError.'
       )
     })
 
