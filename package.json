@@ -6,7 +6,7 @@
   "homepage": "https://coralite.dev/",
   "repository": {
     "type": "git",
-    "url": "git@codeberg.org/tjdavid/coralite.git"
+    "url": "git@github.com:tjdav/coralite.git"
   },
   "keywords": [
     "frontend",

@@ -60,8 +60,8 @@ pnpm create coralite
 ## Repository & Documentation
 
 ### Source Code
-- Hosted on [Codeberg](https://codeberg.org), a decentralized Git hosting service.
-- Path: [packages/create-coralite](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/create-coralite) within the larger Coralite repository.
+- Hosted on [GitHub](https://github.com/tjdav/coralite).
+- Path: [packages/create-coralite](https://github.com/tjdav/coralite/tree/main/packages/create-coralite) within the larger Coralite repository.
 
 ### Official Documentation
 - Accessible at: [https://coralite.dev/docs/create-coralite](https://coralite.dev/docs/create-coralite)

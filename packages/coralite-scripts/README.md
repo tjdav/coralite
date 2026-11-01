@@ -202,6 +202,6 @@ Coralite provides real-time development workflows out of the box:
 
 ---
 
-> **Feedback?** Found a bug or want a feature? [Open an issue](https://codeberg.org/tjdavid/coralite/issues) on our Codeberg repository!
+> **Feedback?** Found a bug or want a feature? [Open an issue](https://github.com/tjdav/coralite/issues) on our GitHub repository!
 
 Happy building with Coralite!

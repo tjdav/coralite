@@ -57,7 +57,7 @@ If you want to contribute or build Coralite from source, follow the steps below.
 Clone the repository and install all dependencies. pnpm will automatically link the local packages together:
 
 ```bash
-git clone https://codeberg.org/tjdavid/coralite.git
+git clone git@github.com:tjdav/coralite.git
 cd coralite
 pnpm install
 ```

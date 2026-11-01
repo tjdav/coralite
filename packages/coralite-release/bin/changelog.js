@@ -20,7 +20,7 @@ program
   .option('--stdout', 'Print to stdout only, ignore output file')
   .option('--no-git', 'Skip git commit and push')
   .action(async (options) => {
-    const REPO = 'https://codeberg.org/tjdavid/coralite'
+    const REPO = 'https://github.com/tjdav/coralite'
     const packageName = options.package
     const pkgPath = options.path
 
@@ -244,7 +244,7 @@ program
             line += ` (${commit.scope})`
           }
           if (commit.pr) {
-            line += ` ([#${commit.pr}](${REPO}/pulls/${commit.pr}))`
+            line += ` ([#${commit.pr}](${REPO}/pull/${commit.pr}))`
           }
           line += ` ([${commit.hash.slice(0, 7)}](${REPO}/commit/${commit.hash}))`
           markdown += `${line}\n`

@@ -19,11 +19,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://codeberg.org/tjdavid/coralite.git",
+    "url": "https://github.com/tjdav/coralite.git",
     "directory": "packages/create-coralite-plugin"
   },
   "bugs": {
-    "url": "https://codeberg.org/tjdavid/coralite/issues"
+    "url": "https://github.com/tjdav/coralite/issues"
   },
   "license": "MPL-2.0",
   "engines": {

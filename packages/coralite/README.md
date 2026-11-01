@@ -319,7 +319,7 @@ We welcome community contributions! Coralite is managed as a monorepo.
 ### 2. Fork & Clone
 
 ```bash
-git clone https://codeberg.org/tjdavid/coralite.git
+git clone git@github.com:tjdav/coralite.git
 cd coralite
 ```
 
@@ -354,4 +354,4 @@ For a deep dive into advanced features, imperative slot rendering, end-to-end te
 
 ## License
 
-This project is licensed under the Mozilla Public License 2.0 - see the [LICENSE](https://codeberg.org/tjdavid/coralite/src/branch/main/LICENSE) file for details.
+This project is licensed under the Mozilla Public License 2.0 - see the [LICENSE](https://github.com/tjdav/coralite/blob/main/LICENSE) file for details.
