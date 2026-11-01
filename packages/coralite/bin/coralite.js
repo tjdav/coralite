@@ -978,27 +978,30 @@ async function main () {
 1. **Dumb Template Invariant**:
    - Component templates (\`<template>\`) contain flat \`{{ token }}\` placeholders ONLY.
    - NO JavaScript expressions (e.g., \`{{ count + 1 }}\`), NO dot notation, NO inline event listeners (\`onclick=""\`).
-   - All derived UI logic MUST reside in synchronous derived getters inside \`getters: { ... }\`.
+   - All derived UI logic MUST reside in synchronous derived getters inside \`export const getters = { ... }\` with destructured context \`({ state }) => ...\`.
 
 2. **Serialization Boundary**:
-   - The \`client()\` block is serialized into browser runtime code.
+   - The \`export function client()\` block is serialized into browser runtime code.
    - Top-level static ES imports or outer module variables CANNOT be closed over inside \`client()\`.
-   - Use dynamic \`await import(...)\` inside \`async client()\` or pass values via \`client.config\`.
+   - Use dynamic \`await import(...)\` inside \`async function client()\` or \`async function server()\`.
 
 3. **Attribute Primitives**:
-   - Component attributes strictly support \`String\`, \`Number\`, and \`Boolean\` primitives.
+   - Component attributes (\`export const attributes = { ... }\`) strictly support \`String\`, \`Number\`, and \`Boolean\` primitives.
    - \`Array\` and \`Object\` attribute types are BLOCKED to prevent state pollution.
-   - Initialize complex objects in \`server()\` or manage them in \`state\`.
+   - Initialize complex objects in \`export function server()\` or manage them in \`state\`.
 
 4. **Two-Phase Plugin Context**:
+   - Plugins use \`export default definePlugin({ ... })\`.
    - Plugin context functions MUST be Two-Phase curried:
      \`context: (pluginContext) => (instanceContext) => ({ ... })\`
 
-5. **Component Structure**:
-   - Coralite components live in \`.html\` files containing \`<template>\`, \`<style>\`, and \`<script type="module">\` exporting \`defineComponent({ ... })\`.
+5. **Component & Page Structure**:
+   - Coralite components live in \`src/components/*.html\` containing \`<template>\`, \`<style>\`, and \`<script type="module">\` using top-level named exports (\`export function\` for \`server\`, \`client\`, \`onError\`; \`export const\` for \`attributes\`, \`getters\`, \`style\`, \`slots\`, \`provide\`, \`consume\`, \`formControl\`, \`listStrategy\`). Legacy \`defineComponent\` is retained strictly for backwards compatibility.
+   - Pages live in \`src/pages/*.html\` and use \`export default definePage({ ... })\` (never bare named exports).
 
-6. **Encapsulation & Scope**:
-   - Target elements locally using \`refs('name')\` inside \`client()\`.
+6. **No Defensive Guards & Encapsulation**:
+   - Every destructured context key (\`state\`, \`refs\`, \`signal\`, \`emit\`, etc.) is guaranteed by the framework. Never guard context keys or check \`typeof window\` in \`client()\` or \`server()\`.
+   - Target elements locally using \`refs('name')\` inside \`client()\` and pass \`{ signal }\` to all \`addEventListener\` calls.
    - Pages are strictly consumers of custom element components and must not manipulate component internals directly.
 `
 

@@ -62,7 +62,8 @@
     "lib",
     "bin",
     "plugins",
-    "llms.txt"
+    "llms.txt",
+    "llms-full.txt"
   ],
   "bin": {
     "coralite": "bin/coralite.js"

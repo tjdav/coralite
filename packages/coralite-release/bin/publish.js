@@ -209,19 +209,21 @@ async function main () {
   const registry = values.registry || 'npmjs'
   const isDryRun = values['dry-run']
 
-  let copiedLlms = false
-  const targetLlms = resolve(pkgDir, 'llms.txt')
+  const copiedLlmsFiles = []
   const createdNpmrcFiles = []
 
   const cleanup = () => {
-    if (copiedLlms && existsSync(targetLlms)) {
-      try {
-        unlinkSync(targetLlms)
-        console.log(`✔ Cleaned up temporary asset: ${targetLlms}`)
-      } catch (err) {
-        console.warn(`⚠️ Failed to cleanup ${targetLlms}: ${err.message}`)
+    for (const target of copiedLlmsFiles) {
+      if (existsSync(target)) {
+        try {
+          unlinkSync(target)
+          console.log(`✔ Cleaned up temporary asset: ${target}`)
+        } catch (err) {
+          console.warn(`⚠️ Failed to cleanup ${target}: ${err.message}`)
+        }
       }
     }
+    copiedLlmsFiles.length = 0
     for (const npmrcPath of createdNpmrcFiles) {
       if (existsSync(npmrcPath)) {
         try {
@@ -245,11 +247,14 @@ async function main () {
 
   try {
     if (packageName === 'coralite') {
-      const sourceLlms = resolve(rootDir, 'website/public/llms.txt')
-      if (existsSync(sourceLlms)) {
-        copyFileSync(sourceLlms, targetLlms)
-        copiedLlms = true
-        console.log(`✔ Copied website/public/llms.txt -> ${targetLlms}`)
+      for (const file of ['llms.txt', 'llms-full.txt']) {
+        const source = resolve(rootDir, `website/public/${file}`)
+        const target = resolve(pkgDir, file)
+        if (existsSync(source)) {
+          copyFileSync(source, target)
+          copiedLlmsFiles.push(target)
+          console.log(`✔ Copied website/public/${file} -> ${target}`)
+        }
       }
     }
 

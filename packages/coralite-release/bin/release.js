@@ -73,7 +73,7 @@ program
   .option('--no-git-commit', 'Skip git commit (only update package.json files)')
   .action(async (type, options) => {
     const git = simpleGit()
-    let copiedLlmsTarget = null
+    const copiedLlmsTargets = []
 
     try {
       // Validate release type
@@ -362,13 +362,15 @@ program
           } catch {
           }
         }
-        if (copiedLlmsTarget && existsSync(copiedLlmsTarget)) {
-          try {
-            unlinkSync(copiedLlmsTarget)
-            copiedLlmsTarget = null
-          } catch {
+        for (const target of copiedLlmsTargets) {
+          if (existsSync(target)) {
+            try {
+              unlinkSync(target)
+            } catch {
+            }
           }
         }
+        copiedLlmsTargets.length = 0
       }
 
       const onSignal = () => {
@@ -390,11 +392,15 @@ program
         for (const rel of plannedReleases) {
           const pkgDir = path.dirname(rel.pkg.path)
           if (rel.name === 'coralite') {
-            const sourceLlms = path.resolve(process.cwd(), 'website/public/llms.txt')
-            copiedLlmsTarget = path.resolve(pkgDir, 'llms.txt')
-            if (existsSync(sourceLlms)) {
-              copyFileSync(sourceLlms, copiedLlmsTarget)
-              prompts.log.success('📄 Copied website/public/llms.txt to packages/coralite/llms.txt')
+            const filesToCopy = ['llms.txt', 'llms-full.txt']
+            for (const file of filesToCopy) {
+              const src = path.resolve(process.cwd(), `website/public/${file}`)
+              const dest = path.resolve(pkgDir, file)
+              if (existsSync(src)) {
+                copyFileSync(src, dest)
+                copiedLlmsTargets.push(dest)
+                prompts.log.success(`📄 Copied website/public/${file} to packages/coralite/${file}`)
+              }
             }
           }
 
@@ -630,12 +636,14 @@ program
       prompts.log.error(`Release failed: ${error.message}`)
       process.exit(1)
     } finally {
-      if (copiedLlmsTarget && existsSync(copiedLlmsTarget)) {
-        try {
-          unlinkSync(copiedLlmsTarget)
-          prompts.log.info('🧹 Cleaned up temporary packages/coralite/llms.txt')
-        } catch {
-          /* Ignore cleanup errors */
+      for (const target of copiedLlmsTargets) {
+        if (existsSync(target)) {
+          try {
+            unlinkSync(target)
+            prompts.log.info(`🧹 Cleaned up temporary ${path.relative(process.cwd(), target)}`)
+          } catch {
+            /* Ignore cleanup errors */
+          }
         }
       }
     }

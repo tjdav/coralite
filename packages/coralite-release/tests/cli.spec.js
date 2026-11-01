@@ -153,6 +153,10 @@ describe('coralite-release CLI & versioning logic', () => {
     })
 
     it('executes non-interactive --dry-run with multi-package --package option', () => {
+      const gitDiffBefore = execFileSync('git', ['diff', 'packages/coralite/package.json'], {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      })
       const output = execFileSync('node', [releaseBin, 'minor', '-p', 'create-coralite,coralite', '-y', '-d', '--allow-any-branch'], {
         cwd: repoRoot,
         encoding: 'utf8'
@@ -171,10 +175,14 @@ describe('coralite-release CLI & versioning logic', () => {
         cwd: repoRoot,
         encoding: 'utf8'
       })
-      assert.strictEqual(gitDiff.trim(), '')
+      assert.strictEqual(gitDiff.trim(), gitDiffBefore.trim())
     })
 
     it('executes non-interactive --dry-run with --all flag', () => {
+      const gitDiffBefore = execFileSync('git', ['diff', '--', 'packages/*/package.json', 'packages/*/templates/*/package.json'], {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      })
       const output = execFileSync('node', [releaseBin, 'minor', '--all', '-y', '-d', '--allow-any-branch'], {
         cwd: repoRoot,
         encoding: 'utf8'
@@ -191,7 +199,7 @@ describe('coralite-release CLI & versioning logic', () => {
         cwd: repoRoot,
         encoding: 'utf8'
       })
-      assert.strictEqual(gitDiff.trim(), '')
+      assert.strictEqual(gitDiff.trim(), gitDiffBefore.trim())
     })
   })
 })

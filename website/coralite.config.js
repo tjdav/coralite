@@ -40,7 +40,52 @@ export default defineConfig({
         {
           file: 'llms.txt',
           changefreq: 'weekly',
+          priority: '0.7'
+        },
+        {
+          file: 'llms-full.txt',
+          changefreq: 'weekly',
           priority: '0.5'
+        },
+        {
+          file: 'llms/components.md',
+          changefreq: 'weekly',
+          priority: '0.6'
+        },
+        {
+          file: 'llms/serialization.md',
+          changefreq: 'weekly',
+          priority: '0.6'
+        },
+        {
+          file: 'llms/face.md',
+          changefreq: 'weekly',
+          priority: '0.6'
+        },
+        {
+          file: 'llms/css.md',
+          changefreq: 'weekly',
+          priority: '0.6'
+        },
+        {
+          file: 'llms/plugins.md',
+          changefreq: 'weekly',
+          priority: '0.6'
+        },
+        {
+          file: 'llms/diagnostics.md',
+          changefreq: 'weekly',
+          priority: '0.6'
+        },
+        {
+          file: 'llms/config.md',
+          changefreq: 'weekly',
+          priority: '0.6'
+        },
+        {
+          file: 'llms/testing.md',
+          changefreq: 'weekly',
+          priority: '0.6'
         }
       ]
     }),

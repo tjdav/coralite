@@ -112,7 +112,9 @@ describe('coralite-publish utility functions', () => {
       assert.match(output, /✔ Cleaned up temporary asset/)
 
       const targetLlms = resolve(rootDir, 'packages/coralite/llms.txt')
+      const targetLlmsFull = resolve(rootDir, 'packages/coralite/llms-full.txt')
       assert.equal(existsSync(targetLlms), false, 'llms.txt should be cleaned up after dry-run completion')
+      assert.equal(existsSync(targetLlmsFull), false, 'llms-full.txt should be cleaned up after dry-run completion')
     })
 
     it('executes dry-run with tag-ref for prerelease tag resolution', () => {
