@@ -277,7 +277,13 @@ async function createProject () {
   const files = fs.readdirSync(templateDir)
 
   for (const file of files.filter((f) => f !== 'package.json')) {
-    if (file === 'AGENTS.md' && options.agent === false) {
+    if (file === 'AGENTS.md') {
+      if (options.agent === false) {
+        continue
+      }
+      const agentsTemplate = fs.readFileSync(path.join(templateDir, 'AGENTS.md'), 'utf-8')
+      const agentsContent = agentsTemplate.replace(/\{\{\s*version\s*\}\}/g, pkg.version)
+      write('AGENTS.md', agentsContent)
       continue
     }
     if (file === 'README.md') {

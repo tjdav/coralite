@@ -1,239 +1,123 @@
 # GitHub Copilot Instructions — Coralite (v{{ version }})
 
-When generating or editing Coralite components (`src/components/*.html`, `src/pages/*.html`):
+When generating or editing Coralite files (`src/components/*.html`, `src/pages/*.html`):
 
-## 1. Component File Structure
+## 1. Language and file extension policy
 
-Every component is a single `.html` file:
+- All source is `.js` (ESM) and `.html`. No `.ts`, `.tsx`, `.jsx`, or `.vue` files.
+- Components are single `.html` files in `src/components/<tag-name>.html`.
+- Pages are `.html` files in `src/pages/`.
+
+## 2. Authoring pattern
+
+- **Components (`src/components/*.html`)**: Use top-level named exports (`export function`, `export const`). Never use `defineComponent` for new components (`defineComponent` is retained strictly for legacy backwards compatibility) or `class extends HTMLElement`.
+  - **Handlers (`export function`)**: `server`, `client`, `onError`.
+  - **Declarations (`export const`)**: `attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`.
+  - Extra/helper exports are ignored by the compiler and preserved in module scope.
+- **Pages (`src/pages/*.html`)**: Always use `export default definePage({ ... })` imported from `'coralite'`. Never use bare named exports in pages (`CORALITE-E108`).
+  - Valid `definePage` blocks: `paths`, `server`, `getters`, `style`, `provide`, `client`, `onError`.
+  - Pages do not support `attributes`, `slots`, `consume`, or `formControl`, and must not query component internals directly (`CORALITE-PAGE-201`).
+- **Plugins**: Always use `export default definePlugin({ ... })` with two-phase curried context: `context: (pluginCtx) => (instanceCtx) => ({ ... })`.
+- **Templates**: Flat `{{ token }}` placeholders only. No expressions (`{{ a + b }}`), dot notation (`{{ user.name }}`), conditionals, loops, or function calls (`CORALITE-E201`). Move all derived logic into synchronous `getters`.
+- **Events**: No inline event handlers (`onclick="..."`, `@click`, `CORALITE-E203`). Bind in `client()` using `refs('name').addEventListener('click', fn, { signal })`. Emit custom events via `emit('name', detail)` (never `root.dispatchEvent`).
+- **Context signatures (must destructure, `CORALITE-E105`)**:
+  - Getters: `({ state, root, isServer, ... }) => value` (synchronous only).
+  - Style: `({ state }) => value` (synchronous only, `CORALITE-E303`; returns string, number, or nullish).
+  - Slots: `({ nodes, state }) => nodes` (build/server-time slot transformation).
+- **Attributes**: Primitive types only (`String`, `Number`, `Boolean`, `CORALITE-E101`). Never `Object` or `Array`, and never combine `required: true` with `default` (`CORALITE-E102`).
+- **State observation**: `observe('key', (val) => ...)` in `client()` is exclusively for external side-effects (imperative DOM, Canvas/WebGL, forms). Never mutate reactive `state` inside `observe()` (`CORALITE-E302`).
+
+### Canonical component structure
 
 ```html
-<template id="component-name">
-  <!-- markup with flat {{ token }} placeholders -->
+<template id="my-counter">
+  <div class="counter">
+    <span>{{ displayCount }}</span>
+    <button ref="inc">+1</button>
+  </div>
 </template>
 
 <script type="module">
-  export const attributes = { ... }
-  export const getters = { ... }
-  export const style = { ... }
-  export const slots = { ... } // optional - transform slot content
+  export const attributes = {
+    initial: { type: Number, default: 0 }
+  }
 
-  export function server ({ state }) { ... }
-  export function client ({ state, refs, signal, emit, observe, slots, root }) { ... }
+  export const getters = {
+    displayCount: ({ state }) => `Count: ${state.count}`
+  }
+
+  export const style = {
+    '--count-color': ({ state }) => state.count > 5 ? 'green' : 'inherit'
+  }
+
+  export function server ({ state }) {
+    return { count: state.initial }
+  }
+
+  export async function client ({ state, refs, signal, emit }) {
+    refs('inc').addEventListener('click', () => {
+      state.count++
+      emit('changed', { count: state.count })
+    }, { signal })
+  }
 </script>
 
 <style>
-  :host { display: block }
+  :host {
+    display: block;
+    color: var(--count-color);
+  }
 </style>
 ```
 
-## 2. Template Rules (<template>)
-
-- **Flat tokens only**: `{{ title }}`, `{{ count }}` — no expressions
-- **No JavaScript expressions**: `{{ count + 1 }}`, `{{ user.name }}`, `{{ format(x) }}`
-- **No inline handlers**: No `onclick="..."`, `onsubmit="..."`, `@click`
-- **No conditionals/loops**: No `if`, `v-for`, `*ngFor`, `{{#each}}`
-- **Compute in getters**: Move all derived values to `getters: { ... }`
-
-### Template Example
+### Canonical page structure
 
 ```html
-<template id="counter-card">
-  <div class="card">
-    <h2>{{ title }}</h2>
-    <p class="value">Count: {{ displayCount }}</p>
-    <button ref="increment">+1</button>
-    <button ref="decrement">-1</button>
-  </div>
-</template>
-```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>{{ pageTitle }}</title>
+</head>
+<body>
+  <my-counter initial="2"></my-counter>
+</body>
+</html>
 
-## 3. Component Definition
+<script type="module">
+  import { definePage } from 'coralite'
 
-### Named Exports
-- Always use top-level named exports (`export function`, `export const`)
-- Handlers use `export function` (`server`, `client`, `onError`)
-- Declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`)
-- Never use `class X extends HTMLElement` or `customElements.define()`
-- The legacy `defineComponent` wrapper is retained strictly for backward compatibility
-
-### `attributes`
-- Only primitives: `String`, `Number`, `Boolean`
-- Never `Object` or `Array`
-
-```js
-attributes: {
-  title: { type: String, default: 'Counter' },
-  initialCount: { type: Number, default: 0 },
-  disabled: { type: Boolean, default: false }
-}
-```
-
-### `state`
-- Declare reactive properties with initial values
-
-```js
-state: {
-  count: 0
-}
-```
-
-### `getters`
-- Pure derived values
-- **MUST destructure context**: `({ state }) => ...`
-- Synchronous only
-- Receive full context: `{ state, root, refs, slots, signal }`
-
-```js
-getters: {
-  displayCount: ({ state }) => `Count: ${state.count}`,
-  doubled: ({ state }) => state.count * 2
-}
-```
-
-### `server({ state })`
-- Runs during SSR/build (Node.js only)
-- Stripped from browser bundles
-- Returns object to hydrate client state
-
-```js
-server({ state }) {
-  // Server-only code here
-  return { count: state.count }
-}
-```
-
-### `client({ state, refs, signal, emit, observe })`
-- Runs in browser only
-- **Cannot access module-scope variables or top-level imports**
-- Use `await import()` for browser dependencies
-- Bind events with `{ signal }` for cleanup
-
-```js
-client({ state, refs, signal, emit }) {
-  const increment = () => { state.count++ }
-  const decrement = () => { state.count-- }
-
-  refs('increment').addEventListener('click', increment, { signal })
-  refs('decrement').addEventListener('click', decrement, { signal })
-}
-```
-
-### `observe(key, callback)` - State Observation
-
-Use `observe()` to sync with external systems (NOT for mutating state):
-
-```js
-client({ state, observe, signal }) {
-  observe('count', (newValue) => {
-    // Sync with external system only - don't mutate state here!
-    console.log('Count changed to:', newValue)
+  export default definePage({
+    getters: {
+      pageTitle: ({ state }) => state.title
+    },
+    server () {
+      return { title: 'Home' }
+    }
   })
-}
+</script>
 ```
 
-### `slots` (optional)
-- Transform slot content at build/server time
-- **MUST destructure context**: `({ nodes, state }) => ...` (`CORALITE-E105`)
+## 3. Import rule & Serialization boundary
 
-```js
-slots: {
-  default ({ nodes }) {
-    // Filter out whitespace-only text nodes
-    return nodes.filter(n => n.type !== 'text' || n.data.trim())
-  }
-}
-```
+- Top-level imports are reserved for `definePage` / `definePlugin` and modules used by isomorphic code (`getters`, `style`, `slots`).
+- `server()` runs in Node.js at build time and is stripped from the browser bundle. It returns an object to initialize/hydrate `state`.
+- `client()` is serialized to run in the browser and cannot reference module-scope variables or top-level imports. Modules used by `server()`, `client()`, or `paths()` must be loaded with dynamic `await import()` inside the block (`CORALITE-E301`).
 
-### `style` (dynamic CSS)
-- **MUST destructure context**: `({ state }) => ...` (`CORALITE-E105`)
-- Synchronous only (`CORALITE-E303`)
-- Return string, number, or nullish
+## 4. No defensive guards in deterministic blocks
 
-```js
-style: {
-  '--primary-color': ({ state }) => state.count > 5 ? 'green' : 'blue'
-}
-```
+`client()` runs in the browser. `server()` runs in Node at build time. `getters`, `style`, and `slots` run in both. Every destructured context key provided by the framework is guaranteed to exist.
 
-## 4. Client Boundary Rules
+- Do not guard context keys (e.g., `if (!refs) return` or `if (!lists) return`).
+- Do not check `typeof window === 'undefined'` inside `client()` or `server()`. Use `{ isServer }` in isomorphic `getters` when branching is required.
 
-- **Do NOT reference top-level imports** inside `client()`
-- **Do NOT reference outer-scope variables** inside `client()`
-- `client()` is stringified and executed in the browser
-- Use dynamic `await import()` inside `client()` for external dependencies
+## 5. Code style & CSS
 
-### Correct Pattern
+- **Factory functions over classes**: Default to factory functions (`createX`). No `this` outside class bodies; always use destructured context (`state`, `refs`, `emit`, `root`).
+- **Scoped CSS**: Use `:host` for the custom element root and `:host-context(.selector)` for ancestor themes. Write `.child` directly instead of `:host .child`.
 
-```js
-client({ signal }) {
-  const { something } = await import('some-browser-lib')
-  something()
-}
-```
+## 6. Workflow
 
-### Wrong Pattern
-
-```js
-import { something } from 'some-lib' // top-level import
-
-client({ signal }) {
-  something() // ERROR: cannot access top-level import
-}
-```
-
-## 5. Event Handling
-
-1. Add `ref="name"` to template elements
-2. Bind in `client()` using `refs('name')`
-3. Always pass `{ signal }` to `addEventListener`
-4. Use `emit('event-name', detail)` for custom events
-
-```html
-<template id="my-btn">
-  <button ref="btn">Click me</button>
-</template>
-```
-
-```js
-client({ refs, signal, emit }) {
-  refs('btn').addEventListener('click', () => {
-    emit('clicked', { timestamp: Date.now() })
-  }, { signal })
-}
-```
-
-## 6. Styling Rules
-
-- Use `:host` to target the component root element
-- Use `:host-context(.dark)` for theme-aware styles
-- Do NOT write `:host .child` — just write `.child`
-- Slotted content (`<slot>`) participates in parent layout automatically
-
-```css
-:host {
-  display: block;
-  padding: 1rem;
-}
-
-:host-context(.dark) {
-  background: #1a1a1a;
-  color: white;
-}
-
-.child {
-  /* styles for child elements */
-}
-```
-
-## 7. Common Mistakes to Avoid
-
-| Mistake | Fix |
-|---------|-----|
-| `{{ a + b }}` in template | Create getter: `sum: ({ state }) => state.a + state.b` |
-| `onclick="handle()"` | Use `ref="btn"` + bind in `client()` |
-| `(state) => ...` in getter | Destructure: `({ state }) => ...` |
-| Import at top, use in `client()` | `await import()` inside `client()` |
-| `dispatchEvent()` | Use `emit()` |
-| Async in `style` | Keep synchronous |
-| Mutate state in `observe()` | Mutate in event handlers only |
-| `Object`/`Array` in attributes | Pass primitives, use `server()` for complex data |
+- `pnpm dev` — start development server
+- `pnpm build` — build production output to `dist/`
+- `pnpm check` — validate components, pages, and plugins (`coralite check`)
+- `pnpm fix` — auto-fix safe validation diagnostics (`coralite fix`)

@@ -120,6 +120,7 @@ describe('CLI integration tests', () => {
     assert.equal(fs.existsSync(path.join(targetDir, 'README.md')), true)
 
     const agentsMd = fs.readFileSync(path.join(targetDir, 'AGENTS.md'), 'utf-8')
+    assert.equal(/\{\{\s*version\s*\}\}/.test(agentsMd), false)
     assert.match(agentsMd, /defineComponent/)
     assert.match(agentsMd, /definePage/)
     assert.match(agentsMd, /Serialization boundary/)
