@@ -3,51 +3,63 @@
 import * as prompts from '@clack/prompts'
 import { simpleGit } from 'simple-git'
 import { program } from 'commander'
-import { writeFileSync, readFileSync } from 'fs'
+import { writeFileSync, readFileSync, existsSync } from 'fs'
 import path from 'path'
 import { globSync } from 'glob'
 import { execFileSync } from 'child_process'
-import { sortTags, resolveBaselineTag } from '../lib/tags.js'
+import { sortTags, resolveBaselineTag, getCleanVersion } from '../lib/tags.js'
 
 const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer with Coralite project releases.
 Your task is to generate a structured GitHub Release Post based on provided git commit messages and technical summaries.
 
-### Style Guidelines:
-- **Perspective**: Use a **Product-Centric** perspective (third-person/objective). Focus on what *the release* or *Coralite* does, rather than the person who wrote it (e.g., "This release introduces...", "Coralite now supports..."). Avoid using "I" or "we" to maintain an objective, mature, and professional tone.
-- **Tone**: Concise, direct, professional, and understated (European style). 
-- **Language**: Be ruthless with brevity. Write punchy, economical sentences. Avoid passive voice, filler words (e.g., "specifically," "concurrently," "furthermore"), and marketing fluff ("thrilled," "huge"). Never use verbose constructions like "This release focuses on enhancing..."—instead, say "This release improves...".
-- **Formatting**: Strictly enforce a specific heading hierarchy (\`##\`, \`###\`, \`####\`). Do not use bolded bullet points for primary list items (e.g., \`* **Feature:** Description\`); instead, elevate them to \`####\` sub-headers for maximum scannability. Use horizontal rules (\`---\`) to visually separate major \`###\` sections.
+### Architecture & Positioning:
+- **Static-First Framing**: Always lead with compile-time static HTML output and zero runtime JavaScript by default. Treat client-side hydration, SPA navigation, and reactivity as progressive enhancements when dynamic behavior is needed.
+- **Perspective**: Use a **Product-Centric** perspective (third-person/objective). Focus on what the release or the package does (e.g., "This release introduces...", "Coralite now supports..."). Avoid "I" or "we".
+- **Tone**: Concise, direct, professional, understated, and factual.
+- **Language**: Be ruthless with brevity. Write punchy, economical sentences. Strictly avoid passive voice, filler words ("specifically," "concurrently," "furthermore"), and marketing fluff or exaggerated claims ("actively fixing the most frustrating pain points", "O(1) precision", "revolutionary", "thrilled").
+- **Formatting**: Strictly enforce the heading hierarchy (\`##\`, \`###\`, \`####\`). Do not use bolded bullet points for primary list items (e.g., \`* **Feature:** Description\`); instead, elevate them to \`####\` sub-headers for maximum scannability. Use horizontal rules (\`---\`) to visually separate major \`###\` sections.
 
 ### Content Structure:
-1. **Title**: Direct title including the version number (e.g., \`# Release vX.X.X\`).
-2. **## Release Overview**: A strict 1-2 sentence summary. Start directly with the impact or action. Do not use preamble like "The goal of this release is to..." or "This release focuses on...". Just state exactly what changed.
-3. **### Key Highlights**: Detailed breakdowns of the most important technical changes.
+1. **Title**: Direct H1 title with package name and version (e.g., \`# coralite vX.X.X\` or \`# create-coralite vX.X.X\`).
+2. **## Release Overview**: A strict 1-2 sentence summary. Start directly with the impact or action. Frame static-first where applicable. Do not use preamble like "The goal of this release is to..." or "This release focuses on...". Just state exactly what changed.
+3. **### Key Highlights**: Detailed breakdowns of the most important technical changes (features, major improvements).
     - Format each highlight with a \`#### [Highlight Title]\` header.
     - Write the primary description as standard paragraph text under the header, using standard bullet points (\`*\`) only for secondary details.
-    - **Include code examples (before/after or API usage)** whenever a technical summary provides enough information to do so.
-4. **---** (Horizontal Rule)
-5. **### Bug Fixes & Improvements**: A section for fixes and minor refinements.
+    - **Include code examples (before/after or API usage)** whenever a technical summary or diff provides enough information to do so.
+4. **### Bug Fixes & Improvements**: A section for bug fixes and minor refinements.
     - Format each fix with a \`#### [Fix Title]\` header, followed by its description.
-6. **---** (Horizontal Rule)
-7. **### Internal Changes**: A section for refactors, utility migrations, and maintenance work (avoiding "Under the Hood").
+5. **### Internal Changes**: A section for refactors, internal utilities, and maintenance work.
     - Format each change with a \`#### [Change Title]\` header, followed by its description.
+
+### Section Omission Rule:
+- **Omit Empty Sections**: If a release has no commits for a category (e.g., no bug fixes, or no internal changes, or no key highlights), strictly omit that section and its surrounding horizontal rules (\`---\`). Do not emit empty headings or placeholder text.
 
 ### Rules:
 - Base content strictly on the provided commit logs and technical summaries; do not hallucinate features.
 - Group related commits into logical technical categories.
 - Translate technical jargon into clear, concise explanations without losing precision.
-- Use the original context from commit descriptions and technical summaries to explain *why* a change was made if it improves clarity.
-- Ensure each release post feels unique by focusing on the specific "star" features of that version.`
+- Ensure each release post feels unique by focusing on the specific changes of that version.`
 
 function callAgy (promptText, model) {
-  const args = ['--print', promptText]
-  const agyModel = (model && model !== 'local-model') ? model : 'gemini-3.6-flash-high'
-  args.push('--model', agyModel)
+  const agyModel = (model && model !== 'local-model') ? model : 'gemini-3.8-flash-high'
+  const args = [
+    '--dangerously-skip-permissions',
+    '--model',
+    agyModel,
+    '--print',
+    promptText
+  ]
   try {
-    return execFileSync('agy', args, {
+    const output = execFileSync('agy', args, {
       encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      maxBuffer: 20 * 1024 * 1024
     }).trim()
+
+    if (!output) {
+      throw new Error('agy CLI produced empty output')
+    }
+    return output
   } catch (err) {
     const stderr = err.stderr ? err.stderr.toString() : err.message
     throw new Error(`agy CLI error: ${stderr}`)
@@ -96,8 +108,14 @@ program
       const git = simpleGit()
 
       // Load framework context
+      let frameworkContext = ''
+      const llmsFullPath = path.join(process.cwd(), 'website/public/llms-full.txt')
       const llmsPath = path.join(process.cwd(), 'website/public/llms.txt')
-      const frameworkContext = readFileSync(llmsPath, 'utf8')
+      if (existsSync(llmsFullPath)) {
+        frameworkContext = readFileSync(llmsFullPath, 'utf8')
+      } else if (existsSync(llmsPath)) {
+        frameworkContext = readFileSync(llmsPath, 'utf8')
+      }
 
       // Prompt for package if not provided
       if (!packageName) {
@@ -139,6 +157,21 @@ program
             if (selectedPkgInfo && !pkgPath) {
               pkgPath = selectedPkgInfo.path
             }
+          }
+        }
+      } else if (!pkgPath) {
+        // Auto-detect path when package is provided via CLI
+        const packageFiles = globSync('packages/*/package.json', { cwd: process.cwd() })
+        for (const filepath of packageFiles) {
+          try {
+            const content = readFileSync(filepath, 'utf8')
+            const pkg = JSON.parse(content)
+            if (pkg.name === packageName) {
+              pkgPath = path.dirname(filepath)
+              break
+            }
+          } catch {
+            // ignore
           }
         }
       }
@@ -253,7 +286,7 @@ program
       }
 
       let selectedHighlights = []
-      if (!process.env.TEST_NON_INTERACTIVE) {
+      if (!process.env.TEST_NON_INTERACTIVE && !options.yes) {
         // @ts-ignore
         selectedHighlights = await prompts.multiselect({
           message: 'Select commits to highlight with extra detail/code examples (optional):',
@@ -269,10 +302,15 @@ program
           prompts.log.info('Operation cancelled')
           process.exit(0)
         }
+      } else if (options.yes) {
+        // Automatically select feat and fix commits as highlights in non-interactive mode
+        selectedHighlights = log.all
+          .filter(commit => /^(feat|fix)(\(|:|!)/i.test(commit.message))
+          .map(commit => commit.hash)
       }
 
       let extraContext = ''
-      if (!process.env.TEST_NON_INTERACTIVE) {
+      if (!process.env.TEST_NON_INTERACTIVE && !options.yes) {
         // @ts-ignore
         extraContext = await prompts.text({
           message: 'Add any additional context or focus for this release (optional):',
@@ -285,7 +323,7 @@ program
         }
       }
 
-      if (!process.env.TEST_NON_INTERACTIVE && !options.json && !options.agy) {
+      if (!process.env.TEST_NON_INTERACTIVE && !options.json && !options.agy && !options.yes) {
         // @ts-ignore
         const selectedProvider = await prompts.select({
           message: 'Select AI provider / generator:',
@@ -416,9 +454,10 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
 
       let titleVersion = toRef
       if (toRef === 'HEAD') {
-        titleVersion = 'Unreleased'
+        titleVersion = packageName ? `${packageName} Unreleased` : 'Unreleased'
       } else {
-        titleVersion = `v${toRef.replace(/^v/, '')}`
+        const cleanVer = getCleanVersion(toRef, packageName) || toRef.replace(/^v/, '')
+        titleVersion = packageName ? `${packageName} v${cleanVer}` : `v${cleanVer}`
       }
 
       if (options.json) {
@@ -451,7 +490,7 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
         const jsonString = JSON.stringify(outputData, null, 2)
 
         if (options.output) {
-          writeFileSync(options.output, jsonString, 'utf8')
+          writeFileSync(options.output, jsonString + '\n', 'utf8')
           if (originalWrite) {
             process.stdout.write = originalWrite
           }
@@ -545,16 +584,20 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
             outputFile = 'RELEASE_POST.md'
           }
 
-          writeFileSync(outputFile, markdown, 'utf8')
+          writeFileSync(outputFile, markdown.trimEnd() + '\n', 'utf8')
           prompts.log.success(`Release post written to ${outputFile}`)
 
           if (options.git) {
-            const shouldCommit = await prompts.confirm({
-              message: 'Commit and push the release post?',
-              initialValue: true
-            })
+            let shouldCommit = Boolean(options.yes)
+            if (!options.yes) {
+              const confirmCommit = await prompts.confirm({
+                message: 'Commit and push the release post?',
+                initialValue: true
+              })
+              shouldCommit = Boolean(confirmCommit && !prompts.isCancel(confirmCommit))
+            }
 
-            if (shouldCommit && !prompts.isCancel(shouldCommit)) {
+            if (shouldCommit) {
               try {
                 prompts.log.step('Committing release post...')
                 await git.add(outputFile)

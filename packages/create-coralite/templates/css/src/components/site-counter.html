@@ -54,7 +54,7 @@
 
     // Bind event listener with automatic signal cleanup on component unmount
     button.addEventListener('click', () => {
-      // Direct reactive mutation triggers Coralite's O(1) microtask DOM updates
+      // Direct reactive mutation schedules DOM updates in the microtask queue
       state.count += state.step
 
       // Dispatch custom DOM event to parent listeners

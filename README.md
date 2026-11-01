@@ -1,18 +1,17 @@
 # 🪸 Coralite
 
-Coralite is a **Native-First**, **Isomorphic Web Component Framework** designed to build fast, interactive single-page applications (SPAs), dynamic websites, and static sites. It seamlessly blends the initial load speed of Server-Side Rendering (SSR) with robust, high-performance client-side hydration, giving you total flexibility over your rendering strategy using standard Web Components.
-
-It leverages standard web technologies—HTML modules, Custom Elements, and standard ES modules—to eliminate framework-specific friction while providing a modern, reactive developer experience.
+Coralite is a static-first Web Component framework that compiles HTML modules into static HTML at build time with zero client JavaScript by default. When interactivity or dynamic data is required, Coralite progressively adds server-side rendering (SSR), fine-grained client-side hydration, and single-page application (SPA) routing using standard native Web Components.
 
 ## Key Features
 
-* **True Native Web Components (Without the Boilerplate)**: Abandon the verbose `class extends HTMLElement` syntax and wrapper boilerplate. Coralite components use standard top-level ES module named exports (`export function`, `export const`) outputting true native Custom Elements.
-* **Scoped CSS without Shadow DOM**: Shadow DOM notoriously breaks global CSS systems and creates accessibility barriers. Coralite completely bypasses this by using compiler-generated instance identifiers to perfectly scope your CSS in the Light DOM.
-* **Isomorphism Built-In (The Vanishing `server` Block)**: Fetch database or API records in the `server()` block during SSR. Coralite automatically serializes that data, hydrates it seamlessly into a unified reactive state on the client, and safely strips the `server()` code entirely from your browser bundle.
-* **Opt-Out Hydration**: For purely static sections, simply append the `no-hydration` attribute to your HTML tag. Coralite will render it on the server but skip client-side hydration completely, keeping your JavaScript bundle incredibly lean.
-* **The "Smart State, Dumb Template" Paradigm**: Say goodbye to spaghetti code. Templates are strictly declarative—no logic loops, inline expressions, or dot-notation allowed. All UI logic resides in pure, synchronous JavaScript `getters` which map cleanly to native HTML attributes.
-* **O(1) Microtask Reactivity (No Virtual DOM)**: Mutate state in the `client()` controller block, and Coralite automatically schedules surgical DOM updates in the next microtask queue with O(1) precision via a compiler-generated hydration map.
-* **Async Race-Condition Immunity**: Coralite’s reactive engine handles asynchronous data with built-in version locks, ensuring your DOM never renders stale data from out-of-order Promise resolutions.
+* **Static HTML by Default**: Components without client logic emit pure static HTML and scoped CSS at build time with zero browser JavaScript overhead.
+* **Native Web Components via Named Exports**: Author components in `.html` files using standard ES module exports (`export const`, `export function`) rather than boilerplate class syntax.
+* **Light DOM Scoped CSS**: Scoped styling using compiler-generated instance identifiers and CSS `@layer` without requiring Shadow DOM boundaries.
+* **Isomorphic Server Execution**: Fetch data or compute state at build/SSR time in `server()`. Initial state serializes to the client while server code is stripped from the browser bundle.
+* **Opt-Out Hydration**: Mark components with `no-hydration` to render markup statically and bypass client runtime hydration entirely.
+* **Declarative Templates & Pure Getters**: Templates read flat tokens (`{{ token }}`) while UI transformations live in pure, synchronous getter functions.
+* **Microtask DOM Reactivity**: Reactive state mutations schedule batched DOM updates directly in the microtask queue without a virtual DOM.
+* **Async Race-Condition Protection**: Version locks prevent stale out-of-order asynchronous responses from overwriting newer state.
 
 ---
 
@@ -44,7 +43,7 @@ pnpm create coralite
 ```
 
 ### Prerequisites
-* **Node.js**: v20.19.0 or higher (Node.js v24 LTS recommended)
+* **Node.js**: >=22.22.2 (ESM native)
 * **pnpm**: v11+ (recommended for monorepo development)
 
 ---

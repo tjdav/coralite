@@ -2,30 +2,20 @@
 
 ## Build for the Web, With the Web
 
-Coralite is a powerful **Isomorphic Web Component Framework** designed to build fast, interactive single-page applications (SPAs), dynamic websites, and static sites. It seamlessly blends the initial load speed of Server-Side Rendering (SSR) with robust, high-performance client-side hydration, giving you total flexibility over your rendering strategy using standard Web Components.
+Coralite is a static-first Web Component framework that compiles HTML modules into static HTML at build time with zero client JavaScript by default. When interactivity or dynamic data is required, Coralite progressively adds server-side rendering (SSR), fine-grained client-side hydration, and single-page application (SPA) routing using standard native Web Components.
 
-### Why Coralite?
+### Key Features
 
-Coralite stands out by actively fixing the most frustrating pain points of modern web development:
-
-* **True Native Web Components (Without the Boilerplate)**
-  Abandon verbose `class extends HTMLElement` and wrapper boilerplate. Coralite uses standard top-level named exports (`export function`, `export const`) outputting true native Custom Elements.
-* **Scoped CSS without Shadow DOM**
-  Shadow DOM notoriously breaks global CSS systems and creates accessibility barriers. Coralite completely bypasses this by using compiler-generated instance identifiers to perfectly scope your CSS in the Light DOM.
-* **Isomorphism Built-In (The Vanishing `server` Block)**
-  Fetch database or API records in the `server()` block during SSR. Coralite automatically serializes that data, hydrates it seamlessly into a unified reactive state on the client, and safely strips the `server()` code entirely from your browser bundle.
-* **Opt-Out Hydration**
-  For purely static sections, simply append the `no-hydration` attribute to your HTML tag. Coralite will render it on the server but skip client-side hydration completely, keeping your JavaScript bundle incredibly lean.
-* **Declarative Reactive Styling (`style`)**
-  Define reactive inline styles and CSS Custom Properties (`--*`) directly in component definitions with automatic kebab-case mapping and zero-cost SSR emission.
-* **Reactive Slot Transformations (`slots`)**
-  Intercept and transform slotted children into rich AST structures or reactive DOM projections with built-in fine-grained state observation and isomorphic input parity.
-* **The "Smart State, Dumb Template" Paradigm**
-  Say goodbye to spaghetti code. Templates are strictly declarative—no logic loops, inline expressions, or dot-notation allowed. All UI logic resides in pure, synchronous JavaScript `getters` which map cleanly to native HTML attributes.
-* **O(1) Microtask Reactivity (No Virtual DOM)**
-  Mutate state in the `client()` controller block, and Coralite automatically schedules surgical DOM updates in the next microtask queue with O(1) precision via a compiler-generated hydration map.
-* **Async Race-Condition Immunity**
-  Coralite’s reactive engine handles asynchronous data with built-in version locks, ensuring your DOM never renders stale data from out-of-order Promise resolutions.
+* **Static HTML by Default**: Components without client logic emit pure static HTML and scoped CSS at build time with zero browser JavaScript overhead.
+* **Native Web Components via Named Exports**: Author components in `.html` files using standard ES module exports (`export const`, `export function`) rather than boilerplate class syntax.
+* **Light DOM Scoped CSS**: Scoped styling using compiler-generated instance identifiers and CSS `@layer` without requiring Shadow DOM boundaries.
+* **Isomorphic Server Execution**: Fetch data or compute state at build/SSR time in `server()`. Initial state serializes to the client while server code is stripped from the browser bundle.
+* **Opt-Out Hydration**: Mark components with `no-hydration` to render markup statically and bypass client runtime hydration entirely.
+* **Declarative Reactive Styling (`style`)**: Define reactive inline styles and CSS Custom Properties (`--*`) directly in component declarations with zero-cost SSR emission.
+* **Reactive Slot Transformations (`slots`)**: Intercept and project slotted children isomorphically across SSR and client updates.
+* **Declarative Templates & Pure Getters**: Templates read flat tokens (`{{ token }}`) while UI transformations live in pure, synchronous getter functions.
+* **Microtask DOM Reactivity**: Mutate state in `client()` controllers and Coralite schedules batched DOM updates in the microtask queue without a virtual DOM.
+* **Async Race-Condition Protection**: Built-in version locks ensure stale asynchronous promise resolutions never overwrite newer state.
 
 ---
 
@@ -211,7 +201,7 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
 
     // Bind events with the 'signal' for automatic garbage collection
     titleEl.addEventListener('click', () => {
-      // Direct mutations automatically trigger O(1) DOM updates
+      // Direct mutations schedule DOM updates in the next microtask
       state.loginCount++
     }, { signal }) 
   }
@@ -323,8 +313,8 @@ We welcome community contributions! Coralite is managed as a monorepo.
 
 ### 1. Prerequisites
 
-* **Node.js** v20.19.0 or higher (Node.js v24 LTS recommended)
-* **pnpm** v11+
+* **Node.js**: >=22.22.2 (ESM native)
+* **pnpm**: v11+
 
 ### 2. Fork & Clone
 
