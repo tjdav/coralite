@@ -253,6 +253,37 @@
  */
 
 /**
+ * Context provided to page definePage({ server(ctx) }) execution.
+ * Includes all registered server plugins alongside core page routing context.
+ *
+ * @typedef {Record<string, any> & {
+ *   route: import('./globals.js').CoraliteRoute,
+ *   app: CoraliteInstance,
+ *   session: CoraliteSession,
+ *   signal: AbortSignal,
+ *   store?: any,
+ *   page?: any
+ * }} CoralitePageServerContext
+ */
+
+/**
+ * Context provided to page definePage({ client(ctx) }) execution.
+ * Includes all registered client plugins alongside core page client context.
+ *
+ * @typedef {Record<string, any> & {
+ *   state: any,
+ *   route: import('./globals.js').CoraliteRoute,
+ *   root: Element,
+ *   refs: (id: string) => Element | null,
+ *   signal: AbortSignal,
+ *   store?: any,
+ *   emit: (name: string, detail?: any, options?: any) => boolean,
+ *   observe: (key: string, callback: Function) => () => void,
+ *   updateComplete: Promise<boolean>
+ * }} CoralitePageClientContext
+ */
+
+/**
  * Union type representing values available for token replacement in components.
  * @typedef {Object.<string, string> & { __script__?: ScriptContent, $urlPathname?: string }} CoraliteProperties
  */

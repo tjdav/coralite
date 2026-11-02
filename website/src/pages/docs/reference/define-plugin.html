@@ -22,10 +22,12 @@
       <coralite-heading level="2" text="Table of Contents"></coralite-heading>
       <ul>
         <li><a href="#configuration">Configuration Options</a></li>
+        <li><a href="#context-binding">Context Binding (`server.context`)</a></li>
         <li><a href="#server-hooks">Server-Side Hooks</a></li>
         <li><a href="#client-scripting">Client-Side Scripting</a></li>
         <li><a href="#script-config">Script Configuration</a></li>
         <li><a href="#context-injection">Context Injection</a></li>
+        <li><a href="#getter-invariant">Getter Isomorphism Invariant</a></li>
         <li><a href="#complete-example">Complete Example</a></li>
       </ul>
     </nav>
@@ -74,11 +76,11 @@ const myPlugin = definePlugin({
     <!-- Context Binding -->
     <section id="context-binding">
       <coralite-heading level="2" text="Context Binding (`server.context`)"></coralite-heading>
-      <p>The <code>server.context</code> property is used to define methods and data available to component <code>server()</code> blocks via the plugin's namespace (e.g. <code>context['logger-plugin']</code>). It follows the <strong>Two-Phase Resolver</strong> pattern.</p>
+      <p>The <code>server.context</code> property defines methods and data injected into component <code>server()</code> blocks and page <code>definePage({ server })</code> handlers (e.g. <code>context['logger-plugin']</code> or <code>server ({ 'logger-plugin': logger })</code>). It follows the <strong>Two-Phase Resolver</strong> pattern.</p>
       
       <ul>
         <li><strong>Phase 1 (Global)</strong>: Receives <code>pluginContext</code>. Used for global initialization and sharing data with other plugins via mutation.</li>
-        <li><strong>Phase 2 (Instance)</strong>: Receives <code>instanceContext</code>. Returns the object exposed to the component. Use <code>instanceContext</code> to access other plugins.</li>
+        <li><strong>Phase 2 (Instance)</strong>: Receives <code>instanceContext</code> (contains <code>page</code>, <code>route</code>, <code>app</code>). Returns the object exposed to the component or page. Use <code>instanceContext</code> to access other plugins.</li>
       </ul>
 
       <coralite-code-highlight language="JavaScript">
@@ -132,7 +134,7 @@ export default definePlugin({
 
 
       <coralite-heading level="3" text="client.context"></coralite-heading>
-      <p>Define utilities that will be available via the plugin's namespace on the <code>context</code> object in <code>defineComponent</code> client-side scripts.</p>
+      <p>Define utilities that will be available via the plugin's namespace on the context object in component <code>client()</code> blocks and page <code>definePage({ client })</code> scripts.</p>
 
       <coralite-code-highlight language="JavaScript">
         definePlugin({
@@ -195,6 +197,14 @@ context: (pluginContext) => {
   }
 }
       </coralite-code-highlight>
+    </section>
+
+    <!-- Getter Isomorphism Invariant -->
+    <section id="getter-invariant">
+      <coralite-heading level="2" text="Getter Isomorphism Invariant"></coralite-heading>
+      <p>Isomorphic getters (<code>export const getters = { ... }</code> in components or <code>getters</code> in pages) strictly receive <code>{ state, route, root, refs, slots, signal, isServer, store }</code>. <strong>Getters never receive plugin context.</strong></p>
+      <p>Getters evaluate synchronously during both server-side generation (Node.js) and reactive browser state mutations (Client). Injecting build-time or server-only plugins into getters would destroy isomorphism when state changes in the browser.</p>
+      <p>To use plugin data within getters: call plugin methods inside <code>server()</code>, assign the result to <code>state</code>, and have pure getters read from <code>state</code>.</p>
     </section>
 
     <!-- Complete Example -->

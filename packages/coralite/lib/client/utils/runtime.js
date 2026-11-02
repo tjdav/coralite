@@ -223,12 +223,15 @@ export function generateClientRuntime ({
 
   window.__coralite__.loadComponent = loadComponent;
   window.__coralite__.upgrade = upgrade;
+  if (typeof getClientContext === 'function') {
+    window.__coralite__.getClientContext = getClientContext;
+  }
 
   if (typeof initPlugins === 'function') {
     await initPlugins();
   }
   if (typeof setupPageRuntime === 'function' && window.__coralite_page_config__) {
-    await setupPageRuntime(window.__coralite_page_config__);
+    await setupPageRuntime(window.__coralite_page_config__, getClientContext);
   }
 
   if (typeof setupDevTools === 'function') {

@@ -31,6 +31,7 @@
  * @property {(el: Element) => Promise<void>} [upgrade]
  * @property {any} [store]
  * @property {any} [lifecycle]
+ * @property {(instanceContext: any) => Promise<any>} [getClientContext]
  */
 
 /**

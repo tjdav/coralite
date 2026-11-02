@@ -800,6 +800,33 @@ esbuild error mapping resolves plugin paths using precedence:
 - **Server Hooks**: `onBeforeBuild`, `onPageSet`, `onPageUpdate`, `onPageDelete`, `onComponentSet`, `onComponentUpdate`, `onComponentDelete`, `onBeforePageRender`, `onBeforeComponentRender`, `onAfterComponentRender`, `onAfterPageRender`, `onAfterBuild`.
 - **Client Hooks**: `onBeforeComponentRender`, `onAfterComponentRender`, `onDisconnected`.
 
+### 7.4 Context Injection Targets & Getter Isomorphism Invariant
+
+Plugin contexts resolved via `server.context` and `client.context` are injected into Component and Page handlers:
+
+- **Server Context Injection**:
+  - **Components**: `export function server ({ ...plugins, ...props, route, state, store })`
+  - **Pages**: `export default definePage({ server ({ ...plugins, route, app, session, signal, store, page }) })`
+- **Client Context Injection**:
+  - **Components**: `export function client ({ ...plugins, refs, signal, state, store, ... })`
+  - **Pages**: `export default definePage({ client ({ ...plugins, route, state, signal, ... }) })`
+- **Reserved Framework Key Precedence**:
+  - Core framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) are guaranteed and take strict precedence over plugin keys. If a plugin exports a key colliding with a reserved framework key, Coralite emits a warning in development and testing modes and preserves the framework key.
+- **Getter Isomorphism Invariant**:
+  - Getters are isomorphic pure derivation functions that execute synchronously both during SSR (Node.js) and during reactive client mutations (Browser).
+  - Getters strictly receive `{ state, route, root, refs, slots, signal, isServer, store }`.
+  - **Getters NEVER receive plugin context**. Injecting build-time or server-only plugins into getters violates isomorphism when state mutates in the browser.
+  - In development mode, attempting to access a registered plugin name on getter context throws a diagnostic warning explaining the invariant.
+  - **Architectural pattern**: Access plugin utilities in `server()`, write the fetched or transformed data into `state` (or return it from `server()`), and have isomorphic getters read directly from `state`.
+
+### 7.5 Testing Server Plugins
+
+To test a server plugin:
+1. Register the plugin in `coralite.config.js` via `plugins: [myPlugin]`.
+2. Create an isolated fixture component (e.g. `tests/fixtures/components/test-plugin-consumer.html`) or fixture page (`tests/fixtures/pages/test-plugin.html`) consuming the plugin in `server({ myPlugin })`.
+3. In tests, use `createCoralite` with custom `plugins: [...]` or test against the fixture route (`/__fixtures__/test-plugin`).
+4. To mock plugins during tests, pass mocks into `plugins: [...]` in the test configuration or use `plugin.server.context = () => () => ({ ...mocks })`.
+
 ---
 
 ## 8. Configuration (`coralite.config.js` / `defineConfig`)
@@ -815,12 +842,14 @@ esbuild error mapping resolves plugin paths using precedence:
 
 ```javascript
 import { defineConfig } from 'coralite-scripts'
+import analyticsPlugin from './plugins/analytics.js'
 
 export default defineConfig({
   output: 'dist',
   components: 'src/components',
   pages: 'src/pages',
   public: 'public',
+  plugins: [analyticsPlugin],
   exclude: ['**/__test__/**', '**/*.test.html'],
   fixtures: {
     pages: 'tests/fixtures/pages',
@@ -848,6 +877,8 @@ export default defineConfig({
   }
 })
 ```
+
+- **`plugins`**: Array of Coralite plugin objects defined via `definePlugin(...)`. Injected into `server()` and `client()` handlers of components and pages.
 
 ---
 

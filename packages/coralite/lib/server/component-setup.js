@@ -360,16 +360,59 @@ async function _executeServerFunction (server, state, context, initialState, app
   }
 }
 
-async function _executeServerGetters (getters, state, root, context) {
+async function _executeServerGetters (getters, state, root, context, app, module) {
   if (!getters) {
     return
   }
   const route = _getRouteFromContext(context)
   const roState = createReadOnlyProxy(state)
   const serverSlots = createServerSlotsHelper(root)
-  const appOpts = context && context.app ? context.app.options : null
+  const appOpts = (context && context.app ? context.app.options : null) || app?.options
   const storeConfig = appOpts ? appOpts.store : undefined
   const reactiveStore = context?.reactiveStore || (storeConfig ? createStore(storeConfig) : undefined)
+  let serverContext = {
+    state: roState,
+    route,
+    root: root || null,
+    refs: () => null,
+    slots: serverSlots,
+    isServer: true,
+    signal: context?.signal || NOOP_SIGNAL,
+    store: reactiveStore
+  }
+  const isDevOrTest = appOpts?.mode === 'development' || appOpts?.mode === 'testing'
+  const sourcePlugins = context?.source?.plugins || app?.source?.plugins
+  if (isDevOrTest && sourcePlugins) {
+    const pluginKeys = new Set(Object.keys(sourcePlugins))
+    if (pluginKeys.size > 0) {
+      serverContext = new Proxy(serverContext, {
+        get (target, prop, receiver) {
+          if (typeof prop === 'string' && pluginKeys.has(prop)) {
+            const warnMsg = `Plugin "${prop}" cannot be accessed directly in isomorphic getters. Fetch or compute plugin data in server(), assign to state, and read from state in getters.`
+            const effectiveApp = app || context?.app
+            if (effectiveApp && typeof effectiveApp.onError === 'function') {
+              effectiveApp.onError({
+                level: 'WARN',
+                message: warnMsg,
+                componentId: module?.id
+              })
+            } else {
+              handleError({
+                onErrorCallback: appOpts?.onError,
+                data: {
+                  level: 'WARN',
+                  message: warnMsg,
+                  componentId: module?.id,
+                  filePath: module?.path?.pathname
+                }
+              })
+            }
+          }
+          return Reflect.get(target, prop, receiver)
+        }
+      })
+    }
+  }
   for (const [key, getter] of Object.entries(getters)) {
     if (isAsyncFunction(getter)) {
       state[key] = undefined
@@ -377,16 +420,6 @@ async function _executeServerGetters (getters, state, root, context) {
         state.__script__.state[key] = undefined
       }
       continue
-    }
-    const serverContext = {
-      state: roState,
-      route,
-      root: root || null,
-      refs: () => null,
-      slots: serverSlots,
-      isServer: true,
-      signal: context?.signal || NOOP_SIGNAL,
-      store: reactiveStore
     }
     const result = getter(serverContext)
     state[key] = (result && typeof result.then === 'function') ? await result : result
@@ -762,7 +795,7 @@ export function createComponentDefinition ({ app }) {
 
     _validateInitialAttributes(normalizedAttributes, state, app, module)
     await _executeServerFunction(server, state, context, initialState, app, module)
-    await _executeServerGetters(getters, state, root, context)
+    await _executeServerGetters(getters, state, root, context, app, module)
     await _processServerSlots(slots, state, root, context, app, module)
 
     _finalizeScriptState(state, options, module)
