@@ -29,9 +29,18 @@ Canonical harness runs against external benchmark repos. Clones each harness int
 pnpm bench:external              # run all registered adapters
 pnpm bench:external jfb          # run only js-framework-benchmark
 pnpm bench:external lumeland     # run only lumeland-benchmark
+pnpm bench:external --compare    # compare Coralite against competitor frameworks and SSGs
+pnpm bench:external jfb --compare --full --save # full comparative JFB run saved to results
+pnpm bench:external jfb --frameworks keyed/vue keyed/solid # custom framework selection
 pnpm bench:external --clean      # wipe .bench-cache/ and re-clone
 pnpm bench:external --save       # write results to benchmarks/results/external/
 ```
+
+### Framework Comparison Presets
+
+- **`jfb --compare`**: Benchmarks Coralite (`keyed/coralite`, `keyed/coralite-opt`) alongside **`keyed/vanillajs`** (baseline), **`keyed/lit`** (peer Web Component), **`keyed/react-hooks`**, and **`keyed/svelte`**. Custom targets can also be specified via `--frameworks <targets...>`. Use `--full` to record full numerical metrics (default is fast `--smoketest true`).
+- **`lumeland --compare`**: Benchmarks Coralite against static site generators **`eleventy`** (Node) and **`lume`** (Deno), plus **`hugo`** (Go) if detected in system PATH.
+- **`bench:internal --frameworks`**: Allows filtering internal hydration benchmark targets (e.g. `--frameworks=coraliteDynamic,react,svelte`). Displays relative delta comparison (vs Coralite baseline) in console and markdown.
 
 **First run is slow** (clone + install ~2–5 min). Subsequent runs are ~1 min (cache hit). `.bench-cache/` is gitignored — not committed.
 

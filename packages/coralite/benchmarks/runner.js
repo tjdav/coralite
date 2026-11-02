@@ -32,7 +32,8 @@ function parseArgs () {
     saveBaseline: false,
     taskId: 'adhoc',
     phase: 'after',
-    save: false
+    save: false,
+    frameworks: null
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -43,6 +44,10 @@ function parseArgs () {
       flags.suite = arg.split('=')[1]
     } else if (arg === '-s' && i + 1 < args.length) {
       flags.suite = args[++i]
+    } else if (arg.startsWith('--frameworks=')) {
+      flags.frameworks = arg.split('=')[1].split(',').map(s => s.trim()).filter(Boolean)
+    } else if (arg === '--frameworks' && i + 1 < args.length) {
+      flags.frameworks = args[++i].split(',').map(s => s.trim()).filter(Boolean)
     } else if (arg.startsWith('--task-id=')) {
       flags.taskId = arg.split('=')[1]
     } else if (arg === '--task-id' && i + 1 < args.length) {
@@ -88,6 +93,7 @@ Usage:
 Options:
   --help, -h          Display formatted CLI usage and exit
   --suite=<name>, -s  Run a specific benchmark suite (bundle-hydration, internal, stress, or all [default: all])
+  --frameworks=<list> Comma-separated list of frameworks to include in bundle-hydration (coraliteDynamic, react, vue, svelte)
   --task-id=<id>      Identifier for the result file (default: adhoc)
   --phase=<phase>     Phase of run: before, after, baseline (default: after)
   --save              Write results to benchmarks/results/<task-id>.json
@@ -210,7 +216,8 @@ async function main () {
 
   if (selectedSuite === 'all' || selectedSuite === 'bundle-hydration' || selectedSuite === 'bundle' || selectedSuite === 'hydration') {
     const bundleResults = await runBundleHydrationSuite({
-      iterations: flags.iterations
+      iterations: flags.iterations,
+      frameworks: flags.frameworks
     })
     resultsData.suites['bundle-hydration'] = bundleResults
     triggerGC()

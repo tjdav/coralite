@@ -62,6 +62,7 @@ async function createStaticServer (rootDir) {
  *
  * @param {Object} [options] - Options for running the benchmark suite.
  * @param {number} [options.iterations=9] - Number of iterations per benchmark run.
+ * @param {string[]} [options.frameworks] - Optional list of framework keys to filter.
  * @returns {Promise<Object>} Benchmark results
  */
 export async function runBundleHydrationSuite (options = {}) {
@@ -69,7 +70,7 @@ export async function runBundleHydrationSuite (options = {}) {
   const buildDir = path.join(__dirname, '.bench-build')
   await fs.mkdir(buildDir, { recursive: true })
 
-  const frameworks = [
+  let frameworks = [
     {
       key: 'coraliteDynamic',
       appDir: 'coralite-dynamic',
@@ -96,6 +97,11 @@ export async function runBundleHydrationSuite (options = {}) {
       entry: 'app.js'
     }
   ]
+
+  if (Array.isArray(options.frameworks) && options.frameworks.length > 0) {
+    const requested = options.frameworks.map(f => f.toLowerCase())
+    frameworks = frameworks.filter(fw => requested.includes(fw.key.toLowerCase()))
+  }
 
   const bundleMetrics = {}
 
