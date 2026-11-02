@@ -25,7 +25,9 @@ function isObject (obj) {
  * @returns {obj is CoraliteElement} True if the object is a CoraliteElement, false otherwise.
  */
 function isCoraliteElement (obj) {
-  return isObject(obj) && (obj.type === 'tag' || obj.type === 'script' || obj.type === 'style')
+  return isObject(obj) &&
+         (obj.type === 'tag' || obj.type === 'script' || obj.type === 'style') &&
+         typeof obj.name === 'string'
 }
 
 /**
@@ -34,7 +36,9 @@ function isCoraliteElement (obj) {
  * @returns {obj is CoraliteTextNode} True if the object is a CoraliteTextNode, false otherwise.
  */
 function isCoraliteTextNode (obj) {
-  return isObject(obj) && obj.type === 'text'
+  return isObject(obj) &&
+         obj.type === 'text' &&
+         typeof obj.data === 'string'
 }
 
 /**
@@ -43,7 +47,9 @@ function isCoraliteTextNode (obj) {
  * @returns {obj is CoraliteComment} True if the object is a CoraliteComment, false otherwise.
  */
 function isCoraliteComment (obj) {
-  return isObject(obj) && obj.type === 'comment'
+  return isObject(obj) &&
+         obj.type === 'comment' &&
+         typeof obj.data === 'string'
 }
 
 /**
@@ -52,7 +58,9 @@ function isCoraliteComment (obj) {
  * @returns {obj is CoraliteDirective} True if the object is a CoraliteDirective, false otherwise.
  */
 function isCoraliteDirective (obj) {
-  return isObject(obj) && obj.type === 'directive'
+  return isObject(obj) &&
+         obj.type === 'directive' &&
+         typeof obj.name === 'string'
 }
 
 /**
@@ -61,7 +69,9 @@ function isCoraliteDirective (obj) {
  * @returns {obj is CoraliteComponentRoot} True if the object is a CoraliteComponentRoot, false otherwise.
  */
 function isCoraliteComponentRoot (obj) {
-  return isObject(obj) && obj.type === 'root'
+  return isObject(obj) &&
+         obj.type === 'root' &&
+         Array.isArray(obj.children)
 }
 
 /**
