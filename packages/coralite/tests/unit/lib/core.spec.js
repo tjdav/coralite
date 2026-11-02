@@ -13,8 +13,10 @@ import {
   indexOfCI,
   extractTemplateBlock,
   stripCssComments,
-  stripHtmlComments
+  stripHtmlComments,
+  normalizeObjectFunctions
 } from '../../../lib/shared/core.js'
+import { astTransformer } from '../../../lib/server/utils/server.js'
 import { CoraliteError } from '../../../lib/shared/errors.js'
 
 describe('shared/core.js', () => {
@@ -485,6 +487,29 @@ describe('shared/core.js', () => {
       const result = stripHtmlComments(payload)
       assert.strictEqual(result.length, payload.length)
       assert.strictEqual(result.includes('<div>Safe</div>'), true)
+    })
+  })
+
+  describe('normalizeObjectFunctions with astTransformer', () => {
+    it('preserves component state with type property without treating it as DOM AST node', () => {
+      const state = {
+        type: 'text',
+        name: 'email',
+        value: 'test@example.com',
+        error: '',
+        disabled: false
+      }
+      const result = normalizeObjectFunctions(state, astTransformer)
+      assert.deepStrictEqual(result, state)
+    })
+
+    it('transforms real DOM AST text nodes to serialized HTML strings', () => {
+      const node = {
+        type: 'text',
+        data: 'Hello World'
+      }
+      const result = normalizeObjectFunctions(node, astTransformer)
+      assert.strictEqual(result, 'Hello World')
     })
   })
 })

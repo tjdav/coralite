@@ -66,6 +66,16 @@ describe('type-helper.js', () => {
           name: 'div'
         }), false)
       })
+
+      it('should return false when name property is missing or not a string', () => {
+        assert.strictEqual(isCoraliteElement({
+          type: 'tag'
+        }), false)
+        assert.strictEqual(isCoraliteElement({
+          type: 'tag',
+          name: 123
+        }), false)
+      })
     })
 
     describe('isCoraliteTextNode', () => {
@@ -87,6 +97,21 @@ describe('type-helper.js', () => {
           data: 'comment'
         }), false)
       })
+
+      it('should return false for state objects without string data', () => {
+        assert.strictEqual(isCoraliteTextNode({
+          type: 'text'
+        }), false)
+        assert.strictEqual(isCoraliteTextNode({
+          type: 'text',
+          data: 123
+        }), false)
+        assert.strictEqual(isCoraliteTextNode({
+          type: 'text',
+          name: 'email',
+          value: 'test@example.com'
+        }), false)
+      })
     })
 
     describe('isCoraliteComment', () => {
@@ -106,6 +131,16 @@ describe('type-helper.js', () => {
         assert.strictEqual(isCoraliteComment({
           type: 'text',
           data: 'text'
+        }), false)
+      })
+
+      it('should return false when data property is missing or not a string', () => {
+        assert.strictEqual(isCoraliteComment({
+          type: 'comment'
+        }), false)
+        assert.strictEqual(isCoraliteComment({
+          type: 'comment',
+          data: 123
         }), false)
       })
     })
@@ -130,6 +165,16 @@ describe('type-helper.js', () => {
           data: 'text'
         }), false)
       })
+
+      it('should return false when name property is missing or not a string', () => {
+        assert.strictEqual(isCoraliteDirective({
+          type: 'directive'
+        }), false)
+        assert.strictEqual(isCoraliteDirective({
+          type: 'directive',
+          name: 123
+        }), false)
+      })
     })
 
     describe('isCoraliteComponentRoot', () => {
@@ -149,6 +194,16 @@ describe('type-helper.js', () => {
         assert.strictEqual(isCoraliteComponentRoot({
           type: 'text',
           data: 'text'
+        }), false)
+      })
+
+      it('should return false when children property is missing or not an array', () => {
+        assert.strictEqual(isCoraliteComponentRoot({
+          type: 'root'
+        }), false)
+        assert.strictEqual(isCoraliteComponentRoot({
+          type: 'root',
+          children: {}
         }), false)
       })
     })
@@ -276,6 +331,22 @@ describe('type-helper.js', () => {
         assert.strictEqual(isCoraliteNode({}), false)
         assert.strictEqual(isCoraliteNode(null), false)
         assert.strictEqual(isCoraliteNode('string'), false)
+      })
+
+      it('should return false for component state objects colliding with node types', () => {
+        assert.strictEqual(isCoraliteNode({
+          type: 'text',
+          name: 'email',
+          value: 'test@example.com'
+        }), false)
+        assert.strictEqual(isCoraliteNode({
+          type: 'tag',
+          variant: 'primary'
+        }), false)
+        assert.strictEqual(isCoraliteNode({
+          type: 'root',
+          count: 5
+        }), false)
       })
     })
   })
