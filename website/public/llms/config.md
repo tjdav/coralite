@@ -74,3 +74,10 @@ export default defineConfig({
 - `fixtures: 'tests/fixtures'` isolates component test fixtures outside `src/pages/`.
 - In `coralite dev` and `coralite test`, fixtures are served under `/__fixtures__/<name>`.
 - In `coralite build`, fixtures and test directories (`__test__`, `__tests__`, `*.test.html`, `*.spec.html`, `*.fixture.html`) are strictly excluded and never emitted to `dist/`.
+
+## 4. Plugins Configuration
+
+- `plugins: [...]` registers plugins created with `definePlugin(...)`.
+- Injects resolved `server.context` into Component `server()` and Page `server()` handlers.
+- Injects resolved `client.context` into Component `client()` and Page `client()` handlers.
+- Plugin context is never injected into isomorphic getters.

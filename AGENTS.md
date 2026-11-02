@@ -17,6 +17,8 @@ All source is `.js` (ESM). No `.ts`, `.tsx`, `.jsx`, or `.mjs` in the source tre
 - Getter signature: `({ state, route, ... })`. Must destructure.
 - Style function signature: `({ state }) => ...`. Must destructure.
 - Slots function signature: `({ nodes, state }) => ...`. Must destructure.
+- **Plugin context injection targets**: `server.context` is injected into Component `server()` and Page `definePage({ server })`. `client.context` is injected into Component `client()` and Page `definePage({ client })`. Core framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) take precedence over plugin keys.
+- **Getter isomorphism invariant**: Getters are isomorphic pure derivation functions that evaluate synchronously during SSR and reactive browser updates. Getters strictly receive `{ state, route, root, refs, slots, isServer, signal, store }`. Getters **never** receive plugin context. Perform plugin operations in `server()`, persist to `state`, and read from `state` in getters.
 
 ### Style and script placement
 

@@ -2,16 +2,16 @@ import { createReadOnlyProxy, normalizeStyleKey, isAsyncFunction, createCombined
 import { isDevRuntime } from '../utils/dev-mode.js'
 import { CoraliteError } from '../shared/errors.js'
 
-/** @import { CoraliteGlobalThis } from '../../types/globals.js' */
 
 /**
  * Initializes client-side reactivity, style bindings, getters, observers,
  * and client() controller execution for Coralite pages on document.documentElement.
  *
  * @param {Object} pageConfig - Page configuration containing state, getters, style, and client controller.
+ * @param {Function} [getClientContext] - Optional resolver function to retrieve client plugin context.
  * @returns {Promise<void>}
  */
-export async function setupPageRuntime (pageConfig) {
+export async function setupPageRuntime (pageConfig, getClientContext) {
   if (!pageConfig || typeof window === 'undefined' || typeof document === 'undefined') {
     return
   }
@@ -300,12 +300,10 @@ export async function setupPageRuntime (pageConfig) {
 
   const clientFn = parseFn(pageConfig.client)
   if (typeof clientFn === 'function') {
-    /** @type {CoraliteGlobalThis} */
-    const win = typeof window !== 'undefined' ? window : globalThis
-    const routerCtx = win.__coralite_router__
+    // @ts-ignore
+    const routerCtx = typeof window !== 'undefined' ? window.__coralite_router__ : undefined
 
-    const context = {
-      ...(routerCtx ? { router: routerCtx } : {}),
+    const baseContext = {
       state: stateProxy,
       route: routeObj,
       root: rootEl,
@@ -333,6 +331,26 @@ export async function setupPageRuntime (pageConfig) {
         return () => observersMap.get(key)?.delete(callback)
       },
       updateComplete: Promise.resolve(true)
+    }
+
+    // @ts-ignore
+    const resolveClientContext = getClientContext || (typeof window !== 'undefined' ? window.__coralite__?.getClientContext : undefined)
+    let clientPluginContext = {}
+    if (typeof resolveClientContext === 'function') {
+      try {
+        const resolved = await resolveClientContext(baseContext)
+        if (resolved && typeof resolved === 'object') {
+          clientPluginContext = resolved
+        }
+      } catch (err) {
+        console.error('Coralite Plugin Error resolving client context for page:', err)
+      }
+    }
+
+    const context = {
+      ...clientPluginContext,
+      ...(routerCtx ? { router: routerCtx } : {}),
+      ...baseContext
     }
 
     await clientFn(context)

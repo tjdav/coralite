@@ -1473,12 +1473,35 @@ export function createRenderer ({
       if (pageExports) {
         if (typeof pageExports.server === 'function') {
           const serverStore = app?.options?.store ? createServerStore(app.options.store) : undefined
-          const pageServerRes = await pageExports.server({
+          const pageInstanceContext = {
             route: routeObj,
             app,
             session: mappedSessionObject,
             signal: NOOP_SIGNAL,
-            store: serverStore
+            store: serverStore,
+            page: pageItem
+          }
+
+          let boundPlugins = {}
+          if (hooks && typeof hooks.bind === 'function' && source?.plugins) {
+            boundPlugins = await hooks.bind(source.plugins, pageInstanceContext)
+          }
+
+          if (normalizedOptions.mode === 'development' || normalizedOptions.mode === 'testing') {
+            for (const key of Object.keys(source?.plugins || {})) {
+              if (key in pageInstanceContext) {
+                handleError({
+                  level: 'WARN',
+                  message: `Plugin "${key}" collides with reserved page server context key "${key}". Framework context takes precedence.`,
+                  filePath: pageItem.path?.pathname
+                })
+              }
+            }
+          }
+
+          const pageServerRes = await pageExports.server({
+            ...boundPlugins,
+            ...pageInstanceContext
           })
           if (pageServerRes && typeof pageServerRes === 'object') {
             Object.assign(activePageState, pageServerRes)
@@ -1516,7 +1539,7 @@ export function createRenderer ({
         if (pageExports.getters && typeof pageExports.getters === 'object') {
           const reactiveStore = app?.options?.store ? createStore(app.options.store) : undefined
           const roState = createReadOnlyProxy(activePageState)
-          const getterCtx = {
+          let getterCtx = {
             state: roState,
             route: routeObj,
             root: mappedComponent.root,
@@ -1525,6 +1548,23 @@ export function createRenderer ({
             isServer: true,
             signal: buildSignal,
             store: reactiveStore
+          }
+          if ((normalizedOptions.mode === 'development' || normalizedOptions.mode === 'testing') && source?.plugins) {
+            const pluginKeys = new Set(Object.keys(source.plugins))
+            if (pluginKeys.size > 0) {
+              getterCtx = new Proxy(getterCtx, {
+                get (target, prop, receiver) {
+                  if (typeof prop === 'string' && pluginKeys.has(prop)) {
+                    handleError({
+                      level: 'WARN',
+                      message: `Plugin "${prop}" cannot be accessed directly in isomorphic getters. Fetch or compute plugin data in server(), assign to state, and read from state in getters.`,
+                      filePath: pageItem.path?.pathname
+                    })
+                  }
+                  return Reflect.get(target, prop, receiver)
+                }
+              })
+            }
           }
           for (const [gKey, gFn] of Object.entries(pageExports.getters)) {
             if (typeof gFn === 'function') {

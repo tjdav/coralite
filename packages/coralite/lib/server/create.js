@@ -409,6 +409,7 @@ export async function createCoralite ({
 
   // @ts-ignore
   app.source = source
+  app.onError = _handleErrorLocal
 
   // Helper to register a component via its ID
   const getComponent = (id) => app.components.getItem(id)

@@ -117,7 +117,7 @@ externalStyles: [
 ]
         </coralite-code-highlight>
       </li>
-      <li><code>plugins</code> — Array of configured plugin instances created via <code>definePlugin</code>.
+      <li><code>plugins</code> — Array of configured plugin instances created via <code>definePlugin</code>. Contexts defined in <code>server.context</code> and <code>client.context</code> are automatically injected into Component and Page handlers (<code>server()</code> and <code>client()</code>). Plugin context is never injected into isomorphic getters.
         <coralite-code-highlight language="javascript">
 plugins: [
   myPlugin({ apiKey: 'secret-key' })
