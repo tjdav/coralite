@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.0.0-rc.10
+
+> Comparing `coralite-v1.0.0-rc.9` to `HEAD`
+
+**Summary:** 9 commits
+
+### ✨ Features
+
+- exclude test files from production components and document fixture conventions (config) ([0b46c12](https://github.com/tjdav/coralite/commit/0b46c1279b40b231fcf8d1dcb2979716de8a7e60))
+- clarify zero-js static contracts, ban passthrough getters, and harden ast guards (component) ([c1dbec3](https://github.com/tjdav/coralite/commit/c1dbec38da48417c6e6c1c0cbca0bdb31a8664db))
+- inject plugin context into page server and client handlers (plugin) ([9ed9e7d](https://github.com/tjdav/coralite/commit/9ed9e7da2a2f76e961970a7f7803e0491f70c735))
+- isolate test fixtures and exclude test files from production pages (config) ([b506b38](https://github.com/tjdav/coralite/commit/b506b3863dda71d5fb8069553438b053d106bb8e))
+- add multi-framework comparative benchmarking capabilities (test) ([ceacd2a](https://github.com/tjdav/coralite/commit/ceacd2a718f1464c19d74697a66fe32bf7746624))
+
+### 🐛 Bug Fixes
+
+- tighten AST node type guards to prevent state collision (types) ([5707d7e](https://github.com/tjdav/coralite/commit/5707d7e0ccfd7267ac7242894dcf8d1bce7da93f))
+
+### 📚 Documentation
+
+- restructure llms.txt into index with modular topics and full reference (manifest) ([1c477c2](https://github.com/tjdav/coralite/commit/1c477c2a705ed3c9010d05061ed83346ebb7855f))
+
+### ♻️ Code Refactoring
+
+- align release post generator and docs with static-first framing (cli) ([9fcd044](https://github.com/tjdav/coralite/commit/9fcd044d50ed454373a03099ec26f044df0bdef1))
+
+### 🧹 Chores
+
+- update repository location to github (config) ([c59979a](https://github.com/tjdav/coralite/commit/c59979a1a9b0171d4789fd6736bc282c4a25788b))
+
+
 ## v1.0.0-rc.9
 
 > Comparing `coralite-v1.0.0-rc.8` to `HEAD`
