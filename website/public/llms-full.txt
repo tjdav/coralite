@@ -455,6 +455,47 @@ Static components perform pure template interpolation without JS scripting overh
 - **Data Binding**: Attribute values passed on host tags (e.g., `<user-badge name="Alice" role="Admin"></user-badge>`) render directly into flat `{{ name }}` and `{{ role }}` interpolations.
 - **Zero Client Footprint**: Static components output zero client JavaScript chunks.
 
+### 5.1 Zero-JS Static Components with Declared Attributes
+
+A component is **static** when its definition serializes zero client lifecycle code: `client: null`, `getters: {}`, no `server`, and no reactive `state` mutations. This is the correct meaning of "zero-JS" in Coralite — the component module is still bundled into `dist/assets/js/` for imperative hydration, but no `client()` handler runs in the browser.
+
+A `<script type="module">` that exports only `attributes` (or `style`) emits 0 bytes of browser runtime lifecycle code:
+
+```html
+<template id="ui-button">
+  <button type="{{ type }}" disabled="{{ disabled }}">
+    <slot></slot>
+  </button>
+</template>
+
+<script type="module">
+  export const attributes = {
+    type: { type: String, default: 'button' },
+    disabled: { type: Boolean, default: false }
+  }
+</script>
+```
+
+Key properties:
+- `{{ type }}` and `{{ disabled }}` render directly from `state` at SSR time — no getter and no `client()` are required.
+- Native boolean attributes (`disabled`, `readonly`, `required`, `checked`) reflect automatically (`attr=""` when truthy, omitted when falsy).
+- Native button/keyboard/form semantics work out-of-the-box because Coralite renders Light DOM.
+
+### 5.2 Ref Pragmas for Phased Component Scaffolding (`CORALITE-W402`)
+
+When authoring UI design systems incrementally (e.g., Phase 1 scaffolds static markup `<button ref="button">`, Phase 2 wires events via `client()`), the validator emits `CORALITE-W402: Element ref 'button' defined in template but never accessed`.
+
+Do NOT delete the `ref` attribute, and do NOT add a dummy `client({ refs }) { refs('button') }` handler (which breaks zero-JS static status). Instead, suppress the warning with a scoped pragma comment `<!-- coralite-ignore <refName> -->` immediately following `<template>`:
+
+```html
+<template id="ui-button">
+  <!-- coralite-ignore button -->
+  <button ref="button" type="{{ type }}">
+    <slot></slot>
+  </button>
+</template>
+```
+
 ---
 
 ## 6. Dynamic Components (Named Exports Reference)
@@ -585,6 +626,42 @@ getters: {
   inputLength: ({ refs }) => refs('field')?.value.length ?? 0
 }
 ```
+
+#### Anti-Pattern: Passthrough Getters
+
+`getters` compute **derived** values — values not directly present in `state`. A getter whose body is literally `({ state }) => state.someField` is dead code: the field is already available as a flat template token `{{ someField }}`.
+
+Rule of thumb: *If the getter body could be replaced by a raw `{{ token }}` in the template, delete the getter.*
+
+**Forbidden — passthrough getter:**
+```html
+<template id="bad-example">
+  <button type="{{ buttonType }}">…</button>
+</template>
+<script type="module">
+  export const attributes = { type: { type: String, default: 'button' } }
+  export const getters = {
+    // ❌ passthrough getter
+    buttonType: ({ state }) => state.type
+  }
+</script>
+```
+
+**Required — direct flat token:**
+```html
+<template id="good-example">
+  <button type="{{ type }}">…</button>
+</template>
+<script type="module">
+  export const attributes = { type: { type: String, default: 'button' } }
+  // no getters block needed
+</script>
+```
+
+**Legitimate getter examples:**
+- Combining fields: `fullName: ({ state }) => `${state.firstName} ${state.lastName}``
+- Fallback chains: `displayValue: ({ state }) => state.value || state.placeholder || '—'`
+- Slot presence: `hasIcon: ({ slots }) => slots.has('icon')`
 
 ### 6.5 `style` (Synchronous Reactive Host Styles & CSS Vars)
 
@@ -1031,7 +1108,7 @@ Diagnostics emitted by the AST validator follow a three-level severity model:
   - `--fix`: Automatically applies AST remediations (e.g., lifting template expressions to getters).
   - `--dry-run`: Previews auto-fixes without writing changes to disk.
 - **Ignore Pragmas**:
-  - `<!-- coralite-ignore symbol1, symbol2 -->` / `/* coralite-ignore symbol1 */`: Ignores unused warnings for specific symbols.
+  - `<!-- coralite-ignore symbol1, symbol2 -->` / `/* coralite-ignore symbol1 */`: Ignores unused warnings for specific symbols, including unused element ref declarations (e.g. `<!-- coralite-ignore button -->` to suppress `CORALITE-W402` during phased development).
   - `coralite-ignore-unused` / `@coralite-ignore-unused`: Suppresses all unused symbol warnings for the entire component.
 
 ---
