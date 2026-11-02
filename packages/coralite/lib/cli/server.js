@@ -73,7 +73,7 @@ export function attachDevRoutes (expressApp) {
  * @param {CoraliteConfig} config - The Coralite configuration.
  * @param {any} coralite - The Coralite instance.
  * @param {Map<string, string>} memoryPageSource - Map of in-memory page sources.
- * @returns {Promise<{pathname: string, key: string}|null>}
+ * @returns {Promise<{pathname: string, key: string, isFixture?: boolean}|null>}
  */
 export async function resolveSource (reqPath, extension, config, coralite, memoryPageSource) {
   const candidates = []
@@ -83,26 +83,54 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
     return rel !== '..' && !rel.startsWith(`..${sep}`) && rel !== '' ? true : candidatePath === rootPath
   }
 
-  // Ensure relative path doesn't start with / for joining
-  const relPath = reqPath.startsWith('/') ? reqPath.slice(1) : reqPath
+  const fixturesConfig = coralite?.options?.fixtures || (typeof config.fixtures === 'object' && config.fixtures !== null ? config.fixtures : null) || (typeof config.fixtures === 'string' ? {
+    pages: config.fixtures,
+    prefix: '/__fixtures__'
+  } : null)
+  const fixturePrefix = fixturesConfig?.prefix || '/__fixtures__'
+  const isFixtureRequest = Boolean(
+    fixturesConfig?.pages && (
+      reqPath === fixturePrefix ||
+      reqPath.startsWith(fixturePrefix + '/') ||
+      reqPath === '/__test__' ||
+      reqPath.startsWith('/__test__/')
+    )
+  )
+
+  let activeRelPath
+  let searchRoot
+  if (isFixtureRequest) {
+    searchRoot = normalize(fixturesConfig.pages)
+    if (reqPath.startsWith(fixturePrefix)) {
+      activeRelPath = reqPath.slice(fixturePrefix.length)
+    } else {
+      activeRelPath = reqPath.slice('/__test__'.length)
+    }
+    if (activeRelPath.startsWith('/')) {
+      activeRelPath = activeRelPath.slice(1)
+    }
+  } else {
+    searchRoot = pagesRoot
+    activeRelPath = reqPath.startsWith('/') ? reqPath.slice(1) : reqPath
+  }
 
   if (reqPath.endsWith('/')) {
-    const key = join(relPath, 'index.html')
-    const candidatePath = normalize(join(config.pages, key))
+    const key = join(activeRelPath, 'index.html')
+    const candidatePath = normalize(join(searchRoot, key))
 
-    if (isPathInsideRoot(pagesRoot, candidatePath)) {
+    if (isPathInsideRoot(searchRoot, candidatePath)) {
       candidates.push({
         path: candidatePath,
         key
       })
     }
 
-    const trimmedRel = relPath.replace(/[/\\]+$/, '')
+    const trimmedRel = activeRelPath.replace(/[/\\]+$/, '')
     if (trimmedRel) {
       const altKey = trimmedRel + '.html'
-      const altCandidatePath = normalize(join(config.pages, altKey))
+      const altCandidatePath = normalize(join(searchRoot, altKey))
 
-      if (isPathInsideRoot(pagesRoot, altCandidatePath)) {
+      if (isPathInsideRoot(searchRoot, altCandidatePath)) {
         candidates.push({
           path: altCandidatePath,
           key: altKey
@@ -110,21 +138,21 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
       }
     }
   } else if (extension === '.html') {
-    const key = relPath
-    const candidatePath = normalize(join(config.pages, key))
+    const key = activeRelPath
+    const candidatePath = normalize(join(searchRoot, key))
 
-    if (isPathInsideRoot(pagesRoot, candidatePath)) {
+    if (isPathInsideRoot(searchRoot, candidatePath)) {
       candidates.push({
         path: candidatePath,
         key
       })
     }
 
-    if (relPath !== 'index.html' && !relPath.endsWith('/index.html') && !relPath.endsWith(`${sep}index.html`)) {
-      const cleanKey = join(relPath.slice(0, -5), 'index.html')
-      const cleanCandidatePath = normalize(join(config.pages, cleanKey))
+    if (activeRelPath !== 'index.html' && !activeRelPath.endsWith('/index.html') && !activeRelPath.endsWith(`${sep}index.html`)) {
+      const cleanKey = join(activeRelPath.slice(0, -5), 'index.html')
+      const cleanCandidatePath = normalize(join(searchRoot, cleanKey))
 
-      if (isPathInsideRoot(pagesRoot, cleanCandidatePath)) {
+      if (isPathInsideRoot(searchRoot, cleanCandidatePath)) {
         candidates.push({
           path: cleanCandidatePath,
           key: cleanKey
@@ -133,20 +161,20 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
     }
   } else {
     // No extension, no trailing slash
-    const key1 = relPath + '.html'
-    const candidatePath1 = normalize(join(config.pages, key1))
+    const key1 = activeRelPath + '.html'
+    const candidatePath1 = normalize(join(searchRoot, key1))
 
-    if (isPathInsideRoot(pagesRoot, candidatePath1)) {
+    if (isPathInsideRoot(searchRoot, candidatePath1)) {
       candidates.push({
         path: candidatePath1,
         key: key1
       })
     }
 
-    const key2 = join(relPath, 'index.html')
-    const candidatePath2 = normalize(join(config.pages, key2))
+    const key2 = join(activeRelPath, 'index.html')
+    const candidatePath2 = normalize(join(searchRoot, key2))
 
-    if (isPathInsideRoot(pagesRoot, candidatePath2)) {
+    if (isPathInsideRoot(searchRoot, candidatePath2)) {
       candidates.push({
         path: candidatePath2,
         key: key2
@@ -161,22 +189,27 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
       const normalizedKey = candidate.key.split(sep).join('/')
       return {
         pathname: candidate.path,
-        key: normalizedKey
+        key: normalizedKey,
+        isFixture: isFixtureRequest
       }
     } catch {
       // continue
     }
   }
 
-  // Fallback check coralite pages collection (supports virtual pages)
-  for (const candidate of candidates) {
-    const item = coralite.pages.getItem(candidate.path)
+  // Fallback check coralite collection (supports virtual pages)
+  const targetCollection = (isFixtureRequest && coralite?.fixtures) ? coralite.fixtures : coralite?.pages
+  if (targetCollection) {
+    for (const candidate of candidates) {
+      const item = targetCollection.getItem(candidate.path)
 
-    if (item) {
-      const normalizedKey = candidate.key.split(sep).join('/')
-      return {
-        pathname: candidate.path,
-        key: normalizedKey
+      if (item) {
+        const normalizedKey = candidate.key.split(sep).join('/')
+        return {
+          pathname: candidate.path,
+          key: normalizedKey,
+          isFixture: isFixtureRequest
+        }
       }
     }
   }
@@ -218,6 +251,7 @@ async function server (config, options, runMode = 'dev') {
     let compilePromise = Promise.resolve()
 
     // start coralite
+    /** @type {any} */
     let coralite
     let currentConfig = config
     const pluginPaths = new Set()
@@ -291,6 +325,8 @@ async function server (config, options, runMode = 'dev') {
       coralite = await createCoralite({
         components: currentConfig.components,
         pages: currentConfig.pages,
+        fixtures: currentConfig.fixtures,
+        exclude: currentConfig.exclude,
         plugins: Array.isArray(currentConfig.plugins) ? currentConfig.plugins : [],
         assets: currentConfig.assets,
         csp: currentConfig.csp,
@@ -399,6 +435,14 @@ async function server (config, options, runMode = 'dev') {
       config.pages,
       config.components
     ]
+
+    const effectiveFixtures = (coralite && coralite.options ? coralite.options.fixtures : null) || currentConfig.fixtures
+    if (effectiveFixtures?.pages) {
+      watchPath.push(effectiveFixtures.pages)
+    }
+    if (effectiveFixtures?.components) {
+      watchPath.push(effectiveFixtures.components)
+    }
 
     // no cache middleware
     app.use(function (req, res, next) {
@@ -528,14 +572,15 @@ async function server (config, options, runMode = 'dev') {
               rebuildScript = buildLiveReloadScript(currentConfig)
             }
 
-            // Only set item if it does not already exist in coralite.pages
-            let item = coralite.pages.getItem(pathname)
+            // Only set item if it does not already exist in coralite.pages or fixtures
+            const targetCollection = (result.isFixture && coralite.fixtures) ? coralite.fixtures : coralite.pages
+            let item = targetCollection.getItem(pathname)
 
             if (!item) {
               try {
                 await access(pathname, constants.R_OK)
-                await coralite.pages.setItem(pathname)
-                item = coralite.pages.getItem(pathname)
+                await targetCollection.setItem(pathname)
+                item = targetCollection.getItem(pathname)
               } catch {
                 // Virtual page from onBeforeBuild
               }
@@ -603,6 +648,9 @@ async function server (config, options, runMode = 'dev') {
             const doc = documents.find(matchedDoc => {
               if (!matchedDoc || !matchedDoc.content) {
                 return false
+              }
+              if (result.isFixture) {
+                return normalize(matchedDoc.path.pathname) === normalize(pathname)
               }
               const relPath = relative(config.pages, matchedDoc.path.pathname)
               const normalizedKey = relPath.split(sep).join('/')
@@ -749,13 +797,15 @@ async function server (config, options, runMode = 'dev') {
       watcher
         .on('unlink', async (path) => {
           try {
-            if (path.startsWith(componentPath)) {
+            if (path.startsWith(componentPath) || (effectiveFixtures?.components && path.startsWith(effectiveFixtures.components))) {
               structuralChanges.add(path)
               pendingChanges.add(path)
               debounceCompile()
               await coralite.components.deleteItem(path)
             } else if (path.startsWith(pagesPath)) {
               await coralite.pages.deleteItem(path)
+            } else if (coralite.fixtures && effectiveFixtures?.pages && path.startsWith(effectiveFixtures.pages)) {
+              await coralite.fixtures.deleteItem(path)
             }
           } catch (error) {
             displayError(`Failed to handle file deletion: ${path}`, error)
@@ -768,12 +818,16 @@ async function server (config, options, runMode = 'dev') {
         })
         .on('add', async (path) => {
           try {
-            if (path.startsWith(componentPath)) {
+            if (path.startsWith(componentPath) || (effectiveFixtures?.components && path.startsWith(effectiveFixtures.components))) {
               // set component item
               structuralChanges.add(path)
               pendingChanges.add(path)
               debounceCompile()
               coralite.components.setItem(path)
+            } else if (coralite.fixtures && effectiveFixtures?.pages && path.startsWith(effectiveFixtures.pages)) {
+              pendingChanges.add(path)
+              debounceCompile()
+              await coralite.fixtures.setItem(path)
             } else if (path.endsWith('.scss') || path.endsWith('.sass') || path === configPathStr || Array.from(pluginPaths).some(pluginPath => path === pluginPath)) {
               // Add to pending changes and trigger debounced compilation
               pendingChanges.add(path)

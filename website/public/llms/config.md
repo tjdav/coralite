@@ -48,6 +48,10 @@ export default defineConfig({
     }
   },
 
+  // Test fixtures & exclusions
+  fixtures: 'tests/fixtures',   // Directory containing test fixture pages (or { pages, components, prefix })
+  exclude: ['**/drafts/**'],    // Custom glob patterns excluded from page discovery
+
   // Styles processing
   styles: {
     input: ['src/css/styles.css'],
@@ -64,3 +68,9 @@ export default defineConfig({
   ]
 })
 ```
+
+## 3. Test Fixtures & Page Exclusions
+
+- `fixtures: 'tests/fixtures'` isolates component test fixtures outside `src/pages/`.
+- In `coralite dev` and `coralite test`, fixtures are served under `/__fixtures__/<name>`.
+- In `coralite build`, fixtures and test directories (`__test__`, `__tests__`, `*.test.html`, `*.spec.html`, `*.fixture.html`) are strictly excluded and never emitted to `dist/`.

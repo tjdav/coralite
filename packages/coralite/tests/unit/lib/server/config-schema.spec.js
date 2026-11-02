@@ -67,6 +67,8 @@ describe('config-schema.spec.js - Unified config schema validation', () => {
     assert.strictEqual(config.output, 'dist')
     assert.strictEqual(config.components, 'components')
     assert.strictEqual(config.pages, 'pages')
+    assert.strictEqual(config.fixtures, undefined)
+    assert.deepStrictEqual(config.exclude, [])
     assert.strictEqual(config.public, 'public')
     assert.strictEqual(config.baseURL, '/')
     assert.strictEqual(config.mode, 'production')
@@ -370,5 +372,106 @@ describe('config-schema.spec.js - Unified config schema validation', () => {
         force: true
       })
     }
+  })
+
+  describe('fixtures & exclude validation', () => {
+    it('accepts string fixtures configuration', () => {
+      const config = defineConfig({
+        output: 'dist',
+        components: 'components',
+        pages: 'pages',
+        fixtures: 'tests/fixtures'
+      })
+      assert.strictEqual(config.fixtures, 'tests/fixtures')
+    })
+
+    it('accepts object fixtures configuration with pages, components, and prefix', () => {
+      const config = defineConfig({
+        output: 'dist',
+        components: 'components',
+        pages: 'pages',
+        fixtures: {
+          pages: 'tests/fixtures/pages',
+          components: 'tests/fixtures/components',
+          prefix: '/__fixtures__'
+        }
+      })
+      assert.deepStrictEqual(config.fixtures, {
+        pages: 'tests/fixtures/pages',
+        components: 'tests/fixtures/components',
+        prefix: '/__fixtures__'
+      })
+    })
+
+    it('normalizes testing.fixtures when top-level fixtures is omitted', () => {
+      const config = defineConfig({
+        output: 'dist',
+        components: 'components',
+        pages: 'pages',
+        testing: {
+          fixtures: 'tests/fixtures'
+        }
+      })
+      assert.strictEqual(config.fixtures, 'tests/fixtures')
+    })
+
+    it('throws error when fixtures is an invalid type', () => {
+      assert.throws(
+        () => defineConfig({
+          output: 'dist',
+          components: 'components',
+          pages: 'pages',
+          fixtures: 123
+        }),
+        /Config property "fixtures" must be a string or an object/
+      )
+    })
+
+    it('throws error when fixtures is an empty string', () => {
+      assert.throws(
+        () => defineConfig({
+          output: 'dist',
+          components: 'components',
+          pages: 'pages',
+          fixtures: '   '
+        }),
+        /Config property "fixtures" cannot be empty/
+      )
+    })
+
+    it('accepts valid exclude array of strings', () => {
+      const config = defineConfig({
+        output: 'dist',
+        components: 'components',
+        pages: 'pages',
+        exclude: ['**/__test__/**', '**/*.spec.html']
+      })
+      assert.deepStrictEqual(config.exclude, ['**/__test__/**', '**/*.spec.html'])
+    })
+
+    it('throws error when exclude is not an array of strings', () => {
+      assert.throws(
+        () => defineConfig({
+          output: 'dist',
+          components: 'components',
+          pages: 'pages',
+          exclude: 'not-an-array'
+        }),
+        /Config property "exclude" must be an array of strings/
+      )
+    })
+
+    it('accepts pages as object with dir and exclude', () => {
+      const config = defineConfig({
+        output: 'dist',
+        components: 'components',
+        pages: {
+          dir: 'src/pages',
+          exclude: ['**/__test__/**']
+        }
+      })
+      assert.strictEqual(config.pages, 'src/pages')
+      assert.deepStrictEqual(config.exclude, ['**/__test__/**'])
+    })
   })
 })

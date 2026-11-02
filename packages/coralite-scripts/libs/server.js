@@ -266,6 +266,8 @@ async function server (config, options, runMode = 'dev') {
       coralite = await createCoralite({
         components: currentConfig.components,
         pages: currentConfig.pages,
+        fixtures: currentConfig.fixtures,
+        exclude: currentConfig.exclude,
         plugins: Array.isArray(currentConfig.plugins) ? currentConfig.plugins : [],
         assets: currentConfig.assets,
         csp: currentConfig.csp,
