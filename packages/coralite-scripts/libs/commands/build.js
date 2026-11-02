@@ -146,7 +146,9 @@ export async function buildCommand (config, options, logger = null) {
 
       if (result.status === 'skipped') {
         skippedCount++
-        if (!options.verbose) {
+        if (options.verbose) {
+          log(toTime() + colours.gray('[-] skipped: ') + result.path.pathname + '\n')
+        } else {
           updateSpinnerText()
         }
         return

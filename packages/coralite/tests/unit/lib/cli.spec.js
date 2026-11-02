@@ -314,6 +314,62 @@ export default {
       assert.ok(content.includes('>Hello <c-token>World</c-token><'))
     })
 
+    test('preserves unchanged pages across incremental builds and deletes stale files when source is removed', () => {
+      const compDir = join(tmpDir, 'components')
+      const pageDir = join(tmpDir, 'pages')
+      const distDir = join(tmpDir, 'dist')
+
+      mkdirSync(compDir, { recursive: true })
+      mkdirSync(pageDir, { recursive: true })
+      writeFileSync(join(tmpDir, 'coralite.config.js'), `
+export default {
+  components: 'components',
+  pages: 'pages',
+  output: 'dist'
+}
+`)
+      writeFileSync(join(compDir, 'test-card.html'), `
+<template id="test-card">
+  <div>Card</div>
+</template>
+`)
+      writeFileSync(join(pageDir, 'index.html'), '<!DOCTYPE html><html><body><test-card></test-card></body></html>')
+      writeFileSync(join(pageDir, 'about.html'), '<!DOCTYPE html><html><body><h1>About</h1></body></html>')
+
+      /* Initial full build */
+      runCli('build --verbose', {
+        cwd: tmpDir,
+        stdio: 'pipe'
+      })
+
+      assert.strictEqual(existsSync(join(distDir, 'index.html')), true)
+      assert.strictEqual(existsSync(join(distDir, 'about/index.html')), true)
+
+      /* Incremental build without changes: pages must be skipped and preserved */
+      const build2 = runCli('build --verbose', {
+        cwd: tmpDir,
+        stdio: 'pipe'
+      }).toString()
+
+      assert.match(build2, /\[-\] skipped:/)
+      assert.strictEqual(existsSync(join(distDir, 'index.html')), true, 'index.html must not be deleted on incremental build')
+      assert.strictEqual(existsSync(join(distDir, 'about/index.html')), true, 'about/index.html must not be deleted on incremental build')
+
+      /* Remove source page */
+      rmSync(join(pageDir, 'about.html'))
+
+      /* Next build must clean up removed page from dist */
+      const build3 = runCli('build --verbose', {
+        cwd: tmpDir,
+        stdio: 'pipe'
+      }).toString()
+
+      assert.strictEqual(existsSync(join(distDir, 'index.html')), true, 'index.html remains')
+      assert.strictEqual(existsSync(join(distDir, 'about/index.html')), false, 'about/index.html must be deleted as stale file')
+      assert.strictEqual(existsSync(join(distDir, 'about')), false, 'empty about directory must be removed')
+      assert.match(build3, /Deleted stale file/)
+    })
+
     test('errors when invoked with retired low-level flags -p or -o', () => {
       assert.throws(() => {
         runCli('build -c components -p pages -o dist', {
