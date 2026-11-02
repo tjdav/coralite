@@ -64,6 +64,57 @@ function runCmd (cmd, args, cwd, log) {
   }
 }
 
+const FRAMEWORK_ALIASES = {
+  vanilla: 'keyed/vanillajs',
+  vanillajs: 'keyed/vanillajs',
+  lit: 'keyed/lit',
+  react: 'keyed/react-hooks',
+  'react-hooks': 'keyed/react-hooks',
+  svelte: 'keyed/svelte',
+  vue: 'keyed/vue',
+  solid: 'keyed/solid',
+  coralite: 'keyed/coralite',
+  'coralite-opt': 'keyed/coralite-opt'
+}
+
+/**
+ * Resolves list of frameworks to run for js-framework-benchmark.
+ * @returns {string[]} Framework keys
+ */
+function getSelectedFrameworks () {
+  const baseFrameworks = ['keyed/coralite', 'keyed/coralite-opt']
+  const comparePreset = ['keyed/vanillajs', 'keyed/lit', 'keyed/react-hooks', 'keyed/svelte']
+
+  const frameworks = [...baseFrameworks]
+
+  if (process.argv.includes('--compare')) {
+    for (const fw of comparePreset) {
+      if (!frameworks.includes(fw)) {
+        frameworks.push(fw)
+      }
+    }
+  }
+
+  const fwArgIdx = process.argv.indexOf('--frameworks')
+  if (fwArgIdx !== -1) {
+    const trailing = process.argv.slice(fwArgIdx + 1)
+    for (const item of trailing) {
+      if (item.startsWith('-')) {
+        break
+      }
+      const items = item.split(',').map(s => s.trim()).filter(Boolean)
+      for (const f of items) {
+        const mapped = FRAMEWORK_ALIASES[f] || (f.startsWith('keyed/') || f.startsWith('non-keyed/') ? f : `keyed/${f}`)
+        if (!frameworks.includes(mapped)) {
+          frameworks.push(mapped)
+        }
+      }
+    }
+  }
+
+  return frameworks
+}
+
 const adapter = {
   name: 'jfb',
   repoUrl: 'https://github.com/krausest/js-framework-benchmark.git',
@@ -155,6 +206,18 @@ const adapter = {
       `
       runCmd('node', ['--experimental-vm-modules', '-e', buildScript], fwDir, log)
     }
+
+    const targetFrameworks = getSelectedFrameworks()
+    const competitorFrameworks = targetFrameworks.filter(fw => !fw.startsWith('keyed/coralite'))
+    if (competitorFrameworks.length > 0) {
+      log('jfb', `Setting up comparator frameworks: ${competitorFrameworks.join(', ')}...`)
+      const rebuildScript = `
+        import { rebuildFrameworks } from './cli/rebuild-build-single.js';
+        const ok = rebuildFrameworks(process.argv.slice(1), true);
+        if (!ok) process.exit(1);
+      `
+      runCmd('node', ['-e', rebuildScript, ...competitorFrameworks], cloneDir, log)
+    }
   },
 
   /**
@@ -166,7 +229,7 @@ const adapter = {
   run: async (cloneDir, log) => {
     log('jfb', 'Starting local server...')
     try {
-      execSync('kill $(lsof -t -i :8080) 2>/dev/null || true')
+      execSync('kill $(lsof -t -iTCP:8080 -sTCP:LISTEN) 2>/dev/null || true')
     } catch {
       // Ignore if no process was running
     }
@@ -184,7 +247,8 @@ const adapter = {
     log('jfb', 'Local server started successfully on port 8080.')
 
     try {
-      log('jfb', 'Running benchmark suite for keyed/coralite and keyed/coralite-opt...')
+      const targetFrameworks = getSelectedFrameworks()
+      log('jfb', `Running benchmark suite for: ${targetFrameworks.join(', ')}...`)
       const possibleChromePaths = [
         '/usr/bin/google-chrome',
         '/usr/bin/chromium',
@@ -209,7 +273,7 @@ const adapter = {
       if (chromeBinary) {
         runnerArgs.push('--chromeBinary', chromeBinary)
       }
-      runnerArgs.push('--framework', 'keyed/coralite', 'keyed/coralite-opt')
+      runnerArgs.push('--framework', ...targetFrameworks)
 
       if (!process.argv.includes('--full')) {
         runnerArgs.push('--smoketest', 'true')
@@ -254,17 +318,64 @@ const adapter = {
       return {
         adapter: 'jfb',
         timestamp: new Date().toISOString(),
-        frameworks: ['keyed/coralite', 'keyed/coralite-opt'],
+        frameworks: targetFrameworks,
         results: rawResults
       }
     } finally {
       log('jfb', 'Stopping local server...')
       serverProc.kill()
       try {
-        execSync('kill $(lsof -t -i :8080) 2>/dev/null || true')
+        execSync('kill $(lsof -t -iTCP:8080 -sTCP:LISTEN) 2>/dev/null || true')
       } catch {
         // Ignore
       }
+    }
+  },
+
+  /**
+   * Prints formatted summary table of benchmark results.
+   * @param {object} results Benchmark run results
+   * @param {Function} log Log callback
+   */
+  printSummary: (results, log) => {
+    if (!results || !Array.isArray(results.results) || results.results.length === 0) {
+      log('jfb', 'Note: Smoketest completed with no recorded numerical metrics.')
+      log('jfb', 'Run with --full to record complete comparative metrics (e.g. pnpm bench:external jfb --compare --full).')
+      return
+    }
+
+    log('jfb', '\n=== Framework Reactivity Comparison Summary ===\n')
+
+    const benchmarks = [...new Set(results.results.map(r => r.benchmark))]
+
+    for (const benchId of benchmarks) {
+      const entries = results.results.filter(r => r.benchmark === benchId)
+      log('jfb', `Benchmark: ${benchId}`)
+
+      const coraliteEntry = entries.find(e => e.framework.includes('coralite-v') || e.framework === 'coralite-keyed')
+      const coraliteTotal = coraliteEntry?.values?.total?.median || 0
+
+      const rows = entries.map(e => {
+        const total = e.values?.total?.median !== undefined ? `${e.values.total.median} ms` : 'N/A'
+        const script = e.values?.script?.median !== undefined ? `${e.values.script.median} ms` : 'N/A'
+        const paint = e.values?.paint?.median !== undefined ? `${e.values.paint.median} ms` : 'N/A'
+
+        let vsCoralite = '-'
+        if (coraliteTotal > 0 && e.values?.total?.median) {
+          const ratio = (e.values.total.median / coraliteTotal).toFixed(2)
+          vsCoralite = e === coraliteEntry ? '1.00x (baseline)' : `${ratio}x`
+        }
+
+        return {
+          Framework: e.framework,
+          'Total (median)': total,
+          'Script (median)': script,
+          'Paint (median)': paint,
+          'vs Coralite': vsCoralite
+        }
+      })
+
+      console.table(rows)
     }
   },
 

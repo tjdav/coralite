@@ -149,6 +149,34 @@ export function generateMarkdownTable (suiteName, suiteResults) {
     const row = metrics.map(m => suiteResults[key][m])
     md += `| ${key} | ${row.join(' | ')} |\n`
   }
+
+  if (suiteName === 'bundle-hydration' && suiteResults.coraliteDynamic) {
+    const coralite = suiteResults.coraliteDynamic
+    md += '\n#### Relative Comparison vs coraliteDynamic\n\n'
+    md += '| Framework | Gzip Size vs Coralite | TTI vs Coralite |\n'
+    md += '| --- | --- | --- |\n'
+    for (const fw of keysOrFrameworks) {
+      if (fw === 'coraliteStatic') {
+        continue
+      }
+      const metrics = suiteResults[fw]
+      let gzipRatio = '-'
+      let ttiRatio = '-'
+      if (fw === 'coraliteDynamic') {
+        gzipRatio = '1.00x (baseline)'
+        ttiRatio = '1.00x (baseline)'
+      } else {
+        if (coralite.gzipKB > 0 && metrics.gzipKB > 0) {
+          gzipRatio = `${(metrics.gzipKB / coralite.gzipKB).toFixed(2)}x`
+        }
+        if (coralite.ttiMS > 0 && metrics.ttiMS > 0) {
+          ttiRatio = `${(metrics.ttiMS / coralite.ttiMS).toFixed(2)}x`
+        }
+      }
+      md += `| ${fw} | ${gzipRatio} | ${ttiRatio} |\n`
+    }
+  }
+
   return md
 }
 
@@ -289,5 +317,35 @@ export function printTerminalResults (data) {
 
     console.table(formattedTable)
     console.log('')
+
+    if (suiteName === 'bundle-hydration' && suiteResults.coraliteDynamic) {
+      const coralite = suiteResults.coraliteDynamic
+      const compTable = {}
+      for (const [fw, metricsObj] of Object.entries(suiteResults)) {
+        if (fw === 'coraliteStatic') {
+          continue
+        }
+        let gzipRatio = '-'
+        let ttiRatio = '-'
+        if (fw === 'coraliteDynamic') {
+          gzipRatio = '1.00x (baseline)'
+          ttiRatio = '1.00x (baseline)'
+        } else {
+          if (coralite.gzipKB > 0 && metricsObj.gzipKB > 0) {
+            gzipRatio = `${(metricsObj.gzipKB / coralite.gzipKB).toFixed(2)}x`
+          }
+          if (coralite.ttiMS > 0 && metricsObj.ttiMS > 0) {
+            ttiRatio = `${(metricsObj.ttiMS / coralite.ttiMS).toFixed(2)}x`
+          }
+        }
+        compTable[fw] = {
+          'Gzip vs Coralite': gzipRatio,
+          'TTI vs Coralite': ttiRatio
+        }
+      }
+      console.log('Framework Relative Comparison (vs coraliteDynamic):')
+      console.table(compTable)
+      console.log('')
+    }
   }
 }

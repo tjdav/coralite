@@ -43,12 +43,16 @@ async function main () {
   node benchmarks/external/runner.js [adapter] [options]
 
 Adapters:
-  jfb               js-framework-benchmark
-  lumeland          lumeland-benchmark
+  jfb               js-framework-benchmark (DOM reactivity)
+  lumeland          lumeland-benchmark (SSG build throughput)
+  jsbenchmarks      jsbenchmarks submission validator
 
 Options:
+  --compare         Compare Coralite against competitor frameworks / SSGs
+  --frameworks <f>  Specify frameworks to include in the benchmark
   --clean           Remove existing cached clone before running
   --save            Save benchmark results JSON into benchmarks/results/external/
+  --full            Run full benchmark in JFB (default is smoketest)
   --help, -h        Show this help message
 `)
     process.exit(0)
@@ -56,21 +60,26 @@ Options:
 
   const clean = args.includes('--clean')
   const save = args.includes('--save') || args.includes('--save-all')
-  const adapterArgs = args.filter(arg => !arg.startsWith('--') && !arg.startsWith('-'))
 
-  const adapterKeys = adapterArgs.length > 0 ? adapterArgs : Object.keys(ADAPTERS)
-
-  for (const key of adapterKeys) {
-    if (!ADAPTERS[key]) {
-      console.error(`[error] Unknown benchmark adapter: ${key}`)
+  const adapterKeys = []
+  for (const arg of args) {
+    if (arg.startsWith('-')) {
+      break
+    }
+    if (ADAPTERS[arg]) {
+      adapterKeys.push(arg)
+    } else {
+      console.error(`[error] Unknown benchmark adapter: ${arg}`)
       console.error(`[error] Available adapters: ${Object.keys(ADAPTERS).join(', ')}`)
       process.exit(1)
     }
   }
 
+  const effectiveAdapterKeys = adapterKeys.length > 0 ? adapterKeys : Object.keys(ADAPTERS)
+
   await fs.mkdir(CACHE_DIR, { recursive: true })
 
-  for (const key of adapterKeys) {
+  for (const key of effectiveAdapterKeys) {
     const getAdapter = ADAPTERS[key]
     const adapter = await getAdapter()
 
@@ -151,6 +160,10 @@ Options:
 
     log('run', `Executing benchmark for ${adapter.name}...`)
     const results = await adapter.run(cloneDir, (tag, msg) => log(tag, msg))
+
+    if (results && typeof adapter.printSummary === 'function') {
+      adapter.printSummary(results, (tag, msg) => log(tag, msg))
+    }
 
     if (save) {
       await fs.mkdir(RESULTS_DIR, { recursive: true })
