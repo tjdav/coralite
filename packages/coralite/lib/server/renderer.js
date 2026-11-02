@@ -2249,7 +2249,12 @@ export function createRenderer ({
       if (isExternalScripts) {
         const fullScriptHash = hash(scriptContent)
         const shortScriptHash = fullScriptHash.slice(0, 8)
-        const relativePagePath = relative(normalizedOptions.path.pages, targetOutPath || pageItem.path.pathname)
+        /** @type {any} */
+        const fixturesOpt = normalizedOptions.fixtures
+        const baseDir = (fixturesOpt?.pages && (targetOutPath || pageItem.path.pathname).startsWith(fixturesOpt.pages))
+          ? fixturesOpt.pages
+          : normalizedOptions.path.pages
+        const relativePagePath = relative(baseDir, targetOutPath || pageItem.path.pathname)
         const pageStem = relativePagePath.replace(/\.html$/, '').replace(/[\/\\]/g, '-') || 'index'
         const relPath = `pages/${pageStem}-${shortScriptHash}.js`
         const fullPath = `assets/js/${relPath}`
@@ -2651,10 +2656,28 @@ export function createRenderer ({
     if (buildPath) {
       const paths = Array.isArray(buildPath) ? buildPath : [buildPath]
       for (const p of paths) {
-        if (typeof p === 'string' && !app.pages.getItem(p)) {
-          try {
-            await app.pages.setItem(p)
-          } catch (_err) {
+        if (typeof p === 'string') {
+          /** @type {any} */
+          const fixturesOpt = app.options.fixtures
+          let fixturePages = null
+          if (typeof fixturesOpt === 'object' && fixturesOpt !== null) {
+            fixturePages = fixturesOpt.pages
+          } else if (typeof fixturesOpt === 'string') {
+            fixturePages = fixturesOpt
+          }
+          const isFixture = app.fixtures && (app.fixtures.getItem(p) || (fixturePages && p.startsWith(fixturePages)))
+          if (isFixture) {
+            if (!app.fixtures.getItem(p)) {
+              try {
+                await app.fixtures.setItem(p)
+              } catch (_err) {
+              }
+            }
+          } else if (!app.pages.getItem(p)) {
+            try {
+              await app.pages.setItem(p)
+            } catch (_err) {
+            }
           }
         }
       }
@@ -2699,7 +2722,11 @@ export function createRenderer ({
     }
 
     // @ts-ignore
-    const resolvedQueue = resolvePageQueue(app.pages, buildPath)
+    const targetCollection = (app.fixtures && buildPath && (app.fixtures.getItem(buildPath) || app.fixtures.getListByPath(buildPath)))
+      ? app.fixtures
+      : app.pages
+    // @ts-ignore
+    const resolvedQueue = resolvePageQueue(targetCollection, buildPath)
     const queue = renderQueues.get(buildId)
 
     if (buildPath) {
@@ -3041,7 +3068,12 @@ export function createRenderer ({
         : manifest.physical?.[targetOutPath] || null
 
       if (!shouldRebuild && existingMeta && normalizedOptions.output && (normalizedOptions.mode === 'production' || normalizedOptions.mode === 'testing')) {
-        const relativeDir = relative(normalizedOptions.path.pages, dirname(targetOutPath))
+        /** @type {any} */
+        const fixturesOpt = normalizedOptions.fixtures
+        const basePages = (fixturesOpt?.pages && targetOutPath.startsWith(fixturesOpt.pages))
+          ? fixturesOpt.pages
+          : normalizedOptions.path.pages
+        const relativeDir = relative(basePages, dirname(targetOutPath))
         const outFile = join(normalizedOptions.output, relativeDir, basename(targetOutPath))
         try {
           await access(outFile)

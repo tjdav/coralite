@@ -10,6 +10,7 @@ All source is `.js` (ESM). No `.ts`, `.tsx`, `.jsx`, or `.mjs` in the source tre
 
 - **Components**: Use top-level named exports (`export function`, `export const`). Never use `defineComponent` for new components (`defineComponent` is retained strictly for legacy backwards compatibility).
 - **Pages and Plugins**: Use `definePage` and `definePlugin` (`export default definePage({...})` and `export default definePlugin({...})`). Never bare objects.
+- **Test fixtures**: Author testing fixtures under `tests/fixtures/` and configure `fixtures` in `coralite.config.js`. Never author test fixtures inside `src/pages/` (`src/pages/__test__`). In development and testing servers (`coralite dev` / `coralite test`), fixtures are routed at `/__fixtures__/<name>`. Production builds (`coralite build`) strictly exclude test fixture patterns from output.
 - **Component export form rule**: Handlers use `export function` (`server`, `client`, `onError`). Configuration declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`). Extra/helper exports are ignored by the compiler and preserved in module scope.
 - Templates use flat `{{ token }}` only. No expressions, dot notation, or function calls.
 - No inline event handlers. Bind in `client()` with `refs()` + `{ signal }`.

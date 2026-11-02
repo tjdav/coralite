@@ -146,6 +146,8 @@
  * @property {string} [output='.coralite'] - The path to the output directory where built files will be placed.
  * @property {string} components - The path to the directory containing Coralite components.
  * @property {string} pages - The path to the directory containing pages that will be rendered using the provided templates.
+ * @property {string | CoraliteFixturesConfig} [fixtures] - Testing fixtures configuration.
+ * @property {string[]} [exclude] - Array of glob or path patterns to exclude from page discovery.
  * @property {string} [public='public'] - The path to the public assets directory.
  * @property {CoralitePluginInstance[]} [plugins] - Optional array of plugin instances to extend Coralite functionality.
  * @property {number} [concurrency] - The maximum number of concurrent page render operations.
@@ -175,6 +177,11 @@
  * @property {{ input?: string[], processors?: Object }} [styles] - Script-specific styles options.
  * @property {{ concurrency?: number }} [build] - Script-specific build options.
  * @property {Record<string, any>} [store] - Global store config shape and initial values.
+ */
+
+/**
+ * User authoring configuration before normalization by defineConfig.
+ * @typedef {Omit<CoraliteConfig, 'pages'> & { pages: string | { dir: string, exclude?: string[] } }} CoraliteUserConfig
  */
 
 /**
@@ -282,7 +289,15 @@
  */
 
 /**
+ * @typedef {Object} CoraliteFixturesConfig
+ * @property {string} [pages] - The path to the directory containing fixture HTML pages.
+ * @property {string} [components] - The path to the directory containing fixture-only components.
+ * @property {string} [prefix='/__fixtures__'] - URL route prefix for serving fixtures.
+ */
+
+/**
  * @typedef {Object} CoraliteTestingConfig
+ * @property {string | CoraliteFixturesConfig} [fixtures] - Testing fixtures configuration.
  * @property {Object} [mocks] - Mock definitions.
  * @property {Object.<string, CoraliteTestingMock>} [mocks.components] - Mock definitions for components.
  * @property {Object.<string, CoraliteTestingPluginMock>} [mocks.plugins] - Mock definitions for plugins.
@@ -313,6 +328,7 @@
  * @typedef {Object} CoraliteInstance
  * @property {CoraliteConfig} options - The configuration options for the Coralite instance.
  * @property {CoraliteCollection} pages - The collection of page documents.
+ * @property {CoraliteCollection} [fixtures] - The collection of fixture page documents.
  * @property {CoraliteCollection} components - The collection of component documents.
  * @property {(pathOrOptions?: string | string[] | CoraliteBuildCallback, optionsOrCallback?: CoraliteBuildOptions | CoraliteBuildCallback, callback?: CoraliteBuildCallback) => Promise<CoraliteBuildResult[]>} build - The function that builds the project or specific pages.
  * @property {(savePath?: string | string[], saveOptions?: CoraliteBuildOptions) => Promise<CoraliteSaveResult[]>} save - The function that builds and saves the project or specific pages to disk.

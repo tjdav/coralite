@@ -172,6 +172,39 @@ export default defineConfig({
       <li><code>sri</code> — Boolean or hash algorithm (<code>'sha256'</code>, <code>'sha384'</code>, <code>'sha512'</code>) to calculate and attach Subresource Integrity attributes.</li>
     </ul>
 
+    <coralite-heading level="2" text="6. Test Fixtures &amp; Page Exclusions"></coralite-heading>
+
+    <p>To prevent test fixture pages from polluting your <code>pages</code> directory or ending up in production builds, configure the <code>fixtures</code> and <code>exclude</code> options:</p>
+
+    <coralite-code-highlight language="javascript" title="Fixtures &amp; Exclusions in coralite.config.js">
+import { defineConfig } from 'coralite'
+
+export default defineConfig({
+  output: 'dist',
+  components: 'src/components',
+  pages: 'src/pages',
+
+  // Directory containing component test fixture pages:
+  fixtures: 'tests/fixtures',
+
+  // Or advanced configuration with fixture-only components and route prefix:
+  // fixtures: {
+  //   pages: 'tests/fixtures/pages',
+  //   components: 'tests/fixtures/components',
+  //   prefix: '/__fixtures__'
+  // },
+
+  // Optional glob patterns to exclude from page discovery:
+  exclude: ['**/drafts/**']
+})
+    </coralite-code-highlight>
+
+    <p>Key behaviors:</p>
+    <ul>
+      <li><strong>Production build isolation</strong>: During <code>coralite build</code>, fixture pages and common test patterns (<code>__test__</code>, <code>__tests__</code>, <code>*.test.html</code>, <code>*.spec.html</code>, <code>*.fixture.html</code>) are automatically excluded and never emitted to <code>dist</code>.</li>
+      <li><strong>Dev and test servers</strong>: Running <code>coralite dev</code> or <code>coralite test</code> mounts your test fixtures under <code>/__fixtures__/&lt;fixture-name&gt;</code> with full component SSR, scoping, and live reload.</li>
+    </ul>
+
   </main>
 
   <coralite-footer></coralite-footer>

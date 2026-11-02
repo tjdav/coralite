@@ -1,4 +1,4 @@
-import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './utils/html.js'
+import { getHtmlFile, getHtmlFiles, discoverHtmlFiles, DEFAULT_PAGE_EXCLUSIONS } from './utils/html.js'
 import { parseHTML, parseModule } from './utils/parse.js'
 import { ScriptManager } from './script-manager.js'
 import { metadataPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
@@ -27,8 +27,9 @@ function dedupePluginsByName (plugins) {
   }
   return Array.from(map.values())
 }
+import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { dirname, join, normalize, relative } from 'node:path'
+import { dirname, join, normalize, relative, resolve } from 'node:path'
 import { CoraliteError, handleError, defaultOnError } from '../shared/errors.js'
 import { createExecutionError } from './utils/errors.js'
 import { transformNode } from './parser/html.js'
@@ -39,6 +40,54 @@ import {
   bindPlugins
 } from './hooks.js'
 import CoraliteCollection from './collection.js'
+
+/**
+ * Normalizes fixtures configuration into directory paths and route prefix.
+ *
+ * @param {string | Object | undefined} fixtures - Fixtures configuration
+ * @param {string} projectRoot - Project root directory
+ * @returns {{ pages: string | null, components: string | null, prefix: string } | null} Normalized fixtures configuration
+ */
+function normalizeFixturesConfig (fixtures, projectRoot) {
+  if (!fixtures) {
+    return null
+  }
+  let pagesDir = null
+  let componentsDir = null
+  let prefix = '/__fixtures__'
+
+  if (typeof fixtures === 'string') {
+    const absPath = resolve(projectRoot, fixtures)
+    const hasPagesSubdir = existsSync(join(absPath, 'pages'))
+    const hasComponentsSubdir = existsSync(join(absPath, 'components'))
+
+    if (hasPagesSubdir) {
+      pagesDir = join(absPath, 'pages')
+    } else {
+      pagesDir = absPath
+    }
+
+    if (hasComponentsSubdir) {
+      componentsDir = join(absPath, 'components')
+    }
+  } else if (typeof fixtures === 'object' && fixtures !== null) {
+    if (fixtures.pages) {
+      pagesDir = resolve(projectRoot, fixtures.pages)
+    }
+    if (fixtures.components) {
+      componentsDir = resolve(projectRoot, fixtures.components)
+    }
+    if (fixtures.prefix) {
+      prefix = fixtures.prefix.startsWith('/') ? fixtures.prefix : `/${fixtures.prefix}`
+    }
+  }
+
+  return {
+    pages: pagesDir,
+    components: componentsDir,
+    prefix
+  }
+}
 
 // Refactored helper imports
 import { createComponentDefinition, registerBaseComponent, prepareAllComponentOps } from './component-setup.js'
@@ -65,6 +114,8 @@ import { initHasher } from './utils/manifest.js'
 export async function createCoralite ({
   components,
   pages,
+  fixtures,
+  exclude,
   plugins: userPlugins,
   concurrency,
   assets,
@@ -102,7 +153,15 @@ export async function createCoralite ({
     })
   }
 
-  if (!pages || typeof pages !== 'string') {
+  let pagesDir = ''
+  /** @type {any} */
+  const pagesAny = pages
+  if (typeof pagesAny === 'string') {
+    pagesDir = pagesAny
+  } else if (pagesAny && typeof pagesAny === 'object' && 'dir' in pagesAny) {
+    pagesDir = pagesAny.dir
+  }
+  if (!pagesDir || typeof pagesDir !== 'string') {
     handleError({
       onErrorCallback: resolvedOnError,
       data: {
@@ -114,8 +173,20 @@ export async function createCoralite ({
 
   const configPath = {
     components: normalize(components),
-    pages: normalize(pages)
+    pages: normalize(pagesDir)
   }
+
+  const effectiveFixtures = fixtures ?? testing?.fixtures
+  const normalizedFixtures = normalizeFixturesConfig(effectiveFixtures, projectRoot)
+
+  const pagesExclusions = (typeof pagesAny === 'object' && pagesAny !== null && Array.isArray(pagesAny.exclude))
+    ? pagesAny.exclude
+    : []
+  const userExclusions = [...(Array.isArray(exclude) ? exclude : []), ...pagesExclusions]
+  const pageExclusions = [
+    ...userExclusions,
+    ...(mode === 'production' ? DEFAULT_PAGE_EXCLUSIONS : [])
+  ]
 
   const effectiveCleanUrls = process.env.CORALITE_CLEAN_URLS !== undefined
     ? process.env.CORALITE_CLEAN_URLS === 'true'
@@ -132,7 +203,9 @@ export async function createCoralite ({
 
   const normalizedOptions = {
     components,
-    pages,
+    pages: pagesDir,
+    fixtures: normalizedFixtures,
+    exclude: userExclusions,
     plugins: uniquePlugins,
     concurrency: typeof concurrency === 'number' && concurrency > 0 ? Math.floor(concurrency) : undefined,
     assets,
@@ -166,6 +239,7 @@ export async function createCoralite ({
       data
     }),
     pages: null,
+    fixtures: null,
     components: null,
     build: null,
     save: null,
@@ -586,6 +660,20 @@ export async function createCoralite ({
     onFileDelete: handlers.onComponentDelete
   })
 
+  // If fixture components exist, register them in development and testing modes
+  if (normalizedFixtures?.components && (app.options.mode === 'development' || app.options.mode === 'testing') && existsSync(normalizedFixtures.components)) {
+    await getHtmlFiles({
+      path: normalizedFixtures.components,
+      recursive: true,
+      type: 'component',
+      // @ts-ignore
+      collection: app.components,
+      onFileSet: handlers.onComponentSet,
+      onFileUpdate: handlers.onComponentUpdate,
+      onFileDelete: handlers.onComponentDelete
+    })
+  }
+
   await Promise.all(plugins.components.map(c => app.components.setItem(c)))
 
   // Perform base evaluation for all discovered components
@@ -605,7 +693,7 @@ export async function createCoralite ({
   prepareAllComponentOps(app)
 
   app.pages = new CoraliteCollection({
-    rootDir: app.options.pages,
+    rootDir: pagesDir,
     onSet: handlers.onPageSet,
     onUpdate: handlers.onPageUpdate,
     onDelete: handlers.onPageDelete
@@ -613,22 +701,43 @@ export async function createCoralite ({
 
   if (app.options.mode === 'production' || app.options.mode === 'testing') {
     for await (const file of discoverHtmlFiles({
-      path: app.options.pages,
+      path: pagesDir,
       recursive: true,
       type: 'page',
-      discoverOnly: false
+      discoverOnly: false,
+      exclude: pageExclusions
     })) {
       await app.pages.setItem(file)
     }
   } else {
     await getHtmlFiles({
-      path: app.options.pages,
+      path: pagesDir,
       recursive: true,
       type: 'page',
       discoverOnly: false,
+      exclude: pageExclusions,
       // @ts-ignore
       collection: app.pages
     })
+  }
+
+  if (normalizedFixtures?.pages && existsSync(normalizedFixtures.pages)) {
+    app.fixtures = new CoraliteCollection({
+      rootDir: normalizedFixtures.pages,
+      onSet: handlers.onPageSet,
+      onUpdate: handlers.onPageUpdate,
+      onDelete: handlers.onPageDelete
+    })
+    if (app.options.mode === 'development' || app.options.mode === 'testing') {
+      await getHtmlFiles({
+        path: normalizedFixtures.pages,
+        recursive: true,
+        type: 'page',
+        discoverOnly: false,
+        // @ts-ignore
+        collection: app.fixtures
+      })
+    }
   }
 
   return app

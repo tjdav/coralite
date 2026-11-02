@@ -16,6 +16,7 @@ Directory boundary responsibilities under `lib/`:
 ## 3. Authoring invariants
 
 - Do not guard destructured context keys or check browser globals in deterministic functions (`client()`, `server()`, `getters`, `style`, `slots`). Context keys are guaranteed by the framework.
+- Author test fixture pages under `tests/fixtures/` using `fixtures` configuration in `coralite.config.js`. Never place test fixtures or test files inside `src/pages/`.
 
 ## 4. Package-scoped commands
 

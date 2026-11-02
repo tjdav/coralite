@@ -261,6 +261,53 @@
       });
     </coralite-code-highlight>
 
+    <coralite-heading level="2" text="Test Fixtures &amp; Dedicated Test Pages"></coralite-heading>
+
+    <p>When testing isolated components with Playwright or Cypress, you need HTML pages (test fixtures) that mount and exercise your custom elements with various attributes, slots, and scenarios. Rather than placing test fixtures inside <code>src/pages/</code> (which pollutes your production routes and build output), Coralite supports dedicated <code>fixtures</code> configuration:</p>
+
+    <coralite-code-highlight language="javascript" title="coralite.config.js">
+      import { defineConfig } from 'coralite';
+
+      export default defineConfig({
+        pages: 'src/pages',
+        components: 'src/components',
+        fixtures: 'tests/fixtures'
+      });
+    </coralite-code-highlight>
+
+    <p>Organize your test fixtures in a dedicated directory:</p>
+
+    <coralite-code-highlight language="text">
+my-project/
+├── coralite.config.js
+├── src/
+│   ├── components/
+│   │   └── user-card.html         # Application component
+│   └── pages/
+│       └── index.html             # Clean production pages
+└── tests/
+    └── fixtures/
+        └── card-demo.html         # Fixture mounting &lt;user-card&gt;
+    </coralite-code-highlight>
+
+    <p>During <code>coralite dev</code> or <code>coralite test</code>, your fixtures are automatically mounted under <code>/__fixtures__/&lt;fixture-name&gt;</code> with full SSR, scoping, and hydration:</p>
+
+    <coralite-code-highlight language="javascript" title="Playwright Test Example">
+      import { test, expect } from '@playwright/test';
+
+      test('user card fixture renders accurately', async ({ page }) => {
+        // Navigate cleanly to the test fixture
+        await page.goto('/__fixtures__/card-demo');
+
+        const card = page.getByTestId('test-card');
+        await expect(card).toBeVisible();
+      });
+    </coralite-code-highlight>
+
+    <blockquote class="note">
+      <p><strong>Zero Production Leakage:</strong> During production builds (<code>coralite build</code>), fixture pages and test patterns (<code>__test__</code>, <code>__tests__</code>, <code>*.test.html</code>, <code>*.spec.html</code>, <code>*.fixture.html</code>) are strictly excluded and never emitted to <code>dist/</code>.</p>
+    </blockquote>
+
     <coralite-heading level="2" text="What Does It Wait For?"></coralite-heading>
 
     <p>The <code>window.__coralite__.lifecycle.hydrated</code> promise ensures two critical hydration pipelines have completed:</p>

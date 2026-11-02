@@ -3,8 +3,59 @@ import { readdir, readFile } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import pLimit from 'p-limit'
+import picomatch from 'picomatch'
 import CoraliteCollection from '../collection.js'
 import { CoraliteError } from '../../shared/errors.js'
+
+/**
+ * Default patterns excluded from page discovery in production mode
+ */
+export const DEFAULT_PAGE_EXCLUSIONS = [
+  '**/__test__/**',
+  '**/__tests__/**',
+  '**/*.test.html',
+  '**/*.spec.html',
+  '**/*.fixture.html',
+  '__test__',
+  '__tests__'
+]
+
+/**
+ * Checks whether a directory entry matches any exclusion rule.
+ *
+ * @param {import('node:fs').Dirent} entry - The directory entry
+ * @param {string} relativePath - Path relative to root search directory
+ * @param {string} pathname - Absolute or full path
+ * @param {string[]} exclude - List of exclusion patterns
+ * @param {Array<(path: string) => boolean>} [globMatchers] - Precompiled picomatch matchers
+ * @returns {boolean} Whether the path is excluded
+ */
+function isPathExcluded (entry, relativePath, pathname, exclude, globMatchers = []) {
+  if (!exclude || exclude.length === 0) {
+    return false
+  }
+
+  if (exclude.includes(entry.name) || exclude.includes(relativePath) || exclude.includes(pathname)) {
+    return true
+  }
+
+  for (let j = 0; j < exclude.length; j++) {
+    const excludePath = exclude[j]
+    const excludeDir = excludePath.endsWith('/') ? excludePath.slice(0, -1) : excludePath
+    if (relativePath === excludeDir || relativePath.startsWith(excludeDir + '/')) {
+      return true
+    }
+  }
+
+  for (let j = 0; j < globMatchers.length; j++) {
+    const isMatch = globMatchers[j]
+    if (isMatch(relativePath) || isMatch(entry.name) || isMatch(pathname)) {
+      return true
+    }
+  }
+
+  return false
+}
 
 /**
  * @import {
@@ -28,6 +79,7 @@ import { CoraliteError } from '../../shared/errors.js'
  * @param {LimitFunction} [options.limit] - Optional concurrency limiter
  * @param {boolean} [options.discoverOnly=false] - Whether to skip reading file content and only discover paths
  * @param {string} [options.rootPath] - Optional root path to calculate relative paths for exclusions
+ * @param {Array<(path: string) => boolean>} [options.globMatchers] - Optional precompiled picomatch matchers
  * @returns {Promise<CoraliteCollection>} Array of HTML file data including parent path, name, and content
  *
  * @example
@@ -49,7 +101,8 @@ export async function getHtmlFiles ({
   onFileDelete,
   collection,
   limit,
-  rootPath = path
+  rootPath = path,
+  globMatchers = null
 }) {
   const resultCollection = collection || new CoraliteCollection({
     rootDir: path,
@@ -59,6 +112,9 @@ export async function getHtmlFiles ({
   })
 
   const taskLimit = limit || pLimit(availableParallelism())
+  const compiledMatchers = globMatchers || exclude
+    .filter(p => typeof p === 'string' && (p.includes('*') || p.includes('?')))
+    .map(p => picomatch(p, { dot: true }))
 
   const entries = await readdir(path, { withFileTypes: true })
   const tasks = []
@@ -76,17 +132,7 @@ export async function getHtmlFiles ({
     // Calculate relative path from root for exclusion checking
     const relativePath = pathname.replace(rootPath + '/', '')
 
-    // Check if entry should be excluded by: name, relative path, or full path
-    const shouldExclude = exclude.includes(entry.name) ||
-                           exclude.includes(relativePath) ||
-                           exclude.includes(pathname) ||
-                           exclude.some(excludePath => {
-                             // Handle directory-based exclusions
-                             const excludeDir = excludePath.endsWith('/') ? excludePath.slice(0, -1) : excludePath
-                             return relativePath.startsWith(excludeDir + '/')
-                           })
-
-    if (shouldExclude) {
+    if (isPathExcluded(entry, relativePath, pathname, exclude, compiledMatchers)) {
       continue
     }
 
@@ -102,7 +148,8 @@ export async function getHtmlFiles ({
         onFileDelete,
         collection: resultCollection,
         limit: taskLimit,
-        rootPath
+        rootPath,
+        globMatchers: compiledMatchers
       }))
     } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
       tasks.push(taskLimit(async () => {
@@ -138,6 +185,7 @@ export async function getHtmlFiles ({
  * @param {string[]} [options.exclude=[]] - Files or directories to exclude
  * @param {boolean} [options.discoverOnly=false] - Whether to skip reading file content
  * @param {string} [options.rootPath] - Optional root path to calculate relative paths for exclusions
+ * @param {Array<(path: string) => boolean>} [options.globMatchers] - Optional precompiled picomatch matchers
  * @yields {Promise<{ type: 'page' | 'component', content: string | undefined, path: { pathname: string, filename: string, dirname: string } }>}
  */
 export async function* discoverHtmlFiles ({
@@ -146,8 +194,13 @@ export async function* discoverHtmlFiles ({
   recursive = false,
   exclude = [],
   discoverOnly = false,
-  rootPath = path
+  rootPath = path,
+  globMatchers = null
 }) {
+  const compiledMatchers = globMatchers || exclude
+    .filter(p => typeof p === 'string' && (p.includes('*') || p.includes('?')))
+    .map(p => picomatch(p, { dot: true }))
+
   const entries = await readdir(path, { withFileTypes: true })
 
   for (let i = 0; i < entries.length; i++) {
@@ -160,15 +213,7 @@ export async function* discoverHtmlFiles ({
     const pathname = join(entry.parentPath, entry.name)
     const relativePath = pathname.replace(rootPath + '/', '')
 
-    const shouldExclude = exclude.includes(entry.name) ||
-                           exclude.includes(relativePath) ||
-                           exclude.includes(pathname) ||
-                           exclude.some(excludePath => {
-                             const excludeDir = excludePath.endsWith('/') ? excludePath.slice(0, -1) : excludePath
-                             return relativePath.startsWith(excludeDir + '/')
-                           })
-
-    if (shouldExclude) {
+    if (isPathExcluded(entry, relativePath, pathname, exclude, compiledMatchers)) {
       continue
     }
 
@@ -179,7 +224,8 @@ export async function* discoverHtmlFiles ({
         recursive,
         exclude,
         discoverOnly,
-        rootPath
+        rootPath,
+        globMatchers: compiledMatchers
       })
     } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
       const content = discoverOnly ? undefined : await readFile(pathname, { encoding: 'utf8' })

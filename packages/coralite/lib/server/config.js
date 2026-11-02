@@ -1,12 +1,12 @@
 /**
- * @import {CoraliteConfig} from '../../types/index.js'
+ * @import {CoraliteConfig, CoraliteUserConfig} from '../../types/index.js'
  */
 import { CoraliteError, handleError } from '../shared/errors.js'
 import { validateSerializable } from '../shared/core.js'
 
 /**
  * Validates and defines a Coralite configuration object
- * @param {CoraliteConfig} options - The configuration options to validate and define
+ * @param {CoraliteUserConfig} options - The configuration options to validate and define
  * @param {Object} [context={}] - Optional context containing onError callback
  * @param {Function} [context.onError] - Optional error handler callback
  * @returns {CoraliteConfig} The validated configuration object
@@ -31,17 +31,77 @@ export function defineConfig (options, { onError } = {}) {
       throw new CoraliteError(`Missing required config property: "${prop}"`)
     }
 
-    // Check if property is a string
-    if (typeof options[prop] !== 'string') {
-      throw new CoraliteError(
-        `Config property "${prop}" must be a string, received ${typeof options[prop]}`
-      )
-    }
+    if (prop === 'pages' && typeof options[prop] === 'object' && options[prop] !== null && !Array.isArray(options[prop]) && 'dir' in options[prop]) {
+      /** @type {any} */
+      const pagesObj = options.pages
+      if (typeof pagesObj.dir !== 'string' || pagesObj.dir.trim() === '') {
+        throw new CoraliteError('Config property "pages.dir" must be a non-empty string')
+      }
+      if (pagesObj.exclude !== undefined) {
+        if (!Array.isArray(pagesObj.exclude)) {
+          throw new CoraliteError('Config property "pages.exclude" must be an array of strings')
+        }
+        for (const item of pagesObj.exclude) {
+          if (typeof item !== 'string') {
+            throw new CoraliteError('Config property "pages.exclude" array items must be strings')
+          }
+        }
+      }
+    } else {
+      // Check if property is a string
+      if (typeof options[prop] !== 'string') {
+        throw new CoraliteError(
+          `Config property "${prop}" must be a string, received ${typeof options[prop]}`
+        )
+      }
 
-    // Check if property is not empty
-    if (options[prop].trim() === '') {
-      throw new CoraliteError(`Config property "${prop}" cannot be empty`)
+      // Check if property is not empty
+      if (options[prop].trim() === '') {
+        throw new CoraliteError(`Config property "${prop}" cannot be empty`)
+      }
     }
+  }
+
+  // Validate exclude property
+  if (options.exclude !== undefined) {
+    if (!Array.isArray(options.exclude)) {
+      throw new CoraliteError('Config property "exclude" must be an array of strings')
+    }
+    for (const item of options.exclude) {
+      if (typeof item !== 'string') {
+        throw new CoraliteError('Config property "exclude" array items must be strings')
+      }
+    }
+  }
+
+  // Helper to validate fixtures configuration
+  const validateFixturesOption = (fixtures, propPath) => {
+    if (fixtures === undefined) {
+      return
+    }
+    if (typeof fixtures === 'string') {
+      if (fixtures.trim() === '') {
+        throw new CoraliteError(`Config property "${propPath}" cannot be empty`)
+      }
+      return
+    }
+    if (typeof fixtures !== 'object' || fixtures === null || Array.isArray(fixtures)) {
+      throw new CoraliteError(`Config property "${propPath}" must be a string or an object`)
+    }
+    if (fixtures.pages !== undefined && (typeof fixtures.pages !== 'string' || fixtures.pages.trim() === '')) {
+      throw new CoraliteError(`Config property "${propPath}.pages" must be a non-empty string`)
+    }
+    if (fixtures.components !== undefined && (typeof fixtures.components !== 'string' || fixtures.components.trim() === '')) {
+      throw new CoraliteError(`Config property "${propPath}.components" must be a non-empty string`)
+    }
+    if (fixtures.prefix !== undefined && (typeof fixtures.prefix !== 'string' || fixtures.prefix.trim() === '')) {
+      throw new CoraliteError(`Config property "${propPath}.prefix" must be a non-empty string`)
+    }
+  }
+
+  validateFixturesOption(options.fixtures, 'fixtures')
+  if (options.testing?.fixtures !== undefined) {
+    validateFixturesOption(options.testing.fixtures, 'testing.fixtures')
   }
 
   // Validate urlStyle migration error
@@ -534,9 +594,25 @@ export function defineConfig (options, { onError } = {}) {
     }
   }
 
+  // Compute merged exclusions
+  /** @type {any} */
+  const pagesConfig = typeof options.pages === 'object' && options.pages !== null
+    ? options.pages
+    : null
+  const resolvedExclusions = [
+    ...(options.exclude || []),
+    ...(pagesConfig && Array.isArray(pagesConfig.exclude) ? pagesConfig.exclude : [])
+  ]
+
+  const resolvedPages = pagesConfig ? pagesConfig.dir : options.pages
+  const resolvedFixtures = options.fixtures ?? options.testing?.fixtures
+
   // Return full config populated with defaults
   return {
     ...options,
+    pages: resolvedPages,
+    fixtures: resolvedFixtures,
+    exclude: resolvedExclusions,
     public: options.public ?? 'public',
     baseURL: options.baseURL ?? '/',
     mode: options.mode ?? 'production',

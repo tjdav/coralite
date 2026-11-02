@@ -87,6 +87,10 @@ test('counter button increments state post-hydration', async ({ page }) => {
 })
     </coralite-code-highlight>
 
+    <coralite-heading level="3" text="Test Fixtures Isolation"></coralite-heading>
+
+    <p>Always place component test fixtures in a dedicated directory (such as <code>tests/fixtures/</code>) configured via <code>fixtures</code> in <code>coralite.config.js</code>. Never author test fixture pages inside <code>src/pages/</code>. In development and test servers (<code>coralite dev</code> and <code>coralite test</code>), fixtures are mounted under <code>/__fixtures__/&lt;name&gt;</code>. When building for production (<code>coralite build</code>), Coralite automatically excludes all test fixtures and test directories (e.g. <code>__test__</code>, <code>*.test.html</code>) to guarantee zero pollution in <code>dist/</code>.</p>
+
     <coralite-heading level="2" text="3. Production Deployment"></coralite-heading>
 
     <p>Building a Coralite project with <code>coralite build</code> compiles all HTML pages, scoped CSS, component scripts, and public static assets into the target directory (default <code>dist/</code>).</p>

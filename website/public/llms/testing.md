@@ -38,3 +38,10 @@ await element.updateComplete
 1. **Static Test IDs**: Write static plain-text test IDs (e.g. `<button data-testid="submit-btn">`). Never attempt dynamic bindings (`data-testid="{{ dynamicId }}"`).
 2. **Preservation**: Authored `data-testid` attributes are preserved verbatim in development, testing, and production E2E test builds.
 3. **No Schema Pollution**: Never add test IDs to the `attributes` declaration (e.g. `testId: String`).
+
+## 4. Test Fixtures Policy
+
+1. **Isolation**: Author test fixture pages under `tests/fixtures/` and configure `fixtures: 'tests/fixtures'` in `coralite.config.js`.
+2. **No Pages Pollution**: Never place test fixtures or test files inside `src/pages/` (e.g. `src/pages/__test__`).
+3. **Routing**: In `coralite dev` and `coralite test`, fixtures are accessed via `/__fixtures__/<name>`.
+4. **Build Guarantee**: Test fixtures and test files (`__test__`, `__tests__`, `*.test.html`, `*.spec.html`, `*.fixture.html`) are never emitted to `dist/`.

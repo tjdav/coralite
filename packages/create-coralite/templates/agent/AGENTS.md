@@ -17,6 +17,7 @@ Read this file before starting any task in this project. Rules apply to every ta
 - **Pages (`src/pages/*.html`)**: Always use `export default definePage({ ... })` imported from `'coralite'`. Never use bare named exports in pages (`CORALITE-E108`).
   - Valid `definePage` blocks: `paths`, `server`, `getters`, `style`, `provide`, `client`, `onError`.
   - Pages do not support `attributes`, `slots`, `consume`, or `formControl`, and must not query component internals directly (`CORALITE-PAGE-201`).
+- **Test fixtures (`tests/fixtures/*.html`)**: Author component test fixtures under `tests/fixtures/` and configure `fixtures` in `coralite.config.js`. Never place test fixtures or test files inside `src/pages/`.
 - **Plugins**: Always use `export default definePlugin({ ... })` with two-phase curried context: `context: (pluginCtx) => (instanceCtx) => ({ ... })`.
 - **Templates**: Flat `{{ token }}` placeholders only. No expressions (`{{ a + b }}`), dot notation (`{{ user.name }}`), conditionals, loops, or function calls (`CORALITE-E201`). Move all derived logic into synchronous `getters`.
 - **Events**: No inline event handlers (`onclick="..."`, `@click`, `CORALITE-E203`). Bind in `client()` using `refs('name').addEventListener('click', fn, { signal })`. Emit custom events via `emit('name', detail)` (never `root.dispatchEvent`).
@@ -131,5 +132,6 @@ Top-level imports are reserved for `definePage` / `definePlugin` and modules use
 
 - `src/components/` — reusable custom elements (`.html`)
 - `src/pages/` — route definitions (`.html`)
+- `tests/fixtures/` — component test fixtures (`.html`)
 - `public/` — static assets copied verbatim to output
 - `coralite.config.js` — project & plugin configuration

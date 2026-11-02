@@ -47,8 +47,45 @@ export function defineConfig (options) {
     throw new Error('Configuration must contain a valid "components" property')
   }
 
-  if (!options.pages || typeof options.pages !== 'string') {
+  /** @type {any} */
+  const pagesObj = options.pages
+  if (typeof pagesObj === 'object' && pagesObj !== null && !Array.isArray(pagesObj) && 'dir' in pagesObj) {
+    if (typeof pagesObj.dir !== 'string' || pagesObj.dir.trim() === '') {
+      throw new Error('Configuration "pages.dir" must be a non-empty string')
+    }
+    if (pagesObj.exclude !== undefined) {
+      if (!Array.isArray(pagesObj.exclude) || !pagesObj.exclude.every(item => typeof item === 'string')) {
+        throw new Error('Configuration "pages.exclude" must be an array of strings')
+      }
+    }
+  } else if (typeof pagesObj !== 'string' || pagesObj.trim() === '') {
     throw new Error('Configuration must contain a valid "pages" property')
+  }
+
+  if (options.exclude !== undefined) {
+    if (!Array.isArray(options.exclude) || !options.exclude.every(item => typeof item === 'string')) {
+      throw new Error('Configuration "exclude" must be an array of strings')
+    }
+  }
+
+  if (options.fixtures !== undefined) {
+    if (typeof options.fixtures === 'string') {
+      if (options.fixtures.trim() === '') {
+        throw new Error('Configuration "fixtures" cannot be empty')
+      }
+    } else if (typeof options.fixtures === 'object' && options.fixtures !== null && !Array.isArray(options.fixtures)) {
+      if (options.fixtures.pages !== undefined && (typeof options.fixtures.pages !== 'string' || options.fixtures.pages.trim() === '')) {
+        throw new Error('Configuration "fixtures.pages" must be a non-empty string')
+      }
+      if (options.fixtures.components !== undefined && (typeof options.fixtures.components !== 'string' || options.fixtures.components.trim() === '')) {
+        throw new Error('Configuration "fixtures.components" must be a non-empty string')
+      }
+      if (options.fixtures.prefix !== undefined && (typeof options.fixtures.prefix !== 'string' || options.fixtures.prefix.trim() === '')) {
+        throw new Error('Configuration "fixtures.prefix" must be a non-empty string')
+      }
+    } else {
+      throw new Error('Configuration "fixtures" must be a string or an object')
+    }
   }
 
   // Validate optional server configuration

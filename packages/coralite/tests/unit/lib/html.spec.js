@@ -866,5 +866,41 @@ describe('html.js', () => {
       }
       assert.strictEqual(results.length, 1)
     })
+
+    it('should exclude glob patterns such as **/__test__/** and **/*.test.html', async () => {
+      await mkdir(path.join(testDir, '__test__'))
+      await writeFile(path.join(testDir, '__test__', 'fixture.html'), 'fixture')
+      await writeFile(path.join(testDir, 'my-component.test.html'), 'test')
+      await writeFile(path.join(testDir, 'normal.html'), 'normal')
+
+      const generator = discoverHtmlFiles({
+        path: testDir,
+        type: 'page',
+        recursive: true,
+        exclude: ['**/__test__/**', '**/*.test.html']
+      })
+      const results = []
+      for await (const file of generator) {
+        results.push(file)
+      }
+      assert.strictEqual(results.length, 1)
+      assert.strictEqual(results[0].path.filename, 'normal.html')
+    })
+
+    it('should exclude glob patterns in getHtmlFiles', async () => {
+      await mkdir(path.join(testDir, '__tests__'))
+      await writeFile(path.join(testDir, '__tests__', 'fixture.html'), 'fixture')
+      await writeFile(path.join(testDir, 'component.spec.html'), 'spec')
+      await writeFile(path.join(testDir, 'page.html'), 'page')
+
+      const collection = await getHtmlFiles({
+        path: testDir,
+        type: 'page',
+        recursive: true,
+        exclude: ['**/__tests__/**', '**/*.spec.html']
+      })
+      assert.strictEqual(collection.list.length, 1)
+      assert.strictEqual(collection.list[0].path.filename, 'page.html')
+    })
   })
 })
