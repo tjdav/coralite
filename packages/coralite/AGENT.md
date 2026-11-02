@@ -16,7 +16,7 @@ Directory boundary responsibilities under `lib/`:
 ## 3. Authoring invariants
 
 - Do not guard destructured context keys or check browser globals in deterministic functions (`client()`, `server()`, `getters`, `style`, `slots`). Context keys are guaranteed by the framework.
-- Author test fixture pages under `tests/fixtures/` using `fixtures` configuration in `coralite.config.js`. Never place test fixtures or test files inside `src/pages/`.
+- Author test fixtures under `tests/fixtures/` (`tests/fixtures/pages` and `tests/fixtures/components`) using `fixtures` configuration in `coralite.config.js`. Never place test fixtures or test files inside `src/pages/` or `src/components/`.
 - Plugin contexts (`server.context` and `client.context`) are injected into Component and Page `server()` and `client()` execution contexts. Framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) take strict precedence over plugin keys.
 - Getters strictly receive `{ state, route, root, refs, slots, signal, isServer, store }` and never receive plugin context. State derivation requiring plugins must occur in `server()`, persist to `state`, and getters read from `state`.
 - Static components serialize zero client lifecycle code (`client: null`, `getters: {}`). A component exporting only `attributes` or `style` is Zero-JS; native attributes and flat tokens interpolate directly at SSR time.

@@ -69,6 +69,54 @@ describe('fixtures and pages test isolation', () => {
     assert.strictEqual(buildResults[0].path.filename, 'index.html')
   })
 
+  it('excludes __test__ directories and *.test.html / *.fixture.html files from production components', async () => {
+    // Normal component
+    await writeFile(join(compDir, 'real-button.html'), `
+<template id="real-button"><button><slot></slot></button></template>
+<script type="module">export const attributes = {}</script>
+`)
+
+    // Test directory inside components
+    const testDirInComp = join(compDir, '__test__')
+    await mkdir(testDirInComp, { recursive: true })
+    await writeFile(join(testDirInComp, 'mock-button.html'), `
+<template id="mock-button"><button>Mock</button></template>
+<script type="module">export const attributes = {}</script>
+`)
+
+    // Test and fixture files directly in components
+    await writeFile(join(compDir, 'button.test.html'), `
+<template id="button-test"><div>Test</div></template>
+<script type="module">export const attributes = {}</script>
+`)
+    await writeFile(join(compDir, 'button.fixture.html'), `
+<template id="button-fixture"><div>Fixture</div></template>
+<script type="module">export const attributes = {}</script>
+`)
+
+    await writeFile(join(pagesDir, 'index.html'), '<template id="page-index"><h1>Home</h1></template>')
+
+    const config = defineConfig({
+      output: outDir,
+      components: compDir,
+      pages: pagesDir,
+      mode: 'production'
+    })
+
+    const app = await createCoralite(config)
+    apps.push(app)
+
+    const userCompIds = app.components.list
+      .filter(c => c.path.pathname.startsWith(compDir))
+      .map(c => c.result?.id)
+
+    assert.ok(userCompIds.includes('real-button'), 'Real component is registered in production')
+    assert.ok(!userCompIds.includes('mock-button'), 'Component in __test__ is excluded in production')
+    assert.ok(!userCompIds.includes('button-test'), 'Component named *.test.html is excluded in production')
+    assert.ok(!userCompIds.includes('button-fixture'), 'Component named *.fixture.html is excluded in production')
+    assert.strictEqual(userCompIds.length, 1)
+  })
+
   it('loads fixtures into app.fixtures and registers fixture components in development mode', async () => {
     // Create an app component
     await writeFile(join(compDir, 'app-card.html'), `

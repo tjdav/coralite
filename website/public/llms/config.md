@@ -69,11 +69,11 @@ export default defineConfig({
 })
 ```
 
-## 3. Test Fixtures & Page Exclusions
+## 3. Test Fixtures & Production Exclusions
 
-- `fixtures: 'tests/fixtures'` isolates component test fixtures outside `src/pages/`.
-- In `coralite dev` and `coralite test`, fixtures are served under `/__fixtures__/<name>`.
-- In `coralite build`, fixtures and test directories (`__test__`, `__tests__`, `*.test.html`, `*.spec.html`, `*.fixture.html`) are strictly excluded and never emitted to `dist/`.
+- `fixtures: 'tests/fixtures'` isolates component test fixtures outside `src/pages/` and `src/components/` (supporting `{ pages, components, prefix }`).
+- In `coralite dev` and `coralite test`, fixture pages are served under `/__fixtures__/<name>` and fixture components (`tests/fixtures/components`) are registered into `app.components`.
+- In `coralite build`, fixtures and test directories/files (`__test__`, `__tests__`, `*.test.html`, `*.spec.html`, `*.fixture.html`) are strictly excluded from both pages and components and never emitted to `dist/`.
 
 ## 4. Plugins Configuration
 
