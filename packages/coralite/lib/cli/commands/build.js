@@ -138,9 +138,17 @@ export async function buildCommand (config, options, logger = null) {
     }
 
     await coralite.build(null, buildOptions, async (result) => {
+      const relativeDir = relative(config.pages, result.path.dirname)
+      const outDir = join(config.output, relativeDir)
+      const outFile = join(outDir, result.path.filename)
+
+      validFiles.add(outFile)
+
       if (result.status === 'skipped') {
         skippedCount++
-        if (!options.verbose) {
+        if (options.verbose) {
+          log(toTime() + colours.gray('[-] skipped: ') + result.path.pathname + '\n')
+        } else {
           updateSpinnerText()
         }
         return
@@ -149,12 +157,6 @@ export async function buildCommand (config, options, logger = null) {
       if (result.status === 'failed' || typeof result.content !== 'string') {
         return undefined
       }
-
-      const relativeDir = relative(config.pages, result.path.dirname)
-      const outDir = join(config.output, relativeDir)
-      const outFile = join(outDir, result.path.filename)
-
-      validFiles.add(outFile)
 
       await mkdir(outDir, { recursive: true })
       await writeFile(outFile, result.content)
