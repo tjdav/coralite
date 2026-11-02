@@ -1,4 +1,4 @@
-import { getHtmlFile, getHtmlFiles, discoverHtmlFiles, DEFAULT_PAGE_EXCLUSIONS } from './utils/html.js'
+import { getHtmlFile, getHtmlFiles, discoverHtmlFiles, DEFAULT_TEST_EXCLUSIONS } from './utils/html.js'
 import { parseHTML, parseModule } from './utils/parse.js'
 import { ScriptManager } from './script-manager.js'
 import { metadataPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
@@ -185,7 +185,11 @@ export async function createCoralite ({
   const userExclusions = [...(Array.isArray(exclude) ? exclude : []), ...pagesExclusions]
   const pageExclusions = [
     ...userExclusions,
-    ...(mode === 'production' ? DEFAULT_PAGE_EXCLUSIONS : [])
+    ...(mode === 'production' ? DEFAULT_TEST_EXCLUSIONS : [])
+  ]
+  const componentExclusions = [
+    ...(Array.isArray(exclude) ? exclude : []),
+    ...(mode === 'production' ? DEFAULT_TEST_EXCLUSIONS : [])
   ]
 
   const effectiveCleanUrls = process.env.CORALITE_CLEAN_URLS !== undefined
@@ -656,6 +660,7 @@ export async function createCoralite ({
     path: app.options.components,
     recursive: true,
     type: 'component',
+    exclude: componentExclusions,
     onFileSet: handlers.onComponentSet,
     onFileUpdate: handlers.onComponentUpdate,
     onFileDelete: handlers.onComponentDelete
@@ -669,6 +674,7 @@ export async function createCoralite ({
       type: 'component',
       // @ts-ignore
       collection: app.components,
+      exclude: Array.isArray(exclude) ? exclude : [],
       onFileSet: handlers.onComponentSet,
       onFileUpdate: handlers.onComponentUpdate,
       onFileDelete: handlers.onComponentDelete

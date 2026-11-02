@@ -41,7 +41,7 @@ await element.updateComplete
 
 ## 4. Test Fixtures Policy
 
-1. **Isolation**: Author test fixture pages under `tests/fixtures/` and configure `fixtures: 'tests/fixtures'` in `coralite.config.js`.
-2. **No Pages Pollution**: Never place test fixtures or test files inside `src/pages/` (e.g. `src/pages/__test__`).
-3. **Routing**: In `coralite dev` and `coralite test`, fixtures are accessed via `/__fixtures__/<name>`.
-4. **Build Guarantee**: Test fixtures and test files (`__test__`, `__tests__`, `*.test.html`, `*.spec.html`, `*.fixture.html`) are never emitted to `dist/`.
+1. **Isolation**: Author test fixture pages under `tests/fixtures/pages` and test fixture components (mock helpers, harnesses) under `tests/fixtures/components`. Configure `fixtures: 'tests/fixtures'` (or `{ pages, components, prefix }`) in `coralite.config.js`.
+2. **No Source Directory Pollution**: Never place test fixtures or test files inside `src/pages/` or `src/components/` (e.g. `__test__`, `*.test.html`, `*.fixture.html`).
+3. **Routing & Component Registration**: In `coralite dev` and `coralite test`, fixture pages are accessed via `/__fixtures__/<name>`, and fixture components are automatically registered into `app.components`.
+4. **Build Guarantee**: Test fixtures and test files (`DEFAULT_TEST_EXCLUSIONS`: `__test__`, `__tests__`, `*.test.html`, `*.spec.html`, `*.fixture.html`) are never emitted to `dist/` or registered in production component bundles.

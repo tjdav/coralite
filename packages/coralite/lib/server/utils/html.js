@@ -8,9 +8,9 @@ import CoraliteCollection from '../collection.js'
 import { CoraliteError } from '../../shared/errors.js'
 
 /**
- * Default patterns excluded from page discovery in production mode
+ * Default patterns excluded from page and component discovery in production mode
  */
-export const DEFAULT_PAGE_EXCLUSIONS = [
+export const DEFAULT_TEST_EXCLUSIONS = [
   '**/__test__/**',
   '**/__tests__/**',
   '**/*.test.html',
@@ -19,6 +19,8 @@ export const DEFAULT_PAGE_EXCLUSIONS = [
   '__test__',
   '__tests__'
 ]
+
+export const DEFAULT_PAGE_EXCLUSIONS = DEFAULT_TEST_EXCLUSIONS
 
 /**
  * Checks whether a directory entry matches any exclusion rule.

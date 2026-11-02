@@ -994,10 +994,10 @@ export default defineConfig({
 ## 11. Automated Testing & E2E
 
 ### Test Fixtures Isolation (`fixtures` & `exclude`)
-- **Isolation Outside `src/pages/`**: Keep component fixtures and test pages out of `src/pages/` (defaulting to `tests/fixtures/pages` and `tests/fixtures/components`). Never let test fixtures pollute `src/pages/` to prevent test pages from leaking into production build distributions (`dist/`).
+- **Isolation Outside `src/pages/` and `src/components/`**: Keep component fixtures and test pages out of `src/pages/` and `src/components/` (defaulting to `tests/fixtures/pages` and `tests/fixtures/components`). Never let test fixtures pollute source directories to prevent test files from leaking into production build distributions (`dist/`).
 - **Dev & Test Server Routing**: Fixture pages are mounted and served at `/__fixtures__/<name>` during development and testing servers (`coralite dev`), while being strictly excluded from production SSG output (`coralite build`).
-- **Fixture Components Registration**: Components located in `fixtures.components` (e.g. mock helpers) are automatically registered into the component registry in `development` and `testing` modes so fixture pages can render them.
-- **Automated Default Exclusions**: Coralite automatically excludes `**/__test__/**`, `**/__tests__/**`, `**/*.test.html`, `**/*.spec.html`, and `**/*.fixture.html` from the pages build. Custom patterns can be specified via top-level `exclude` or `pages.exclude`.
+- **Fixture Components Registration**: Components located in `fixtures.components` (e.g. mock helpers, harnesses) are automatically registered into the component registry in `development` and `testing` modes so fixture pages can render them. In production builds, fixture components are strictly excluded from registration.
+- **Automated Default Exclusions (`DEFAULT_TEST_EXCLUSIONS`)**: Coralite automatically excludes `**/__test__/**`, `**/__tests__/**`, `**/*.test.html`, `**/*.spec.html`, and `**/*.fixture.html` from both pages and components in production mode. Custom patterns can also be specified via top-level `exclude` or `pages.exclude`.
 
 ### Testing Mode Target (`mode: 'testing'`)
 - **Velocity Engine**: Coralite's testing plugin automatically suppresses animations, transitions, and smooth scrolling (`*, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }`) to guarantee instantaneous test execution and deterministic visual snapshots.
