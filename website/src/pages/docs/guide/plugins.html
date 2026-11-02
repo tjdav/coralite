@@ -103,6 +103,50 @@
       });
     </coralite-code-highlight>
 
+    <coralite-heading level="2" text="Ubiquitous Ambient Context (context)"></coralite-heading>
+
+    <p>When a plugin provides lightweight, synchronous utilities (such as an i18n translation helper <code>$t</code>, formatters, or math utilities) that need to be universally accessible across <strong>all</strong> execution blocks &mdash; including component and page <code>server()</code>, <code>getters</code>, <code>client()</code>, <code>slots</code>, and <code>style</code> &mdash; declare top-level <code>context</code> instead of splitting into separate <code>server.context</code> and <code>client.context</code> blocks.</p>
+
+    <p>Top-level context uses the curried <strong>Two-Phase Resolver</strong> pattern: Phase 1 runs at plugin initialization, and Phase 2 lazily resolves per instance context:</p>
+
+    <coralite-code-highlight language="javascript">
+      import { definePlugin } from 'coralite';
+
+      export default definePlugin({
+        name: '$t',
+        config: {
+          defaultLocale: { type: String, default: 'en' }
+        },
+        context: ({ app, config }) => {
+          const dict = {
+            en: { welcome: 'Welcome', submit: 'Submit' },
+            es: { welcome: 'Bienvenido', submit: 'Enviar' }
+          };
+
+          return (instanceContext) => {
+            const locale = instanceContext.route?.params?.lang || config.defaultLocale;
+            return (key) => dict[locale]?.[key] || key;
+          };
+        }
+      });
+    </coralite-code-highlight>
+
+    <p>Because top-level <code>context</code> is available directly in <code>getters</code>, zero-JS static components can resolve localized copy during SSR and client hydration without needing to define a boilerplate <code>server()</code> block:</p>
+
+    <coralite-code-highlight language="html">
+      &lt;template id="greeting-banner"&gt;
+        &lt;h1&gt;{{ heading }}&lt;/h1&gt;
+      &lt;/template&gt;
+
+      &lt;script type="module"&gt;
+        export const getters = {
+          heading: ({ $t }) => $t('welcome')
+        };
+      &lt;/script&gt;
+    </coralite-code-highlight>
+
+    <p><strong>Mutual Exclusivity Rule (<code>CORALITE-P211</code>):</strong> A plugin must define either top-level <code>context</code> (for ubiquitous, synchronous ambient helpers) or environment-specific <code>server.context</code> / <code>client.context</code> (for asynchronous, environment-specialized tasks). Defining both top-level <code>context</code> and environment-specific context on the same plugin throws <code>CORALITE-P211</code>.</p>
+
     <coralite-heading level="2" text="Global Component Registration"></coralite-heading>
 
     <p>Plugins can distribute their own HTML components. By providing an array of file paths to the <code>components</code> property in your plugin configuration, Coralite automatically reads, parses, and registers these files as global components during initialization.</p>

@@ -318,6 +318,7 @@
  * @property {string} [rootDir] - Absolute path to the plugin root directory
  * @property {string} [filePath] - Absolute path to the plugin source file
  * @property {Record<string, any>} [config] - Top-level shared configuration schema/values
+ * @property {CoralitePluginExportFunction} [context] - Ubiquitous, synchronous ambient context factory
  * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
  * @property {boolean} [_isAutoCorePlugin] - Internal flag indicating whether plugin was auto-registered by core
@@ -335,6 +336,7 @@
  * @property {string} [rootDir] - Absolute path to the plugin root directory
  * @property {string} [filePath] - Absolute path to the plugin source file
  * @property {Record<string, any>} [config] - Top-level shared configuration schema/values
+ * @property {CoralitePluginExportFunction} [context] - Ubiquitous, synchronous ambient context factory
  * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
  * @property {boolean} [_isConfiguredInstance] - Internal flag

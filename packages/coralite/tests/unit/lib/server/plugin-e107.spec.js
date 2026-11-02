@@ -21,7 +21,7 @@ describe('CORALITE-E107: Unified define* entry point block validation', () => {
           assert.strictEqual(err.code, 'CORALITE-E107')
           assert.strictEqual(
             err.message,
-            'Unknown block "unknownBlock" in definePlugin. Valid blocks are: name, config, server, client, dependencies, modes, rootDir, filePath.'
+            'Unknown block "unknownBlock" in definePlugin. Valid blocks are: name, config, context, server, client, dependencies, modes, rootDir, filePath.'
           )
           return true
         }
@@ -42,7 +42,7 @@ describe('CORALITE-E107: Unified define* entry point block validation', () => {
       assert.ok(e107)
       assert.strictEqual(
         e107.message,
-        'Unknown block "badOption" in definePlugin. Valid blocks are: name, config, server, client, dependencies, modes, rootDir, filePath.'
+        'Unknown block "badOption" in definePlugin. Valid blocks are: name, config, context, server, client, dependencies, modes, rootDir, filePath.'
       )
     })
 
@@ -57,7 +57,7 @@ describe('CORALITE-E107: Unified define* entry point block validation', () => {
       assert.ok(e107)
       assert.strictEqual(
         e107.message,
-        'Unknown block "extraField" in definePlugin. Valid blocks are: name, config, server, client, dependencies, modes, rootDir, filePath.'
+        'Unknown block "extraField" in definePlugin. Valid blocks are: name, config, context, server, client, dependencies, modes, rootDir, filePath.'
       )
     })
 
@@ -69,7 +69,7 @@ describe('CORALITE-E107: Unified define* entry point block validation', () => {
       assert.ok(e107)
       assert.strictEqual(
         e107.message,
-        'Unknown block "unknownOption" in definePlugin. Valid blocks are: name, config, server, client, dependencies, modes, rootDir, filePath.'
+        'Unknown block "unknownOption" in definePlugin. Valid blocks are: name, config, context, server, client, dependencies, modes, rootDir, filePath.'
       )
     })
 

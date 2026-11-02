@@ -21,6 +21,7 @@ const VALID_PLUGIN_MODES = new Set(['development', 'testing', 'production'])
 const ALLOWED_PLUGIN_CONFIG_KEYS = new Set([
   'name',
   'config',
+  'context',
   'server',
   'client',
   'dependencies',

@@ -9,6 +9,7 @@ const VALID_MODES = /* @__PURE__ */ new Set(['development', 'testing', 'producti
 const ALLOWED_PLUGIN_KEYS = /* @__PURE__ */ new Set([
   'name',
   'config',
+  'context',
   'server',
   'client',
   'dependencies',
@@ -218,6 +219,7 @@ export function definePlugin (options = {}) {
     rootDir,
     filePath,
     config,
+    context,
     server,
     client
   } = options
@@ -231,6 +233,20 @@ export function definePlugin (options = {}) {
   }
   validateDependencies(dependencies)
   validateModes(modes)
+
+  if (context !== undefined) {
+    if (typeof context !== 'function') {
+      throw new CoraliteError(
+        `Coralite plugin validation failed: "context" must be a function, received ${typeof context}`
+      )
+    }
+    if (server?.context !== undefined || client?.context !== undefined) {
+      throw new CoraliteError(
+        '[CORALITE-P211] Plugin cannot specify both top-level "context" and "server.context" or "client.context".',
+        { code: 'CORALITE-P211' }
+      )
+    }
+  }
 
   if (config !== undefined && (typeof config !== 'object' || config === null)) {
     throw new CoraliteError(
@@ -399,6 +415,7 @@ export function definePlugin (options = {}) {
       rootDir: resolvedRootDir,
       filePath: resolvedFilePath,
       config: valuesByBlock.config,
+      ...(context !== undefined ? { context } : {}),
       server: instanceServer,
       client: instanceClient,
       _normalizedSchemas: normalizedSchemas,
@@ -423,6 +440,9 @@ export function definePlugin (options = {}) {
   }
   if (config !== undefined) {
     pluginCallable.config = config
+  }
+  if (context !== undefined) {
+    pluginCallable.context = context
   }
   if (resolvedServer !== undefined) {
     pluginCallable.server = resolvedServer

@@ -867,10 +867,11 @@ esbuild error mapping resolves plugin paths using precedence:
 2. `client.rootDir` and `client.filePath` properties.
 3. Caller stack-derived file paths (skipping Node internals and `node_modules`).
 
-### 7.2 Context Resolver System (Static vs. Two-Phase Instance Context)
+### 7.2 Context Resolver System (Top-Level Ubiquitous vs. Environment-Specific)
 
-- **Static Context Object**: Use an object literal `context: { myUtil: () => {} }` for static global helpers.
-- **Two-Phase Curried Context**: Use `(pluginContext) => (instanceContext) => ({ ... })` when plugin context depends on component instance state or needs lazy cross-plugin resolution.
+- **Top-Level Ubiquitous Context (`context`)**: Use `context: ({ app, config }) => (instanceContext) => ({ ... })` to provide synchronous ambient utilities (such as `$t` i18n functions, formatters, pure helpers) across **all** execution blocks: `server()`, `getters`, `client()`, `slots`, and `style`.
+- **Mutual Exclusivity (`CORALITE-P211`)**: A plugin must define either top-level `context` (for ubiquitous ambient helpers) OR environment-specific `server.context` / `client.context`. Defining both on the same plugin throws `CORALITE-P211`.
+- **Two-Phase Curried Context**: Currying `(pluginContext) => (instanceContext) => ({ ... })` ensures Phase 1 runs once at initialization and Phase 2 lazily resolves per component/page instance.
 
 ### 7.3 Server & Client Lifecycle Hooks
 
@@ -879,8 +880,10 @@ esbuild error mapping resolves plugin paths using precedence:
 
 ### 7.4 Context Injection Targets & Getter Isomorphism Invariant
 
-Plugin contexts resolved via `server.context` and `client.context` are injected into Component and Page handlers:
+Plugin context properties are injected into Component and Page handlers:
 
+- **Top-Level `context` (Ubiquitous Ambient Context)**:
+  - Injected synchronously across **all** component and page execution blocks: `server()`, `getters`, `client()`, `slots`, and `style`.
 - **Server Context Injection**:
   - **Components**: `export function server ({ ...plugins, ...props, route, state, store })`
   - **Pages**: `export default definePage({ server ({ ...plugins, route, app, session, signal, store, page }) })`
@@ -891,10 +894,10 @@ Plugin contexts resolved via `server.context` and `client.context` are injected 
   - Core framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) are guaranteed and take strict precedence over plugin keys. If a plugin exports a key colliding with a reserved framework key, Coralite emits a warning in development and testing modes and preserves the framework key.
 - **Getter Isomorphism Invariant**:
   - Getters are isomorphic pure derivation functions that execute synchronously both during SSR (Node.js) and during reactive client mutations (Browser).
-  - Getters strictly receive `{ state, route, root, refs, slots, signal, isServer, store }`.
-  - **Getters NEVER receive plugin context**. Injecting build-time or server-only plugins into getters violates isomorphism when state mutates in the browser.
-  - In development mode, attempting to access a registered plugin name on getter context throws a diagnostic warning explaining the invariant.
-  - **Architectural pattern**: Access plugin utilities in `server()`, write the fetched or transformed data into `state` (or return it from `server()`), and have isomorphic getters read directly from `state`.
+  - Getters strictly receive `{ state, route, root, refs, slots, signal, isServer, store }` plus any ambient utilities provided by top-level plugin `context` (e.g. `({ state, $t })`).
+  - **Getters NEVER receive environment-specific plugin context** (`server.context` or `client.context`). Injecting build-time or server-only plugins into getters violates isomorphism when state mutates in the browser.
+  - In development mode, attempting to access a registered `server.context` plugin name on getter context throws a diagnostic warning explaining the invariant.
+  - **Architectural pattern**: Access server-only plugin utilities in `server()`, write the fetched or transformed data into `state` (or return it from `server()`), and have isomorphic getters read directly from `state`. For pure synchronous helpers (like `$t`), use top-level `context`.
 
 ### 7.5 Testing Server Plugins
 

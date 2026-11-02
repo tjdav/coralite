@@ -1549,23 +1549,47 @@ export function createRenderer ({
             signal: buildSignal,
             store: reactiveStore
           }
-          if ((normalizedOptions.mode === 'development' || normalizedOptions.mode === 'testing') && source?.plugins) {
-            const pluginKeys = new Set(Object.keys(source.plugins))
-            if (pluginKeys.size > 0) {
-              getterCtx = new Proxy(getterCtx, {
-                get (target, prop, receiver) {
-                  if (typeof prop === 'string' && pluginKeys.has(prop)) {
-                    handleError({
-                      level: 'WARN',
-                      message: `Plugin "${prop}" cannot be accessed directly in isomorphic getters. Fetch or compute plugin data in server(), assign to state, and read from state in getters.`,
-                      filePath: pageItem.path?.pathname
-                    })
-                  }
-                  return Reflect.get(target, prop, receiver)
+          const isDevOrTest = normalizedOptions.mode === 'development' || normalizedOptions.mode === 'testing'
+          const sourcePlugins = source?.plugins
+          const isomorphicPlugins = source?.isomorphicPlugins
+
+          const isoCache = new Map()
+          getterCtx = new Proxy(getterCtx, {
+            get (target, prop, receiver) {
+              if (Reflect.has(target, prop)) {
+                return Reflect.get(target, prop, receiver)
+              }
+              if (isomorphicPlugins && typeof prop === 'string' && prop in isomorphicPlugins) {
+                if (isoCache.has(prop)) {
+                  return isoCache.get(prop)
                 }
-              })
+                const fn = isomorphicPlugins[prop]
+                const resolved = typeof fn === 'function' ? fn(receiver) : fn
+                isoCache.set(prop, resolved)
+                return resolved
+              }
+              if (isDevOrTest && sourcePlugins && typeof prop === 'string' && prop in sourcePlugins) {
+                handleError({
+                  level: 'WARN',
+                  message: `Plugin "${prop}" cannot be accessed directly in isomorphic getters. Fetch or compute plugin data in server(), assign to state, and read from state in getters.`,
+                  filePath: pageItem.path?.pathname
+                })
+              }
+              return Reflect.get(target, prop, receiver)
+            },
+            has (target, prop) {
+              return Reflect.has(target, prop) || (isomorphicPlugins && prop in isomorphicPlugins)
+            },
+            ownKeys (target) {
+              const keys = new Set(Reflect.ownKeys(target))
+              if (isomorphicPlugins) {
+                for (const k of Object.keys(isomorphicPlugins)) {
+                  keys.add(k)
+                }
+              }
+              return Array.from(keys)
             }
-          }
+          })
           for (const [gKey, gFn] of Object.entries(pageExports.getters)) {
             if (typeof gFn === 'function') {
               if (isAsyncFunction(gFn)) {

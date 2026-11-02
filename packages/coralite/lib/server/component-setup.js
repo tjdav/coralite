@@ -331,12 +331,37 @@ async function _executeServerFunction (server, state, context, initialState, app
   const appOpts = context && context.app ? context.app.options : null
   const storeConfig = appOpts ? appOpts.store : undefined
   const serverStore = context?.store || (storeConfig ? createServerStore(storeConfig) : undefined)
-  const serverResult = await serverToExecute({
+  let serverContext = {
     ...context,
     ...initialState,
     route,
     store: serverStore
-  })
+  }
+  const isomorphicPlugins = context?.source?.isomorphicPlugins || app?.source?.isomorphicPlugins
+  if (isomorphicPlugins) {
+    const isoCache = new Map()
+    serverContext = new Proxy(serverContext, {
+      get (target, prop, receiver) {
+        if (Reflect.has(target, prop)) {
+          return Reflect.get(target, prop, receiver)
+        }
+        if (typeof prop === 'string' && prop in isomorphicPlugins) {
+          if (isoCache.has(prop)) {
+            return isoCache.get(prop)
+          }
+          const fn = isomorphicPlugins[prop]
+          const resolved = typeof fn === 'function' ? fn(receiver) : fn
+          isoCache.set(prop, resolved)
+          return resolved
+        }
+        return Reflect.get(target, prop, receiver)
+      },
+      has (target, prop) {
+        return Reflect.has(target, prop) || (typeof prop === 'string' && prop in isomorphicPlugins)
+      }
+    })
+  }
+  const serverResult = await serverToExecute(serverContext)
 
   if (serverResult) {
     if (typeof serverResult !== 'object' || Array.isArray(serverResult)) {
@@ -376,37 +401,59 @@ async function _executeServerGetters (getters, state, root, context, app, module
   }
   const isDevOrTest = appOpts?.mode === 'development' || appOpts?.mode === 'testing'
   const sourcePlugins = context?.source?.plugins || app?.source?.plugins
-  if (isDevOrTest && sourcePlugins) {
-    const pluginKeys = new Set(Object.keys(sourcePlugins))
-    if (pluginKeys.size > 0) {
-      serverContext = new Proxy(serverContext, {
-        get (target, prop, receiver) {
-          if (typeof prop === 'string' && pluginKeys.has(prop)) {
-            const warnMsg = `Plugin "${prop}" cannot be accessed directly in isomorphic getters. Fetch or compute plugin data in server(), assign to state, and read from state in getters.`
-            const effectiveApp = app || context?.app
-            if (effectiveApp && typeof effectiveApp.onError === 'function') {
-              effectiveApp.onError({
-                level: 'WARN',
-                message: warnMsg,
-                componentId: module?.id
-              })
-            } else {
-              handleError({
-                onErrorCallback: appOpts?.onError,
-                data: {
-                  level: 'WARN',
-                  message: warnMsg,
-                  componentId: module?.id,
-                  filePath: module?.path?.pathname
-                }
-              })
-            }
-          }
-          return Reflect.get(target, prop, receiver)
+  const isomorphicPlugins = context?.source?.isomorphicPlugins || app?.source?.isomorphicPlugins
+
+  const isoCache = new Map()
+  serverContext = new Proxy(serverContext, {
+    get (target, prop, receiver) {
+      if (Reflect.has(target, prop)) {
+        return Reflect.get(target, prop, receiver)
+      }
+      if (isomorphicPlugins && typeof prop === 'string' && prop in isomorphicPlugins) {
+        if (isoCache.has(prop)) {
+          return isoCache.get(prop)
         }
-      })
+        const fn = isomorphicPlugins[prop]
+        const resolved = typeof fn === 'function' ? fn(receiver) : fn
+        isoCache.set(prop, resolved)
+        return resolved
+      }
+      if (isDevOrTest && sourcePlugins && typeof prop === 'string' && prop in sourcePlugins) {
+        const warnMsg = `Plugin "${prop}" cannot be accessed directly in isomorphic getters. Fetch or compute plugin data in server(), assign to state, and read from state in getters.`
+        const effectiveApp = app || context?.app
+        if (effectiveApp && typeof effectiveApp.onError === 'function') {
+          effectiveApp.onError({
+            level: 'WARN',
+            message: warnMsg,
+            componentId: module?.id
+          })
+        } else {
+          handleError({
+            onErrorCallback: appOpts?.onError,
+            data: {
+              level: 'WARN',
+              message: warnMsg,
+              componentId: module?.id,
+              filePath: module?.path?.pathname
+            }
+          })
+        }
+      }
+      return Reflect.get(target, prop, receiver)
+    },
+    has (target, prop) {
+      return Reflect.has(target, prop) || (isomorphicPlugins && prop in isomorphicPlugins)
+    },
+    ownKeys (target) {
+      const keys = new Set(Reflect.ownKeys(target))
+      if (isomorphicPlugins) {
+        for (const k of Object.keys(isomorphicPlugins)) {
+          keys.add(k)
+        }
+      }
+      return Array.from(keys)
     }
-  }
+  })
   for (const [key, getter] of Object.entries(getters)) {
     if (isAsyncFunction(getter)) {
       state[key] = undefined
