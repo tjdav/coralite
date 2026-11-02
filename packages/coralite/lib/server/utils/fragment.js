@@ -4,6 +4,7 @@ import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, fo
 import { filterReservedAttributes } from '../renderer.js'
 import { CoraliteError } from '../../shared/errors.js'
 import { BOOLEAN_ATTRIBUTES, isAriaAttribute, isAriaBooleanState, resolveAriaBooleanState } from '../../shared/tags.js'
+import { isCoraliteNode } from '../../shared/types.js'
 
 /**
  * Deeply freezes a target value (object, array) recursively, excluding DOM AST nodes.
@@ -18,7 +19,7 @@ function deepFreeze (obj) {
 
   // Do not freeze DOM AST nodes (tags, text, root, directives, comments)
   // because dom-serializer mutates elem.name in-place when normalizing SVG/MathML elements
-  if (obj.type === 'tag' || obj.type === 'text' || obj.type === 'root' || obj.type === 'directive' || obj.type === 'comment') {
+  if (isCoraliteNode(obj)) {
     return obj
   }
 

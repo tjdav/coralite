@@ -73,6 +73,83 @@ Read this file before starting any task in this project. Rules apply to every ta
 </style>
 ```
 
+### Zero-JS static components
+
+A component is **static** when its definition serializes zero client lifecycle code: `client: null`, `getters: {}`, no `server`, no reactive `state` mutations. This is the correct meaning of "zero-JS" in Coralite — the component module is still bundled into `dist/assets/js/` for imperative hydration, but no `client()` handler runs in the browser.
+
+A `<script type="module">` that exports only `attributes` (or `style`) emits 0 bytes of browser runtime lifecycle code.
+
+```html
+<template id="ui-button">
+  <button type="{{ type }}" disabled="{{ disabled }}">
+    <slot></slot>
+  </button>
+</template>
+
+<script type="module">
+  export const attributes = {
+    type: { type: String, default: 'button' },
+    disabled: { type: Boolean, default: false }
+  }
+</script>
+```
+
+Key properties:
+- `{{ type }}` and `{{ disabled }}` render directly from `state` at SSR time — no getter, no `client()`.
+- Native boolean attributes (`disabled`, `readonly`, `required`, `checked`) reflect automatically (`attr=""` when truthy, omitted when falsy).
+- Native button/keyboard/form semantics work directly because Coralite renders Light DOM.
+
+### Getters are for derived state, not passthroughs
+
+`getters` compute **derived** values — things not directly present in `state`. A getter whose body is literally `({ state }) => state.someField` is dead code: the field is already available as a flat template token `{{ someField }}`.
+
+Rule of thumb: *If the getter body could be replaced by a raw `{{ token }}` in the template, delete the getter.*
+
+**Forbidden — passthrough getter:**
+```html
+<template id="bad-example">
+  <button type="{{ buttonType }}">…</button>
+</template>
+<script type="module">
+  export const attributes = { type: { type: String, default: 'button' } }
+  export const getters = {
+    // ❌ passthrough
+    buttonType: ({ state }) => state.type
+  }
+</script>
+```
+
+**Required — direct flat token:**
+```html
+<template id="good-example">
+  <button type="{{ type }}">…</button>
+</template>
+<script type="module">
+  export const attributes = { type: { type: String, default: 'button' } }
+  // no getters block
+</script>
+```
+
+**Legitimate getter examples:**
+- Combining fields: `fullName: ({ state }) => `${state.firstName} ${state.lastName}``
+- Fallback chains: `displayValue: ({ state }) => state.value || state.placeholder || '—'`
+- Slot presence: `hasIcon: ({ slots }) => slots.has('icon')`
+
+### Ref pragmas for phased component evolution (`CORALITE-W402`)
+
+When authoring UI components incrementally (e.g., Step 1 builds static markup `<button ref="button">`, Step 2 wires events in `client()`), the validator emits `CORALITE-W402: Element ref 'button' defined in template but never accessed`.
+
+Do NOT delete the `ref` attribute, and do NOT add an empty `client({ refs }) { refs('button') }` handler (which breaks zero-JS static status). Instead, suppress the warning with a scoped pragma comment `<!-- coralite-ignore <refName> -->` immediately following `<template>`:
+
+```html
+<template id="ui-button">
+  <!-- coralite-ignore button -->
+  <button ref="button" type="{{ type }}">
+    <slot></slot>
+  </button>
+</template>
+```
+
 ### Canonical page structure
 
 ```html
@@ -91,7 +168,7 @@ Read this file before starting any task in this project. Rules apply to every ta
 
   export default definePage({
     getters: {
-      pageTitle: ({ state }) => state.title
+      pageTitle: ({ state }) => `App — ${state.title}`
     },
     server () {
       return { title: 'Home' }

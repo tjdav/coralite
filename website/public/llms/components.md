@@ -38,6 +38,9 @@ Every Coralite component is authored as a single `.html` file located in `src/co
 1. **Named Exports Rule**: Handlers use `export function` (`server`, `client`, `onError`). Declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`). Never use `defineComponent` or `class extends HTMLElement` for new components.
 2. **Templates are Dumb**: Only flat `{{ token }}` interpolations are supported. No expressions (`{{ a + b }}`), function calls, or inline events (`onclick`).
 3. **No Defensive Guards**: Framework-injected context arguments (`state`, `refs`, `signal`, `emit`, etc.) are guaranteed to exist. Never guard them with `if (!refs) return`.
+4. **Zero-JS Static Components**: A component is static when its definition serializes zero client lifecycle code (`client: null`, `getters: {}`). A component exporting only `attributes` (or `style`) emits 0 bytes of client lifecycle code. Attributes reflect directly to template tokens at SSR time.
+5. **Getters are for Derived State, Not Passthroughs**: `getters` compute derived values. Never author a getter that merely passes through raw state (`({ state }) => state.someProp`). If a getter body could be replaced by a flat `{{ token }}`, delete the getter.
+6. **Ref Pragmas for Phased Evolution (`CORALITE-W402`)**: Suppress unused element ref warnings during multi-step development with `<!-- coralite-ignore <refName> -->` following `<template>`, rather than deleting refs or authoring dummy `client()` blocks.
 
 ## 3. Declarations Reference
 

@@ -108,6 +108,34 @@
       </template>
     </coralite-code-html>
 
+    <coralite-heading level="3" text="Zero-JS Static Components with Attributes"></coralite-heading>
+
+    <p>A component is <strong>Zero-JS static</strong> when it serializes zero client lifecycle code: <code>client: null</code> and <code>getters: {}</code>. You can include a <code>&lt;script type="module"&gt;</code> that exports <code>attributes</code> (for type coercion and default values) or <code>style</code> and still maintain a 100% Zero-JS footprint in the browser runtime.</p>
+
+    <coralite-code-html>
+      <!-- src/components/ui-button.html -->
+      <template id="ui-button">
+        <button type="{{ type }}" disabled="{{ disabled }}">
+          <slot></slot>
+        </button>
+      </template>
+
+      <script type="module">
+        export const attributes = {
+          type: {
+    type: String,
+    default: 'button'
+  },
+          disabled: {
+    type: Boolean,
+    default: false
+  }
+        }
+      </script>
+    </coralite-code-html>
+
+    <p>Both <code>{{ type }}</code> and <code>{{ disabled }}</code> render directly from <code>state</code> at SSR time without getters or client code. Native boolean attributes reflect automatically (present when truthy, omitted when falsy).</p>
+
     <coralite-heading level="2" text="Dynamic Components"></coralite-heading>
 
     <p>While static components are great for simple layouts, modern web development often requires more power. When your component needs data fetching, reactive state, or client-side interactivity, you create a <strong>Dynamic Component</strong>.</p>

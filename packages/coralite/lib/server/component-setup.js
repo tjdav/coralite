@@ -26,17 +26,11 @@ function createServerSlotsHelper (root) {
       if (!node) {
         return false
       }
-      if (isCoraliteComment(node) || node.type === 'comment') {
+      if (isCoraliteComment(node)) {
         return false
       }
-      if (isCoraliteTextNode(node) || node.type === 'text') {
-        let text = ''
-        if (typeof node.data === 'string') {
-          text = node.data
-        } else if (typeof node.content === 'string') {
-          text = node.content
-        }
-        if (!text.trim()) {
+      if (isCoraliteTextNode(node)) {
+        if (!node.data.trim()) {
           return false
         }
       }
