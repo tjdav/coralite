@@ -1700,7 +1700,7 @@ export class CoraliteElement extends BaseElement {
               }
             }
             const roState = this._getTrackedReadOnlyState(key, tracker)
-            context = {
+            context = this._wrapGetterContext({
               state: roState,
               route: _getClientRoute(),
               root: this,
@@ -1710,7 +1710,7 @@ export class CoraliteElement extends BaseElement {
               signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal,
               // @ts-ignore
               store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
-            }
+            })
             this._getterContexts.set(key, context)
           }
 
@@ -1739,6 +1739,49 @@ export class CoraliteElement extends BaseElement {
     this._registerSlotStateObserver()
     this._syncValidityFromErrors()
 
+  }
+
+  /**
+   * Wraps raw getter context with a lazy proxy resolving top-level isomorphic plugin context.
+   *
+   * @param {Object} rawContext - Raw getter context object
+   * @returns {Proxy} Wrapped getter context proxy
+   * @private
+   */
+  _wrapGetterContext (rawContext) {
+    const isoCache = new Map()
+    return new Proxy(rawContext, {
+      get (target, prop, receiver) {
+        if (Reflect.has(target, prop)) {
+          return Reflect.get(target, prop, receiver)
+        }
+        const isoPlugins = typeof window !== 'undefined' && window['__coralite__']?.isomorphicPlugins
+        if (isoPlugins && typeof prop === 'string' && prop in isoPlugins) {
+          if (isoCache.has(prop)) {
+            return isoCache.get(prop)
+          }
+          const fn = isoPlugins[prop]
+          const resolved = typeof fn === 'function' ? fn(receiver) : fn
+          isoCache.set(prop, resolved)
+          return resolved
+        }
+        return Reflect.get(target, prop, receiver)
+      },
+      has (target, prop) {
+        const isoPlugins = typeof window !== 'undefined' && window['__coralite__']?.isomorphicPlugins
+        return Reflect.has(target, prop) || (isoPlugins && typeof prop === 'string' && prop in isoPlugins)
+      },
+      ownKeys (target) {
+        const keys = new Set(Reflect.ownKeys(target))
+        const isoPlugins = typeof window !== 'undefined' && window['__coralite__']?.isomorphicPlugins
+        if (isoPlugins) {
+          for (const k of Object.keys(isoPlugins)) {
+            keys.add(k)
+          }
+        }
+        return Array.from(keys)
+      }
+    })
   }
 
   /**
@@ -1803,7 +1846,7 @@ export class CoraliteElement extends BaseElement {
             }
           }
           const roState = this._getTrackedReadOnlyState(key, tracker)
-          context = {
+          context = this._wrapGetterContext({
             state: roState,
             route: _getClientRoute(),
             root: this,
@@ -1813,7 +1856,7 @@ export class CoraliteElement extends BaseElement {
             signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal,
             // @ts-ignore
             store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
-          }
+          })
           this._getterContexts.set(key, context)
         }
 
@@ -1929,7 +1972,7 @@ export class CoraliteElement extends BaseElement {
         }
       }
       const roState = this._getTrackedReadOnlyState(key, tracker)
-      context = {
+      context = this._wrapGetterContext({
         state: roState,
         route: _getClientRoute(),
         root: this,
@@ -1937,7 +1980,7 @@ export class CoraliteElement extends BaseElement {
         slots: this._getSlotsHelper(),
         isServer: false,
         signal: combinedSignal
-      }
+      })
       this._getterContexts.set(key, context)
     } else {
       context.signal = combinedSignal
@@ -2633,13 +2676,13 @@ export class CoraliteElement extends BaseElement {
                   }
                 }
                 const roState = self._getTrackedReadOnlyState(getterKey, tracker)
-                getterContext = {
+                getterContext = self._wrapGetterContext({
                   state: roState,
                   root: self,
                   refs: resolveRef,
                   slots: self._getSlotsHelper(),
                   signal: null
-                }
+                })
                 self._getterContexts.set(getterKey, getterContext)
               }
 

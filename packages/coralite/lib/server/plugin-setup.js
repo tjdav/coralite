@@ -220,6 +220,56 @@ export async function setupPlugins ({
       plugin.client.config = clientConfigStaging
     }
 
+    if (plugin.context) {
+      const contextName = plugin.name
+      const hookConfig = createServerHookConfig(sharedConfig, clientConfigStaging, declaredClientKeys)
+
+      /** @type {any} */
+      const pluginContext = new Proxy({
+        app,
+        config: null
+      }, {
+        get (target, prop) {
+          if (prop === 'config') {
+            return hookConfig
+          }
+          if (prop in target) {
+            return target[prop]
+          }
+          // Block access to other plugins' Phase 2 factories in Phase 1
+          if (allExportNames.has(prop)) {
+            return undefined
+          }
+          return serverGlobalContext[prop]
+        },
+        set (target, prop, value) {
+          serverGlobalContext[prop] = value
+          return Reflect.set(target, prop, value)
+        }
+      })
+
+      if (allExportNames.has(contextName)) {
+        throw new Error(`Coralite Error: Plugin export name conflict. The export name "${contextName}" from plugin "${plugin.name}" is already defined by another plugin.`)
+      }
+
+      allExportNames.add(contextName)
+
+      const contextResult = await plugin.context(pluginContext)
+
+      if (typeof contextResult !== 'function') {
+        throw new CoraliteError(`Coralite Plugin Error: The "context" function of plugin "${plugin.name}" must return a function for the second phase (instance context). Received: ${typeof contextResult}`)
+      }
+
+      source.plugins[contextName] = contextResult
+      if (!source.isomorphicPlugins) {
+        source.isomorphicPlugins = {}
+      }
+      source.isomorphicPlugins[contextName] = contextResult
+      serverGlobalContext[contextName] = contextResult
+
+      scriptManager.use(plugin)
+    }
+
     if (plugin.server) {
       const serverName = plugin.server.name || plugin.name
       const hookConfig = createServerHookConfig(plugin.server.config, clientConfigStaging, declaredClientKeys)

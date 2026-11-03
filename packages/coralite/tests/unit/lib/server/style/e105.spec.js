@@ -53,26 +53,25 @@ describe('Style Validator (E105 and E303)', () => {
     const result = validateComponentSource(code, 'style-comp.html')
     const e105 = result.diagnostics.find(d => d.code === 'CORALITE-E105')
     assert.ok(e105, 'E105 diagnostic emitted for (state) => ... in style')
-    assert.ok(e105.message.includes('style functions must destructure the context'))
+    assert.ok(e105.message.includes('Style function parameter receives unified context'))
     assert.strictEqual(e105.fix?.action, 'style_context_migration')
   })
 
-  test('Style function with (s) => s.active emits CORALITE-E105 without fix action', () => {
+  test('Style function with (context) => context.state.active permits context parameter without E105', () => {
     const code = `
       <template id="style-comp"><div></div></template>
       <script type="module">
         import { defineComponent } from 'coralite'
         export default defineComponent({
           style: {
-            '--accent': (s) => s.active ? 'green' : 'gray'
+            '--accent': (context) => context.state.active ? 'green' : 'gray'
           }
         })
       </script>
     `
     const result = validateComponentSource(code, 'style-comp.html')
     const e105 = result.diagnostics.find(d => d.code === 'CORALITE-E105')
-    assert.ok(e105, 'E105 diagnostic emitted for (s) => ... in style')
-    assert.strictEqual(e105.fix, null)
+    assert.strictEqual(e105, undefined)
   })
 
   test('Async style function async ({ state }) => ... emits CORALITE-E303', () => {

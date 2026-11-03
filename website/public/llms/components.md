@@ -63,31 +63,31 @@ export const attributes = {
 
 ### `getters`
 Pure derived state computed synchronously.
-* Must destructure context: `({ state, root, refs, slots, signal }) => value` (`CORALITE-E105`).
+* Receives unified context: `({ state, root, refs, slots, signal }) => value` or `(context) => context.state...`.
 * Synchronous only.
 
 ```javascript
 export const getters = {
   displayCount: ({ state }) => `Total: ${state.count}`,
-  hasItems: ({ state }) => state.items.length > 0
+  hasItems: (context) => context.state.items.length > 0
 }
 ```
 
 ### `style`
 Dynamic CSS properties and CSS variables mapped to synchronous functions.
-* Must destructure context: `({ state, isServer, signal }) => value` (`CORALITE-E105`).
+* Receives style context: `({ state, isServer, signal }) => value` or `(context) => context.state...`.
 * Synchronous only (`CORALITE-E303`). Returning a Promise throws an error.
 
 ```javascript
 export const style = {
   '--theme-color': ({ state }) => (state.active ? '#22c55e' : '#64748b'),
-  display: ({ state }) => (state.hidden ? 'none' : 'block')
+  display: (context) => (context.state.hidden ? 'none' : 'block')
 }
 ```
 
 ### `slots`
 Build-time/SSR slot transformations.
-* Must destructure context: `({ nodes, state }) => nodes` (`CORALITE-E105`).
+* Receives slot context: `({ nodes, state }) => nodes` or `(context) => context.nodes`.
 
 ```javascript
 export const slots = {

@@ -48,7 +48,7 @@ export const style = {
 }
 ```
 
-* **Destructuring Mandatory (`CORALITE-E105`)**: You must destructure `({ state }) => ...`. Writing `(state) => state.prop` binds `state` to the context object and evaluates to `undefined`.
+* **Context parameter**: You can write destructured `({ state }) => ...` or unified context `(context) => context.state.prop`. Writing `(state) => state.prop` binds `state` to the context object, evaluating to `undefined` (`CORALITE-E105`).
 * **Synchronous Only (`CORALITE-E303`)**: Returning a Promise throws a `CoraliteError`.
 
 ## 4. Slot Layout Transparency (`display: contents`)

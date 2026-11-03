@@ -6,6 +6,12 @@ import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
 import semver from 'semver'
 import { parseArgs } from 'node:util'
+import {
+  createOrUpdateGitHubRelease,
+  extractChangelogSection,
+  getRepoSlug,
+  isPrerelease
+} from '../lib/github.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const rootDir = resolve(__dirname, '../../..')
@@ -24,6 +30,9 @@ Options:
   --tag-ref <ref>     Git tag reference (e.g. coralite-v0.48.0-rc.0)
   --skip-build        Skip package build step
   --dry-run           Simulate publish process without uploading
+  --github-release    Publish release to GitHub Releases after npm publish
+  --no-github-release Skip publishing to GitHub Releases
+  --notes <path>      Path to release notes file for GitHub release
   --help              Show this help message
 `)
 }
@@ -138,6 +147,17 @@ async function main () {
       'skip-build': {
         type: 'boolean',
         default: false
+      },
+      'github-release': {
+        type: 'boolean',
+        default: false
+      },
+      'no-github-release': {
+        type: 'boolean',
+        default: false
+      },
+      notes: {
+        type: 'string'
       },
       help: {
         type: 'boolean',
@@ -373,6 +393,86 @@ async function main () {
           if (!verified) {
             throw new Error(`Publish failed permanently. Version ${packageName}@${version} not found on Codeberg after retries.`)
           }
+        }
+      }
+    }
+
+    const targetTag = (parsedTagRef && parsedTagRef.packageName === packageName)
+      ? tagRefEnv
+      : `${packageName}-v${version}`
+
+    let shouldPostGitHub = values['github-release']
+    if (!shouldPostGitHub && !values['no-github-release'] && process.stdout.isTTY && registry === 'npmjs') {
+      const { confirm } = await import('@clack/prompts')
+      const chosenConfirm = await confirm({
+        message: `Post GitHub Release for "${targetTag}"?`,
+        initialValue: true
+      })
+      shouldPostGitHub = Boolean(chosenConfirm && typeof chosenConfirm !== 'symbol')
+    }
+
+    if (shouldPostGitHub) {
+      const repoSlug = getRepoSlug(rootDir)
+      if (isDryRun) {
+        console.log(`\n[DRY RUN] Would create GitHub Release for "${targetTag}" on ${repoSlug.owner}/${repoSlug.repo}`)
+      } else {
+        console.log(`\n📦 Preparing GitHub Release for ${targetTag}...`)
+        let releaseBody = ''
+
+        if (values.notes && existsSync(values.notes)) {
+          releaseBody = readFileSync(values.notes, 'utf8')
+        } else {
+          const pkgReleasePost = resolve(pkgDir, 'RELEASE_POST.md')
+          const rootReleasePost = resolve(rootDir, 'RELEASE_POST.md')
+
+          if (existsSync(pkgReleasePost)) {
+            const content = readFileSync(pkgReleasePost, 'utf8')
+            if (content.includes(`v${version}`)) {
+              releaseBody = content
+            }
+          }
+
+          if (!releaseBody && existsSync(rootReleasePost)) {
+            const content = readFileSync(rootReleasePost, 'utf8')
+            if (content.includes(`v${version}`)) {
+              releaseBody = content
+            }
+          }
+
+          if (!releaseBody) {
+            const pkgChangelog = resolve(pkgDir, 'CHANGELOG.md')
+            const rootChangelog = resolve(rootDir, 'CHANGELOG.md')
+            const targetChangelog = existsSync(pkgChangelog) ? pkgChangelog : rootChangelog
+
+            if (existsSync(targetChangelog)) {
+              const changelogContent = readFileSync(targetChangelog, 'utf8')
+              const section = extractChangelogSection(changelogContent, version)
+              if (section) {
+                releaseBody = `## ${packageName} v${version}\n\n${section}`
+              }
+            }
+          }
+
+          if (!releaseBody) {
+            releaseBody = `## ${packageName} v${version}\n\nAutomated release for \`${targetTag}\`.`
+          }
+        }
+
+        const ghResult = await createOrUpdateGitHubRelease({
+          tag: targetTag,
+          title: `${packageName} v${version}`,
+          body: releaseBody,
+          prerelease: isPrerelease(version),
+          repoSlug
+        })
+
+        if (ghResult.success) {
+          console.log(`✔ Successfully ${ghResult.action} GitHub Release: ${ghResult.htmlUrl}`)
+        } else if (ghResult.webUrl) {
+          console.warn(`⚠️ ${ghResult.error}`)
+          console.log(`🔗 Create release manually: ${ghResult.webUrl}`)
+        } else {
+          console.error(`❌ Failed to publish GitHub Release: ${ghResult.error}`)
         }
       }
     }

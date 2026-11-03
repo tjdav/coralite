@@ -26,6 +26,10 @@ export default definePlugin({
   config: {
     // Plugin configuration schema
   },
+  // Top-level ubiquitous context (available across server, getters, client, slots, style)
+  context: ({ app, config }) => (instanceContext) => ({
+    // Ambient utilities (mutually exclusive with server.context / client.context)
+  }),
   server: {
     // Server-side hooks, context, and components
   },

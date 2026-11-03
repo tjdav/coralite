@@ -18,13 +18,13 @@ Read this file before starting any task in this project. Rules apply to every ta
   - Valid `definePage` blocks: `paths`, `server`, `getters`, `style`, `provide`, `client`, `onError`.
   - Pages do not support `attributes`, `slots`, `consume`, or `formControl`, and must not query component internals directly (`CORALITE-PAGE-201`).
 - **Test fixtures (`tests/fixtures/`)**: Author test fixtures under `tests/fixtures/` (`tests/fixtures/pages` for test pages, `tests/fixtures/components` for mock/harness components) and configure `fixtures` in `coralite.config.js`. Never place test fixtures or test files inside `src/pages/` or `src/components/`.
-- **Plugins**: Always use `export default definePlugin({ ... })` with two-phase curried context: `context: (pluginCtx) => (instanceCtx) => ({ ... })`. Plugin context is injected into Component and Page `server()` and `client()` handlers. Reserved framework keys (`route`, `app`, etc.) take strict precedence.
+- **Plugins**: Always use `export default definePlugin({ ... })` with two-phase curried context: `context: (pluginCtx) => (instanceCtx) => ({ ... })`. Top-level `context` is ubiquitous across Component and Page `server`, `getters`, `client`, `slots`, and `style`. Environment-specific `server.context` / `client.context` are injected into Component and Page `server()` and `client()` handlers respectively. Reserved framework keys (`route`, `app`, etc.) take strict precedence.
 - **Templates**: Flat `{{ token }}` placeholders only. No expressions (`{{ a + b }}`), dot notation (`{{ user.name }}`), conditionals, loops, or function calls (`CORALITE-E201`). Move all derived logic into synchronous `getters`.
 - **Events**: No inline event handlers (`onclick="..."`, `@click`, `CORALITE-E203`). Bind in `client()` using `refs('name').addEventListener('click', fn, { signal })`. Emit custom events via `emit('name', detail)` (never `root.dispatchEvent`).
-- **Context signatures (must destructure, `CORALITE-E105`)**:
-  - Getters: `({ state, root, isServer, ... }) => value` (synchronous only; never receives plugin context).
-  - Style: `({ state }) => value` (synchronous only, `CORALITE-E303`; returns string, number, or nullish).
-  - Slots: `({ nodes, state }) => nodes` (build/server-time slot transformation).
+- **Context signatures (flexible destructuring)**:
+  - Getters: `({ state, root, isServer, ... }) => value` or `(context) => context.state...` (synchronous only; pure derivations; receives core context plus any ubiquitous top-level plugin `context`, e.g. `$t`).
+  - Style: `({ state }) => value` or `(context) => context.state...` (synchronous only, `CORALITE-E303`; returns string, number, or nullish).
+  - Slots: `({ nodes, state }) => nodes` or `(context) => context.nodes` (build/server-time slot transformation).
 - **Attributes**: Primitive types only (`String`, `Number`, `Boolean`, `CORALITE-E101`). Never `Object` or `Array`, and never combine `required: true` with `default` (`CORALITE-E102`).
 - **State observation**: `observe('key', (val) => ...)` in `client()` is exclusively for external side-effects (imperative DOM, Canvas/WebGL, forms). Never mutate reactive `state` inside `observe()` (`CORALITE-E302`).
 

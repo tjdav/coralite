@@ -20,9 +20,8 @@ export default defineComponent({
     const res = validateComponentSource(code, 'x-test-slots.html')
     const e105s = res.diagnostics.filter(d => d.code === 'CORALITE-E105')
 
-    assert.equal(e105s.length, 2)
-    assert.match(e105s[0].message, /slots functions must receive a single destructured context/)
-    assert.match(e105s[1].message, /slots functions must receive a single destructured context/)
+    assert.equal(e105s.length, 1)
+    assert.match(e105s[0].message, /slots functions must receive a single context parameter/)
 
     assert.deepEqual(res.defined.slots.sort(), ['a', 'b', 'c', 'd'])
   })

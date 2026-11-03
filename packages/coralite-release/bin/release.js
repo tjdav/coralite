@@ -71,6 +71,10 @@ program
   .option('--allow-any-branch', 'Allow release from branches other than main/master/release/rc')
   .option('--no-git-tag', 'Skip creating git tag')
   .option('--no-git-commit', 'Skip git commit (only update package.json files)')
+  .option('--publish', 'Publish released package(s) to npm after git push', false)
+  .option('--github-release', 'Create GitHub release(s) after publishing', false)
+  .option('--no-publish', 'Skip publishing package(s) to npm')
+  .option('--no-github-release', 'Skip creating GitHub release(s)')
   .action(async (type, options) => {
     const git = simpleGit()
     const copiedLlmsTargets = []
@@ -458,6 +462,12 @@ program
             console.log(`    4. Git commit: "${rel.commitMessage}"`)
             console.log(`    5. Git tag: "${rel.tagName}"`)
             console.log(`    6. Git push origin ${currentBranch} & tag "${rel.tagName}"`)
+            if (options.publish) {
+              console.log(`    7. Publish ${rel.name}@${rel.newVersion} to npm`)
+              if (options.githubRelease !== false) {
+                console.log(`    8. Create GitHub Release for "${rel.tagName}"`)
+              }
+            }
             console.log('')
           }
 
@@ -624,11 +634,38 @@ program
 
       prompts.log.success('\n🎉 Multi-package sequential release completed successfully!')
       console.log('')
-      for (const rel of succeededPackages) {
-        if (semver.prerelease(rel.newVersion)) {
-          prompts.log.info(`📦 To publish ${rel.name} to npm, run:\n   pnpm --filter ${rel.name} publish --tag ${options.preid || 'rc'}`)
-        } else {
-          prompts.log.info(`📦 To publish ${rel.name} to npm, run:\n   pnpm --filter ${rel.name} publish`)
+
+      let shouldPublish = Boolean(options.publish)
+      if (!options.publish && !options.noPublish && !options.yes && succeededPackages.length > 0) {
+        const confirmPublish = await prompts.confirm({
+          message: 'Publish released package(s) to npm and create GitHub Releases now?',
+          initialValue: true
+        })
+        shouldPublish = Boolean(confirmPublish && !prompts.isCancel(confirmPublish))
+      }
+
+      if (shouldPublish) {
+        const __dirname = path.dirname(fileURLToPath(import.meta.url))
+        const publishScript = path.join(__dirname, 'publish.js')
+        const noGhFlag = options.githubRelease === false ? '--no-github-release' : '--github-release'
+
+        for (const rel of succeededPackages) {
+          prompts.log.step(`\n🚀 Publishing ${rel.name} (${rel.newVersion}) to npm & GitHub...`)
+          try {
+            execSync(`node "${publishScript}" --package "${rel.name}" --tag-ref "${rel.tagName}" ${noGhFlag}`, {
+              stdio: 'inherit'
+            })
+          } catch (pubErr) {
+            prompts.log.error(`Publish failed for ${rel.name}: ${pubErr.message}`)
+          }
+        }
+      } else {
+        for (const rel of succeededPackages) {
+          if (semver.prerelease(rel.newVersion)) {
+            prompts.log.info(`📦 To publish ${rel.name} to npm, run:\n   pnpm --filter ${rel.name} publish --tag ${options.preid || 'rc'}`)
+          } else {
+            prompts.log.info(`📦 To publish ${rel.name} to npm, run:\n   pnpm --filter ${rel.name} publish`)
+          }
         }
       }
 

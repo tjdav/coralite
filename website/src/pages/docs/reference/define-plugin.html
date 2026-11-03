@@ -43,16 +43,16 @@
 const myPlugin = definePlugin({
   name: 'my-plugin', // Required: Unique name for the plugin
 
+  // Optional: Top-level ubiquitous context (available across server, getters, client, slots, style)
+  // Mutually exclusive with server.context and client.context (CORALITE-P211)
+  context: ({ app, config }) => (instanceContext) => {
+    return {
+      format: (val) => String(val).trim()
+    }
+  },
+
   // Optional: Server-side logic
   server: {
-    // Context resolver for component server() blocks
-    context: (pluginContext) => {
-      return {
-        log: (message, context) => {
-          console.log(`[${context.id}] ${message}`, context.state)
-        }
-      }
-    },
     // Register custom components
     components: ['./path/to/component-name.html'],
     // Server-side lifecycle hooks
@@ -62,12 +62,7 @@ const myPlugin = definePlugin({
 
   // Optional: Client-side logic
   client: {
-    config: { /* static configuration */ },
-    context: (pluginContext) => (instanceContext) => {
-      return {
-        myHelper: () => 'hello'
-      }
-    }
+    config: { /* static configuration */ }
   }
 })
       </coralite-code-highlight>
@@ -75,6 +70,13 @@ const myPlugin = definePlugin({
 
     <!-- Context Binding -->
     <section id="context-binding">
+      <coralite-heading level="2" text="Ubiquitous Context (`context`)"></coralite-heading>
+      <p>The top-level <code>context</code> property defines synchronous methods and data injected ubiquitously across <strong>all</strong> component and page execution blocks: <code>server()</code>, <code>getters</code>, <code>client()</code>, <code>slots</code>, and <code>style</code>. It uses the curried <strong>Two-Phase Resolver</strong> pattern: <code>({ app, config }) => (instanceContext) => Record&lt;string, any&gt;</code>.</p>
+      
+      <p>Because top-level context is available directly in <code>getters</code>, zero-JS static components can resolve localized strings, formatters, and pure derived values during SSR and client hydration without defining a <code>server()</code> block.</p>
+
+      <p><em>Note:</em> Top-level <code>context</code> is mutually exclusive with <code>server.context</code> and <code>client.context</code> (<code>CORALITE-P211</code>).</p>
+
       <coralite-heading level="2" text="Context Binding (`server.context`)"></coralite-heading>
       <p>The <code>server.context</code> property defines methods and data injected into component <code>server()</code> blocks and page <code>definePage({ server })</code> handlers (e.g. <code>context['logger-plugin']</code> or <code>server ({ 'logger-plugin': logger })</code>). It follows the <strong>Two-Phase Resolver</strong> pattern.</p>
       

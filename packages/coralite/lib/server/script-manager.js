@@ -385,7 +385,8 @@ ScriptManager.prototype.use = async function (plugin) {
     // @ts-ignore
     const client = plugin.client || plugin
 
-    if (client.context
+    if (plugin.context
+      || client.context
       || client.init
       || typeof client.onBeforeComponentRender === 'function'
       || typeof client.onAfterComponentRender === 'function'
@@ -396,6 +397,7 @@ ScriptManager.prototype.use = async function (plugin) {
         ...plugin,
         client: pluginObj.client || plugin,
         context: pluginObj.context || client.context,
+        isIsomorphicContext: Boolean(pluginObj.context),
         init: pluginObj.init || client.init,
         onBeforeComponentRender: pluginObj.onBeforeComponentRender || client.onBeforeComponentRender,
         onAfterComponentRender: pluginObj.onAfterComponentRender || client.onAfterComponentRender,
@@ -676,7 +678,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
 
   // Generate ESM imports for each script module
   for (let i = 0; i < this.scriptModules.length; i++) {
-    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i}, onDisconnected as onDisconnected_${i}, init as init_${i} } from "${virtualPrefix}${moduleNamespace}${i}";\n`)
+    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, isomorphicContextProps as isomorphicContextProps_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i}, onDisconnected as onDisconnected_${i}, init as init_${i} } from "${virtualPrefix}${moduleNamespace}${i}";\n`)
   }
 
   entryCodeParts.push(`const clientPluginConfigs = ${serialize(clientPluginConfigs)};\n`)
@@ -702,10 +704,32 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
     ${contextParts}
   };\n`)
 
+  const isomorphicParts = [
+    ...this.scriptModules.map((_, i) => `...isomorphicContextProps_${i}`)
+  ].filter(Boolean).join(',\n')
+
+  entryCodeParts.push(`const coraliteIsomorphicContextProps = {
+    ${isomorphicParts}
+  };\n`)
+
   // Global context initialization
   entryCodeParts.push(`if (typeof window !== 'undefined') {
   window.__coralite__ = window.__coralite__ || {};
   window.__coralite_hydration__ = window.__coralite_hydration__ || {};
+  window.__coralite__.isomorphicPlugins = {};
+  for (const [key, initFn] of Object.entries(coraliteIsomorphicContextProps)) {
+    try {
+      if (typeof initFn === 'function') {
+        window.__coralite__.isomorphicPlugins[key] = initFn(globalContext);
+      }
+    } catch (e) {
+      if (window.__coralite__?.onError) {
+        window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize isomorphic context for plugin "' + key + '": ' + e?.message, error: e });
+      } else {
+        console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin "' + key + '":', e);
+      }
+    }
+  }
   if (store !== undefined) {
     window.__coralite__.store = store;
   }
@@ -766,6 +790,13 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         if (Reflect.has(target, prop)) return Reflect.get(target, prop, receiver);
         if (cache.has(prop)) return cache.get(prop);
 
+        if (typeof window !== 'undefined' && window.__coralite__?.isomorphicPlugins && prop in window.__coralite__.isomorphicPlugins) {
+          const isoFn = window.__coralite__.isomorphicPlugins[prop];
+          const resolved = typeof isoFn === 'function' ? isoFn(receiver) : isoFn;
+          cache.set(prop, resolved);
+          return resolved;
+        }
+
         const factory = factories[prop];
         if (factory === undefined) return undefined;
 
@@ -787,12 +818,14 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         return resolved;
       },
       has(target, prop) {
-        return Reflect.has(target, prop) || prop in factories;
+        return Reflect.has(target, prop) || prop in factories || (typeof window !== 'undefined' && Boolean(window.__coralite__?.isomorphicPlugins && prop in window.__coralite__.isomorphicPlugins));
       },
       ownKeys(target) {
+        const isoKeys = (typeof window !== 'undefined' && window.__coralite__?.isomorphicPlugins) ? Object.keys(window.__coralite__.isomorphicPlugins) : [];
         return Array.from(new Set([
           ...Reflect.ownKeys(target),
-          ...Object.keys(factories)
+          ...Object.keys(factories),
+          ...isoKeys
         ]));
       },
       getOwnPropertyDescriptor(target, prop) {
@@ -1309,8 +1342,51 @@ export default {
               const initFn = module.init ? normalizeFunction(module.init) : 'null'
               contents += `export const init = ${initFn};\n`
 
+              contents += 'export const isomorphicContextProps = {\n'
+              if (module.isIsomorphicContext && module.context) {
+                const isoName = module.name
+                if (['id', 'state', 'page', 'root', 'signal'].includes(isoName)) {
+                  throw new CoraliteError(`Reserved context key '${isoName}' cannot be used in plugin context.`)
+                }
+
+                const fn = normalizeFunction(module.context)
+                const safeIsoName = JSON.stringify(isoName)
+
+                contents += `  ${safeIsoName}: (globalContext) => {\n`
+                contents += `    const fn = ${fn};\n`
+                contents += `    const pluginContext = new Proxy(globalContext, {
+                            get (target, prop) {
+                              if (prop === 'config') return pluginConfig;
+                              if (prop === 'route') return typeof window !== 'undefined' && window.__coralite_hydration__ ? window.__coralite_hydration__.__route__ : undefined;
+                              if (prop in target) return target[prop];
+                              return undefined;
+                            },
+                            set (target, prop, value) {
+                              return Reflect.set(target, prop, value);
+                            }
+                          });
+                          let phase2;
+                          try {
+                             phase2 = fn(pluginContext);
+                          } catch (e) {
+                             if (typeof window !== 'undefined' && window.__coralite__?.onError) {
+                               window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize isomorphic context for plugin ' + ${safeIsoName} + ' phase 1: ' + e?.message, error: e });
+                             } else {
+                               console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin ' + ${safeIsoName} + ' phase 1:', e);
+                             }
+                             throw e;
+                          }
+
+                          if (typeof phase2 !== 'function') {
+                            throw new Error('Coralite Plugin Error: The "context" function of plugin ' + ${safeIsoName} + ' must return a function for the second phase (instance context). Received: ' + typeof phase2);
+                          }
+                          return phase2;
+                        },\n`
+              }
+              contents += '};\n'
+
               contents += 'export const clientContextProps = {\n'
-              if (module.context) {
+              if (module.context && !module.isIsomorphicContext) {
                 const clientName = module.client?.name || module.name
                 if (['id', 'state', 'page', 'root', 'signal'].includes(clientName)) {
                   throw new CoraliteError(`Reserved context key '${clientName}' cannot be used in plugin context.`)
@@ -1400,8 +1476,51 @@ export default {
               const initFn = module.init ? normalizeFunction(module.init) : 'null'
               contents += `export const init = ${initFn};\n`
 
+              contents += 'export const isomorphicContextProps = {\n'
+              if (module.isIsomorphicContext && module.context) {
+                const isoName = module.name
+                if (['id', 'state', 'page', 'root', 'signal'].includes(isoName)) {
+                  throw new CoraliteError(`Reserved context key '${isoName}' cannot be used in plugin context.`)
+                }
+
+                const fn = normalizeFunction(module.context)
+                const safeIsoName = JSON.stringify(isoName)
+
+                contents += `  ${safeIsoName}: (globalContext) => {\n`
+                contents += `    const fn = ${fn};\n`
+                contents += `    const pluginContext = new Proxy(globalContext, {
+                            get (target, prop) {
+                              if (prop === 'config') return pluginConfig;
+                              if (prop === 'route') return typeof window !== 'undefined' && window.__coralite_hydration__ ? window.__coralite_hydration__.__route__ : undefined;
+                              if (prop in target) return target[prop];
+                              return undefined;
+                            },
+                            set (target, prop, value) {
+                              return Reflect.set(target, prop, value);
+                            }
+                          });
+                          let phase2;
+                          try {
+                             phase2 = fn(pluginContext);
+                          } catch (e) {
+                             if (typeof window !== 'undefined' && window.__coralite__?.onError) {
+                               window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize isomorphic context for plugin ' + ${safeIsoName} + ' phase 1: ' + e?.message, error: e });
+                             } else {
+                               console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin ' + ${safeIsoName} + ' phase 1:', e);
+                             }
+                             throw e;
+                          }
+
+                          if (typeof phase2 !== 'function') {
+                            throw new Error('Coralite Plugin Error: The "context" function of plugin ' + ${safeIsoName} + ' must return a function for the second phase (instance context). Received: ' + typeof phase2);
+                          }
+                          return phase2;
+                        },\n`
+              }
+              contents += '};\n'
+
               contents += 'export const clientContextProps = {\n'
-              if (module.context) {
+              if (module.context && !module.isIsomorphicContext) {
                 const clientName = module.client?.name || module.name
                 if (['id', 'state', 'page', 'root', 'signal'].includes(clientName)) {
                   throw new CoraliteError(`Reserved context key '${clientName}' cannot be used in plugin context.`)

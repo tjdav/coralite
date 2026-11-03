@@ -14,11 +14,11 @@ All source is `.js` (ESM). No `.ts`, `.tsx`, `.jsx`, or `.mjs` in the source tre
 - **Component export form rule**: Handlers use `export function` (`server`, `client`, `onError`). Configuration declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`). Extra/helper exports are ignored by the compiler and preserved in module scope.
 - Templates use flat `{{ token }}` only. No expressions, dot notation, or function calls.
 - No inline event handlers. Bind in `client()` with `refs()` + `{ signal }`.
-- Getter signature: `({ state, route, ... })`. Must destructure.
-- Style function signature: `({ state }) => ...`. Must destructure.
-- Slots function signature: `({ nodes, state }) => ...`. Must destructure.
-- **Plugin context injection targets**: `server.context` is injected into Component `server()` and Page `definePage({ server })`. `client.context` is injected into Component `client()` and Page `definePage({ client })`. Core framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) take precedence over plugin keys.
-- **Getter isomorphism invariant**: Getters are isomorphic pure derivation functions that evaluate synchronously during SSR and reactive browser updates. Getters strictly receive `{ state, route, root, refs, slots, isServer, signal, store }`. Getters **never** receive plugin context. Perform plugin operations in `server()`, persist to `state`, and read from `state` in getters.
+- Getter signature: `({ state, route, ... })` or `(context) => context.state...`.
+- Style function signature: `({ state }) => ...` or `(context) => context.state...`.
+- Slots function signature: `({ nodes, state }) => ...` or `(context) => context.nodes`.
+- **Plugin context injection targets**: Top-level `context` is ubiquitous across Component and Page `server`, `getters`, `client`, `slots`, and `style`. `server.context` is injected into Component `server()` and Page `definePage({ server })`. `client.context` is injected into Component `client()` and Page `definePage({ client })`. Core framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) take precedence over plugin keys.
+- **Getter isomorphism invariant**: Getters are isomorphic pure derivation functions that evaluate synchronously during SSR and reactive browser updates. Getters strictly receive `{ state, route, root, refs, slots, isServer, signal, store }` plus any ubiquitous properties provided by top-level plugin `context` (e.g. `({ state, $t })`). Getters **never** receive environment-specific plugin context (`server.context` or `client.context`). To use data from `server.context`, perform plugin operations in `server()`, persist to `state`, and read from `state` in getters.
 
 ### Zero-JS static components
 

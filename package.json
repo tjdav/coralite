@@ -33,6 +33,7 @@
     "release": "coralite-release",
     "release:post": "coralite-release-post",
     "release:changelog": "coralite-release-changelog",
+    "release:github": "coralite-github-release",
     "bench:internal": "pnpm --filter coralite run bench:internal",
     "bench:external": "node benchmarks/external/runner.js",
     "changelog": "coralite-changelog",

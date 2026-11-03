@@ -47,27 +47,28 @@ export default definePlugin({
 1. **Two-Phase Context Resolvers**:
    * If a plugin injects helper methods or properties into component contexts that depend on instance state, the `context` function MUST be curried:
      `(pluginContext) => (instanceContext) => ({ ... })`
-2. **Explicit `rootDir` and `filePath`**:
+2. **Mutual Exclusivity (`CORALITE-P211`)**:
+   * A plugin must specify either ubiquitous top-level `context` (for synchronous ambient helpers across all blocks) OR environment-specific `server.context` / `client.context`. Combining top-level `context` with `server.context` or `client.context` throws `CORALITE-P211`.
+3. **Explicit `rootDir` and `filePath`**:
    * Supplying `rootDir` and `filePath` ensures compiler diagnostic reports and AST auto-fixers map errors directly to physical files on disk.
-3. **No Bare Objects**:
+4. **No Bare Objects**:
    * Plugins must always be wrapped with `definePlugin(...)` for static verification and type inference.
 
 ## 3. Context Injection Targets & Getter Invariant
 
 Plugin context properties are injected into Component and Page handlers:
 
-- **Server Handlers**:
-  - Components: `export function server ({ ...plugins, ...props, route, state, store })`
-  - Pages: `export default definePage({ server ({ ...plugins, route, app, session, signal, store, page }) })`
-- **Client Handlers**:
-  - Components: `export function client ({ ...plugins, refs, signal, state, store, ... })`
-  - Pages: `export default definePage({ client ({ ...plugins, route, state, signal, ... }) })`
+- **Top-Level `context` (Ubiquitous Ambient Context)**:
+  - Injected synchronously across **all** component and page execution blocks: `server()`, `getters`, `client()`, `slots`, and `style`.
+- **Environment-Specific Handlers**:
+  - `server.context` is injected into Component `server({ ...plugins, ...props, route, state, store })` and Page `definePage({ server })`.
+  - `client.context` is injected into Component `client({ ...plugins, refs, signal, state, store, ... })` and Page `definePage({ client })`.
 - **Reserved Key Precedence**:
   - Reserved framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) are guaranteed and take precedence over plugin keys. Collisions trigger a warning in dev/test mode.
 - **Getter Isomorphism Invariant**:
-  - Getters strictly receive `{ state, route, root, refs, slots, signal, isServer, store }`.
-  - **Getters NEVER receive plugin context**. Getters are isomorphic and run synchronously during both SSR and reactive browser state updates.
-  - To use plugin data in getters: call the plugin in `server()`, write to `state`, and read from `state` in getters.
+  - Getters strictly receive `{ state, route, root, refs, slots, signal, isServer, store }` plus any ambient utilities provided by top-level plugin `context` (e.g. `({ state, $t })`).
+  - **Getters NEVER receive environment-specific plugin context** (`server.context` or `client.context`). Getters are isomorphic and evaluate synchronously during both SSR and reactive browser state updates.
+  - To use data from `server.context` in getters: call the plugin in `server()`, write to `state`, and read from `state` in getters.
 
 ## 4. Testing Plugins
 

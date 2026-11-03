@@ -98,36 +98,21 @@ export function analyzeFunctionBlock (
   if (fnNode.params && fnNode.params.length > paramIdx) {
     const targetParam = fnNode.params[paramIdx]
     if (targetParam.type === 'Identifier') {
-      if (isStyleFn) {
-        diagnostics.push(createDiagnostic({
-          code: 'CORALITE-E105',
-          severity: 'error',
-          message: 'style functions must destructure the context.\nExpected: ({ state }) => ...\nFound:    (' + targetParam.name + ') => ...',
-          filePath,
-          line: targetParam.loc ? targetParam.loc.start.line + scriptStartLine : 1,
-          column: targetParam.loc ? targetParam.loc.start.column + 1 : 1,
-          sourceCode,
-          cause: 'Style functions in Coralite receive context ({ state, isServer, signal }) instead of state directly.',
-          fix: targetParam.name === 'state' ? {
-            action: 'style_context_migration',
-            description: 'Rewrite style parameter to destructured ({ state })'
-          } : null
-        }))
-        stateVars.add(targetParam.name)
-      } else if (isGetterFn) {
+      if (isStyleFn || isGetterFn) {
         if (targetParam.name === 'state') {
+          const typeName = isStyleFn ? 'CoraliteStyleContext ({ state, isServer, signal })' : 'CoraliteGetterContext ({ state, root, refs, slots, signal })'
           diagnostics.push(createDiagnostic({
             code: 'CORALITE-E105',
             severity: 'error',
-            message: 'Getter function parameter receives CoraliteGetterContext ({ state, root, refs, slots, signal }). Destructure { state } or context parameter instead of (state).',
+            message: `${isStyleFn ? 'Style' : 'Getter'} function parameter receives ${typeName}. Destructure { state } or use a context parameter (e.g. (context) => context.state.prop) instead of (state).`,
             filePath,
             line: targetParam.loc ? targetParam.loc.start.line + scriptStartLine : 1,
             column: targetParam.loc ? targetParam.loc.start.column + 1 : 1,
             sourceCode,
-            cause: 'Getter functions in Coralite receive context ({ state, root, refs, slots, signal }) instead of state directly.',
+            cause: `${isStyleFn ? 'Style' : 'Getter'} functions in Coralite receive unified context instead of state directly.`,
             fix: {
-              action: 'rewrite_getter_context',
-              description: 'Rewrite getter parameter to destructured ({ state })'
+              action: isStyleFn ? 'style_context_migration' : 'rewrite_getter_context',
+              description: `Rewrite ${isStyleFn ? 'style' : 'getter'} parameter to destructured ({ state })`
             }
           }))
           stateVars.add('state')

@@ -41,12 +41,9 @@ jobs:
         run: |
           pnpm --filter coralite publish --access public --no-git-checks
           pnpm --filter create-coralite publish --access public --no-git-checks
-        # No NPM_TOKEN secret needed here anymore!
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ github.event.inputs.tag }}
-          body_path: RELEASE_NOTES.md
-          draft: false
-          prerelease: ${{ contains(github.event.inputs.tag, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pnpm release:github --tag "${{ github.event.inputs.tag }}" -y
