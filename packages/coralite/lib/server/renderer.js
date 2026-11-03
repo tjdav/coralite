@@ -2444,6 +2444,7 @@ export function createRenderer ({
         dirname: outDirname,
         filename: outFilename
       },
+      sourcePath: pageItem.path?.pathname || pageItem.file?.pathname || mappedComponent.path?.pathname,
       content: rawHTML,
       duration: performance.now() - startTime,
       session: mappedSessionObject,
@@ -3000,6 +3001,7 @@ export function createRenderer ({
           type: 'page',
           // @ts-ignore
           path: pageItem.path,
+          sourcePath: pageItem.path?.pathname || pageItem.file?.pathname,
           route: {
             path: pageObj?.url?.pathname || routePattern || '/',
             pattern: routePattern,
@@ -3172,6 +3174,7 @@ export function createRenderer ({
               pages: normalizedOptions.path.pages,
               components: normalizedOptions.path.components
             },
+            sourcePath: pageItem.path?.pathname || pageItem.file?.pathname,
             route: targetRoute,
             status: 'skipped'
           }
@@ -3248,6 +3251,7 @@ export function createRenderer ({
               pages: normalizedOptions.path.pages,
               components: normalizedOptions.path.components
             },
+            sourcePath: pageItem.path?.pathname || pageItem.file?.pathname,
             route: targetRoute,
             status: 'skipped'
           }
@@ -3404,6 +3408,7 @@ export function createRenderer ({
                 pages: normalizedOptions.path.pages,
                 components: normalizedOptions.path.components
               },
+              sourcePath: task.pageItem.path?.pathname || task.pageItem.file?.pathname,
               route: task.targetRoute,
               status: 'failed',
               error: diagnosticError

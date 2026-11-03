@@ -210,6 +210,7 @@
  * @typedef {Object} CoraliteBuildResult
  * @property {'page'} type - The type of result.
  * @property {CoraliteFilePath & { pages: string, components: string }} path - Path information.
+ * @property {string} [sourcePath] - The original source file path.
  * @property {string} [content] - The rendered HTML content.
  * @property {number} [duration] - Time taken to render in milliseconds.
  * @property {CoraliteSession} [session] - The session associated with the render.

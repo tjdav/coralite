@@ -37,7 +37,16 @@ export function createPageHandlers ({
 }) {
   const onFileSetLocal = async (data) => {
     // @ts-ignore
-    const rootPath = data.type === 'component' ? app.options.path.components : app.options.path.pages
+    const fixturesPages = app.fixtures?.rootDir || app.options.fixtures?.pages
+    const isFixturePage = fixturesPages && data.path.pathname.startsWith(fixturesPages)
+    let rootPath
+    if (isFixturePage) {
+      rootPath = fixturesPages
+    } else if (data.type === 'component') {
+      rootPath = app.options.path.components
+    } else {
+      rootPath = app.options.path.pages
+    }
     const relPath = relative(rootPath, data.path.pathname).replace(/\\/g, '/')
     const urlPathname = pathToFileURL(join('/', relPath)).pathname
 
