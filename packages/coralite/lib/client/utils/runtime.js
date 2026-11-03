@@ -247,7 +247,7 @@ export function generateClientRuntime ({
       const isDeclarative = declarativeTags.includes(tagName);
       const isInitial = el.hasAttribute('data-coralite-initial');
 
-      if ('${mode}' === 'testing' && isInitial) {
+      if ('${mode}' === 'testing' && isDeclarative && isInitial) {
         const cid = el.getAttribute('data-cid');
         const store = window.__coralite_hydration__ || {};
         if (cid && !store[cid]) {

@@ -452,3 +452,100 @@ describe('mode-restricted runtime DOM prototype patching', () => {
     }
   })
 })
+
+describe('testing-mode hydration validation', () => {
+  it('should not throw hydration mismatch for static zero-JS components missing hydration data', async () => {
+    const rawRuntimeCode = generateClientRuntime({
+      base: '/',
+      sharedChunkPath: 'shared.js',
+      declarativeTags: ['my-interactive-card'],
+      hydrationData: '{}',
+      mode: 'testing'
+    })
+
+    const mockManifest = {
+      'my-interactive-card': { js: 'card.js' }
+    }
+
+    const executableCode = rawRuntimeCode.replace(/import\(([^)]+)\)/g, (match, path) => {
+      if (path.includes('manifest.js')) {
+        return `Promise.resolve({ default: ${JSON.stringify(mockManifest)} })`
+      }
+      if (path.includes('shared.js')) {
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+      }
+      return 'Promise.resolve({ default: { componentId: "my-interactive-card" } })'
+    })
+
+    const staticEl = document.createElement('static-banner')
+    staticEl.setAttribute('data-cid', 'static-banner-0')
+    staticEl.setAttribute('data-coralite-initial', '')
+    document.body.appendChild(staticEl)
+
+    try {
+      const fn = new Function('return ' + executableCode)
+      await fn()
+
+      assert.strictEqual(
+        document.querySelector('div[style*="background-color: rgba(127, 29, 29, 0.98)"]'),
+        null,
+        'Should not inject red error overlay for static components'
+      )
+    } finally {
+      document.body.removeChild(staticEl)
+      delete window.__coralite_hydration__
+    }
+  })
+
+  it('should throw hydration mismatch for declarative components missing hydration data in testing mode', async () => {
+    const rawRuntimeCode = generateClientRuntime({
+      base: '/',
+      sharedChunkPath: 'shared.js',
+      declarativeTags: ['my-interactive-card'],
+      hydrationData: '{}',
+      mode: 'testing'
+    })
+
+    const mockManifest = {
+      'my-interactive-card': { js: 'card.js' }
+    }
+
+    const executableCode = rawRuntimeCode.replace(/import\(([^)]+)\)/g, (match, path) => {
+      if (path.includes('manifest.js')) {
+        return `Promise.resolve({ default: ${JSON.stringify(mockManifest)} })`
+      }
+      if (path.includes('shared.js')) {
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+      }
+      return 'Promise.resolve({ default: { componentId: "my-interactive-card" } })'
+    })
+
+    const declEl = document.createElement('my-interactive-card')
+    declEl.setAttribute('data-cid', 'my-interactive-card-0')
+    declEl.setAttribute('data-coralite-initial', '')
+    document.body.appendChild(declEl)
+
+    let caughtError = null
+    const origConsoleError = console.error
+    console.error = () => {
+    }
+
+    try {
+      const fn = new Function('return ' + executableCode)
+      await fn()
+    } catch (err) {
+      caughtError = err
+    } finally {
+      console.error = origConsoleError
+      document.body.removeChild(declEl)
+      const overlay = Array.from(document.body.children).find(el => el.textContent.includes('Coralite Hydration Mismatch'))
+      if (overlay) {
+        document.body.removeChild(overlay)
+      }
+      delete window.__coralite_hydration__
+    }
+
+    assert.ok(caughtError, 'Expected hydration mismatch error to be thrown')
+    assert.match(caughtError.message, /Coralite Hydration Mismatch: Component with data-cid "my-interactive-card-0"/)
+  })
+})
