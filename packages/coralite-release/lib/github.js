@@ -275,7 +275,8 @@ export async function createOrUpdateGitHubRelease ({
       }
 
       if (releaseExists) {
-        execSync(`gh release edit "${tag}" ${repoFlag} --title "${releaseTitle}" --notes "${body.replace(/"/g, '\\"')}" ${draftFlag} ${preFlag}`, {
+        execSync(`gh release edit "${tag}" ${repoFlag} --title "${releaseTitle}" --notes-file - ${draftFlag} ${preFlag}`, {
+          input: body,
           stdio: ['pipe', 'pipe', 'pipe']
         })
         const url = `https://github.com/${repo.owner}/${repo.repo}/releases/tag/${tag}`
@@ -286,7 +287,8 @@ export async function createOrUpdateGitHubRelease ({
         }
       }
 
-      execSync(`gh release create "${tag}" ${repoFlag} --title "${releaseTitle}" --notes "${body.replace(/"/g, '\\"')}" ${draftFlag} ${preFlag}`, {
+      execSync(`gh release create "${tag}" ${repoFlag} --title "${releaseTitle}" --notes-file - ${draftFlag} ${preFlag}`, {
+        input: body,
         stdio: ['pipe', 'pipe', 'pipe']
       })
       const url = `https://github.com/${repo.owner}/${repo.repo}/releases/tag/${tag}`
