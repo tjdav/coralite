@@ -7,7 +7,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { simpleGit } from 'simple-git'
 import { updateChangelogData } from '../lib/changelog-entry-generator.js'
-import { extractChangelogSection, matchesReleaseVersion } from '../lib/github.js'
+import { extractChangelogSection, matchesReleaseVersion, stripLeadingHeading } from '../lib/github.js'
 import { parseTagRef, getPackagePath } from './publish.js'
 
 program
@@ -174,15 +174,17 @@ async function processTagEntry ({ tag, options, rootDir, changelogJsonPath, git 
         const changelogContent = readFileSync(targetChangelog, 'utf8')
         const section = extractChangelogSection(changelogContent, version)
         if (section) {
-          markdownNotes = `# ${packageName} v${version}\n\n## Release Overview\nRelease ${version} for ${packageName}.\n\n${section}`
+          markdownNotes = `## Release Overview\nRelease ${version} for ${packageName}.\n\n${section}`
         }
       }
     }
 
     if (!markdownNotes) {
-      markdownNotes = `# ${packageName} v${version}\n\n## Release Overview\nAutomated release for ${tag}.`
+      markdownNotes = `## Release Overview\nAutomated release for ${tag}.`
     }
   }
+
+  markdownNotes = stripLeadingHeading(markdownNotes, version, packageName)
 
   if (options.dryRun) {
     prompts.log.info(`[dry-run] Would update ${path.relative(rootDir, changelogJsonPath)} for ${tag}`)

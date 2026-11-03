@@ -176,6 +176,14 @@ export function parseReleaseNotesToEntry (markdown, version, packageName = 'cora
       continue
     }
 
+    // Skip leading H2 if it matches package or version
+    if (bodyLines.length === 0 && !foundOverview && line.startsWith('## ')) {
+      const headingText = line.slice(3).trim().toLowerCase()
+      if (headingText.includes(cleanVer.toLowerCase()) || headingText.includes(packageName.toLowerCase())) {
+        continue
+      }
+    }
+
     // Overview section
     if (line.startsWith('## Release Overview')) {
       foundOverview = true

@@ -80,6 +80,22 @@ export const attributes = {}
       assert.ok(parsed.html.includes('<coralite-heading level="3" text="Key Highlights"></coralite-heading>'))
       assert.ok(parsed.html.includes('<coralite-code-highlight language="javascript">'))
     })
+
+    it('does not include leading duplicate H2 heading in timeline html', () => {
+      const sampleWithH2 = `## coralite v1.0.0
+
+## Release Overview
+Version 1.0.0 release.
+
+### Features
+- Feature 1
+`
+      const parsed = parseReleaseNotesToEntry(sampleWithH2, '1.0.0', 'coralite')
+      assert.strictEqual(parsed.title, 'coralite v1.0.0')
+      assert.strictEqual(parsed.summary, 'Version 1.0.0 release.')
+      assert.strictEqual(parsed.html.includes('coralite-heading level="2" text="coralite v1.0.0"'), false)
+      assert.ok(parsed.html.includes('<coralite-heading level="3" text="Features"></coralite-heading>'))
+    })
   })
 
   describe('updateChangelogData()', () => {

@@ -126,6 +126,59 @@ export function extractChangelogSection (changelogContent, version) {
 }
 
 /**
+ * Strips a redundant leading heading (e.g. "# coralite v1.0.0", "## coralite v1.0.0", or top-level "# Title")
+ * from release notes markdown so that duplicate headings are not displayed when the title is already entered.
+ * @param {string} markdown - Release notes markdown text
+ * @param {string} [version] - Version string (e.g. "1.0.0" or "v1.0.0")
+ * @param {string} [packageName] - Package name (e.g. "coralite" or "create-coralite")
+ * @returns {string} Cleaned markdown without leading duplicate heading
+ */
+export function stripLeadingHeading (markdown, version = '', packageName = '') {
+  if (!markdown || typeof markdown !== 'string') {
+    return ''
+  }
+
+  const cleanVer = version ? version.replace(/^.*-v/, '').replace(/^v/, '').trim().toLowerCase() : ''
+  const pkg = packageName ? packageName.replace(/-v[\d].*$/, '').trim().toLowerCase() : ''
+  const lines = markdown.split(/\r?\n/)
+  let startIndex = 0
+
+  while (startIndex < lines.length) {
+    while (startIndex < lines.length && lines[startIndex].trim() === '') {
+      startIndex++
+    }
+
+    if (startIndex >= lines.length) {
+      break
+    }
+
+    const line = lines[startIndex].trim()
+
+    // Strip top-level H1 heading (# Title)
+    if (line.startsWith('# ')) {
+      startIndex++
+      continue
+    }
+
+    // Strip H2 heading if it matches the package name or version
+    if (line.startsWith('## ')) {
+      const headingText = line.slice(3).trim().toLowerCase()
+      const matchesVer = cleanVer && (headingText === `v${cleanVer}` || headingText === cleanVer || headingText.includes(cleanVer))
+      const matchesPkg = pkg && (headingText === pkg || headingText.includes(pkg))
+
+      if (matchesVer || matchesPkg) {
+        startIndex++
+        continue
+      }
+    }
+
+    break
+  }
+
+  return lines.slice(startIndex).join('\n')
+}
+
+/**
  * Checks whether release post markdown content matches a target version strictly.
  * @param {string} content - Markdown content of a release post.
  * @param {string} version - Target version number (e.g. "1.0.0").
@@ -187,6 +240,7 @@ export async function createOrUpdateGitHubRelease ({
   const releaseTitle = title || tag
   const isPre = prerelease !== null ? prerelease : isPrerelease(tag)
   const ghToken = token || process.env.GITHUB_TOKEN || process.env.GH_TOKEN
+  const cleanedBody = stripLeadingHeading(body, tag, releaseTitle)
 
   const activeFetch = fetchFn || (typeof globalThis.fetch === 'function' ? globalThis.fetch : null)
 
@@ -214,7 +268,7 @@ export async function createOrUpdateGitHubRelease ({
         },
         body: JSON.stringify({
           name: releaseTitle,
-          body,
+          body: cleanedBody,
           draft,
           prerelease: isPre
         })
@@ -246,7 +300,7 @@ export async function createOrUpdateGitHubRelease ({
         body: JSON.stringify({
           tag_name: tag,
           name: releaseTitle,
-          body,
+          body: cleanedBody,
           draft,
           prerelease: isPre
         })
@@ -292,7 +346,7 @@ export async function createOrUpdateGitHubRelease ({
 
       if (releaseExists) {
         execSync(`gh release edit "${tag}" ${repoFlag} --title "${releaseTitle}" --notes-file - ${draftFlag} ${preFlag}`, {
-          input: body,
+          input: cleanedBody,
           stdio: ['pipe', 'pipe', 'pipe']
         })
         const url = `https://github.com/${repo.owner}/${repo.repo}/releases/tag/${tag}`
@@ -304,7 +358,7 @@ export async function createOrUpdateGitHubRelease ({
       }
 
       execSync(`gh release create "${tag}" ${repoFlag} --title "${releaseTitle}" --notes-file - ${draftFlag} ${preFlag}`, {
-        input: body,
+        input: cleanedBody,
         stdio: ['pipe', 'pipe', 'pipe']
       })
       const url = `https://github.com/${repo.owner}/${repo.repo}/releases/tag/${tag}`
@@ -323,7 +377,7 @@ export async function createOrUpdateGitHubRelease ({
 
   const encodedTag = encodeURIComponent(tag)
   const encodedTitle = encodeURIComponent(releaseTitle)
-  const encodedBody = encodeURIComponent(body)
+  const encodedBody = encodeURIComponent(cleanedBody)
   const webUrl = `https://github.com/${repo.owner}/${repo.repo}/releases/new?tag=${encodedTag}&title=${encodedTitle}&body=${encodedBody}`
 
   return {

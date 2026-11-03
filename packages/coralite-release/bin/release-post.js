@@ -8,7 +8,7 @@ import path from 'path'
 import { globSync } from 'glob'
 import { execFileSync } from 'child_process'
 import { sortTags, resolveBaselineTag, getCleanVersion } from '../lib/tags.js'
-import { createOrUpdateGitHubRelease, getRepoSlug, isPrerelease } from '../lib/github.js'
+import { createOrUpdateGitHubRelease, getRepoSlug, isPrerelease, stripLeadingHeading } from '../lib/github.js'
 import { updateChangelogData } from '../lib/changelog-entry-generator.js'
 
 const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer with Coralite project releases.
@@ -19,12 +19,12 @@ Your task is to generate a structured GitHub Release Post based on provided git 
 - **Perspective**: Use a **Product-Centric** perspective (third-person/objective). Focus on what the release or the package does (e.g., "This release introduces...", "Coralite now supports..."). Avoid "I" or "we".
 - **Tone**: Concise, direct, professional, understated, and factual.
 - **Language**: Be ruthless with brevity. Write punchy, economical sentences. Strictly avoid passive voice, filler words ("specifically," "concurrently," "furthermore"), and marketing fluff or exaggerated claims ("actively fixing the most frustrating pain points", "O(1) precision", "revolutionary", "thrilled").
-- **Formatting**: Strictly enforce the heading hierarchy (\`##\`, \`###\`, \`####\`). Do not use bolded bullet points for primary list items (e.g., \`* **Feature:** Description\`); instead, elevate them to \`####\` sub-headers for maximum scannability. Use horizontal rules (\`---\`) to visually separate major \`###\` sections.
+- **Formatting**: Strictly enforce the heading hierarchy (\`##\`, \`###\`, \`####\`). Do not use bolded bullet points for primary list items (e.g., \`* **Feature:** Description\`); instead, elevate them to \`####\` sub-headers for maximum scannability. Use horizontal rules (\`---\`) to visually separate major \`###\` sections. Never emit a top-level document title or \`#\` H1 heading.
 
 ### Content Structure:
-1. **Title**: Direct H1 title with package name and version (e.g., \`# coralite vX.X.X\` or \`# create-coralite vX.X.X\`).
-2. **## Release Overview**: A strict 1-2 sentence summary. Start directly with the impact or action. Frame static-first where applicable. Do not use preamble like "The goal of this release is to..." or "This release focuses on...". Just state exactly what changed.
-3. **### Key Highlights**: Detailed breakdowns of the most important technical changes (features, major improvements).
+- **No Document Title / H1 Heading**: Do NOT include a document title heading (e.g., no \`# coralite vX.X.X\` or \`# Title\`). The release title heading is already entered in GitHub Releases and the changelog timeline. The release post document must start directly with content (e.g. an opening blockquote callout or \`## Release Overview\`).
+1. **## Release Overview**: A strict 1-2 sentence summary. Start directly with the impact or action. Frame static-first where applicable. Do not use preamble like "The goal of this release is to..." or "This release focuses on...". Just state exactly what changed.
+2. **### Key Highlights**: Detailed breakdowns of the most important technical changes (features, major improvements).
     - Format each highlight with a \`#### [Highlight Title]\` header.
     - Write the primary description as standard paragraph text under the header, using standard bullet points (\`*\`) only for secondary details.
     - **Include code examples (before/after or API usage)** whenever a technical summary or diff provides enough information to do so.
@@ -563,6 +563,8 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
         }
 
         s.stop('Release post generated!')
+
+        markdown = stripLeadingHeading(markdown, titleVersion, packageName)
 
         prompts.log.info('Release Post Preview:')
         console.log('\n' + markdown + '\n')

@@ -11,7 +11,8 @@ import {
   extractChangelogSection,
   getRepoSlug,
   isPrerelease,
-  matchesReleaseVersion
+  matchesReleaseVersion,
+  stripLeadingHeading
 } from '../lib/github.js'
 import { parseTagRef, getPackagePath } from './publish.js'
 
@@ -218,17 +219,19 @@ async function processSingleTagRelease ({ tag, options, rootDir, repoSlug }) {
         const changelogContent = readFileSync(targetChangelog, 'utf8')
         const section = extractChangelogSection(changelogContent, version)
         if (section) {
-          releaseBody = `## ${packageName} v${version}\n\n${section}`
+          releaseBody = section
           prompts.log.info(`Extracted changelog notes from ${path.relative(rootDir, targetChangelog)}`)
         }
       }
     }
 
     if (!releaseBody) {
-      releaseBody = `## ${packageName} v${version}\n\nAutomated release for \`${tag}\`.`
-      prompts.log.warn(`No changelog or release post found for ${version}. Using fallback header.`)
+      releaseBody = `Automated release for \`${tag}\`.`
+      prompts.log.warn(`No changelog or release post found for ${version}. Using fallback notes.`)
     }
   }
+
+  releaseBody = stripLeadingHeading(releaseBody, version, packageName)
 
   prompts.log.info(`\nTarget Tag:   ${tag}`)
   prompts.log.info(`Release Name: ${title}`)

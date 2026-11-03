@@ -5,7 +5,8 @@ import {
   getRepoSlug,
   isPrerelease,
   extractChangelogSection,
-  createOrUpdateGitHubRelease
+  createOrUpdateGitHubRelease,
+  stripLeadingHeading
 } from '../lib/github.js'
 
 describe('GitHub release helper & changelog extraction', () => {
@@ -252,6 +253,88 @@ describe('GitHub release helper & changelog extraction', () => {
           process.env.GH_TOKEN = origGhToken
         }
       }
+    })
+
+    it('strips redundant leading headings from release body before publishing', async () => {
+      const calls = []
+      const mockFetch = async (url, options = {}) => {
+        calls.push({
+          url,
+          method: options.method || 'GET',
+          body: options.body ? JSON.parse(options.body) : null
+        })
+        if (url.includes('/tags/coralite-v1.0.0')) {
+          return {
+            status: 404,
+            ok: false,
+            text: async () => 'Not found'
+          }
+        }
+        return {
+          status: 201,
+          ok: true,
+          json: async () => ({
+            id: 999,
+            html_url: 'https://github.com/tjdav/coralite/releases/tag/coralite-v1.0.0'
+          })
+        }
+      }
+
+      const inputWithDuplicateHeading = '# coralite v1.0.0\n\n## Release Overview\nAll features ready.'
+      const result = await createOrUpdateGitHubRelease({
+        tag: 'coralite-v1.0.0',
+        title: 'coralite v1.0.0',
+        body: inputWithDuplicateHeading,
+        token: 'test-token',
+        repoSlug: {
+          owner: 'tjdav',
+          repo: 'coralite'
+        },
+        fetchFn: mockFetch
+      })
+
+      assert.strictEqual(result.success, true)
+      assert.strictEqual(calls.length, 2)
+      assert.strictEqual(calls[1].method, 'POST')
+      assert.strictEqual(calls[1].body.body, '## Release Overview\nAll features ready.')
+    })
+  })
+
+  describe('stripLeadingHeading()', () => {
+    it('strips top-level H1 title heading', () => {
+      const md = '# coralite v1.0.0\n\n## Release Overview\nOverview text.'
+      assert.strictEqual(stripLeadingHeading(md, '1.0.0', 'coralite'), '## Release Overview\nOverview text.')
+    })
+
+    it('strips descriptive H1 title heading', () => {
+      const md = '# Coralite v1.0.0: The Zero-JS Framework\n\n> Announcement\n\n## Release Overview'
+      assert.strictEqual(stripLeadingHeading(md, '1.0.0', 'coralite'), '> Announcement\n\n## Release Overview')
+    })
+
+    it('strips H2 heading matching package and version', () => {
+      const md = '## coralite v1.0.0\n\n- Feature A\n- Feature B'
+      assert.strictEqual(stripLeadingHeading(md, '1.0.0', 'coralite'), '- Feature A\n- Feature B')
+    })
+
+    it('strips combined H1 and H2 redundant headings', () => {
+      const md = '# coralite v1.0.0\n\n## coralite v1.0.0\n\n## Release Overview\nText'
+      assert.strictEqual(stripLeadingHeading(md, '1.0.0', 'coralite'), '## Release Overview\nText')
+    })
+
+    it('preserves ## Release Overview and content headings', () => {
+      const md = '## Release Overview\nThis is the overview.'
+      assert.strictEqual(stripLeadingHeading(md, '1.0.0', 'coralite'), '## Release Overview\nThis is the overview.')
+    })
+
+    it('preserves leading blockquotes and lists', () => {
+      const md = '> Milestone announcement\n\n## Features'
+      assert.strictEqual(stripLeadingHeading(md, '1.0.0', 'coralite'), '> Milestone announcement\n\n## Features')
+    })
+
+    it('handles empty and falsy input gracefully', () => {
+      assert.strictEqual(stripLeadingHeading(''), '')
+      assert.strictEqual(stripLeadingHeading(null), '')
+      assert.strictEqual(stripLeadingHeading('   \n\n  '), '')
     })
   })
 })

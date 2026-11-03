@@ -11,7 +11,8 @@ import {
   extractChangelogSection,
   getRepoSlug,
   isPrerelease,
-  matchesReleaseVersion
+  matchesReleaseVersion,
+  stripLeadingHeading
 } from '../lib/github.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -441,20 +442,20 @@ async function main () {
               const changelogContent = readFileSync(targetChangelog, 'utf8')
               const section = extractChangelogSection(changelogContent, version)
               if (section) {
-                releaseBody = `## ${packageName} v${version}\n\n${section}`
+                releaseBody = section
               }
             }
           }
 
           if (!releaseBody) {
-            releaseBody = `## ${packageName} v${version}\n\nAutomated release for \`${targetTag}\`.`
+            releaseBody = `Automated release for \`${targetTag}\`.`
           }
         }
 
         const ghResult = await createOrUpdateGitHubRelease({
           tag: targetTag,
           title: `${packageName} v${version}`,
-          body: releaseBody,
+          body: stripLeadingHeading(releaseBody, version, packageName),
           prerelease: isPrerelease(version),
           repoSlug
         })
