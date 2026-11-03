@@ -125,7 +125,7 @@ export async function server ({ state, isServer }) {
 
     <p>The <code>getters</code> declaration provides synchronous derived state computations. Getter values update automatically whenever dependencies inside state change.</p>
 
-    <p><strong>Context Object:</strong> Functions in <code>getters</code> <strong>must</strong> destructure the single context parameter <code>({ state, route, refs, slots, signal, isServer, ...pluginContext })</code>. Passing non-destructured parameters (e.g. <code>getters: { double: (state) => ... }</code>) causes build-time error <code>CORALITE-E105</code>.</p>
+    <p><strong>Context Object:</strong> Functions in <code>getters</code> receive a single unified context parameter <code>({ state, route, refs, slots, signal, isServer, ...pluginContext })</code>. Parameters can be destructured or accepted as a whole context object (e.g. <code>(context) => context.state.price</code>). Naming the parameter <code>state</code> without destructuring (e.g. <code>(state) => state.price</code>) triggers <code>CORALITE-E105</code> because the parameter holds the context object, not state directly.</p>
 
     <coralite-code-highlight language="javascript" title="Synchronous Derived Getters">
 export const attributes = {
@@ -164,7 +164,7 @@ export const style = {
 
     <p>The <code>slots</code> declaration transforms or filters Light DOM children before slot distribution occurs in template rendering.</p>
 
-    <p><strong>Context Object:</strong> Receives one destructured context parameter <code>({ nodes, state, isServer, ...pluginContext }) => nodes</code>. Non-destructured signatures trigger diagnostic <code>CORALITE-E105</code>.</p>
+    <p><strong>Context Object:</strong> Receives a unified context parameter <code>({ nodes, state, isServer, ...pluginContext }) => nodes</code> or <code>(context) => context.nodes</code>.</p>
 
     <coralite-code-highlight language="javascript" title="Light DOM Slot Filtering">
 export const slots = {

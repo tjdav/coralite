@@ -156,6 +156,24 @@ describe('Page Blocks - Build-Time Execution (getters, style, provide, client)',
     assert.ok(e105, 'CORALITE-E105 diagnostic emitted for non-destructured page getter parameter')
   })
 
+  test('Page getter with (context) => context.state.first passes validation without CORALITE-E105', async () => {
+    const validSource = `
+      <script type="module">
+        import { definePage } from 'coralite'
+
+        export default definePage({
+          getters: {
+            good: (context) => context.state.first
+          }
+        })
+      </script>
+    `
+
+    const validation = validatePageSource(validSource, { filePath: 'good-getter.html' })
+    const e105 = validation.diagnostics.find(d => d.code === 'CORALITE-E105')
+    assert.strictEqual(e105, undefined)
+  })
+
   test('Page style applies CSS custom properties to <html> tag in rendered output', async () => {
     const results = await app.build(join(projectDir, 'pages/with-style.html'))
     const content = results[0].content

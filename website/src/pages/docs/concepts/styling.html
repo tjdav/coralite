@@ -88,7 +88,7 @@
 
     <p>Component theming in Coralite is driven via CSS Custom Properties (<code>--custom-props</code>). The top-level <code>style</code> block in <code>defineComponent</code> allows binding reactive CSS variables directly to the host custom element.</p>
 
-    <p>The <code>style</code> block contains functions that receive a destructured context object (e.g. <code>({ state }) =&gt; ...</code>) and return CSS property values. Returning <code>null</code>, <code>undefined</code>, or an empty string removes the inline variable from the host element.</p>
+    <p>The <code>style</code> block contains functions that receive context (e.g. <code>({ state }) =&gt; ...</code> or <code>(context) =&gt; context.state...</code>) and return CSS property values. Returning <code>null</code>, <code>undefined</code>, or an empty string removes the inline variable from the host element.</p>
 
     <coralite-code-highlight language="javascript">
 import { defineComponent } from 'coralite'
@@ -135,7 +135,7 @@ export default defineComponent({
 
     <coralite-heading level="2" text="5. Transforming Slots"></coralite-heading>
 
-    <p>The <code>slots</code> block in <code>defineComponent</code> allows you to intercept and transform projected Light DOM slot nodes before rendering. Each slot transformation function receives a destructured context object containing <code>{ nodes, state, isServer, signal }</code>.</p>
+    <p>The <code>slots</code> block in <code>defineComponent</code> allows you to intercept and transform projected Light DOM slot nodes before rendering. Each slot transformation function receives a context object containing <code>{ nodes, state, isServer, signal }</code>, which can be destructured or accepted as a whole parameter.</p>
 
     <p>The <code>nodes</code> array represents the collection of projected DOM nodes for that slot. You can filter, reorder, or modify <code>nodes</code> in place. On the client, returning <code>undefined</code> preserves existing DOM nodes and skips unnecessary re-transformation passes.</p>
 

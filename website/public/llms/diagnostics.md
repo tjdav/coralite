@@ -25,7 +25,7 @@ npx coralite fix --dry-run
 | `CORALITE-E101` | Error | Non-primitive type (`Array`, `Object`) in `attributes` schema | Use primitives (`String`, `Number`, `Boolean`). Fetch complex data in `server()` or pass via context. |
 | `CORALITE-E102` | Error | Attribute declares both `required: true` and `default` | Remove `default` if the attribute is strictly required. |
 | `CORALITE-E103` | Error | Asynchronous attribute `transform` or `validate` function | Make attribute coercion functions synchronous. |
-| `CORALITE-E105` | Error | Non-destructured context parameter in `getters`, `style`, or `slots` | Destructure the context parameter: `({ state }) => ...` or `({ nodes, state }) => ...`. |
+| `CORALITE-E105` | Error | Context parameter misuse (e.g. (state) => state.prop, deprecated context.attributes, or legacy 2-arg slots) | Destructure ({ state }), use (context) => context.state.prop, or migrate slots to single parameter. |
 | `CORALITE-E108` | Error | Bare named exports in a page file (`src/pages/*.html`) | Wrap page exports in `export default definePage({ ... })`. |
 | `CORALITE-E201` | Error | Non-flat identifier expression in `<template>` (`{{ a + b }}`) | Move expressions into a synchronous derived getter in `export const getters = { ... }`. |
 | `CORALITE-E203` | Error | Inline event handler attribute in `<template>` (`onclick="..."`) | Use `ref="btn"` in template and wire with `refs('btn').addEventListener('click', fn, { signal })` in `client()`. |

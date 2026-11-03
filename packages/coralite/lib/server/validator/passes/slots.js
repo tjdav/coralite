@@ -41,33 +41,27 @@ export function validateSlots (context) {
       (fnNode.type === 'FunctionExpression' || fnNode.type === 'ArrowFunctionExpression')
     ) {
       const params = fnNode.params || []
-      const isTwoParams = params.length === 2
-      const isOneIdentifier = params.length === 1 && params[0].type === 'Identifier'
+      const isMultiParams = params.length > 1
 
-      if (isTwoParams || isOneIdentifier) {
-        let foundText = ''
-        if (isTwoParams) {
-          let p0Str = params[0].type === 'Identifier' ? params[0].name : 'nodes'
-          let p1Fallback = '{ ... }'
-          if (params[1].type === 'ObjectPattern') {
-            p1Fallback = '{ state }'
-          } else if (params[1].type === 'Identifier') {
-            p1Fallback = params[1].name
-          }
-          let p1Str = p1Fallback
-
-          if (scriptContent && params[0].start !== undefined && params[0].end !== undefined) {
-            p0Str = scriptContent.slice(params[0].start, params[0].end)
-          }
-          if (scriptContent && params[1].start !== undefined && params[1].end !== undefined) {
-            p1Str = scriptContent.slice(params[1].start, params[1].end)
-          }
-          foundText = `(${p0Str}, ${p1Str}) => ...`
-        } else {
-          foundText = `(${params[0].name}) => ...`
+      if (isMultiParams) {
+        let p0Str = params[0].type === 'Identifier' ? params[0].name : 'nodes'
+        let p1Fallback = '{ ... }'
+        if (params[1].type === 'ObjectPattern') {
+          p1Fallback = '{ state }'
+        } else if (params[1].type === 'Identifier') {
+          p1Fallback = params[1].name
         }
+        let p1Str = p1Fallback
 
-        const isFixable = isTwoParams &&
+        if (scriptContent && params[0].start !== undefined && params[0].end !== undefined) {
+          p0Str = scriptContent.slice(params[0].start, params[0].end)
+        }
+        if (scriptContent && params[1].start !== undefined && params[1].end !== undefined) {
+          p1Str = scriptContent.slice(params[1].start, params[1].end)
+        }
+        const foundText = `(${p0Str}, ${p1Str}) => ...`
+
+        const isFixable = params.length === 2 &&
           params[0].type === 'Identifier' &&
           (params[0].name === 'nodes' || params[0].name === 'content') &&
           params[1].type === 'ObjectPattern'
@@ -76,12 +70,12 @@ export function validateSlots (context) {
         diagnostics.push(createDiagnostic({
           code: 'CORALITE-E105',
           severity: 'error',
-          message: `CORALITE-E105: slots functions must receive a single destructured context.\nExpected: ({ nodes, state }) => ...\nFound:    ${foundText}`,
+          message: `CORALITE-E105: slots functions must receive a single context parameter.\nExpected: ({ nodes, state }) => ... or (context) => ...\nFound:    ${foundText}`,
           filePath,
           line: locNode.loc ? locNode.loc.start.line + scriptStartLine : 1,
           column: locNode.loc ? locNode.loc.start.column + 1 : 1,
           sourceCode,
-          cause: 'Slot functions in Coralite receive a single destructured context object ({ nodes, state, isServer, signal }).',
+          cause: 'Slot functions in Coralite receive a single context object ({ nodes, state, isServer, signal }).',
           fix: isFixable ? {
             action: 'slots_context_migration',
             description: 'Rewrite slots function parameters to destructured context ({ nodes, state })'
