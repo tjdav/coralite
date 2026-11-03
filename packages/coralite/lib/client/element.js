@@ -3511,6 +3511,7 @@ export class CoraliteElement extends BaseElement {
     this._hasRenderedOnce = true
 
     if (this._updaters && this.componentOptions?.compilerOptimizations !== 'none') {
+      let hasUnhandledKey = false
       const changedKeys = this._changedStateKeys
       if (isFirstRender || (changedKeys && changedKeys.size > 0)) {
         let keysToRun
@@ -3541,6 +3542,8 @@ export class CoraliteElement extends BaseElement {
           const updater = this._updaters[key]
           if (updater) {
             updater.call(this)
+          } else if (this._tokenBindings && this._tokenBindings[key]) {
+            hasUnhandledKey = true
           }
         }
       }
@@ -3564,7 +3567,9 @@ export class CoraliteElement extends BaseElement {
         window.__coralite__.lifecycle._markInstanceRendered(this)
       }
 
-      return
+      if (!hasUnhandledKey) {
+        return
+      }
     }
 
     const renderVersion = ++this._renderVersionCounter

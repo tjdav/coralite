@@ -41,6 +41,37 @@ describe('Compiler - Per-Token Updaters', () => {
     assert.strictEqual(code.includes('typeof _rawValue === \'function\' ? this._state["disableSubmit"] : _rawValue'), true)
   })
 
+  it('generates updaters for both text and attribute tokens in co-existing components', async () => {
+    const sm = new ScriptManager({ compilerOptimizations: 'all' })
+    sm.registerComponent({
+      id: 'test-banner-comp',
+      isRepeated: true,
+      templateAST: [{
+        type: 'tag',
+        name: 'div',
+        attribs: {
+          hidden: '{{ isHidden }}'
+        },
+        children: [{
+          type: 'text',
+          data: '{{ message }}'
+        }]
+      }]
+    })
+
+    try {
+      await sm.compileComponents('development')
+      const code = sm.virtualModules.get('test-banner-comp') || ''
+      assert.strictEqual(code.includes('_updaters: {'), true)
+      assert.strictEqual(code.includes('"message": function ()'), true)
+      assert.strictEqual(code.includes('"isHidden": function ()'), true)
+      assert.strictEqual(code.includes('element.removeAttribute(binding.name)'), true)
+      assert.strictEqual(code.includes('element.setAttribute(binding.name, \'\')'), true)
+    } finally {
+      await sm.disposeContext()
+    }
+  })
+
   it('emits _updaters: null when compilerOptimizations is "none"', async () => {
     const sm = new ScriptManager({ compilerOptimizations: 'none' })
     sm.registerComponent({

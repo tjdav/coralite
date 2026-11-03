@@ -326,6 +326,36 @@ describe('shared/core.js', () => {
       assert.deepStrictEqual(map.texts[0].path, [])
     })
 
+    it('should set type: "attribute" when generating attributes in hydration map', () => {
+      const element = {
+        type: 'tag',
+        name: 'div',
+        attribs: {
+          hidden: '{{ isHidden }}',
+          'data-title': 'Hello {{ name }}'
+        }
+      }
+      const templateNodes = [element]
+      const templateValues = {
+        attributes: [
+          {
+            element,
+            name: 'hidden'
+          },
+          {
+            element,
+            name: 'data-title'
+          }
+        ]
+      }
+      const map = generateHydrationMap(templateNodes, templateValues)
+      assert.strictEqual(map.attributes.length, 2)
+      assert.strictEqual(map.attributes[0].type, 'attribute')
+      assert.strictEqual(map.attributes[0].name, 'hidden')
+      assert.strictEqual(map.attributes[1].type, 'attribute')
+      assert.strictEqual(map.attributes[1].name, 'data-title')
+    })
+
     it('should handle empty templateNodes', () => {
       const map = generateHydrationMap([], { textNodes: [] })
       assert.deepStrictEqual(map.texts, [])

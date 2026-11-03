@@ -880,6 +880,7 @@ export function generateHydrationMap (templateNodes, templateValues) {
         }
 
         map.attributes.push({
+          type: 'attribute',
           path: getNodePath(item.element, root),
           name: item.name,
           template: originalValue,

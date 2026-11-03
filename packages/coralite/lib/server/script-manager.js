@@ -217,7 +217,7 @@ export function generateTokenUpdaterCode (binding, bindingIndex, tokenKey, isGet
     return `    ${readState}\n    ${bindingRef}\n    ${nodeRef}\n    if (!node) return\n    const next = value == null ? '' : String(value)\n    if (node.innerHTML !== next) {\n      node.innerHTML = next\n    }`
   }
 
-  if (binding.type === 'attribute') {
+  if (binding.type === 'attribute' || (!binding.type && binding.name)) {
     const kind = binding.attrKind ?? 0
     if (kind === 1) {
       return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const strVal = String(value)\n    const isFalsy = strVal === '' || strVal === 'false' || strVal === 'null' || strVal === '0' || strVal === 'undefined'\n    if (isFalsy) {\n      element.removeAttribute(binding.name)\n    } else {\n      element.setAttribute(binding.name, '')\n    }`
@@ -293,7 +293,12 @@ export function generateCompiledUpdaters (hydrationMap, getterKeys = new Set(), 
     }
 
     if (codeBlocks.length > 0) {
-      updaterEntries.push(`  ${JSON.stringify(key)}: function () {\n${codeBlocks.join('\n')}\n  }`)
+      if (codeBlocks.length === 1) {
+        updaterEntries.push(`  ${JSON.stringify(key)}: function () {\n${codeBlocks[0]}\n  }`)
+      } else {
+        const wrappedBlocks = codeBlocks.map(block => `    {\n${block}\n    }`).join('\n')
+        updaterEntries.push(`  ${JSON.stringify(key)}: function () {\n${wrappedBlocks}\n  }`)
+      }
     }
   }
 
