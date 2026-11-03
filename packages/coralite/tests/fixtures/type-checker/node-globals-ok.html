@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head><title>Node Globals Page</title></head>
+<body><h1>Node Globals</h1></body>
+</html>
+
+<script type="module">
+import { definePage } from 'coralite'
+
+export default definePage({
+  async paths () {
+    const url = process.env.API_URL || 'http://localhost:8080'
+    const buf = Buffer.from(url)
+    return [{ slug: buf.length > 0 ? 'found' : 'empty' }]
+  },
+  async server () {
+    const isProd = process.env.NODE_ENV === 'production'
+    return {
+      isProd
+    }
+  }
+})
+</script>

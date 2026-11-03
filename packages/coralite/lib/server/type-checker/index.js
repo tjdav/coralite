@@ -2,6 +2,8 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { coraliteLanguagePlugin, extractScriptBlock } from './volar-plugin.js'
 
+const NODE_GLOBALS_NAME_PATTERN = /^Cannot find name '(?:process|Buffer|global|setImmediate|clearImmediate)'/
+
 /**
  * @typedef {Object} Diagnostic
  * @property {string} file - Absolute path to .html file
@@ -123,6 +125,24 @@ export async function typeCheck (files, options = {}) {
     }
   }
 
+  if (Array.isArray(compilerOptions.types) && !compilerOptions.types.includes('node')) {
+    let hasNodeTypes = false
+    try {
+      requireUser.resolve('@types/node/package.json')
+      hasNodeTypes = true
+    } catch {
+      try {
+        requireSelf.resolve('@types/node/package.json')
+        hasNodeTypes = true
+      } catch {
+        hasNodeTypes = false
+      }
+    }
+    if (hasNodeTypes) {
+      compilerOptions.types = [...compilerOptions.types, 'node']
+    }
+  }
+
   const absoluteFiles = files.map(file => path.resolve(cwd, file))
   const targetMap = new Map()
   const virtualRootNames = absoluteFiles.map(filePath => {
@@ -231,6 +251,14 @@ export async function typeCheck (files, options = {}) {
         : ts.flattenDiagnosticMessageText(diag.messageText, '\n')
 
       if (diag.code === 2307 && (message.includes("'http://") || message.includes("'https://"))) {
+        continue
+      }
+
+      if (diag.code === 2580 || diag.code === 2591) {
+        continue
+      }
+
+      if (diag.code === 2304 && NODE_GLOBALS_NAME_PATTERN.test(message)) {
         continue
       }
 

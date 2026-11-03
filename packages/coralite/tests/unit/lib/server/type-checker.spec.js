@@ -1,5 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
+import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { typeCheck } from '../../../../lib/server/type-checker/index.js'
@@ -107,5 +109,57 @@ describe('typeCheck', () => {
 
     assert.strictEqual(result.skipped, false)
     assert.deepStrictEqual(result.diagnostics, [])
+  })
+
+  it('returns zero diagnostics for a page accessing Node globals (process, Buffer) in paths() and server()', async () => {
+    const file = path.join(fixturesDir, 'node-globals-ok.html')
+    const result = await typeCheck([file])
+
+    assert.strictEqual(result.skipped, false)
+    assert.deepStrictEqual(result.diagnostics, [])
+  })
+
+  it('returns zero diagnostics for Node globals when tsconfig specifies types array omitting node', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'coralite-types-test-'))
+    const tsconfigPath = path.join(tmpDir, 'tsconfig.json')
+    fs.writeFileSync(tsconfigPath, JSON.stringify({
+      compilerOptions: {
+        types: []
+      }
+    }))
+
+    const file = path.join(fixturesDir, 'node-globals-ok.html')
+    try {
+      const result = await typeCheck([file], { tsconfig: tsconfigPath })
+      assert.strictEqual(result.skipped, false)
+      assert.deepStrictEqual(result.diagnostics, [])
+    } finally {
+      fs.rmSync(tmpDir, {
+        recursive: true,
+        force: true
+      })
+    }
+  })
+
+  it('suppresses TS2580 diagnostics for Node globals when typeRoots is empty', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'coralite-typeroots-test-'))
+    const tsconfigPath = path.join(tmpDir, 'tsconfig.json')
+    fs.writeFileSync(tsconfigPath, JSON.stringify({
+      compilerOptions: {
+        typeRoots: []
+      }
+    }))
+
+    const file = path.join(fixturesDir, 'node-globals-ok.html')
+    try {
+      const result = await typeCheck([file], { tsconfig: tsconfigPath })
+      assert.strictEqual(result.skipped, false)
+      assert.deepStrictEqual(result.diagnostics, [])
+    } finally {
+      fs.rmSync(tmpDir, {
+        recursive: true,
+        force: true
+      })
+    }
   })
 })
