@@ -9,6 +9,7 @@ import { globSync } from 'glob'
 import { execFileSync } from 'child_process'
 import { sortTags, resolveBaselineTag, getCleanVersion } from '../lib/tags.js'
 import { createOrUpdateGitHubRelease, getRepoSlug, isPrerelease } from '../lib/github.js'
+import { updateChangelogData } from '../lib/changelog-entry-generator.js'
 
 const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer with Coralite project releases.
 Your task is to generate a structured GitHub Release Post based on provided git commit messages and technical summaries.
@@ -83,6 +84,7 @@ program
   .option('--stdout', 'Print to stdout only, ignore output file')
   .option('--no-git', 'Skip git commit and push')
   .option('--github-release', 'Publish release post directly to GitHub Releases', false)
+  .option('--website-changelog', 'Update website changelog (website/src/data/changelog.json)', false)
   .option('--json', 'Output the gathered data in JSON format instead of calling OpenAI API')
   .action(async (options) => {
     let packageName = options.package
@@ -654,6 +656,29 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
                 }
               } catch (ghErr) {
                 prompts.log.error(`GitHub release error: ${ghErr.message}`)
+              }
+            }
+
+            let shouldUpdateChangelog = Boolean(options.websiteChangelog)
+            if (!options.websiteChangelog && !options.yes) {
+              const confirmWebsite = await prompts.confirm({
+                message: 'Update website changelog (website/src/data/changelog.json) with this release?',
+                initialValue: true
+              })
+              shouldUpdateChangelog = Boolean(confirmWebsite && !prompts.isCancel(confirmWebsite))
+            }
+
+            if (shouldUpdateChangelog) {
+              try {
+                prompts.log.step('Updating website changelog...')
+                updateChangelogData({
+                  version: getCleanVersion(toRef, packageName),
+                  packageName,
+                  markdown
+                })
+                prompts.log.success('✅ Successfully updated website changelog')
+              } catch (clErr) {
+                prompts.log.error(`Website changelog error: ${clErr.message}`)
               }
             }
           }
