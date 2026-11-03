@@ -7,6 +7,8 @@ import { displayError, displayInfo, displayWarning, displaySuccess, toCode, toMS
 import { dirname, extname, join, normalize, relative, sep } from 'path'
 import { access, constants, mkdir, readFile, writeFile } from 'fs/promises'
 import { createCoralite, resolveCspConfig } from 'coralite'
+import { buildRouteTable } from '../server/routes/build-table.js'
+import { matchRoute } from '../server/routes/match.js'
 import portfinder from 'portfinder'
 
 /**
@@ -220,8 +222,60 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
     if (memoryPageSource.has(normalizedKey)) {
       return {
         pathname: memoryPageSource.get(normalizedKey),
-        key: normalizedKey
+        key: normalizedKey,
+        isFixture: isFixtureRequest
       }
+    }
+  }
+
+  // Fallback check route pattern matching (supports dynamic and static routes)
+  if (targetCollection) {
+    try {
+      const matchUrl = '/' + (activeRelPath.split(sep).join('/'))
+      const routeTable = buildRouteTable(targetCollection)
+      const match = matchRoute(matchUrl, routeTable)
+
+      if (match) {
+        const pageItem = targetCollection.getItem(match.pagePath)
+        const page = pageItem?.result?.page || pageItem?.page
+        const enumeratedPaths = Array.isArray(page?.enumeratedPaths) ? page.enumeratedPaths : []
+        const isDynamic = Array.isArray(page?.routeParams) && page.routeParams.length > 0
+
+        let normalizedKey = (activeRelPath + '.html').split(sep).join('/')
+        if (extension === '.html' || reqPath.endsWith('.html')) {
+          normalizedKey = activeRelPath.split(sep).join('/')
+        } else if (reqPath.endsWith('/')) {
+          normalizedKey = join(activeRelPath, 'index.html').split(sep).join('/')
+        }
+
+        if (isDynamic) {
+          if (enumeratedPaths.length > 0) {
+            const isEnumerated = enumeratedPaths.some(paramSet => {
+              return Object.keys(match.params).every(key => {
+                const paramVal = Array.isArray(paramSet[key]) ? paramSet[key].join('/') : String(paramSet[key])
+                const matchVal = String(match.params[key])
+                return paramVal === matchVal
+              })
+            })
+
+            if (isEnumerated) {
+              return {
+                pathname: match.pagePath,
+                key: normalizedKey,
+                isFixture: isFixtureRequest
+              }
+            }
+          }
+        } else {
+          return {
+            pathname: match.pagePath,
+            key: normalizedKey,
+            isFixture: isFixtureRequest
+          }
+        }
+      }
+    } catch {
+      // Continue to null return if route matching encounters invalid state
     }
   }
 
@@ -373,7 +427,7 @@ async function server (config, options, runMode = 'dev') {
               pageCache.set(normalizedKey, injectedHtml)
               pageCache.set(htmlAliasKey, injectedHtml)
 
-              const sourcePathname = normalize(join(config.pages, htmlAliasKey))
+              const sourcePathname = buildResult.sourcePath || normalize(join(config.pages, htmlAliasKey))
               memoryPageSource.set(normalizedKey, sourcePathname)
               memoryPageSource.set(htmlAliasKey, sourcePathname)
 
@@ -530,7 +584,7 @@ async function server (config, options, runMode = 'dev') {
         return res.sendStatus(404)
       }
 
-      const result = await resolveSource(reqPath, extension, config, coralite, memoryPageSource)
+      const result = await resolveSource(reqPath, extension, currentConfig, coralite, memoryPageSource)
 
       if (!result) {
         res.sendStatus(404)
@@ -572,6 +626,14 @@ async function server (config, options, runMode = 'dev') {
               rebuildScript = buildLiveReloadScript(currentConfig)
             }
 
+            const fixturesConfig = coralite?.options?.fixtures || (typeof currentConfig.fixtures === 'object' && currentConfig.fixtures !== null ? currentConfig.fixtures : null) || (typeof currentConfig.fixtures === 'string' ? {
+              pages: currentConfig.fixtures,
+              prefix: '/__fixtures__'
+            } : null)
+            const basePagesRoot = (result.isFixture && fixturesConfig?.pages)
+              ? normalize(fixturesConfig.pages)
+              : normalize(currentConfig.pages)
+
             // Only set item if it does not already exist in coralite.pages or fixtures
             const targetCollection = (result.isFixture && coralite.fixtures) ? coralite.fixtures : coralite.pages
             let item = targetCollection.getItem(pathname)
@@ -593,18 +655,19 @@ async function server (config, options, runMode = 'dev') {
               // inject a script to enable live reload via Server-Sent Events
               const injectedHtml = buildResult.content.replace(/<\/body>/i, rebuildScript)
 
-              const relPath = relative(config.pages, buildResult.path.pathname)
+              const relPath = relative(basePagesRoot, buildResult.path.pathname)
               const normalizedKey = relPath.split(sep).join('/')
               const htmlAliasKey = normalizedKey.endsWith('/index.html')
                 ? normalizedKey.slice(0, -11) + '.html'
                 : normalizedKey
 
+              const sourcePathname = buildResult.sourcePath || pathname
               // map in memory page to source
-              if (normalizedKey !== pathname) {
-                memoryPageSource.set(normalizedKey, pathname)
+              if (normalizedKey !== sourcePathname) {
+                memoryPageSource.set(normalizedKey, sourcePathname)
               }
-              if (htmlAliasKey !== pathname) {
-                memoryPageSource.set(htmlAliasKey, pathname)
+              if (htmlAliasKey !== sourcePathname) {
+                memoryPageSource.set(htmlAliasKey, sourcePathname)
               }
 
               // cache rendered output under both normalized and .html alias keys
@@ -649,10 +712,7 @@ async function server (config, options, runMode = 'dev') {
               if (!matchedDoc || !matchedDoc.content) {
                 return false
               }
-              if (result.isFixture) {
-                return normalize(matchedDoc.path.pathname) === normalize(pathname)
-              }
-              const relPath = relative(config.pages, matchedDoc.path.pathname)
+              const relPath = relative(basePagesRoot, matchedDoc.path.pathname)
               const normalizedKey = relPath.split(sep).join('/')
               const htmlAliasKey = normalizedKey.endsWith('/index.html')
                 ? normalizedKey.slice(0, -11) + '.html'
