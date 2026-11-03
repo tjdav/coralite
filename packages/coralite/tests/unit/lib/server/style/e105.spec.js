@@ -53,7 +53,7 @@ describe('Style Validator (E105 and E303)', () => {
     const result = validateComponentSource(code, 'style-comp.html')
     const e105 = result.diagnostics.find(d => d.code === 'CORALITE-E105')
     assert.ok(e105, 'E105 diagnostic emitted for (state) => ... in style')
-    assert.ok(e105.message.includes('Style function parameter receives unified context'))
+    assert.ok(e105.message.includes('Style function parameter receives CoraliteStyleContext'))
     assert.strictEqual(e105.fix?.action, 'style_context_migration')
   })
 

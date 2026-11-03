@@ -651,6 +651,22 @@ program
       }
 
       if (shouldPublish) {
+        if (!process.env.NPM_TOKEN && !process.env.NODE_AUTH_TOKEN) {
+          const { homedir } = await import('node:os')
+          const homeNpmrc = path.resolve(homedir(), '.npmrc')
+          if (existsSync(homeNpmrc)) {
+            try {
+              const homeContent = readFileSync(homeNpmrc, 'utf8')
+              const npmMatch = homeContent.match(/\/\/registry\.npmjs\.org\/:_authToken=(.+)/)
+              if (npmMatch) {
+                process.env.NPM_TOKEN = npmMatch[1].trim()
+              }
+            } catch {
+              // Ignore home .npmrc read errors
+            }
+          }
+        }
+
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
         const publishScript = path.join(__dirname, 'publish.js')
         const noGhFlag = options.githubRelease === false ? '--no-github-release' : '--github-release'
