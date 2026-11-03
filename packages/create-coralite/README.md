@@ -39,12 +39,16 @@ pnpm create coralite
 
 ### `-t, --template <name>`
 
-- **Purpose**: Select styling template for the scaffolded project.
-- **Choices**: `css`, `scss`
+- **Purpose**: Select template for the scaffolded project.
+- **Choices**: `css`, `scss`, `plugin`
 - **Default**: Empty string → user selection required
-- **Usage Example**:
+- **Usage Examples**:
   ```bash
+  # Scaffold a SCSS application
   npm create coralite -t scss
+
+  # Scaffold a Coralite plugin package
+  npm create coralite -t plugin
   ```
 
 ---

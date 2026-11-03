@@ -17,9 +17,7 @@ export const RELEASE_TYPES = ['major', 'minor', 'patch', 'premajor', 'preminor',
 export const TOPOLOGICAL_ORDER = [
   'coralite',
   'coralite-scripts',
-  'create-coralite',
-  'coralite-plugin-scripts',
-  'create-coralite-plugin'
+  'create-coralite'
 ]
 
 /**
@@ -179,8 +177,7 @@ program
       // Get all package.json files
       const packageFiles = globSync('packages/*/package.json')
       const packageTemplateFiles = globSync('packages/create-coralite/templates/*/package.json')
-      const pluginTemplateFiles = globSync('packages/create-coralite-plugin/templates/*/package.json')
-      const packageJsonFiles = packageFiles.concat(packageTemplateFiles, pluginTemplateFiles)
+      const packageJsonFiles = packageFiles.concat(packageTemplateFiles)
 
       if (packageJsonFiles.length === 0) {
         prompts.log.warn('No packages found in packages/ directory')

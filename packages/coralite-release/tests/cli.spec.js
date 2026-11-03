@@ -34,9 +34,7 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.deepStrictEqual(TOPOLOGICAL_ORDER, [
         'coralite',
         'coralite-scripts',
-        'create-coralite',
-        'coralite-plugin-scripts',
-        'create-coralite-plugin'
+        'create-coralite'
       ])
     })
   })
@@ -192,8 +190,6 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.match(output, /coralite:/)
       assert.match(output, /coralite-scripts:/)
       assert.match(output, /create-coralite:/)
-      assert.match(output, /coralite-plugin-scripts:/)
-      assert.match(output, /create-coralite-plugin:/)
 
       const gitDiff = execFileSync('git', ['diff', '--', 'packages/*/package.json', 'packages/*/templates/*/package.json'], {
         cwd: repoRoot,

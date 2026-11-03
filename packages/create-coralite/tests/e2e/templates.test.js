@@ -175,3 +175,73 @@ for (const templateName of templates) {
     })
   })
 }
+
+test.describe.serial('create-coralite template: plugin', () => {
+  let tempDir
+  let projectPath
+
+  test.beforeAll(async () => {
+    const cliPath = join(process.cwd(), 'bin/index.js')
+    if (!existsSync(cliPath)) {
+      throw new Error(`CLI not found at ${cliPath}`)
+    }
+
+    tempDir = await mkdtemp(join(tmpdir(), 'create-coralite-plugin-'))
+    const projectName = 'test-plugin'
+    projectPath = join(tempDir, projectName)
+
+    execSync(`node "${cliPath}" -o "${projectName}" --template plugin --no-ai`, {
+      cwd: tempDir,
+      stdio: 'pipe'
+    })
+
+    if (!existsSync(projectPath)) {
+      throw new Error(`Scaffolded directory ${projectPath} does not exist`)
+    }
+
+    const repoRoot = path.resolve(process.cwd(), '../..')
+    const coralitePkgPath = path.join(repoRoot, 'packages/coralite')
+
+    const pkgJsonPath = join(projectPath, 'package.json')
+    const pkgJson = JSON.parse(await readFile(pkgJsonPath, 'utf8'))
+
+    const relativeCoralitePath = path.relative(projectPath, coralitePkgPath).split(path.sep).join('/')
+    pkgJson.devDependencies = pkgJson.devDependencies || {}
+    pkgJson.devDependencies.coralite = 'file:' + relativeCoralitePath
+
+    await writeFile(pkgJsonPath, JSON.stringify(pkgJson, null, 2))
+
+    execSync('npm install --prefer-offline --no-audit --no-fund', {
+      cwd: projectPath,
+      stdio: 'pipe'
+    })
+  })
+
+  test.afterAll(async () => {
+    if (tempDir && existsSync(tempDir)) {
+      await rm(tempDir, {
+        recursive: true,
+        force: true
+      })
+    }
+  })
+
+  test('should scaffold valid plugin files and pass test suite', async () => {
+    expect(existsSync(join(projectPath, 'src/index.js'))).toBe(true)
+    expect(existsSync(join(projectPath, 'tests/unit.spec.js'))).toBe(true)
+    expect(existsSync(join(projectPath, 'tests/smoke.spec.js'))).toBe(true)
+    expect(existsSync(join(projectPath, '.github/workflows/ci.yml'))).toBe(true)
+
+    const testOutput = execSync('npm test', {
+      cwd: projectPath,
+      encoding: 'utf8',
+      stdio: 'pipe'
+    })
+
+    expect(testOutput).toContain('Plugin Unit Tests')
+    expect(testOutput).toContain('Plugin Smoke Test')
+    expect(testOutput).toContain('pass 4')
+    expect(testOutput).toContain('fail 0')
+  })
+})
+

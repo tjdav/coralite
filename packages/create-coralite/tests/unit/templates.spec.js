@@ -16,6 +16,7 @@ describe('create-coralite template package declarations', () => {
     assert.ok(templates.length > 0, 'Templates directory should contain templates')
     assert.ok(templates.includes('css'), 'Must include css template')
     assert.ok(templates.includes('scss'), 'Must include scss template')
+    assert.ok(templates.includes('plugin'), 'Must include plugin template')
   })
 
   for (const templateName of templates) {
@@ -40,9 +41,17 @@ describe('create-coralite template package declarations', () => {
         assert.strictEqual(jsconfig.compilerOptions?.moduleResolution, 'nodenext')
       })
 
-      it('contains coralite.config.js configuration file', () => {
-        assert.ok(existsSync(configPath), `coralite.config.js must exist in ${templateName}`)
-      })
+      if (templateName === 'plugin') {
+        it('contains src/index.js entry point and test suite', () => {
+          assert.ok(existsSync(path.join(templatePath, 'src/index.js')), 'src/index.js must exist in plugin')
+          assert.ok(existsSync(path.join(templatePath, 'tests/unit.spec.js')), 'unit.spec.js must exist in plugin')
+          assert.ok(existsSync(path.join(templatePath, 'tests/smoke.spec.js')), 'smoke.spec.js must exist in plugin')
+        })
+      } else {
+        it('contains coralite.config.js configuration file', () => {
+          assert.ok(existsSync(configPath), `coralite.config.js must exist in ${templateName}`)
+        })
+      }
 
       it('contains AGENTS.md and README.md with deploying guidance', () => {
         const agentsPath = path.join(templatePath, 'AGENTS.md')
@@ -64,7 +73,9 @@ describe('create-coralite template package declarations', () => {
         const readme = readFileSync(readmePath, 'utf8')
         assert.match(readme, /# \{\{\s*name\s*\}\}/, 'README.md must contain project name placeholder')
         assert.match(readme, /## Deploying/, 'README.md must contain Deploying section')
-        assert.match(readme, /clean by default/, 'README.md must describe cleanUrls behavior')
+        if (templateName !== 'plugin') {
+          assert.match(readme, /clean by default/, 'README.md must describe cleanUrls behavior')
+        }
       })
     })
   }

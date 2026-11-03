@@ -41,7 +41,8 @@ program
   .addOption(
     new Option('-t, --template <name>', 'use a specific template').choices([
       'css',
-      'scss'
+      'scss',
+      'plugin'
     ]).default('')
   )
 
@@ -87,7 +88,7 @@ if (program.args.length > 1) {
 const positionalTarget = program.args[0] || ''
 const options = program.opts()
 const cwd = process.cwd()
-const { magenta, cyan } = colours
+const { magenta, cyan, yellow } = colours
 const TEMPLATES = [
   {
     value: 'css',
@@ -98,6 +99,11 @@ const TEMPLATES = [
     value: 'scss',
     name: 'SCSS',
     colour: magenta
+  },
+  {
+    value: 'plugin',
+    name: 'Plugin',
+    colour: yellow
   }
 ]
 const defaultTarget = 'coralite-project'
@@ -332,7 +338,15 @@ async function createProject () {
     }`
   }
 
-  if (pkgManager === 'yarn') {
+  if (template === 'plugin') {
+    if (pkgManager === 'yarn') {
+      doneMessage += '\n  yarn'
+      doneMessage += '\n  yarn test'
+    } else {
+      doneMessage += `\n  ${pkgManager} install`
+      doneMessage += `\n  ${pkgManager} test`
+    }
+  } else if (pkgManager === 'yarn') {
     doneMessage += '\n  yarn'
     doneMessage += '\n  yarn dev'
   } else {
