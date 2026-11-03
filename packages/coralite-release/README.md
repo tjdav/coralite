@@ -2,11 +2,13 @@
 
 Requires Node.js v20.19.0 or higher (Node.js v24 LTS recommended).
 
-This package provides three CLI tools for managing releases, generating changelogs, and compiling release posts:
+This package provides five CLI tools for managing releases, generating changelogs, publishing packages, and creating GitHub releases:
 
-1. `coralite-release` - Creates new git release tags and bumps package versions
+1. `coralite-release` - Creates new git release tags, bumps versions, and optionally triggers publishing
 2. `coralite-changelog` - Generates a markdown changelog based on commits between git tags
 3. `coralite-release-post` - Generates an AI-powered release post based on commits between git tags
+4. `coralite-publish` - Builds and publishes packages to npm or Codeberg with automated asset handling
+5. `coralite-github-release` - Creates or updates GitHub releases for published git tags
 
 ## Installation
 
@@ -40,6 +42,10 @@ This command creates new releases by bumping versions and tagging commits.
 - `--allow-any-branch`: Allow release from branches other than `main`, `master`, `release/*`, or `rc/*`
 - `--no-git-tag`: Skip creating git tag
 - `--no-git-commit`: Skip git commit (only update package.json files)
+- `--publish`: Automatically publish released package(s) to npm after git push
+- `--github-release`: Automatically create GitHub release(s) with release notes
+- `--no-publish`: Skip publishing package(s) to npm
+- `--no-github-release`: Skip creating GitHub release(s)
 
 #### Examples:
 
@@ -124,4 +130,34 @@ coralite-release-post --json > release_data.json
 
 # Run non-interactively using the TEST_NON_INTERACTIVE env variable with agy
 TEST_NON_INTERACTIVE=true coralite-release-post --package coralite-scripts --from coralite-scripts-v0.27.0 --to coralite-scripts-v0.28.0 --agy
+```
+
+### coralite-github-release
+
+This command creates or updates GitHub releases for published git tags. It auto-resolves release notes from existing `RELEASE_POST.md` files or extracts the version section from `CHANGELOG.md`.
+
+#### Options:
+- `-t, --tag <tag>`: Specify git tag name (e.g. `coralite-v1.0.0-rc.10`)
+- `-p, --package <name>`: Package name (e.g. `coralite`, `create-coralite`)
+- `--title <title>`: Custom release title
+- `--notes <file>`: Path to custom release notes markdown file
+- `--draft`: Create release as draft (default: false)
+- `-d, --dry-run`: Show release details without creating on GitHub
+- `-y, --yes`: Skip confirmation prompts
+- `--backfill`: Scan local tags and GitHub releases, and create missing releases
+
+#### Authentication:
+Set `GITHUB_TOKEN` or `GH_TOKEN` in your environment, or ensure the GitHub CLI (`gh`) is authenticated.
+
+#### Examples:
+
+```bash
+# Post release for a specific tag
+coralite-github-release --tag coralite-v1.0.0-rc.10
+
+# Dry-run release posting
+coralite-github-release --tag coralite-v1.0.0-rc.10 --dry-run
+
+# Backfill any released tags missing from GitHub Releases
+coralite-github-release --backfill
 ```

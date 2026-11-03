@@ -8,6 +8,7 @@ import path from 'path'
 import { globSync } from 'glob'
 import { execFileSync } from 'child_process'
 import { sortTags, resolveBaselineTag, getCleanVersion } from '../lib/tags.js'
+import { createOrUpdateGitHubRelease, getRepoSlug, isPrerelease } from '../lib/github.js'
 
 const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer with Coralite project releases.
 Your task is to generate a structured GitHub Release Post based on provided git commit messages and technical summaries.
@@ -81,6 +82,7 @@ program
   .option('-y, --yes', 'Skip confirmation')
   .option('--stdout', 'Print to stdout only, ignore output file')
   .option('--no-git', 'Skip git commit and push')
+  .option('--github-release', 'Publish release post directly to GitHub Releases', false)
   .option('--json', 'Output the gathered data in JSON format instead of calling OpenAI API')
   .action(async (options) => {
     let packageName = options.package
@@ -616,6 +618,42 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
                 prompts.log.success('✅ Successfully pushed release post')
               } catch (error) {
                 prompts.log.error(`Failed to commit/push release post: ${error.message}`)
+              }
+            }
+          }
+
+          if (toRef && toRef !== 'HEAD') {
+            let shouldPostToGithub = Boolean(options.githubRelease)
+            if (!options.githubRelease && !options.yes) {
+              const confirmGh = await prompts.confirm({
+                message: `Publish this release post to GitHub Releases for tag "${toRef}"?`,
+                initialValue: true
+              })
+              shouldPostToGithub = Boolean(confirmGh && !prompts.isCancel(confirmGh))
+            }
+
+            if (shouldPostToGithub) {
+              try {
+                prompts.log.step(`Publishing GitHub release for ${toRef}...`)
+                const repoSlug = getRepoSlug(process.cwd())
+                const ghResult = await createOrUpdateGitHubRelease({
+                  tag: toRef,
+                  title: `${packageName} v${getCleanVersion(toRef, packageName)}`,
+                  body: markdown,
+                  prerelease: isPrerelease(toRef),
+                  repoSlug
+                })
+
+                if (ghResult.success) {
+                  prompts.log.success(`✅ Successfully published GitHub Release: ${ghResult.htmlUrl}`)
+                } else if (ghResult.webUrl) {
+                  prompts.log.warn(`⚠️ ${ghResult.error}`)
+                  prompts.log.info(`🔗 Open this link to create the release manually:\n   ${ghResult.webUrl}`)
+                } else {
+                  prompts.log.error(`❌ Failed to publish GitHub Release: ${ghResult.error}`)
+                }
+              } catch (ghErr) {
+                prompts.log.error(`GitHub release error: ${ghErr.message}`)
               }
             }
           }
