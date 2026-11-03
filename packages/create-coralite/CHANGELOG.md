@@ -1,5 +1,84 @@
 # Changelog
 
+## v1.0.0
+
+> Comparing `create-coralite-v0.47.1` to `HEAD`
+
+**Summary:** 57 commits
+
+### ✨ Features
+
+- permit non-destructured context parameters in style, slots, and getters (validator) ([70300cf](https://github.com/tjdav/coralite/commit/70300cfbe16c6d903e141db293105fba3362c00f))
+- add top-level context for ubiquitous component and getter access (plugin) ([90e5e9b](https://github.com/tjdav/coralite/commit/90e5e9b67922441568be0b4c43e66f7801cd3b3d))
+- exclude test files from production components and document fixture conventions (config) ([0b46c12](https://github.com/tjdav/coralite/commit/0b46c1279b40b231fcf8d1dcb2979716de8a7e60))
+- clarify zero-js static contracts, ban passthrough getters, and harden ast guards (component) ([c1dbec3](https://github.com/tjdav/coralite/commit/c1dbec38da48417c6e6c1c0cbca0bdb31a8664db))
+- inject plugin context into page server and client handlers (plugin) ([9ed9e7d](https://github.com/tjdav/coralite/commit/9ed9e7da2a2f76e961970a7f7803e0491f70c735))
+- isolate test fixtures and exclude test files from production pages (config) ([b506b38](https://github.com/tjdav/coralite/commit/b506b3863dda71d5fb8069553438b053d106bb8e))
+- migrate starter templates to named exports (create-coralite) ([1ace6bf](https://github.com/tjdav/coralite/commit/1ace6bf356dfc42ccb2aa9a245ff86a0c4a3120f))
+- encapsulate Node experimental flags in coralite CLI (cli) ([bca2333](https://github.com/tjdav/coralite/commit/bca23338522c4af0b26720c5a67d2159b913ae33))
+- scaffold AGENTS.md, add Node check, improve README (create-coralite) ([a539395](https://github.com/tjdav/coralite/commit/a5393950cc97b55840159f6e670ae0ba2a622326))
+- scaffold AGENTS.md, add Node check, improve README (create-coralite) ([cd3a862](https://github.com/tjdav/coralite/commit/cd3a862aa5ee1395cc2a82a7d1f3f29e8c58e83e))
+- add config schema declaration and validation (plugin) ([e3d82f6](https://github.com/tjdav/coralite/commit/e3d82f61e08536ebcd22bdda28f7059c42f0719d))
+- expand and correct agent rule templates (create-coralite) ([97944ac](https://github.com/tjdav/coralite/commit/97944acd3301f86575a6fb0fa0b26ef615215b71))
+- add AI assistant rule generator and --agent mode (create-coralite) ([cd22de9](https://github.com/tjdav/coralite/commit/cd22de9f0c2b7572f11c1b0127bbfa951d3d48b9))
+- integrate check and fix subcommands (coralite-scripts) ([7efba81](https://github.com/tjdav/coralite/commit/7efba816dd320982421a01f29519f0b975a44c39))
+
+### 🐛 Bug Fixes
+
+- align template components and docs with best practices (create-coralite) ([248ed08](https://github.com/tjdav/coralite/commit/248ed08d8b3139db18ea2443c49b1d511263d505))
+- support remote URL imports natively without TS2307 errors (type-checker) ([ee4a9b6](https://github.com/tjdav/coralite/commit/ee4a9b61fc25a22a713d029f98558c73a7195c31))
+- resolve final release gate blockers for rc.6 ([78b34cd](https://github.com/tjdav/coralite/commit/78b34cd8e566e366e7f2c4c8b95744ef43aac6a5))
+- declare coralite devDependency in scaffolding templates (create-coralite) ([52f6725](https://github.com/tjdav/coralite/commit/52f6725c3c227faa889495d0047737ebfe919429))
+- invert isEmpty check and harden error handling (create-coralite) ([e30b88f](https://github.com/tjdav/coralite/commit/e30b88f623fe9b82efaa37cdb9a174dfd420de03))
+- strip test attributes in production and streamline create-coralite e2e (testing) ([618c55f](https://github.com/tjdav/coralite/commit/618c55fca54c097f8b21b697042a4005a25e781d))
+- Refactor publishing workflows for npm and Codeberg (ci) ([120bdb2](https://github.com/tjdav/coralite/commit/120bdb2dc77b05e85e33ae80dae1ef92eb65e6bc))
+
+### ♻️ Code Refactoring
+
+- fold plugin scaffolding into create-coralite and remove obsolete packages (cli) ([9315a39](https://github.com/tjdav/coralite/commit/9315a390a6cf5f3a8d89c33674ceefe72970c65c))
+- align release post generator and docs with static-first framing (cli) ([9fcd044](https://github.com/tjdav/coralite/commit/9fcd044d50ed454373a03099ec26f044df0bdef1))
+- Optimize performance and improve clarity in Counter and Footer components (components) ([86919b2](https://github.com/tjdav/coralite/commit/86919b2ac4bc2a01ab6a9c9ed6e465cdf45a3947))
+- Update CSS style guide comments ([940562d](https://github.com/tjdav/coralite/commit/940562dfc3bad32123ce11363b9e8e3aea19a15c))
+- modernize css and scss starter templates (create-coralite) ([a4e600d](https://github.com/tjdav/coralite/commit/a4e600dcbb51d98c6273f00de76f6dd2a7caa3ad))
+- update starter template components to latest API (create-coralite) ([8138e6c](https://github.com/tjdav/coralite/commit/8138e6cb0537534903514a2189b7822c4652edc5))
+
+### 🧹 Chores
+
+- update repository location to github (config) ([c59979a](https://github.com/tjdav/coralite/commit/c59979a1a9b0171d4789fd6736bc282c4a25788b))
+- unify agent instructions and template invariants (cli) ([f7d42ba](https://github.com/tjdav/coralite/commit/f7d42ba61536de2e9d5ac1b301d6b92a9293015c))
+- prepare v1.0.0-rc.6 release (release) ([e0e9456](https://github.com/tjdav/coralite/commit/e0e9456646a276ca0fd29c2824c688fb5e26635c))
+- fix source and runtime lint errors ([e77cee9](https://github.com/tjdav/coralite/commit/e77cee92584a103035004817743024aa8737db9f))
+- update Node.js engine requirements across packages ([5c2c714](https://github.com/tjdav/coralite/commit/5c2c714ab11c7a6756ec0ab12a36291b9bf72b3c))
+- bump minimum required Node.js version to 22.0.0 (deps) ([d4405ad](https://github.com/tjdav/coralite/commit/d4405adadd20eff63c6a93b057a3eee3b075c79a))
+- Update default typography and font imports (styles) ([111af40](https://github.com/tjdav/coralite/commit/111af402571f7db0859396d85acfd16590cfad6c))
+
+### 🔨 Other Changes
+
+- release(coralite): version 1.0.0 ([e52dea8](https://github.com/tjdav/coralite/commit/e52dea84113df63dc446496db980b0f90c9b0652))
+- release(create-coralite): version 1.0.0-rc.10 ([0c8540a](https://github.com/tjdav/coralite/commit/0c8540a423f7863c6b0ec38d538cb741b396db02))
+- release(coralite): version 1.0.0-rc.10 ([243d31c](https://github.com/tjdav/coralite/commit/243d31c34b24645566653fca5a587ea022b187e5))
+- release(create-coralite): version 1.0.0-rc.9 ([555eb7e](https://github.com/tjdav/coralite/commit/555eb7e7cc6876288f5cddfdd6a14584f9321e79))
+- release(coralite): version 1.0.0-rc.9 ([2ad293f](https://github.com/tjdav/coralite/commit/2ad293f61464ce760eff34cc0244aae550c6c16c))
+- release(create-coralite): version 1.0.0-rc.8 ([15ebe9d](https://github.com/tjdav/coralite/commit/15ebe9d5a387bf977d2c184ce6cab5a5879046df))
+- release(coralite): version 1.0.0-rc.8 ([93d2c12](https://github.com/tjdav/coralite/commit/93d2c12bd243a3f3b01ee72740461d903eec15d5))
+- I have prepared the v1.0.0-rc.7 release (superseding broken rc.6): ([16adb87](https://github.com/tjdav/coralite/commit/16adb873247ff8cdbcc3f94ee3b34c3a41bb5621))
+- release(create-coralite): version 1.0.0-rc.5 ([e8004e2](https://github.com/tjdav/coralite/commit/e8004e25b4c2a5bc106650f682365e0ea066ca53))
+- release(coralite-scripts): version 1.0.0-rc.5 ([5a47cd8](https://github.com/tjdav/coralite/commit/5a47cd897d6e4f31df206e61ca49b77e0df49b9e))
+- release(coralite): version 1.0.0-rc.5 ([86b4aff](https://github.com/tjdav/coralite/commit/86b4aff11fa503b9d3bb9e8c5e4096113b827d4e))
+- release(create-coralite): version 1.0.0-rc.4 ([e8f4fa8](https://github.com/tjdav/coralite/commit/e8f4fa8559ba88d232e6ca5a716212ad11f140b0))
+- release(coralite-scripts): version 1.0.0-rc.4 ([f1935ff](https://github.com/tjdav/coralite/commit/f1935ff22a26d95aaaaad1d8c6e8255c88574be1))
+- release(coralite): version 1.0.0-rc.4 ([3f7fce5](https://github.com/tjdav/coralite/commit/3f7fce5b3aa72c75674a15c98f6a83eb607b7b72))
+- release(create-coralite): version 1.0.0-rc.3 ([28fd244](https://github.com/tjdav/coralite/commit/28fd244eaddbfcd520bab1101668949d41b40171))
+- release(coralite-scripts): version 1.0.0-rc.3 ([f00726f](https://github.com/tjdav/coralite/commit/f00726fd2c62a076b71c92553051559bcf66e70f))
+- release(coralite): version 1.0.0-rc.3 ([247d15d](https://github.com/tjdav/coralite/commit/247d15dbac37db6e9dcdf823b156b538e2b51fb9))
+- release(create-coralite): version 1.0.0-rc.2 ([227e47b](https://github.com/tjdav/coralite/commit/227e47b8b6b27c05a5ccb7739cba9d3431f82b82))
+- release(coralite-scripts): version 1.0.0-rc.2 ([4739d5a](https://github.com/tjdav/coralite/commit/4739d5ab0d3bd18c1a49c7d3b3bdadb9be45f823))
+- release(create-coralite): version 1.0.0-rc.1 ([29d0f68](https://github.com/tjdav/coralite/commit/29d0f6841ad61fc7b1de837b26a69be8195f6a2f))
+- release(coralite-scripts): version 1.0.0-rc.1 ([b3eaf5c](https://github.com/tjdav/coralite/commit/b3eaf5c1afa9d8b64ac9adab941338166a2ed11e))
+- release(create-coralite): version 1.0.0-rc.0 ([9175131](https://github.com/tjdav/coralite/commit/9175131473d55474b3e9f54c2153e27f2e95237f))
+- release(coralite-scripts): version 1.0.0-rc.0 ([3c61bf5](https://github.com/tjdav/coralite/commit/3c61bf5c1fb72b812fb66fb6fb1badab4797e317))
+
+
 ## v1.0.0-rc.10
 
 > Comparing `create-coralite-v1.0.0-rc.9` to `HEAD`
