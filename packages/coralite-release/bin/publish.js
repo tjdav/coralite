@@ -2,6 +2,7 @@
 
 import { existsSync, copyFileSync, unlinkSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
+import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
 import semver from 'semver'
@@ -283,8 +284,31 @@ async function main () {
     console.log(`🔍 Verifying package contents for ${packageName}...`)
     verifyPackageFiles(pkgDir, pkgJson.files)
 
-    const npmToken = process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN
-    const codebergToken = process.env.CODEBERG_TOKEN
+    let npmToken = process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN
+    let codebergToken = process.env.CODEBERG_TOKEN
+
+    if (!npmToken || !codebergToken) {
+      const homeNpmrc = resolve(homedir(), '.npmrc')
+      if (existsSync(homeNpmrc)) {
+        try {
+          const homeContent = readFileSync(homeNpmrc, 'utf8')
+          if (!npmToken) {
+            const npmMatch = homeContent.match(/\/\/registry\.npmjs\.org\/:_authToken=(.+)/)
+            if (npmMatch) {
+              npmToken = npmMatch[1].trim()
+            }
+          }
+          if (!codebergToken) {
+            const cbMatch = homeContent.match(/\/\/codeberg\.org\/.*:_authToken=(.+)/)
+            if (cbMatch) {
+              codebergToken = cbMatch[1].trim()
+            }
+          }
+        } catch {
+          // Ignore home .npmrc read errors
+        }
+      }
+    }
 
     if (registry === 'npmjs') {
       if (!isDryRun) {
