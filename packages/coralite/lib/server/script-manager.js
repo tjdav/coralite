@@ -397,7 +397,7 @@ ScriptManager.prototype.use = async function (plugin) {
         ...plugin,
         client: pluginObj.client || plugin,
         context: pluginObj.context || client.context,
-        isIsomorphicContext: Boolean(pluginObj.context),
+        isIsomorphicContext: pluginObj.isIsomorphicContext ?? (Boolean(pluginObj.context) && pluginObj.client !== pluginObj),
         init: pluginObj.init || client.init,
         onBeforeComponentRender: pluginObj.onBeforeComponentRender || client.onBeforeComponentRender,
         onAfterComponentRender: pluginObj.onAfterComponentRender || client.onAfterComponentRender,
@@ -716,20 +716,6 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
   entryCodeParts.push(`if (typeof window !== 'undefined') {
   window.__coralite__ = window.__coralite__ || {};
   window.__coralite_hydration__ = window.__coralite_hydration__ || {};
-  window.__coralite__.isomorphicPlugins = {};
-  for (const [key, initFn] of Object.entries(coraliteIsomorphicContextProps)) {
-    try {
-      if (typeof initFn === 'function') {
-        window.__coralite__.isomorphicPlugins[key] = initFn(globalContext);
-      }
-    } catch (e) {
-      if (window.__coralite__?.onError) {
-        window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize isomorphic context for plugin "' + key + '": ' + e?.message, error: e });
-      } else {
-        console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin "' + key + '":', e);
-      }
-    }
-  }
   if (store !== undefined) {
     window.__coralite__.store = store;
   }
@@ -750,6 +736,23 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
   }
 }\n`)
   entryCodeParts.push('const globalContext = typeof window !== "undefined" && window.__coralite__ ? { ...window.__coralite__, store } : { store };\n')
+
+  entryCodeParts.push(`if (typeof window !== 'undefined') {
+  window.__coralite__.isomorphicPlugins = {};
+  for (const [key, initFn] of Object.entries(coraliteIsomorphicContextProps)) {
+    try {
+      if (typeof initFn === 'function') {
+        window.__coralite__.isomorphicPlugins[key] = initFn(globalContext);
+      }
+    } catch (e) {
+      if (window.__coralite__?.onError) {
+        window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize isomorphic context for plugin "' + key + '": ' + e?.message, error: e });
+      } else {
+        console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin "' + key + '":', e);
+      }
+    }
+  }
+}\n`)
 
   entryCodeParts.push(`const resolvedContextFactoriesPromise = (async () => {
     const factories = {};

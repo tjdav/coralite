@@ -267,7 +267,10 @@ export async function setupPlugins ({
       source.isomorphicPlugins[contextName] = contextResult
       serverGlobalContext[contextName] = contextResult
 
-      scriptManager.use(plugin)
+      scriptManager.use({
+        ...plugin,
+        isIsomorphicContext: true
+      })
     }
 
     if (plugin.server) {
@@ -391,7 +394,10 @@ export async function setupPlugins ({
     }
     if (plugin.client) {
       plugin.client.name = plugin.client.name || plugin.name
-      scriptManager.use(plugin.client)
+      scriptManager.use({
+        ...plugin.client,
+        isIsomorphicContext: false
+      })
     }
   }
 }
