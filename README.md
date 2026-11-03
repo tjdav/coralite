@@ -21,13 +21,10 @@ This repository is a monorepo managed with `pnpm`. It contains the following pac
 
 ### Core Framework
 * [`coralite`](./packages/coralite) - The core reactive engine, HTML module compiler, and CLI.
-* [`create-coralite`](./packages/create-coralite) - Scaffolding tool to initialize new projects in seconds.
+* [`create-coralite`](./packages/create-coralite) - Scaffolding tool to initialize new Coralite applications and plugins (`--template plugin`).
 
-### Plugin Ecosystem
-* [`coralite-plugin-scripts`](./packages/coralite-plugin-scripts) - Development and release toolset for plugin authors.
-* [`create-coralite-plugin`](./packages/create-coralite-plugin) - Scaffolding tool for generating new Coralite plugins.
-
-### Release Tools
+### Tooling & Release
+* [`coralite-scripts`](./packages/coralite-scripts) - Development server and build CLI.
 * [`coralite-release`](./packages/coralite-release) - Internal monorepo release and changelog management.
 
 ---

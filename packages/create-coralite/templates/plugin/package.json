@@ -1,21 +1,23 @@
 {
   "name": "coralite-plugin-template",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A Coralite plugin",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.spec.js",
-    "release": "coralite-plugin-scripts release"
+    "test": "node --test tests/*.spec.js"
   },
   "keywords": [
     "coralite",
+    "coralite-plugin",
     "plugin"
   ],
   "author": "",
   "license": "MPL-2.0",
+  "engines": {
+    "node": ">=22.22.2"
+  },
   "devDependencies": {
-    "coralite": "^1.0.0-rc.10",
-    "@coralite/plugin-scripts": "latest"
+    "coralite": "^1.0.0-rc.10"
   }
 }
