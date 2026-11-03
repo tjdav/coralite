@@ -10,7 +10,8 @@ import {
   createOrUpdateGitHubRelease,
   extractChangelogSection,
   getRepoSlug,
-  isPrerelease
+  isPrerelease,
+  matchesReleaseVersion
 } from '../lib/github.js'
 import { parseTagRef, getPackagePath } from './publish.js'
 
@@ -194,7 +195,7 @@ async function processSingleTagRelease ({ tag, options, rootDir, repoSlug }) {
 
     if (existsSync(pkgReleasePost)) {
       const content = readFileSync(pkgReleasePost, 'utf8')
-      if (content.includes(`v${version}`)) {
+      if (matchesReleaseVersion(content, version)) {
         releaseBody = content
         prompts.log.info(`Found existing release post in ${path.relative(rootDir, pkgReleasePost)}`)
       }
@@ -202,7 +203,7 @@ async function processSingleTagRelease ({ tag, options, rootDir, repoSlug }) {
 
     if (!releaseBody && existsSync(rootReleasePost)) {
       const content = readFileSync(rootReleasePost, 'utf8')
-      if (content.includes(`v${version}`)) {
+      if (matchesReleaseVersion(content, version)) {
         releaseBody = content
         prompts.log.info(`Found existing release post in ${path.relative(rootDir, rootReleasePost)}`)
       }

@@ -7,7 +7,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { simpleGit } from 'simple-git'
 import { updateChangelogData } from '../lib/changelog-entry-generator.js'
-import { extractChangelogSection } from '../lib/github.js'
+import { extractChangelogSection, matchesReleaseVersion } from '../lib/github.js'
 import { parseTagRef, getPackagePath } from './publish.js'
 
 program
@@ -153,14 +153,14 @@ async function processTagEntry ({ tag, options, rootDir, changelogJsonPath, git 
 
     if (existsSync(pkgReleasePost)) {
       const content = readFileSync(pkgReleasePost, 'utf8')
-      if (content.includes(`v${version}`)) {
+      if (matchesReleaseVersion(content, version)) {
         markdownNotes = content
       }
     }
 
     if (!markdownNotes && existsSync(rootReleasePost)) {
       const content = readFileSync(rootReleasePost, 'utf8')
-      if (content.includes(`v${version}`)) {
+      if (matchesReleaseVersion(content, version)) {
         markdownNotes = content
       }
     }

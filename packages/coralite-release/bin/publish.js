@@ -10,7 +10,8 @@ import {
   createOrUpdateGitHubRelease,
   extractChangelogSection,
   getRepoSlug,
-  isPrerelease
+  isPrerelease,
+  matchesReleaseVersion
 } from '../lib/github.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -419,14 +420,14 @@ async function main () {
 
           if (existsSync(pkgReleasePost)) {
             const content = readFileSync(pkgReleasePost, 'utf8')
-            if (content.includes(`v${version}`)) {
+            if (matchesReleaseVersion(content, version)) {
               releaseBody = content
             }
           }
 
           if (!releaseBody && existsSync(rootReleasePost)) {
             const content = readFileSync(rootReleasePost, 'utf8')
-            if (content.includes(`v${version}`)) {
+            if (matchesReleaseVersion(content, version)) {
               releaseBody = content
             }
           }

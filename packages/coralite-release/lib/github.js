@@ -126,6 +126,22 @@ export function extractChangelogSection (changelogContent, version) {
 }
 
 /**
+ * Checks whether release post markdown content matches a target version strictly.
+ * @param {string} content - Markdown content of a release post.
+ * @param {string} version - Target version number (e.g. "1.0.0").
+ * @returns {boolean} True if the content heading explicitly matches the version.
+ */
+export function matchesReleaseVersion (content, version) {
+  if (!content || typeof content !== 'string' || !version) {
+    return false
+  }
+  const cleanVer = version.replace(/^v/, '')
+  const escaped = cleanVer.replace(/\./g, '\\.')
+  const regex = new RegExp(`^#+\\s+.*?\\bv?${escaped}(?:\\s|$)`, 'm')
+  return regex.test(content)
+}
+
+/**
  * Check whether the GitHub CLI (gh) is installed and available in PATH.
  * @returns {boolean} True if gh is available
  */
