@@ -188,10 +188,6 @@ async function main () {
             label: 'coralite'
           },
           {
-            value: 'coralite-scripts',
-            label: 'coralite-scripts'
-          },
-          {
             value: 'create-coralite',
             label: 'create-coralite'
           }

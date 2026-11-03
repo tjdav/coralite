@@ -33,7 +33,6 @@ describe('coralite-release CLI & versioning logic', () => {
     it('defines canonical topological package order', () => {
       assert.deepStrictEqual(TOPOLOGICAL_ORDER, [
         'coralite',
-        'coralite-scripts',
         'create-coralite'
       ])
     })
@@ -41,21 +40,19 @@ describe('coralite-release CLI & versioning logic', () => {
 
   describe('sortPackagesInTopologicalOrder()', () => {
     it('sorts package string names according to topological order', () => {
-      const unsorted = ['create-coralite', 'coralite-scripts', 'coralite']
+      const unsorted = ['create-coralite', 'coralite']
       const sorted = sortPackagesInTopologicalOrder(unsorted)
-      assert.deepStrictEqual(sorted, ['coralite', 'coralite-scripts', 'create-coralite'])
+      assert.deepStrictEqual(sorted, ['coralite', 'create-coralite'])
     })
 
     it('sorts package objects according to topological order', () => {
       const unsorted = [
         { name: 'create-coralite' },
-        { name: 'coralite' },
-        { name: 'coralite-scripts' }
+        { name: 'coralite' }
       ]
       const sorted = sortPackagesInTopologicalOrder(unsorted)
       assert.deepStrictEqual(sorted, [
         { name: 'coralite' },
-        { name: 'coralite-scripts' },
         { name: 'create-coralite' }
       ])
     })
@@ -69,16 +66,15 @@ describe('coralite-release CLI & versioning logic', () => {
 
   describe('parsePackageOption()', () => {
     it('parses comma-separated package names', () => {
-      assert.deepStrictEqual(parsePackageOption('coralite,coralite-scripts'), [
+      assert.deepStrictEqual(parsePackageOption('coralite,create-coralite'), [
         'coralite',
-        'coralite-scripts'
+        'create-coralite'
       ])
     })
 
     it('parses array of package names and space/comma combinations', () => {
-      assert.deepStrictEqual(parsePackageOption(['coralite', 'coralite-scripts, create-coralite']), [
+      assert.deepStrictEqual(parsePackageOption(['coralite', 'create-coralite']), [
         'coralite',
-        'coralite-scripts',
         'create-coralite'
       ])
     })
@@ -188,8 +184,8 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.match(output, /Dry run completed/)
       assert.match(output, /Release Plan:/)
       assert.match(output, /coralite:/)
-      assert.match(output, /coralite-scripts:/)
       assert.match(output, /create-coralite:/)
+      assert.doesNotMatch(output, /coralite-scripts:/)
 
       const gitDiff = execFileSync('git', ['diff', '--', 'packages/*/package.json', 'packages/*/templates/*/package.json'], {
         cwd: repoRoot,

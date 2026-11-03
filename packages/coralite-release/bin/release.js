@@ -16,8 +16,13 @@ export const RELEASE_TYPES = ['major', 'minor', 'patch', 'premajor', 'preminor',
 // Define topological dependency order for monorepo packages
 export const TOPOLOGICAL_ORDER = [
   'coralite',
-  'coralite-scripts',
   'create-coralite'
+]
+
+// Packages strictly excluded from release and publishing automation
+export const EXCLUDED_RELEASE_PACKAGES = [
+  'coralite-scripts',
+  'coralite-release'
 ]
 
 /**
@@ -193,8 +198,8 @@ program
         const pkg = JSON.parse(content)
 
         // Only add to choices if it's in packages/ directory (not templates)
-        // and it has a version field
-        if (packageFiles.includes(filepath) && pkg.version) {
+        // and it has a version field and is not excluded
+        if (packageFiles.includes(filepath) && pkg.version && !EXCLUDED_RELEASE_PACKAGES.includes(pkg.name)) {
           releaseChoices.push({
             value: pkg.name,
             label: `${pkg.name} (${pkg.version})`,
@@ -212,7 +217,9 @@ program
         })
       }
 
-      const publishablePackages = packages.filter(p => packageFiles.includes(p.path) && p.version)
+      const publishablePackages = packages.filter(
+        p => packageFiles.includes(p.path) && p.version && !EXCLUDED_RELEASE_PACKAGES.includes(p.name)
+      )
       const sortedPublishable = sortPackagesInTopologicalOrder(publishablePackages)
 
       // Determine selected package names
