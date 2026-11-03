@@ -70,12 +70,14 @@ export function setupDevTools () {
       return
     }
 
-    // Preserve existing lifecycle and mode if created by SSR readiness script
-    const existingLifecycle = window['__coralite__']?.lifecycle
+    // Preserve existing lifecycle, mode, and runtime properties (e.g. isomorphicPlugins, hydrationStore)
+    const existing = window['__coralite__'] || {}
+    const existingLifecycle = existing.lifecycle
     // @ts-ignore
-    const currentMode = window['__coralite__']?.mode || (typeof import.meta.env !== 'undefined' && import.meta.env ? import.meta.env.MODE : 'development')
+    const currentMode = existing.mode || (typeof import.meta.env !== 'undefined' && import.meta.env ? import.meta.env.MODE : 'development')
 
     const devtoolsAPI = {
+      ...existing,
       version: '1.0.0',
       mode: currentMode,
 
@@ -128,7 +130,7 @@ export function setupDevTools () {
     // Attach to window using non-enumerable descriptor to prevent global key pollution
     Object.defineProperty(window, '__coralite__', {
       value: devtoolsAPI,
-      writable: false,
+      writable: true,
       configurable: true,
       enumerable: false
     })

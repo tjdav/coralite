@@ -209,4 +209,22 @@ describe('window.__coralite_test__ API surface', () => {
     assert.deepStrictEqual(testAPI.getInstances('x-btn'), ['btn1'])
     assert.deepStrictEqual(testAPI.getInstances(), ['btn1', 'card1'])
   })
+
+  it('should preserve existing properties on window.__coralite__ such as isomorphicPlugins', () => {
+    const mockPlugins = { $t: () => 'translated' }
+    globalThis.window.__coralite__ = {
+      mode: 'testing',
+      isomorphicPlugins: mockPlugins,
+      customRuntimeProp: 42
+    }
+    setupDevTools()
+
+    assert.strictEqual(globalThis.window.__coralite__.isomorphicPlugins, mockPlugins)
+    assert.strictEqual(globalThis.window.__coralite__.customRuntimeProp, 42)
+    assert.strictEqual(globalThis.window.__coralite__.version, '1.0.0')
+
+    // Verify window.__coralite__ remains extensible and writable
+    globalThis.window.__coralite__.anotherProp = 'hello'
+    assert.strictEqual(globalThis.window.__coralite__.anotherProp, 'hello')
+  })
 })
