@@ -1,0 +1,182 @@
+/* Timeline Changelog (eusend.dev style) */
+
+.changelog-page {
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: var(--spacer-4);
+  padding-bottom: var(--spacer-5);
+}
+
+.changelog-header {
+  margin-bottom: var(--spacer-5);
+  padding-bottom: var(--spacer-3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.changelog-lead {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: var(--spacer-1);
+  max-width: 65ch;
+}
+
+.changelog-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.changelog-item {
+  display: grid;
+  grid-template-columns: 1fr;
+  position: relative;
+  margin-bottom: var(--spacer-2);
+}
+
+.changelog-aside {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacer-2);
+  margin-bottom: var(--spacer-2);
+}
+
+.changelog-date {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+  font-variant-numeric: tabular-nums;
+}
+
+.changelog-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-monospace);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background-color: rgba(208, 255, 0, 0.12);
+  color: var(--green-light);
+  border: 1px solid rgba(208, 255, 0, 0.3);
+  letter-spacing: -0.01em;
+}
+
+.changelog-content {
+  position: relative;
+  padding-bottom: var(--spacer-5);
+}
+
+.changelog-title {
+  font-size: clamp(1.4rem, 1.2rem + 0.8vw, 1.85rem);
+  font-family: var(--font-heading);
+  line-height: 1.3;
+  margin-top: 0;
+  margin-bottom: var(--spacer-2);
+}
+
+.changelog-title a {
+  color: var(--light);
+  text-decoration: none;
+  transition: color 0.15s ease-in-out;
+}
+
+.changelog-title a:hover {
+  color: var(--green-light);
+}
+
+.changelog-summary {
+  font-size: 1.075rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: var(--spacer-3);
+  max-width: 70ch;
+}
+
+.changelog-body {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.changelog-body p {
+  margin-bottom: var(--spacer-2);
+}
+
+.changelog-body ul {
+  padding-left: var(--spacer-3);
+  margin-bottom: var(--spacer-3);
+}
+
+.changelog-body li {
+  margin-bottom: var(--spacer-1);
+}
+
+.changelog-body li strong {
+  color: var(--light);
+}
+
+.changelog-body code {
+  font-family: var(--font-monospace);
+  font-size: 0.875em;
+  padding: 0.15em 0.35em;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  color: var(--pink-light);
+}
+
+.changelog-footer {
+  margin-top: var(--spacer-3);
+  padding-top: var(--spacer-2);
+  display: flex;
+  align-items: center;
+  gap: var(--spacer-3);
+}
+
+.changelog-anchor-link {
+  font-size: 0.875rem;
+  color: var(--green-light);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.changelog-anchor-link:hover {
+  text-decoration: underline;
+}
+
+/* Desktop layout with sticky date column & timeline track */
+@media (min-width: 768px) {
+  .changelog-item {
+    grid-template-columns: 180px 1fr;
+    gap: var(--spacer-4);
+  }
+
+  .changelog-aside {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacer-1);
+    position: sticky;
+    top: 5.5rem;
+    align-self: start;
+    margin-bottom: 0;
+    padding-top: 0.25rem;
+  }
+
+  .changelog-content {
+    padding-left: var(--spacer-4);
+    border-left: 2px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .changelog-content::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 0.5rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--green-light);
+    box-shadow: 0 0 10px rgba(208, 255, 0, 0.5);
+  }
+}

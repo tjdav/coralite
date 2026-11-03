@@ -7,7 +7,8 @@
     "coralite-changelog": "./bin/changelog.js",
     "coralite-release-post": "./bin/release-post.js",
     "coralite-publish": "./bin/publish.js",
-    "coralite-github-release": "./bin/github-release.js"
+    "coralite-github-release": "./bin/github-release.js",
+    "coralite-changelog-post": "./bin/changelog-post.js"
   },
   "scripts": {
     "test:unit": "node --experimental-vm-modules --test \"./tests/**/*.spec.js\""

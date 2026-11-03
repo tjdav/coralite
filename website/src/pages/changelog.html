@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Coralite Changelog"
+    description="Every feature, improvement, and release we have shipped on Coralite — newest first."></coralite-meta>
+
+  <meta property="article:published_time" name="published_time" content="2026-11-03T09:00:00+01:00">
+  <title>Coralite Changelog</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content changelog-page">
+    <header class="changelog-header">
+      <h1 class="display">Changelog</h1>
+      <p class="changelog-lead">Every feature, improvement, and release we have shipped — newest first.</p>
+    </header>
+
+    <div class="changelog-timeline">
+      {{ timelineHtml }}
+    </div>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+  <script type="module">
+    import { definePage } from 'coralite'
+
+    export default definePage({
+      async server () {
+        const { readFileSync, existsSync } = await import('node:fs')
+        const { resolve } = await import('node:path')
+
+        const candidatePaths = [
+          resolve(process.cwd(), 'src/data/changelog.json'),
+          resolve(process.cwd(), 'website/src/data/changelog.json')
+        ]
+        const dataPath = candidatePaths.find(p => existsSync(p))
+
+        let entries = []
+        if (dataPath) {
+          try {
+            entries = JSON.parse(readFileSync(dataPath, 'utf8'))
+          } catch {
+            entries = []
+          }
+        }
+
+        const timelineHtml = entries.map(entry => `
+          <article class="changelog-item" id="${entry.id || ''}">
+            <div class="changelog-aside">
+              <time datetime="${entry.date}" class="changelog-date">${entry.formattedDate}</time>
+              <span class="changelog-badge">${entry.package || 'coralite'} v${entry.version}</span>
+            </div>
+            <div class="changelog-content">
+              <h2 class="changelog-title">
+                <a href="#${entry.id || ''}">${entry.title}</a>
+              </h2>
+              ${entry.summary ? `<p class="changelog-summary">${entry.summary}</p>` : ''}
+              <div class="changelog-body">
+                ${entry.html || ''}
+              </div>
+              <div class="changelog-footer">
+                <a href="#${entry.id || ''}" class="changelog-anchor-link"># Permalink</a>
+                <a href="https://github.com/tjdav/coralite/releases/tag/${entry.tag}" class="changelog-anchor-link" target="_blank" rel="noopener">GitHub Release ↗</a>
+              </div>
+            </div>
+          </article>
+        `).join('\n')
+
+        return {
+          timelineHtml: timelineHtml || '<p class="text-muted">No changelog entries found.</p>'
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>

@@ -75,6 +75,8 @@ program
   .option('--github-release', 'Create GitHub release(s) after publishing', false)
   .option('--no-publish', 'Skip publishing package(s) to npm')
   .option('--no-github-release', 'Skip creating GitHub release(s)')
+  .option('--website-changelog', 'Update website changelog (website/src/data/changelog.json)', false)
+  .option('--no-website-changelog', 'Skip updating website changelog')
   .action(async (type, options) => {
     const git = simpleGit()
     const copiedLlmsTargets = []
@@ -665,6 +667,30 @@ program
             prompts.log.info(`📦 To publish ${rel.name} to npm, run:\n   pnpm --filter ${rel.name} publish --tag ${options.preid || 'rc'}`)
           } else {
             prompts.log.info(`📦 To publish ${rel.name} to npm, run:\n   pnpm --filter ${rel.name} publish`)
+          }
+        }
+      }
+
+      let shouldUpdateWebsite = Boolean(options.websiteChangelog)
+      if (!options.websiteChangelog && !options.noWebsiteChangelog && !options.yes && succeededPackages.length > 0) {
+        const confirmChangelog = await prompts.confirm({
+          message: 'Update website changelog (website/src/data/changelog.json) now?',
+          initialValue: true
+        })
+        shouldUpdateWebsite = Boolean(confirmChangelog && !prompts.isCancel(confirmChangelog))
+      }
+
+      if (shouldUpdateWebsite) {
+        const __dirname = path.dirname(fileURLToPath(import.meta.url))
+        const changelogPostScript = path.join(__dirname, 'changelog-post.js')
+        for (const rel of succeededPackages) {
+          try {
+            prompts.log.step(`Updating website changelog for ${rel.tagName}...`)
+            execSync(`node "${changelogPostScript}" --tag "${rel.tagName}" -y`, {
+              stdio: 'inherit'
+            })
+          } catch (clErr) {
+            prompts.log.error(`Website changelog update failed for ${rel.tagName}: ${clErr.message}`)
           }
         }
       }

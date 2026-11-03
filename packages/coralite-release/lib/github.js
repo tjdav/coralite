@@ -149,6 +149,7 @@ export function isGhCliAvailable () {
  * @param {{ owner: string, repo: string }} [options.repoSlug] - GitHub owner and repo
  * @param {string} [options.token] - GitHub Personal Access Token
  * @param {Function} [options.fetchFn] - Custom fetch implementation (defaults to global fetch)
+ * @param {boolean} [options.allowGhCli=true] - Whether to allow gh CLI fallback when available
  * @returns {Promise<{ success: boolean, action?: 'created'|'updated', htmlUrl?: string, error?: string, webUrl?: string }>} Result of operation
  */
 export async function createOrUpdateGitHubRelease ({
@@ -159,7 +160,8 @@ export async function createOrUpdateGitHubRelease ({
   draft = false,
   repoSlug = null,
   token = null,
-  fetchFn = null
+  fetchFn = null,
+  allowGhCli = true
 }) {
   if (!tag) {
     throw new Error('A git tag is required to create a GitHub release.')
@@ -257,7 +259,7 @@ export async function createOrUpdateGitHubRelease ({
     }
   }
 
-  if (isGhCliAvailable()) {
+  if (allowGhCli && isGhCliAvailable()) {
     try {
       const repoFlag = `--repo ${repo.owner}/${repo.repo}`
       const draftFlag = draft ? '--draft' : ''

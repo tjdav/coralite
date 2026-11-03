@@ -236,7 +236,8 @@ describe('GitHub release helper & changelog extraction', () => {
             owner: 'tjdav',
             repo: 'coralite'
           },
-          fetchFn: null
+          fetchFn: null,
+          allowGhCli: false
         })
 
         assert.strictEqual(result.success, false)

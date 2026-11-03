@@ -2,13 +2,14 @@
 
 Requires Node.js v20.19.0 or higher (Node.js v24 LTS recommended).
 
-This package provides five CLI tools for managing releases, generating changelogs, publishing packages, and creating GitHub releases:
+This package provides six CLI tools for managing releases, generating changelogs, publishing packages, creating GitHub releases, and maintaining the website changelog timeline:
 
 1. `coralite-release` - Creates new git release tags, bumps versions, and optionally triggers publishing
 2. `coralite-changelog` - Generates a markdown changelog based on commits between git tags
 3. `coralite-release-post` - Generates an AI-powered release post based on commits between git tags
 4. `coralite-publish` - Builds and publishes packages to npm or Codeberg with automated asset handling
 5. `coralite-github-release` - Creates or updates GitHub releases for published git tags
+6. `coralite-changelog-post` - Generates and upserts release entries into the website's changelog timeline (`website/src/data/changelog.json`)
 
 ## Installation
 
@@ -44,8 +45,10 @@ This command creates new releases by bumping versions and tagging commits.
 - `--no-git-commit`: Skip git commit (only update package.json files)
 - `--publish`: Automatically publish released package(s) to npm after git push
 - `--github-release`: Automatically create GitHub release(s) with release notes
+- `--website-changelog`: Automatically add release entry to website changelog timeline
 - `--no-publish`: Skip publishing package(s) to npm
 - `--no-github-release`: Skip creating GitHub release(s)
+- `--no-website-changelog`: Skip updating website changelog timeline
 
 #### Examples:
 
@@ -160,4 +163,29 @@ coralite-github-release --tag coralite-v1.0.0-rc.10 --dry-run
 
 # Backfill any released tags missing from GitHub Releases
 coralite-github-release --backfill
+```
+
+### coralite-changelog-post
+
+This command generates and appends release entries to the website's changelog timeline data store (`website/src/data/changelog.json`), powering the single-page `/changelog` timeline modeled after `eusend.dev/changelog`.
+
+#### Options:
+- `-t, --tag <tag>`: Specify git tag name (e.g. `coralite-v1.0.0-rc.10`)
+- `-p, --package <name>`: Package name (e.g. `coralite`, `create-coralite`)
+- `--notes <file>`: Path to custom release notes markdown file
+- `-d, --dry-run`: Show changelog entry JSON without updating files
+- `-y, --yes`: Skip confirmation prompts
+- `--backfill`: Scan git tags and backfill missing entries into `changelog.json`
+
+#### Examples:
+
+```bash
+# Add changelog entry for a specific tag
+coralite-changelog-post --tag coralite-v1.0.0-rc.10
+
+# Preview changelog entry without writing
+coralite-changelog-post --tag coralite-v1.0.0-rc.10 --dry-run
+
+# Backfill all releases into the website changelog
+coralite-changelog-post --backfill
 ```
