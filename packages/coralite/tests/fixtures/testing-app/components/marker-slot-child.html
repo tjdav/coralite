@@ -1,0 +1,16 @@
+<template id="marker-slot-child">
+  <button ref="action" data-testid="child-action">{{ childText }}</button>
+</template>
+
+<script type="module">
+  export const getters = {
+    childText: () => 'child'
+  }
+
+  export function client ({ root, refs, signal }) {
+    root.setAttribute('data-child-ready', '')
+    refs('action').addEventListener('click', () => {
+      root.setAttribute('data-child-clicked', '')
+    }, { signal })
+  }
+</script>

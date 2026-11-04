@@ -150,6 +150,20 @@ const createManifestOutputFile = (manifest) => ({
 })
 
 /**
+ * Stamps the owning component instance onto a binding marker target.
+ *
+ * @param {any} node - AST node carrying a binding marker.
+ * @param {string} instanceId - Component instance identifier.
+ * @returns {void}
+ */
+function stampBindingOwner (node, instanceId) {
+  if (!node || node.type !== 'tag' || !node.attribs || !node.attribs['data-coralite-bind']) {
+    return
+  }
+  node.attribs['data-coralite-bind-owner'] = instanceId
+}
+
+/**
  * Filters out reserved DOM attributes unless explicitly declared in the component's attributes schema.
  *
  * @param {Object} attribs - Raw element attributes object.
@@ -308,6 +322,7 @@ export function createRenderer ({
           slot.element.attribs = {}
         }
         slot.element.attribs['data-coralite-owner'] = instanceId
+        stampBindingOwner(slot.element, instanceId)
 
         const rawSlots = resolveComponentSlots(module)
         const componentSlots = (rawSlots && Object.keys(rawSlots).length > 0)
@@ -629,6 +644,7 @@ export function createRenderer ({
           if (ref.element && ref.element.attribs) {
             ref.element.attribs.ref = uniqueRefValue
             ref.element.attribs['data-coralite-owner'] = instanceId
+            stampBindingOwner(ref.element, instanceId)
           }
 
           componentState[`ref_${ref.name}`] = uniqueRefValue
@@ -837,6 +853,7 @@ export function createRenderer ({
       const attributes = module.values.attributes
       for (let i = 0; i < attributes.length; i++) {
         const item = attributes[i]
+        stampBindingOwner(item.element, instanceId)
         const tokens = item.tokens
         for (let j = 0; j < tokens.length; j++) {
           const token = tokens[j]
@@ -858,6 +875,12 @@ export function createRenderer ({
       const textNodes = module.values.textNodes
       for (let i = 0; i < textNodes.length; i++) {
         const item = textNodes[i]
+        /** @type {any} */
+        const parent = item.textNode && item.textNode.parent
+        const markerNode = parent && parent.type === 'tag' && parent.name === 'c-token'
+          ? parent
+          : item.textNode
+        stampBindingOwner(markerNode, instanceId)
         const tokens = item.tokens
         for (let j = 0; j < tokens.length; j++) {
           const token = tokens[j]

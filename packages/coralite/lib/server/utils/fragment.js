@@ -686,6 +686,10 @@ export async function emitFragment ({
           nodeCopy.attribs['data-coralite-owner'] = instanceId
         }
 
+        if (nodeCopy.attribs['data-coralite-bind']) {
+          nodeCopy.attribs['data-coralite-bind-owner'] = instanceId
+        }
+
         for (const item of op.attrItems) {
           const attrLower = item.name ? item.name.toLowerCase() : ''
           const isSingleToken = item.tokens && item.tokens.length === 1 && (nodeCopy.attribs[item.name] || '').trim() === item.tokens[0].content
@@ -770,6 +774,10 @@ export async function emitFragment ({
           hostNodeAttribs[item.name] = attrVal
         }
 
+        if (hostNodeAttribs['data-coralite-bind']) {
+          hostNodeAttribs['data-coralite-bind-owner'] = instanceId
+        }
+
         const attribValues = filterReservedAttributes(hostNodeAttribs, declaredAttrs)
         const childState = {
           ...state,
@@ -833,7 +841,14 @@ export async function emitFragment ({
     return resultStr
   }
 
-  const fragmentString = await renderOpsToString(module._ops || [])
+  let fragmentString = await renderOpsToString(module._ops || [])
+
+  fragmentString = fragmentString.replace(/<([a-zA-Z][\w:-]*)([^>]*)>/g, (match, tagName, attrs) => {
+    if (!attrs.includes('data-coralite-bind=') || attrs.includes('data-coralite-bind-owner=')) {
+      return match
+    }
+    return `<${tagName}${attrs} data-coralite-bind-owner="${instanceId}">`
+  })
 
   const finalResult = {
     type: 'root',

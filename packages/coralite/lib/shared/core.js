@@ -766,12 +766,29 @@ export { classifyAttribute }
  */
 export function generateHydrationMap (templateNodes, templateValues) {
   const map = {
+    version: 2,
     texts: [],
     attributes: [],
     refs: [],
     slots: [],
     requiredTokens: [],
     tokenBindings: {}
+  }
+
+  const appendBindingMarker = (node, id) => {
+    if (!node || !id || node.type !== 'tag') {
+      return false
+    }
+    if (!node.attribs) {
+      node.attribs = {}
+    }
+    const existing = node.attribs['data-coralite-bind']
+    const ids = existing ? existing.split(/\s+/).filter(Boolean) : []
+    if (!ids.includes(id)) {
+      ids.push(id)
+    }
+    node.attribs['data-coralite-bind'] = ids.join(' ')
+    return true
   }
 
   if (!templateNodes) {
@@ -854,7 +871,11 @@ export function generateHydrationMap (templateNodes, templateValues) {
           registerTokenBinding(token, currentIndex)
         }
 
+        const bindId = `b${currentIndex}`
+        const hasMarker = appendBindingMarker(targetNode, bindId)
+
         map.texts.push({
+          id: hasMarker ? bindId : undefined,
           path: getNodePath(targetNode, root),
           template,
           type: isHtml ? 'html' : 'text',
@@ -879,7 +900,11 @@ export function generateHydrationMap (templateNodes, templateValues) {
           registerTokenBinding(token, currentIndex)
         }
 
+        const bindId = `b${currentIndex}`
+        const hasMarker = appendBindingMarker(item.element, bindId)
+
         map.attributes.push({
+          id: hasMarker ? bindId : undefined,
           type: 'attribute',
           path: getNodePath(item.element, root),
           name: item.name,
@@ -895,9 +920,13 @@ export function generateHydrationMap (templateNodes, templateValues) {
   }
 
   if (values && values.refs) {
+    let refIndex = 0
     for (const item of values.refs) {
       if (item.element) {
+        const bindId = `r${refIndex++}`
+        const hasMarker = appendBindingMarker(item.element, bindId)
         map.refs.push({
+          id: hasMarker ? bindId : undefined,
           path: getNodePath(item.element, root),
           name: item.name
         })
@@ -906,6 +935,7 @@ export function generateHydrationMap (templateNodes, templateValues) {
   }
 
   // Collect direct <slot> elements (excluding slots inside nested custom elements)
+  let slotIndex = 0
   const collectSlots = (nodes) => {
     if (!nodes || !Array.isArray(nodes)) {
       return
@@ -913,7 +943,10 @@ export function generateHydrationMap (templateNodes, templateValues) {
     for (const node of nodes) {
       if (node.type === 'tag') {
         if (node.name === 'slot') {
+          const bindId = `s${slotIndex++}`
+          const hasMarker = appendBindingMarker(node, bindId)
           map.slots.push({
+            id: hasMarker ? bindId : undefined,
             name: node.attribs?.name || 'default',
             path: getNodePath(node, root)
           })

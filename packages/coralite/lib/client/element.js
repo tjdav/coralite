@@ -340,7 +340,7 @@ export class CoraliteElement extends BaseElement {
 
     /**
      * The collection of DOM nodes mapped to template tokens and attributes.
-     * @type {Array<{type: string, node: Node, path?: number[], template?: string, name?: string, tokens?: string[], isSingleToken?: boolean, singleTokenKey?: string, segments?: Array<[number, string]> | null, attrKind?: number}>}
+     * @type {Array<{type: string, id?: string, node: Node, path?: number[], template?: string, name?: string, tokens?: string[], isSingleToken?: boolean, singleTokenKey?: string, segments?: Array<[number, string]> | null, attrKind?: number}>}
      * @protected
      */
     this._bindings = []
@@ -1127,6 +1127,11 @@ export class CoraliteElement extends BaseElement {
     }
 
     this._nextSlotIndex = this._getMaxSlotIndex() + 1
+
+    if (isImperative) {
+      this._stampBindingOwners()
+    }
+
     this._resolvedClientContext = null
     this._slotRuntimeReady = false
     this._processSlotsOnReady = false
@@ -1135,9 +1140,11 @@ export class CoraliteElement extends BaseElement {
     this._contextCallbacks = []
 
     this._setupState()
+
     if (this.componentOptions?.consume) {
       this._setupContextConsumers(this.componentOptions.consume)
     }
+
     this._setupBindings()
     this._needsDOMUpdate = Boolean(
       (this._bindings && this._bindings.length > 0) ||
@@ -1145,6 +1152,7 @@ export class CoraliteElement extends BaseElement {
       (this.componentOptions?.slots && Object.keys(this.componentOptions.slots).length > 0) ||
       (this._hooks && this._hooks.onAfterComponentRender && this._hooks.onAfterComponentRender.length > 0)
     )
+
     if (this._getOwnSlots().length > 0) {
       this._setupSlotObserver()
       this._reconcileLightDOM()
@@ -1476,7 +1484,11 @@ export class CoraliteElement extends BaseElement {
           target[`ref_${ref.name}`] = uniqueRefValue
         }
 
-        let node = this.getAttribute('ref') === uniqueRefValue || this.getAttribute('ref') === ref.name ? this : null
+        let node = ref.id ? this._findBindingMarker(ref.id) : null
+
+        if (!node && (this.getAttribute('ref') === uniqueRefValue || this.getAttribute('ref') === ref.name)) {
+          node = this
+        }
 
         if (!node) {
           node = this.querySelector(`[ref="${uniqueRefValue}"]`)
@@ -1486,7 +1498,7 @@ export class CoraliteElement extends BaseElement {
           node = findOwnedRefNode(this, ref.name, uniqueRefValue, this._instanceId)
         }
 
-        if (!node) {
+        if (!node && !ref.id) {
           node = this.getNodeByPath(ref.path)
         }
 
@@ -2976,6 +2988,105 @@ export class CoraliteElement extends BaseElement {
   }
 
   /**
+   * Stamps binding marker owners on this component's own template roots.
+   * Slotted content owned by another component is left untouched.
+   *
+   * @protected
+   */
+  _stampBindingOwners () {
+    const roots = this._templateRoots
+    if (!roots) {
+      return
+    }
+
+    const stamp = (node) => {
+      if (!node || node.nodeType !== 1) {
+        return
+      }
+
+      if (node.getAttribute('data-coralite-bind') && !node.getAttribute('data-coralite-bind-owner')) {
+        node.setAttribute('data-coralite-bind-owner', this._instanceId)
+      }
+
+      if (typeof node.querySelectorAll === 'function') {
+        const marked = node.querySelectorAll('[data-coralite-bind]')
+        for (let i = 0; i < marked.length; i++) {
+          const child = marked[i]
+          if (!child.getAttribute('data-coralite-bind-owner')) {
+            child.setAttribute('data-coralite-bind-owner', this._instanceId)
+          }
+        }
+      }
+    }
+
+    for (const root of roots) {
+      stamp(root)
+    }
+  }
+
+  /**
+   * Builds an owner-scoped map from binding marker IDs to DOM nodes.
+   *
+   * @param {boolean} [refresh=false] - Rebuild the cached marker map.
+   * @returns {Map<string, Node>} Binding marker map.
+   * @protected
+   */
+  _getBindingMarkerMap (refresh = false) {
+    if (!refresh && this._bindingMarkerMap) {
+      return this._bindingMarkerMap
+    }
+
+    const markers = new Map()
+    const marked = this.querySelectorAll('[data-coralite-bind]')
+
+    for (let i = 0; i < marked.length; i++) {
+      const node = marked[i]
+      if (node.getAttribute('data-coralite-bind-owner') !== this._instanceId) {
+        continue
+      }
+
+      const rawIds = node.getAttribute('data-coralite-bind')
+      if (!rawIds) {
+        continue
+      }
+
+      const ids = rawIds.split(/\s+/).filter(Boolean)
+      for (const id of ids) {
+        const existing = markers.get(id)
+        if (existing && existing !== node) {
+          if (isDevRuntime()) {
+            throw new CoraliteError(`Duplicate binding marker "${id}" for component "${this.componentOptions?.componentId || 'unknown'}".`, {
+              componentId: this.componentOptions?.componentId,
+              instanceId: this._instanceId
+            })
+          }
+          continue
+        }
+        markers.set(id, node)
+      }
+    }
+
+    this._bindingMarkerMap = markers
+    return markers
+  }
+
+  /**
+   * Resolves a binding marker ID to its target node.
+   *
+   * @param {string} id - Binding marker identifier.
+   * @param {boolean} [refresh=false] - Rebuild the marker cache before resolving.
+   * @returns {Node|null} Resolved node or null.
+   * @protected
+   */
+  _findBindingMarker (id, refresh = false) {
+    if (!id) {
+      return null
+    }
+    const markers = this._getBindingMarkerMap(refresh)
+    return markers.get(id) || null
+  }
+
+  /**
    * Initializes DOM bindings based on the compiler's hydration map.
    * Caches physical DOM references to text nodes and attributes that contain template tokens.
    * @private
@@ -2989,6 +3100,7 @@ export class CoraliteElement extends BaseElement {
     if (!tree) {
       return
     }
+    /** @type {Array<any>} */
     const bindings = []
     const walk = (node, currentTree) => {
       if (!node || !currentTree) {
@@ -3082,43 +3194,48 @@ export class CoraliteElement extends BaseElement {
 
     this._tokenBindings = map.tokenBindings || null
 
-    const bindingTree = this.componentOptions?._bindingTree
-    const compilerOpts = this.componentOptions?.compilerOptimizations ?? 'all'
-
-    if (bindingTree && compilerOpts !== 'none') {
-      this._resolveBindings(bindingTree)
-    } else {
-      const fallbackParse = (template) => {
-        if (!template || typeof template !== 'string') {
-          return {
-            tokens: [],
-            isSingleToken: false,
-            singleTokenKey: undefined,
-            segments: null
-          }
-        }
-        const tokens = []
-        template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
-          tokens.push(key)
-          return ''
-        })
-        const trimmed = template.trim()
-        const isSingleToken = tokens.length === 1 && (trimmed === `{{${tokens[0]}}}` || trimmed === `{{ ${tokens[0]} }}`)
+    const fallbackParse = (template) => {
+      if (!template || typeof template !== 'string') {
         return {
-          tokens,
-          isSingleToken,
-          singleTokenKey: tokens[0],
+          tokens: [],
+          isSingleToken: false,
+          singleTokenKey: undefined,
           segments: null
         }
       }
+      const tokens = []
+      template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
+        tokens.push(key)
+        return ''
+      })
+      const trimmed = template.trim()
+      const isSingleToken = tokens.length === 1 && (trimmed === `{{${tokens[0]}}}` || trimmed === `{{ ${tokens[0]} }}`)
+      return {
+        tokens,
+        isSingleToken,
+        singleTokenKey: tokens[0],
+        segments: null
+      }
+    }
+
+    const hasMarkerBindings = map.version >= 2 || (
+      (map.texts && map.texts.some(item => item.id)) ||
+      (map.attributes && map.attributes.some(item => item.id))
+    )
+
+    if (hasMarkerBindings) {
+      const markerMap = this._getBindingMarkerMap()
 
       if (map.texts) {
         for (let i = 0; i < map.texts.length; i++) {
           const item = map.texts[i]
-          const node = this.getNodeByPath(item.path)
+          const node = item.id
+            ? (markerMap.get(item.id) || null)
+            : this.getNodeByPath(item.path)
           const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
           this._bindings.push({
             type: item.type || 'text',
+            id: item.id,
             node,
             path: item.path,
             template: item.template,
@@ -3133,12 +3250,14 @@ export class CoraliteElement extends BaseElement {
       if (map.attributes) {
         for (let i = 0; i < map.attributes.length; i++) {
           const item = map.attributes[i]
-          // See the note above: unresolved paths stay pending and are retried by _updateDOM().
-          const node = this.getNodeByPath(item.path)
+          const node = item.id
+            ? (markerMap.get(item.id) || null)
+            : this.getNodeByPath(item.path)
           const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
           const attrKind = item.attrKind !== undefined ? item.attrKind : classifyAttribute(item.name, parsed.isSingleToken)
           this._bindings.push({
             type: 'attribute',
+            id: item.id,
             node,
             path: item.path,
             name: item.name,
@@ -3149,6 +3268,63 @@ export class CoraliteElement extends BaseElement {
             segments: parsed.segments,
             attrKind
           })
+        }
+      }
+
+      if (isDevRuntime()) {
+        const missing = this._bindings.filter(binding => binding.id && !binding.node)
+        if (missing.length > 0) {
+          throw new CoraliteError(`Missing binding marker target(s) for component "${this.componentOptions?.componentId || 'unknown'}": ${missing.map(binding => binding.id).join(', ')}.`, {
+            componentId: this.componentOptions?.componentId,
+            instanceId: this._instanceId
+          })
+        }
+      }
+    } else {
+      const bindingTree = this.componentOptions?._bindingTree
+      const compilerOpts = this.componentOptions?.compilerOptimizations ?? 'all'
+
+      if (bindingTree && compilerOpts !== 'none') {
+        this._resolveBindings(bindingTree)
+      } else {
+        if (map.texts) {
+          for (let i = 0; i < map.texts.length; i++) {
+            const item = map.texts[i]
+            const node = this.getNodeByPath(item.path)
+            const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
+            this._bindings.push({
+              type: item.type || 'text',
+              node,
+              path: item.path,
+              template: item.template,
+              tokens: parsed.tokens,
+              isSingleToken: parsed.isSingleToken,
+              singleTokenKey: parsed.singleTokenKey,
+              segments: parsed.segments
+            })
+          }
+        }
+
+        if (map.attributes) {
+          for (let i = 0; i < map.attributes.length; i++) {
+            const item = map.attributes[i]
+            // See the note above: unresolved paths stay pending and are retried by _updateDOM().
+            const node = this.getNodeByPath(item.path)
+            const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
+            const attrKind = item.attrKind !== undefined ? item.attrKind : classifyAttribute(item.name, parsed.isSingleToken)
+            this._bindings.push({
+              type: 'attribute',
+              node,
+              path: item.path,
+              name: item.name,
+              template: item.template,
+              tokens: parsed.tokens,
+              isSingleToken: parsed.isSingleToken,
+              singleTokenKey: parsed.singleTokenKey,
+              segments: parsed.segments,
+              attrKind
+            })
+          }
         }
       }
     }
@@ -3624,8 +3800,13 @@ export class CoraliteElement extends BaseElement {
       for (let i = 0; i < targetBindings.length; i++) {
         const binding = targetBindings[i]
         let node = binding.node
-        if (binding.path && (!node || !isNodeConnected(node))) {
-          const resolved = this.getNodeByPath(binding.path)
+        if (!node || !isNodeConnected(node)) {
+          let resolved = null
+          if (binding.id) {
+            resolved = this._findBindingMarker(binding.id, true)
+          } else if (binding.path) {
+            resolved = this.getNodeByPath(binding.path)
+          }
           if (resolved) {
             binding.node = resolved
             node = resolved
@@ -4390,8 +4571,12 @@ export class CoraliteElement extends BaseElement {
       /** @type {any[]} */
       const slots = []
       let allFound = true
+      const markerMap = map.slots.some(slot => slot.id) ? this._getBindingMarkerMap() : null
       for (let i = 0; i < map.slots.length; i++) {
-        const node = this.getNodeByPath(map.slots[i].path)
+        const slot = map.slots[i]
+        const node = slot.id && markerMap
+          ? (markerMap.get(slot.id) || null)
+          : this.getNodeByPath(slot.path)
         if (node && node.nodeName === 'SLOT') {
           slots.push(node)
         } else {
