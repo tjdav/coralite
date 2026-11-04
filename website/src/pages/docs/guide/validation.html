@@ -33,7 +33,7 @@
 
     <coralite-heading level="2" text="2. Comprehensive Diagnostic Catalog"></coralite-heading>
 
-    <coralite-heading level="3" text="Component Diagnostics (CORALITE-E101 – E303, W401 – W402)"></coralite-heading>
+    <coralite-heading level="3" text="Component Diagnostics (CORALITE-E101 – E304, W401 – W402)"></coralite-heading>
     <p>Audits template syntax, script block boundaries, slot signatures, and state reactivity rules.</p>
 
     <ul>
@@ -47,6 +47,7 @@
       <li><strong><code>CORALITE-E301</code> (Serialization Boundary):</strong> Client block referencing top-level static ES import. Rewrites to dynamic <code>await import(...)</code> inside <code>client()</code> while preserving shared SSR static imports. (Auto-fix action: <code>dynamic_import</code>)</li>
       <li><strong><code>CORALITE-E302</code> (Reactivity Loop):</strong> Direct state assignment inside <code>observe(...)</code> callback causing infinite reactivity loops.</li>
       <li><strong><code>CORALITE-E303</code> (Style Block):</strong> Asynchronous getter function in <code>style: { ... }</code> block. Style getters must be strictly synchronous.</li>
+      <li><strong><code>CORALITE-E304</code> (Client Boundary):</strong> Node runtime global (<code>process</code>, <code>Buffer</code>, <code>setImmediate</code>, ...) referenced inside <code>client()</code>. Web-platform globals shared with the browser (<code>console</code>, <code>fetch</code>, <code>URL</code>, <code>crypto</code>, ...) are allowed. Fetch build-time data in <code>server()</code> or <code>paths()</code> and pass it through <code>state</code>.</li>
       <li><strong><code>CORALITE-W401</code> (Dead Code Warning):</strong> Unused component getter, server state property, or attribute declaration.</li>
       <li><strong><code>CORALITE-W402</code> (Dead Code Warning):</strong> Unused element <code>ref="..."</code> declaration.</li>
     </ul>

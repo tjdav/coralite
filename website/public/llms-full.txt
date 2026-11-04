@@ -1167,6 +1167,7 @@ Diagnostics emitted by the AST validator follow a three-level severity model:
   - `CORALITE-E301`: Outer static module import referenced in `client()`. (Auto-fixer rewrites to dynamic `await import(...)`).
   - `CORALITE-E302`: Reactive state mutation detected inside `observe()` callback.
   - `CORALITE-E303`: Asynchronous getter function in `style` block.
+  - `CORALITE-E304`: Node runtime global (`process`, `Buffer`, `setImmediate`, ...) referenced inside `client()`. Web-platform globals shared with the browser (`console`, `fetch`, `URL`, `crypto`, ...) are allowed.
 - **Dead Code & Coverage**:
   - `CORALITE-W401`: Unused getter, server property, or declared attribute.
   - `CORALITE-W402`: Dead CSS selectors or unused element `ref="..."` declaration.
