@@ -1127,9 +1127,11 @@ export class CoraliteElement extends BaseElement {
     }
 
     this._nextSlotIndex = this._getMaxSlotIndex() + 1
+
     if (isImperative) {
       this._stampBindingOwners()
     }
+
     this._resolvedClientContext = null
     this._slotRuntimeReady = false
     this._processSlotsOnReady = false
@@ -1138,9 +1140,11 @@ export class CoraliteElement extends BaseElement {
     this._contextCallbacks = []
 
     this._setupState()
+
     if (this.componentOptions?.consume) {
       this._setupContextConsumers(this.componentOptions.consume)
     }
+
     this._setupBindings()
     this._needsDOMUpdate = Boolean(
       (this._bindings && this._bindings.length > 0) ||
@@ -1148,6 +1152,7 @@ export class CoraliteElement extends BaseElement {
       (this.componentOptions?.slots && Object.keys(this.componentOptions.slots).length > 0) ||
       (this._hooks && this._hooks.onAfterComponentRender && this._hooks.onAfterComponentRender.length > 0)
     )
+
     if (this._getOwnSlots().length > 0) {
       this._setupSlotObserver()
       this._reconcileLightDOM()
