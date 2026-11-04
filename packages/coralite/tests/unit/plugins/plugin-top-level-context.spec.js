@@ -168,6 +168,73 @@ describe('top-level plugin context', () => {
     document.body.removeChild(el)
   })
 
+  it('exposes top-level context keys to page getters via Object.keys and spread', async () => {
+    /** @type {any} */
+    const win = window
+    win.__coralite__ = {
+      isomorphicPlugins: {
+        $t: () => (key) => `translated:${key}`
+      }
+    }
+
+    let hasKey = null
+    let spreadResult = null
+
+    await setupPageRuntime({
+      getters: {
+        probe (ctx) {
+          hasKey = Object.keys(ctx).includes('$t')
+          spreadResult = { ...ctx }.$t('spread')
+          return spreadResult
+        }
+      },
+      client ({ state }) {
+        assert.strictEqual(state.probe, 'translated:spread')
+      }
+    })
+
+    assert.strictEqual(hasKey, true)
+    assert.strictEqual(spreadResult, 'translated:spread')
+  })
+
+  it('exposes top-level context keys to component getters via Object.keys and spread', () => {
+    const tagName = 'iso-spread-' + Math.random().toString(36).substring(2, 9)
+    /** @type {any} */
+    const win = window
+    win.__coralite__ = {
+      isomorphicPlugins: {
+        $t: () => (key) => `localized:${key}`
+      }
+    }
+
+    let hasKey = null
+
+    const IsoElement = createCoraliteClass({
+      componentId: 'iso-spread',
+      templateHTML: '<div><span id="text">{{ greeting }}</span></div>',
+      getters: {
+        greeting (ctx) {
+          hasKey = Object.keys(ctx).includes('$t')
+          return { ...ctx }.$t('spread')
+        }
+      },
+      hydrationMap: {
+        texts: [{
+          path: [0, 0],
+          template: '{{ greeting }}'
+        }]
+      }
+    })
+    customElements.define(tagName, IsoElement)
+
+    const el = document.createElement(tagName)
+    document.body.appendChild(el)
+
+    assert.strictEqual(hasKey, true)
+    assert.strictEqual(el.querySelector('#text').textContent, 'localized:spread')
+    document.body.removeChild(el)
+  })
+
   it('provides top-level context to component SSR getters and server()', async () => {
     const plugin = definePlugin({
       name: '$t',

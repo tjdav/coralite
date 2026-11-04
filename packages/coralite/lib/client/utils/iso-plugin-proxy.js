@@ -46,6 +46,20 @@ export function createIsoPluginProxy (rawContext) {
         }
       }
       return Array.from(keys)
+    },
+    getOwnPropertyDescriptor (target, prop) {
+      if (Reflect.has(target, prop)) {
+        return Reflect.getOwnPropertyDescriptor(target, prop)
+      }
+      const isoPlugins = getIsoPlugins()
+      if (isoPlugins && typeof prop === 'string' && prop in isoPlugins) {
+        return {
+          enumerable: true,
+          configurable: true,
+          writable: true
+        }
+      }
+      return undefined
     }
   })
 }
