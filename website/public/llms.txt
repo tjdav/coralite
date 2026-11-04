@@ -30,4 +30,4 @@ Key words per RFC 2119:
 
 ## Full Reference
 
-- [Complete Reference Dump](/llms-full.txt): Comprehensive single-file reference containing all APIs, schemas, and specifications for large-context models.
+- [Complete Reference Dump](/llms-full.txt): Comprehensive single-file reference containing all APIs, schemas, and specifications for large-context models, including the built-in plugin references and the opt-in SPA router contract (§10.1 `coralite/plugins/router`: registration, outlet semantics, `navigate`/`current`/`beforeEach`, navigation guards & events).

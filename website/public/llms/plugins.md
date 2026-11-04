@@ -75,3 +75,7 @@ Plugin context properties are injected into Component and Page handlers:
 1. Register the plugin under `plugins: [...]` in `coralite.config.js`.
 2. Author testing fixtures under `tests/fixtures/pages/` or `tests/fixtures/components/`.
 3. In tests, invoke `createCoralite({ plugins: [...] })` or mount fixture routes (`/__fixtures__/<name>`). Mocks can be passed directly via the plugin context resolver.
+
+## 5. Built-In Plugins
+
+Coralite ships core plugins importable from `coralite/plugins/*` (metadata, static assets, testing, SPA router). The normative SPA router contract — registration, outlet semantics, `navigate`/`current`/`beforeEach` guard API, navigation events, head reconciliation, hydration re-store, and View Transitions interplay — is documented in `llms-full.txt` §10 "Built-In Plugins" and §10.1 "SPA Router (`coralite/plugins/router`)".
