@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="SPA Router Guide - Coralite Documentation"
+    description="Patterns for building single-page applications with the Coralite router plugin: outlets and persistent elements, guards, navigation events, global store state across route swaps, and production pitfalls."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content">
+    <h1 class="display">SPA Router Guide</h1>
+    <p>Coralite's default navigation model is multi-page: every route is a fully pre-rendered static HTML document, and transitions between full page loads are animated with native View Transitions. That model is the right default for content sites — it is simple, SEO-complete, and works behind any static host.</p>
+    <p>The opt-in <strong>router plugin</strong> (<code>coralite/plugins/router</code>) turns an application into a true single-page app on top of that same static output: it intercepts same-origin link clicks and history navigation, fetches the target route's pre-built HTML, and swaps only the <em>outlet</em> region in the browser. Nothing you see on the server changes — every route is still a real file. The router is a client-side layer over the static site.</p>
+
+    <nav aria-label="table of contents">
+      <coralite-heading level="2" text="Table of Contents"></coralite-heading>
+      <ul>
+        <li><a href="#when">When to Reach for the Router</a></li>
+        <li><a href="#registering">Registering the Router</a></li>
+        <li><a href="#outlet">The Outlet &amp; Persistent Elements</a></li>
+        <li><a href="#programmatic">Programmatic Navigation</a></li>
+        <li><a href="#guards">Navigation Guards</a></li>
+        <li><a href="#events">Navigation Events</a></li>
+        <li><a href="#interception">Link Interception &amp; Opt-Outs</a></li>
+        <li><a href="#state">State Across Route Swaps</a></li>
+        <li><a href="#scroll">Scroll &amp; Hash Behavior</a></li>
+        <li><a href="#production">Production Pitfalls</a></li>
+        <li><a href="#related">Related Pages</a></li>
+      </ul>
+    </nav>
+
+    <section id="when">
+      <coralite-heading level="2" text="When to Reach for the Router"></coralite-heading>
+      <p>Choose the router when your application has state or resources that must <strong>survive navigation</strong>:</p>
+      <ul>
+        <li>Audio or video playback that keeps running as the user moves between screens.</li>
+        <li>Long-lived connections: WebSockets, Server-Sent Events, canvas or WebGL contexts.</li>
+        <li>App-shell experiences — a single login session, a wizard, or a dashboard where full page reloads would be jarring.</li>
+        <li>Client-side state (search filters, drafts, UI settings) that must follow the user across routes.</li>
+      </ul>
+      <p>If none of those apply, stay with the multi-page default. The router adds real behavioral surface area — guards, fetch/swap semantics, outlet requirements — that your content site does not need.</p>
+    </section>
+
+    <section id="registering">
+      <coralite-heading level="2" text="Registering the Router"></coralite-heading>
+      <p>The router is a standard plugin. Register it in <code>coralite.config.js</code>:</p>
+
+      <coralite-code-highlight language="javascript" title="coralite.config.js">
+import { defineConfig } from 'coralite'
+import router from 'coralite/plugins/router'
+
+export default defineConfig({
+  output: 'dist',
+  components: 'src/components',
+  pages: 'src/pages',
+  plugins: [
+    router({
+      base: '/',
+      outlet: 'data-router-outlet'
+    })
+  ]
+})
+      </coralite-code-highlight>
+
+      <ul>
+        <li><strong><code>outlet</code></strong> (String, default <code>'data-router-outlet'</code>) — the attribute name that marks the SPA swap region. Rename it here and use the new attribute in your pages.</li>
+        <li><strong><code>base</code></strong> (String, default <code>'/'</code>) — declared in the plugin's config schema, but it currently carries no behavioral wiring: routing performs no base-path stripping or prefixing. Do not rely on a non-<code>'/'</code> base today.</li>
+      </ul>
+
+      <p>Everything the router does — link interception, <code>popstate</code> handling, guards, head reconciliation — lives in the plugin's lifecycle hooks, which only run once the plugin is registered. A <code>data-router-outlet</code> marker on a page <strong>without the plugin is inert</strong>: the page behaves as a standard multi-page document.</p>
+    </section>
+
+    <section id="outlet">
+      <coralite-heading level="2" text="The Outlet &amp; Persistent Elements"></coralite-heading>
+      <p>On every client-side navigation, the router replaces <strong>only the outlet's children</strong>. Think in terms of two zones:</p>
+      <ul>
+        <li><strong>Inside the outlet</strong> — route content. Replaced on each navigation, re-hydrated from that route's pre-built HTML.</li>
+        <li><strong>Outside the outlet</strong> — the app shell. Navbar, footer, background audio, open sockets. Never touched by the router; their component instances and state persist across every route change.</li>
+      </ul>
+
+      <p>The typical app shell is authored on every page, marking the routed region with the outlet attribute (each route is its own pre-built document — the router's job is only to keep the shell's DOM nodes alive across swaps):</p>
+
+      <coralite-code-html>
+        <!-- src/pages/playback/index.html -->
+        <body>
+          <coralite-navbar></coralite-navbar>
+
+          <!-- Persistent: survives every route swap -->
+          <site-player src="/media/keynote.mp3"></site-player>
+
+          <!-- Swapped: each navigation replaces this region only -->
+          <main data-router-outlet>
+            <h1 class="display">Keynotes</h1>
+            <p>Pick a keynote to start playback.</p>
+          </main>
+
+          <coralite-footer></coralite-footer>
+        </body>
+      </coralite-code-html>
+
+      <p>A persistent element behaves like any other component — here, an audio player whose media keeps playing while routes swap beneath it:</p>
+
+      <coralite-code-html>
+        <!-- components/site-player.html -->
+        <template id="site-player">
+          <audio ref="track" loop></audio>
+          <button ref="play" type="button" aria-label="Play or pause">&#9654;</button>
+        </template>
+
+        <script type="module">
+        export const attributes = {
+          src: { type: String }
+        }
+
+        export async function client ({ refs, state, signal }) {
+          const track = refs('track')
+          track.src = state.src
+
+          refs('play').addEventListener('click', () => {
+            if (track.paused) {
+              track.play()
+              refs('play').textContent = '❚❚'
+            } else {
+              track.pause()
+              refs('play').textContent = '▶'
+            }
+          }, { signal })
+        }
+        </script>
+      </coralite-code-html>
+
+      <h3>Automatic wrapping</h3>
+      <p>Pages that declare no outlet of their own are <strong>automatically wrapped at render time</strong>: when the router is active, the plugin injects a <code>&lt;router-outlet data-router-outlet&gt;</code> element around the page's entire <code>&lt;body&gt;</code> content. This is convenient, but it means <em>the whole body is the swap region</em> — including your navbar and player, if they are on that page. If a route declares no explicit outlet, nothing on that route persists.</p>
+      <p>Pages that already contain an outlet are never double-wrapped. Outlet detection also looks inside the templates of components a page references, so an outlet living in a shared layout component satisfies the page and suppresses the wrap. The plugin registers a virtual <code>&lt;router-outlet&gt;</code> component (<code>&lt;slot&gt;&lt;/slot&gt;</code> body), so:</p>
+
+      <coralite-code-html>
+        <!-- A layout component can own the outlet -->
+        <router-outlet>
+          <h1>{{ pageTitle }}</h1>
+          <slot></slot>
+        </router-outlet>
+      </coralite-code-html>
+    </section>
+
+    <section id="programmatic">
+      <coralite-heading level="2" text="Programmatic Navigation"></coralite-heading>
+      <p>The router API is injected into component and page <code>client()</code> blocks under the <code>router</code> key (the same object is also on <code>window.__coralite_router__</code>):</p>
+      <ul>
+        <li><strong><code>router.navigate(path, { replace = false })</code></strong> — client-side navigation through the full pipeline: guards, the <code>coralite:navigating</code> event, history update, fetch, head reconcile, outlet swap, re-hydration, scroll, and the <code>coralite:navigated</code> event. With <code>replace: true</code> the current history entry is replaced instead of pushed.</li>
+        <li><strong><code>router.current()</code></strong> — returns <code>{ path }</code>, the current browser pathname.</li>
+        <li><strong><code>router.beforeEach(guard)</code></strong> — registers a guard; returns an unregister function.</li>
+      </ul>
+
+      <coralite-code-highlight language="javascript" title="Programmatic Navigation in a Component">
+export function client ({ refs, router, signal }) {
+  refs('back').addEventListener('click', () => {
+    history.back()
+  }, { signal })
+
+  refs('dashboard').addEventListener('click', () => {
+    router.navigate('/app/dashboard')
+  }, { signal })
+
+  refs('search').addEventListener('click', () => {
+    // Replace instead of push: no dead-end in the back button
+    router.navigate('/search?term=coralite', { replace: true })
+  }, { signal })
+}
+      </coralite-code-highlight>
+
+      <p>Every link inside the app <em>or</em> the outlet is intercepted the same way, so <code>router.navigate()</code> and a plain <code>&lt;a href&gt;</code> click produce identical behavior — guards, events, and history semantics included. That makes it rare to need programmatic navigation at all.</p>
+    </section>
+
+    <section id="guards">
+      <coralite-heading level="2" text="Navigation Guards"></coralite-heading>
+      <p>Guards run in registration order before every client navigation. They receive <code>({ to: { path }, from: { path }, signal })</code> and may return a value to steer (or stop) the navigation:</p>
+      <ul>
+        <li><code>undefined</code> or <code>true</code> — proceed.</li>
+        <li><code>false</code> — cancel. No history update, no fetch; the user stays put.</li>
+        <li>A path string (e.g. <code>'/login'</code>) — a <strong>soft redirect</strong>: the router re-navigates client-side with <code>replace: true</code>. Relative strings are resolved against the current URL. Redirect chains are capped at a depth of 10; deeper chains abort (the dev runtime logs <code>Redirect loop detected</code>).</li>
+        <li>An <code>http://</code> / <code>https://</code> URL — a <strong>hard redirect</strong> via <code>window.location.replace()</code>: a full document transition, useful for bouncing to an external IdP or SSO host.</li>
+      </ul>
+      <p>A guard may be async (e.g. an auth check against an API). A guard that throws cancels the navigation (an <code>AbortError</code> from an aborted navigation unwinds silently). Every running navigation exposes an <code>AbortSignal</code> to its guards and its fetch: a newer navigation aborts the in-flight one, so long-running guards should honor the <code>signal</code> before acting on their result.</p>
+
+      <h3>Where to Register Guards</h3>
+      <p>The guard list lives in the router's client-init scope, so it persists for the whole SPA session — an outlet swap does not reset it. A guard re-registered from a component's <code>client()</code> therefore <strong>accumulates on every visit</strong> to a route that contains that component. Two patterns keep this honest:</p>
+      <ul>
+        <li><strong>App-wide guards</strong> belong to a <em>persistent shell component</em> — one that lives outside the outlet and therefore connects exactly once per document load.</li>
+        <li><strong>Route-scoped guards</strong> register in the route's own component and <em>unregister</em> when that route's instance is torn down (its <code>signal</code> aborts).</li>
+      </ul>
+
+      <coralite-code-highlight language="javascript" title="App-Wide Guard (Shell Component, Outside the Outlet)">
+export function client ({ router }) {
+  // This component sits outside the outlet, so client() runs once per
+  // document load — guard registered exactly once for the SPA session.
+  router.beforeEach(({ to }) => {
+    if (to.path.startsWith('/admin') && !isAuthenticated()) {
+      return false // cancel: stay in the app you are logged in to
+    }
+    return true
+  })
+}
+      </coralite-code-highlight>
+
+      <coralite-code-highlight language="javascript" title="Route-Scoped Guard (Unregistered on Route Exit)">
+export function client ({ router, signal }) {
+  const unregister = router.beforeEach(({ to }) => {
+    if (to.path.startsWith('/app') && !isAuthenticated()) {
+      return '/login' // soft redirect
+    }
+    // e.g. bounce an expired session to the external IdP
+    if (sessionExpired()) {
+      return 'https://ids.example.com/mfa' // hard redirect, full document load
+    }
+    return true
+  })
+
+  // This route leaves the outlet: unregister its guard with it.
+  signal.addEventListener('abort', unregister)
+}
+      </coralite-code-highlight>
+    </section>
+
+    <section id="events">
+      <coralite-heading level="2" text="Navigation Events"></coralite-heading>
+      <p>The router also speaks plain DOM events on <code>window</code>, which keeps integrations (analytics, third-party widgets, feature flags) loose-coupled from the router API.</p>
+      <ul>
+        <li><strong><code>coralite:navigating</code></strong> — dispatched <em>before</em> the target is fetched. <strong>Cancelable</strong>: call <code>event.preventDefault()</code> to abort. <code>event.detail</code> is <code>{ from, to }</code>.</li>
+        <li><strong><code>coralite:navigated</code></strong> — dispatched <em>after</em> the swap, upgrade, and scroll settle. Not cancelable. <code>event.detail</code> is <code>{ from, to }</code>.</li>
+      </ul>
+
+      <coralite-code-highlight language="javascript" title="Unsaved-Changes Veto + Analytics">
+export function client ({ refs, signal }) {
+  let dirty = false
+
+  window.addEventListener('coralite:navigating', (event) => {
+    if (dirty) {
+      event.preventDefault()
+    }
+  }, { signal })
+
+  window.addEventListener('coralite:navigated', (event) => {
+    const { from, to } = event.detail
+    trackPageView(to, { referrer: from })
+  }, { signal })
+
+  refs('save').addEventListener('click', async () => {
+    dirty = false
+    await saveDraft()
+  }, { signal })
+}
+      </coralite-code-highlight>
+
+      <p>Note the ordering: guards run first (before any event, and they can hard-stop or full-redirect), then <code>coralite:navigating</code>, then the fetch. Guards are the right tool for navigation policy — auth, redirects, hard blocks. The cancelable event is the right tool for view-local concerns like unsaved form state, or for integrations that should not need to know the router API exists.</p>
+    </section>
+
+    <section id="interception">
+      <coralite-heading level="2" text="Link Interception &amp; Opt-Outs"></coralite-heading>
+      <p>While the router is active, left-clicks on same-origin <code>&lt;a href&gt;</code> links become client-side navigations. The router deliberately falls back to native browser behavior in these cases:</p>
+      <ul>
+        <li>The click is not the primary button, or carries <code>meta</code> / <code>ctrl</code> / <code>shift</code> / <code>alt</code> (opens tabs, opens in background, context menus).</li>
+        <li>Another listener already called <code>preventDefault()</code>.</li>
+        <li>The link has a <code>target</code> other than <code>_self</code> (e.g. <code>_blank</code>).</li>
+        <li>The link carries a <code>download</code> attribute.</li>
+        <li>The link is cross-origin.</li>
+        <li>The link carries <code>data-router-ignore</code> — the per-link, per-URL opt-out you author in markup.</li>
+      </ul>
+
+      <coralite-code-html>
+        <a href="/files/report.pdf" download>Download report</a>
+        <a href="/legacy/checkout" target="_blank">Open legacy checkout</a>
+        <a href="/reports/export.csv" data-router-ignore>Force full reload</a>
+      </coralite-code-html>
+    </section>
+
+    <section id="state">
+      <coralite-heading level="2" text="State Across Route Swaps"></coralite-heading>
+      <p>This is the section that pays for adopting the router. There are exactly two places state can live, and the distinction drives how you design your app:</p>
+
+      <h3>1. Component <code>state</code> — route-scoped</h3>
+      <p>A component's reactive <code>state</code> lives on its instance. When a navigation swaps the outlet, the old instances are disconnected (their <code>signal</code> fires, listeners and <code>observe()</code> subscriptions clean up) and the new route's components are hydrated from <strong>that route's pre-built HTML</strong> — the router replaces the shared hydration store with the fetched document's <code>&lt;script data-coralite-hydration&gt;</code> payload before upgrading the outlet. Consequence: if you change state on <code>/cart</code>, leave, and come back, you are looking at the route's <em>server-rendered</em> state again. Treat <code>state</code> as per-screen, and promote anything that must outlive the screen.</p>
+
+      <h3>2. The global <code>store</code> — app-scoped, survives navigation</h3>
+      <p>Coralite's signal-backed <strong>Global Store</strong> is a single client runtime instance created from your <code>coralite.config.js</code>. The router touches the hydration store, not the store object — so store values follow the user across every swap, and any getter or <code>client()</code> reading them reactively updates the moment they change:</p>
+
+      <coralite-code-highlight language="javascript" title="coralite.config.js">
+import { defineConfig } from 'coralite'
+
+export default defineConfig({
+  output: 'dist',
+  components: 'src/components',
+  pages: 'src/pages',
+  store: {
+    user: null,           // set client-side after the session check
+    volume: 0.8,
+    draft: null
+  }
+})
+      </coralite-code-highlight>
+
+      <coralite-code-html>
+        <!-- components/volume-dial.html -->
+        <template id="volume-dial">
+          <div ref="dial"></div>
+          <span>{{ label }}</span>
+        </template>
+
+        <script type="module">
+        export const getters = {
+          label: ({ store }) => `Volume ${Math.round(store.volume * 100)}%`
+        }
+
+        export function client ({ refs, store }) {
+          const dial = createVolumeDial(refs('dial'))
+
+          dial.onInput = (value) => {
+            // reactive: every dial on every route updates
+            store.volume = value
+          }
+        }
+        </script>
+      </coralite-code-html>
+
+      <ul>
+        <li>Read/write the store via the <code>store</code> context key in <code>getters</code> and <code>client()</code>. Mutations from <code>server()</code> during SSR are forbidden — the store is a read-only snapshot at build time.</li>
+        <li>Use <code>store.batch(fn)</code> for multi-key writes (subscribers fire once) and <code>store.subscribe(key, cb)</code> for side effects. See the <a href="/docs/reference/lists.html">Lists &amp; Store reference</a>.</li>
+        <li><code>store.reset()</code> restores the config defaults — a clean <em>log out</em> path in an SPA.</li>
+      </ul>
+
+      <h3>Tearing Down Imperative Resources</h3>
+      <p>Components that hold native resources (a map instance, a WebGL context, a worker) should release them when their instance dies. The component's <code>signal</code> aborts on disconnection, so hook cleanup to it:</p>
+
+      <coralite-code-highlight language="javascript">
+export function client ({ root, signal }) {
+  const map = createMap(root.querySelector('.map-canvas'))
+
+  signal.addEventListener('abort', () => {
+    map.dispose()
+  })
+}
+      </coralite-code-highlight>
+    </section>
+
+    <section id="scroll">
+      <coralite-heading level="2" text="Scroll &amp; Hash Behavior"></coralite-heading>
+      <p>After each client-side navigation the router scrolls the window to the top — unless the target path contains a <code>#</code> fragment, in which case the scroll is left alone (use <code>element.scrollIntoView()</code> or the browser's native anchor jump if you need a specific fragment). Back/forward navigation works through the normal <code>popstate</code> entry: the router re-fetches and re-renders the route's canonical pre-built document for the new history entry, so in-memory browser state is never the source of truth.</p>
+    </section>
+
+    <section id="production">
+      <coralite-heading level="2" text="Production Pitfalls"></coralite-heading>
+      <ul>
+        <li><strong>Every routed document must contain an outlet.</strong> A navigation to a route whose served HTML has no outlet fails with an error. Regular pages get one via auto-wrap, but server-level fallbacks (a static host's <code>404.html</code>, an edge-rewritten error page) do not. Ship a 404/fallback page <em>built by Coralite</em> so it carries an outlet like every other route.</li>
+        <li><strong>Only <code>&lt;title&gt;</code> and <code>&lt;meta name|property&gt;</code> are reconciled in the head.</strong> The fetched page's <code>&lt;link&gt;</code> and <code>&lt;script&gt;</code> tags are never injected into the live document — its CSS must already be loaded (it is, since builds emit global per-project style bundles) and any third-party per-page scripts will not run on SPA navigation. Keep per-route JS in component <code>client()</code> blocks instead.</li>
+        <li><strong>The <code>X-Coralite-Router: true</code> header distinguishes route fetches from initial page loads.</strong> Your host, CDN rule, or service worker must serve route documents (not a redirect to the content root, not a cached SPA shell) for that header. If caching is involved, verify a route fetch returns that route's HTML.</li>
+        <li><strong>Third-party singletons inside the outlet silently go stale.</strong> Libraries that cache a DOM reference or bind to <code>window</code> globals during their first mount need to reinitialize after each swap — listen for <code>coralite:navigated</code> and rebind, or keep the singleton <em>outside</em> the outlet.</li>
+        <li><strong>Rapid navigation is safe, guards are not automatically so.</strong> A newer navigation aborts the in-flight one (its guard and fetch receive the abort — honor the <code>signal</code>). A guard that does an unbounded fetch and resolves after the abort wins nothing: check <code>signal.aborted</code> before acting on its result.</li>
+        <li><strong>Do not store auth secrets in the store</strong> and treat the store as UI/session state. <code>store.reset()</code> resets to <em>config</em> defaults — anything that must be cleared (tokens) belongs in <code>localStorage</code> with an explicit log-out flow.</li>
+        <li><strong><code>viewTransitions: true</code> animates outlet swaps</strong> as native View Transitions (skipped under <code>prefers-reduced-motion: reduce</code>). The same flag also crossfades full page loads for the multi-page routes you keep outside the router — a single switch for both behaviors.</li>
+      </ul>
+    </section>
+
+    <section id="related">
+      <coralite-heading level="2" text="Related Pages"></coralite-heading>
+      <ul>
+        <li><a href="/docs/reference/plugins/router.html">Router Plugin Reference</a> — the complete API: client surface, guard contracts, events, interception rules, and the fetch behavior contract.</li>
+        <li><a href="/docs/guide/building.html">Building Applications</a> — SSG, Hybrid, and SPA build modes compared, with the SPA trade-off table.</li>
+        <li><a href="/docs/reference/pages.html#12-spa-router-opt-in">Pages &amp; Routing Reference, §12</a> — router entry in the pages reference.</li>
+        <li><a href="/docs/reference/lists.html">Lists &amp; Store Reference</a> — the Global Store API this guide persists with (<code>store</code> config, <code>subscribe</code>/<code>batch</code>/<code>reset</code>).</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
