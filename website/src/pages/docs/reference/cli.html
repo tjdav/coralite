@@ -17,76 +17,75 @@
     </p>
 
     <coralite-heading level="2" text="Command Structure"></coralite-heading>
-    <p>The basic command structure for the Coralite CLI is as follows:</p>
-    <coralite-code language="bash">coralite [options]</coralite-code>
+    <p>The Coralite CLI is subcommand-based. Directories, output, and modes are declared in <code>coralite.config.js</code> (see the <a href="/docs/reference/config.html">Configuration reference</a>); the CLI only accepts flags that adjust the operation:</p>
+    <coralite-code language="bash">coralite &lt;command&gt; [options]</coralite-code>
 
-    <coralite-heading level="2" text="Options"></coralite-heading>
-    <p>The Coralite CLI accepts several options to configure its behavior. Here's a detailed list of available options:
-    </p>
+    <coralite-heading level="2" text="Commands"></coralite-heading>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Command</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>coralite dev</code></td>
+        <td>Start the development server with live reload and hot CSS updates.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>coralite test</code></td>
+        <td>Start the testing server used by <code>coralite.config.js</code> with <code>mode: 'testing'</code>.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>coralite build</code></td>
+        <td>Build the site for production.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>coralite check</code></td>
+        <td>Run a unified validation pass across Components, Plugins, and Pages.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>coralite fix</code></td>
+        <td>Apply deterministic AST auto-fixes in place.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>coralite init-agent</code></td>
+        <td>Scaffold <code>AGENTS.md</code> guidelines for AI coding assistants.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>coralite validate-components</code></td>
+        <td>Validate component templates, refs, serialization boundaries, and unused symbols.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>coralite validate-pages</code></td>
+        <td>Validate page documents against known component schemas.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>coralite validate-plugins</code></td>
+        <td>Validate plugin contracts, hook signatures, and serializable client options.</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="2" text="Shared Options (dev / test / build)"></coralite-heading>
 
     <ul>
       <li>
-        <p><strong><code>-c, --components &lt;path&gt;</code></strong> (required)</p>
+        <p><strong><code>-v, --verbose</code></strong> (optional)</p>
         <ul>
-          <li>Description: The file system path to the directory containing Coralite component files.</li>
-          <li>Example: <code>--components path/to/components</code></li>
+          <li>Description: Enable verbose logging output.</li>
+          <li>Example: <code>coralite dev -v</code></li>
         </ul>
       </li>
       <li>
-        <p><strong><code>-p, --pages &lt;path&gt;</code></strong> (required)</p>
+        <p><strong><code>-c, --clean</code></strong> (optional)</p>
         <ul>
-          <li>Description: The file system path to the directory containing page files that will be rendered.</li>
-          <li>Example: <code>--pages path/to/pages</code></li>
-        </ul>
-      </li>
-      <li>
-        <p><strong><code>-o, --output &lt;path&gt;</code></strong> (required)</p>
-        <ul>
-          <li>Description: The output directory for the generated site. If the specified directory does not exist, it
-            will be created.</li>
-          <li>Example: <code>--output path/to/dist</code></li>
-        </ul>
-      </li>
-      <li>
-        <p><strong><code>-m, --mode &lt;mode&gt;</code></strong> (optional)</p>
-        <ul>
-          <li>Description: The build mode. Can be <code>"production"</code> or <code>"development"</code>. Default is <code>"production"</code>.</li>
-          <li>Example: <code>--mode development</code></li>
-        </ul>
-      </li>
-      <li>
-        <p><strong><code>-i, --ignore-attribute &lt;key=value...&gt;</code></strong> (optional)</p>
-        <ul>
-          <li>Description: Ignore elements by attribute name-value pair during parsing. Multiple pairs can be provided
-            separated by spaces.</li>
-          <li>Examples:
-            <ul>
-              <li>Ignore <code>&lt;div data-ignore&gt;</code> elements: <code>--ignore-attribute data-ignore=true</code>
-              </li>
-              <li>Ignore multiple elements: <code>--ignore-attribute data-ignore=true class=test-only</code></li>
-            </ul>
-          </li>
-        </ul>
-      </li>
-      <li>
-        <p><strong><code>-s, --skip-render-attribute &lt;key...&gt;</code></strong> (optional)</p>
-        <ul>
-          <li>Description: Parse elements but exclude them from final render output based on attribute presence.</li>
-          <li>Example: <code>--skip-render-attribute data-client-only</code></li>
-        </ul>
-      </li>
-      <li>
-        <p><strong><code>-d, --dry-run</code></strong> (optional)</p>
-        <ul>
-          <li>Description: Run the CLI in dry-run mode. This displays information about generated documents and their
-            content without actually writing files to the output directory.</li>
-          <li>Example: <code>coralite -c src/components -p src/pages -o dist --dry-run</code></li>
+          <li>Description: Clear the output directory before building.</li>
+          <li>Example: <code>coralite build -c</code></li>
         </ul>
       </li>
       <li>
         <p><strong><code>-a, --assets &lt;mapping...&gt;</code></strong> (optional)</p>
         <ul>
-          <li>Description: Static assets to copy during build. Supports both NPM packages and local paths. Multiple mappings can be provided separated by spaces. CLI assets override config assets if they target the same destination.</li>
+          <li>Description: Static assets to copy during build. Supports both NPM packages and local paths. Multiple mappings can be provided separated by spaces. CLI assets take full precedence over config assets that target the same destination.</li>
           <li>Formats:
             <ul>
               <li><strong>NPM Package (3 parts):</strong> <code>pkg:path:dest</code></li>
@@ -102,24 +101,31 @@
           </li>
         </ul>
       </li>
+      <li>
+        <p><strong><code>--no-incremental</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Disable change detection optimization and force rebuilding all pages and components.</li>
+          <li>Example: <code>coralite build --no-incremental</code></li>
+        </ul>
+      </li>
     </ul>
 
     <coralite-heading level="2" text="Configuration File Support"></coralite-heading>
-    <p>The Coralite CLI automatically looks for a <code>coralite.config.js</code> file in the current working directory. If found, it will merge its configuration with the CLI options.</p>
+    <p><code>coralite dev</code>, <code>coralite test</code>, and <code>coralite build</code> require a <code>coralite.config.js</code> file in the current working directory. Paths such as <code>pages</code>, <code>components</code>, and <code>output</code>, plus <code>mode</code> and <code>cleanUrls</code>, are all declared there via <code>defineConfig</code> imported from <code>coralite</code> — the CLI itself no longer accepts directory or output flags.</p>
 
     <coralite-heading level="2" text="Examples"></coralite-heading>
 
-    <p><strong>1. Generate a site with default options:</strong></p>
+    <p><strong>1. Start the development server:</strong></p>
 
-    <coralite-code language="bash">coralite -c src/components -p src/pages -o dist</coralite-code>
+    <coralite-code language="bash">coralite dev</coralite-code>
 
-    <p><strong>2. Ignore specific elements during parsing and run in dry-run mode:</strong></p>
+    <p><strong>2. Build for production with CLI asset mappings:</strong></p>
 
-    <coralite-code language="bash">coralite -c src/components -p src/pages -o dist --ignore-attribute data-ignore=true class=test-only --dry-run</coralite-code>
+    <coralite-code language="bash">coralite build -a ./src/logo.png:assets/logo.png -a my-package:dist/style.css:assets/style.css</coralite-code>
 
-    <p><strong>3. Using with a configuration file:</strong></p>
-    <p>When a <code>coralite.config.js</code> file exists in your project the CLI will automatically load it:</p>
-    <coralite-code language="bash">coralite -c src/components -p src/pages -o dist</coralite-code>
+    <p><strong>3. Start the testing server:</strong></p>
+
+    <coralite-code language="bash">coralite test</coralite-code>
 
     <coralite-heading level="2" text="coralite check (Workspace Audit)"></coralite-heading>
     <p>
@@ -178,9 +184,30 @@
       The <code>coralite fix</code> command executes deterministic AST auto-fixers across Components and Plugins. It modifies source files in-place and re-audits the codebase to confirm issues are resolved.
     </p>
 
-    <coralite-code language="bash">coralite fix [--dry-run]</coralite-code>
+    <coralite-code language="bash">coralite fix [options]</coralite-code>
 
     <ul>
+      <li>
+        <p><strong><code>-c, --components &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Path to component files or directory to fix.</li>
+          <li>Example: <code>coralite fix -c src/components</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>-p, --plugins &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Path to a plugin file or plugins directory to fix.</li>
+          <li>Example: <code>coralite fix -p src/plugins</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--pages &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Path to the pages directory to fix.</li>
+          <li>Example: <code>coralite fix --pages src/pages</code></li>
+        </ul>
+      </li>
       <li>
         <p><strong><code>--dry-run</code></strong> (optional)</p>
         <ul>
