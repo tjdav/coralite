@@ -104,7 +104,25 @@
 
     <coralite-heading level="3" text="Setting Up SPA Mode"></coralite-heading>
 
-    <p>The router is a core plugin automatically included with Coralite. To activate SPA routing in your pages, wrap your main page content area in an element with <code>data-router-outlet</code> (or use the <code>&lt;router-outlet&gt;</code> component).</p>
+    <p>The SPA router is a core router plugin, and it is opt-in: it must be registered in <code>coralite.config.js</code> before any client-side routing behavior (link interception, history handling, guards) activates.</p>
+
+    <coralite-code-highlight language="javascript" title="Registering the SPA Router Plugin">
+import { defineConfig } from 'coralite-scripts'
+import router from 'coralite/plugins/router'
+
+export default defineConfig({
+  plugins: [
+    router({
+      base: '/',
+      outlet: 'data-router-outlet'
+    })
+  ]
+})
+    </coralite-code-highlight>
+
+    <p>Once the plugin is registered, any element carrying the <code>data-router-outlet</code> attribute (or the <code>&lt;router-outlet&gt;</code> component provided by the plugin) marks the SPA swap region. On each navigation only the outlet content is replaced, so elements outside it — a persistent navbar, a background audio player, connected WebSockets — survive every route change. Pages that declare no outlet of their own are automatically wrapped in a <code>&lt;router-outlet&gt;</code> element around their full body content at render time.</p>
+
+    <p><em>Note: A <code>data-router-outlet</code> element without the registered plugin is inert — it does not change navigation behavior on its own.</em></p>
 
     <coralite-code-html>
       <!-- src/pages/app/dashboard.html -->
