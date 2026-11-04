@@ -21,7 +21,7 @@
 
     <coralite-code-highlight language="javascript">
 // coralite.config.js
-import { defineConfig } from 'coralite-scripts';
+import { defineConfig } from 'coralite';
 
 export default defineConfig({
   output: './dist',
@@ -121,7 +121,7 @@ export default defineConfig({
     <coralite-code-highlight language="javascript">
 // coralite.config.js
 import fs from 'node:fs/promises';
-import { defineConfig } from 'coralite-scripts';
+import { defineConfig } from 'coralite';
 
 export default defineConfig({
   output: './dist',
@@ -222,7 +222,7 @@ await fastify.listen({ port: 3000 });
 
     <coralite-code-highlight language="javascript">
 // coralite.config.js
-import { defineConfig } from 'coralite-scripts';
+import { defineConfig } from 'coralite';
 
 export default defineConfig({
   output: './dist',
@@ -273,7 +273,7 @@ export default defineConfig({
 
     <coralite-heading level="2" text="Development Server &amp; Live-Reload"></coralite-heading>
 
-    <p>When developing locally using <code>coralite-scripts dev</code> (or when <code>mode === 'development'</code>), Coralite automatically appends <code>connect-src 'self'</code> (or <code>connect-src ws: http:</code>) to allow Server-Sent Events (SSE) live-reloading via the <code>/__coralite/rebuild.js</code> route.</p>
+    <p>When developing locally using <code>coralite dev</code> (or when <code>mode === 'development'</code>), Coralite automatically appends <code>connect-src 'self'</code> (or <code>connect-src ws: http:</code>) to allow Server-Sent Events (SSE) live-reloading via the <code>/__coralite/rebuild.js</code> route.</p>
 
     <p>This guarantees that enabling strict CSP during local development will never break hot-reloading or terminal error overlays.</p>
 

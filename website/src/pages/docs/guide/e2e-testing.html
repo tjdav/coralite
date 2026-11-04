@@ -95,7 +95,7 @@
     <p>Define your mock implementations under the <code>testing.mocks.components</code> and <code>testing.mocks.plugins</code> objects within your configuration:</p>
 
     <coralite-code-highlight language="javascript">
-      import { defineConfig } from 'coralite-scripts';
+      import { defineConfig } from 'coralite';
 
       export default defineConfig({
         mode: 'testing',
@@ -174,7 +174,7 @@
     <p>Next, the mock configuration in <code>coralite.config.js</code> overriding this component's data based on the <code>userId</code> attribute under <code>components</code>:</p>
 
     <coralite-code-highlight language="javascript">
-      import { defineConfig } from 'coralite-scripts';
+      import { defineConfig } from 'coralite';
 
       export default defineConfig({
         mode: 'testing',

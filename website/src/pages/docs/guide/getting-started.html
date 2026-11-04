@@ -15,7 +15,7 @@
 
     <coralite-heading level="2" text="1. Installation"></coralite-heading>
 
-    <p>Coralite consists of two primary packages: <code>coralite</code> (the framework runtime and engine) and <code>coralite-scripts</code> (the build, development, and toolchain scripts). You can scaffold a new project using the official <code>create-coralite</code> initializer:</p>
+    <p>Coralite ships as a single <code>coralite</code> package: framework runtime and engine, the <code>coralite</code> CLI (development server, build, and testing commands), the <code>defineConfig</code> configuration helper, and the plugin system. You can scaffold a new project using the official <code>create-coralite</code> initializer:</p>
 
     <coralite-code-highlight language="bash" title="Scaffold a New Project">
 npm create coralite@latest my-app
@@ -51,7 +51,7 @@ my-app/
 
     <coralite-heading level="2" text="3. First Component"></coralite-heading>
 
-    <p>Components in Coralite are authored as HTML files containing a <code>&lt;template&gt;</code> element, an optional <code>&lt;script type="module"&gt;</code> exporting <code>defineComponent</code>, and an optional <code>&lt;style&gt;</code> element.</p>
+    <p>Components in Coralite are authored as HTML files containing a <code>&lt;template&gt;</code> element, an optional <code>&lt;script type="module"&gt;</code> block with top-level named exports (<code>export const attributes</code>, <code>export function server</code>, <code>export function client</code>), and an optional <code>&lt;style&gt;</code> element.</p>
 
     <coralite-code-highlight language="javascript" title="components/greeting-card.html">
 <template id="greeting-card">
@@ -62,20 +62,16 @@ my-app/
 </template>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    attributes: {
-      title: {
-        type: String,
-        default: 'Hello'
-      },
-      message: {
-        type: String,
-        default: 'Welcome to Coralite!'
-      }
+  export const attributes = {
+    title: {
+      type: String,
+      default: 'Hello'
+    },
+    message: {
+      type: String,
+      default: 'Welcome to Coralite!'
     }
-  })
+  }
 </script>
 
 <style>

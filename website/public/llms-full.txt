@@ -28,7 +28,7 @@
   - [§7.2 Context Resolver System (Static vs. Two-Phase Instance Context)](#72-context-resolver-system-static-vs-two-phase-instance-context)
   - [§7.3 Server & Client Lifecycle Hooks](#73-server-client-lifecycle-hooks)
 - [§8. Configuration (`coralite.config.js` / `defineConfig`)](#8-configuration-coraliteconfigjs-defineconfig)
-  - [§8.1 Core `defineConfig` vs. `coralite-scripts` Requirements](#81-core-defineconfig-vs-coralite-scripts-requirements)
+  - [§8.1 `defineConfig` Requirements](#81-defineconfig-requirements)
   - [§8.2 Complete Options Reference](#82-complete-options-reference)
 - [§9. Asset Management & Automated SRI Injection](#9-asset-management-automated-sri-injection)
 - [§10. Built-In Plugins](#10-built-in-plugins)
@@ -353,7 +353,7 @@ Copy-pasteable reference setup featuring an interactive component, a Form-Associ
 
 ### `coralite.config.js`
 ```javascript
-import { defineConfig } from 'coralite-scripts'
+import { defineConfig } from 'coralite'
 
 export default defineConfig({
   output: 'dist',
@@ -913,17 +913,17 @@ To test a server plugin:
 
 ## 8. Configuration (`coralite.config.js` / `defineConfig`)
 
-### 8.1 Core `defineConfig` vs. `coralite-scripts` Requirements
+### 8.1 `defineConfig` Requirements
 
-- **Core `'coralite'` (`defineConfig`)**:
-  - Required properties: `output`, `components`, `pages`.
-- **App `'coralite-scripts'` (`defineConfig`)**:
-  - Required properties: `output`, `components`, `pages`, `public`.
+`defineConfig` is exported from the `coralite` package. (The legacy `coralite-scripts` package is deprecated; import `defineConfig` from `coralite`.)
+
+- Required properties: `output`, `components`, `pages` — non-empty strings; `pages` also accepts a `{ dir, exclude }` object.
+- Optional: `public` (defaults to `'public'`).
 
 ### 8.2 Complete Options Reference
 
 ```javascript
-import { defineConfig } from 'coralite-scripts'
+import { defineConfig } from 'coralite'
 import analyticsPlugin from './plugins/analytics.js'
 
 export default defineConfig({
@@ -1004,7 +1004,7 @@ Coralite ships core plugins, importable from `coralite/plugins/*` and registered
 Every SPA navigation behavior (link interception, popstate handling, guards, head reconciliation) lives in the plugin itself. A `data-router-outlet` marker WITHOUT plugin registration is inert — the page behaves as a standard MPA. Register in `coralite.config.js`:
 
 ```javascript
-import { defineConfig } from 'coralite-scripts'
+import { defineConfig } from 'coralite'
 import router from 'coralite/plugins/router'
 
 export default defineConfig({
@@ -1228,15 +1228,17 @@ Audit page files using `coralite validate-pages` (or `coralite check --pages`):
 
 ## 19. CLI & Tooling Ecosystem
 
-### `coralite-scripts`
-- `coralite-scripts dev`: Starts local development server on port 3000 with SSE live-reloading.
-- `coralite-scripts test`: Starts automated test server on port 3862 in `testing` mode.
-- `coralite-scripts build`: Compiles production static site to `dist`.
+### `coralite dev` / `coralite test` / `coralite build`
+- `coralite dev`: Development server with SSE live-reload and hot CSS updates. The port is allocated dynamically (portfinder window starting at the optional `server.port` config value).
+- `coralite test`: Testing server in `testing` mode (same dynamic port selection).
+- `coralite build`: Compiles the production static site into the configured `output` directory.
+- Shared flags: `-v, --verbose`, `-c, --clean`, `-a, --assets <mapping...>`, `--no-incremental`.
 
 ### Core `coralite` CLI
 - `coralite check`: Multi-domain workspace auditor across components, plugins, and pages.
 - `coralite fix [--dry-run]`: Whole-workspace AST auto-linter.
 - `coralite init-agent [--cursor] [--claude]`: Scaffolds zero-token `AGENTS.md` guidelines for AI coding assistants.
+- `coralite validate-components` / `coralite validate-pages` / `coralite validate-plugins`: Domain-specific validators (see §15–§18).
 
 ---
 
