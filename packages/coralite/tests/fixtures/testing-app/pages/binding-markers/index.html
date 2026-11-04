@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Binding marker collision</title>
+</head>
+<body>
+  <marker-slot-parent id="marker-custom" data-testid="parent-custom">
+    <marker-slot-child slot="extra"></marker-slot-child>
+  </marker-slot-parent>
+
+  <marker-slot-parent id="marker-plain" data-testid="parent-plain">
+    <div slot="extra" data-testid="plain-slot">plain</div>
+  </marker-slot-parent>
+
+  <marker-slot-parent id="marker-empty" data-testid="parent-empty"></marker-slot-parent>
+</body>
+</html>

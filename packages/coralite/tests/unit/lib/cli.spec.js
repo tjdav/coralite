@@ -311,7 +311,7 @@ export default {
       const outFile = join(distDir, 'index.html')
       assert.strictEqual(existsSync(outFile), true)
       const content = readFileSync(outFile, 'utf8')
-      assert.ok(content.includes('>Hello <c-token>World</c-token><'))
+      assert.ok(content.includes('>Hello <c-token data-coralite-bind="b0" data-coralite-bind-owner="hello-card-0">World</c-token><'))
     })
 
     test('preserves unchanged pages across incremental builds and deletes stale files when source is removed', () => {

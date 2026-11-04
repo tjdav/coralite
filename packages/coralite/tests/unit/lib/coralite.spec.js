@@ -457,7 +457,7 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     const htmlOutput = results[0].content
 
     // Check that during SSR, computedGetter was evaluated and substituted inside the child component
-    assert.ok(htmlOutput.includes('Name: <c-token>value</c-token>') || htmlOutput.includes('Name: value'), `Expected SSR to evaluate computedGetter to "value", but output was:\n${htmlOutput}`)
+    assert.ok(/Name: <c-token[^>]*>value<\/c-token>/.test(htmlOutput) || htmlOutput.includes('Name: value'), `Expected SSR to evaluate computedGetter to "value", but output was:\n${htmlOutput}`)
     assert.ok(!htmlOutput.includes('{{ computedGetter }}'), 'Should not contain raw computedGetter token in final HTML')
   })
 
@@ -593,8 +593,8 @@ describe('Bug Fix: Preserving recursive tokens', () => {
 
       assert.strictEqual(results.length, 1)
       // Check that it rendered the mocked value and preserved the coerced attribute (wrapped in c-token tags in testing mode)
-      assert.ok(results[0].content.includes('<c-token>MOCKED_USER</c-token>'))
-      assert.ok(results[0].content.includes('<c-token>123</c-token>'))
+      assert.ok(/<c-token[^>]*>MOCKED_USER<\/c-token>/.test(results[0].content))
+      assert.ok(/<c-token[^>]*>123<\/c-token>/.test(results[0].content))
 
       // Check that the mock server received the expected context
       assert.ok(receivedContext !== null, 'Mock server should receive context')

@@ -992,6 +992,11 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         componentEntryCode += `import "${virtualPrefix}${cssNamespace}${componentId}";\n`
       }
 
+      // Generate the hydration map before serializing the template so binding
+      // markers are present in imperative templateHTML as well as SSR output.
+      const hydrationMapObj = generateHydrationMap(sharedFn.templateAST, sharedFn.templateValues)
+      const hydrationMap = serialize(hydrationMapObj)
+
       // Use a WeakMap to map original nodes to a unique index
       const nodeMap = new WeakMap()
       const state = { counter: 0 }
@@ -1020,8 +1025,6 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         normalizedAttributes = normalizeObjectFunctions(normalizedAttributes, astTransformer)
       }
       const attributes = serialize(normalizedAttributes)
-      const hydrationMapObj = generateHydrationMap(sharedFn.templateAST, sharedFn.templateValues)
-      const hydrationMap = serialize(hydrationMapObj)
 
       let normalizedGetters = sharedFn.getters || sharedFn.script?.getters || {}
 

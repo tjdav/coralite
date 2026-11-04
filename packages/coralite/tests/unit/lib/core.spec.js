@@ -295,6 +295,7 @@ describe('shared/core.js', () => {
   describe('generateHydrationMap', () => {
     it('should return empty map for missing inputs', () => {
       assert.deepStrictEqual(generateHydrationMap(null, null), {
+        version: 2,
         texts: [],
         attributes: [],
         refs: [],

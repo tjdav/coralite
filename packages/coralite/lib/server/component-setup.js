@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, cloneModuleInstance, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL, isAsyncFunction } from '../shared/core.js'
+import { createReadOnlyProxy, cloneModuleInstance, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL, isAsyncFunction, generateHydrationMap } from '../shared/core.js'
 import { processTokenValue } from './parser/html.js'
 import { CoraliteError, handleError } from '../shared/errors.js'
 import {
@@ -859,6 +859,10 @@ export function createComponentDefinition ({ app }) {
 async function _safeRegister (component, scriptManager, scriptResultMeta = null, onError = null) {
   const templateAST = component.template?.children || []
   const templateValues = component.values || {}
+
+  // Stamp binding markers before fragment ops are compiled, so production
+  // fast-path SSR includes the same binding targets as the hydration map.
+  generateHydrationMap(templateAST, templateValues)
 
   if (component.styles?.length && !component._processedCss) {
     const rawCss = component.styles.join('\n')

@@ -64,7 +64,7 @@ async function processMetadataElement (element, context, index) {
             }
             return nodes.map(c => {
               if (c.type === 'text') {
-                return c.data.replace(/<\/?c-token>/g, '')
+                return c.data.replace(/<\/?c-token(?:\s[^>]*)?>/g, '')
               }
               if (c.type === 'tag' && c.name === 'c-token' && c.children) {
                 return extractText(c.children)

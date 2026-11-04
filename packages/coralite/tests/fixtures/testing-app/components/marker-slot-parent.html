@@ -1,0 +1,28 @@
+<template id="marker-slot-parent">
+  <div class="marker-parent">
+    <button ref="toggle" data-testid="toggle" aria-pressed="{{ pressed }}">{{ label }}</button>
+    <p data-testid="status" hidden="{{ hidden }}">{{ status }}</p>
+    <slot name="extra"></slot>
+  </div>
+</template>
+
+<script type="module">
+  export function server () {
+    return {
+      pressed: false,
+      label: 'off',
+      hidden: true,
+      status: 'idle'
+    }
+  }
+
+  export function client ({ root, state, refs, signal }) {
+    root.setAttribute('data-parent-ready', '')
+    refs('toggle').addEventListener('click', () => {
+      state.pressed = !state.pressed
+      state.label = state.pressed ? 'on' : 'off'
+      state.hidden = !state.hidden
+      state.status = state.pressed ? 'active' : 'idle'
+    }, { signal })
+  }
+</script>
