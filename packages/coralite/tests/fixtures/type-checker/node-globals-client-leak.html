@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><title>Client Leak</title></head>
+<body><h1>Client Leak</h1></body>
+</html>
+
+<script type="module">
+import { definePage } from 'coralite'
+
+export default definePage({
+  async server () {
+    const isProd = process.env.NODE_ENV === 'production'
+    return {
+      isProd
+    }
+  },
+  client () {
+    const token = process.env.CLIENT_TOKEN
+    console.log(token)
+  }
+})
+</script>

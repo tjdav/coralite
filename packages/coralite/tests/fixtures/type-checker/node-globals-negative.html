@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Unknown Global</title></head>
+<body><h1>Unknown Global</h1></body>
+</html>
+
+<script type="module">
+import { definePage } from 'coralite'
+
+export default definePage({
+  async server () {
+    const source = foobro
+    return {
+      source
+    }
+  }
+})
+</script>

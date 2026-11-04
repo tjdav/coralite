@@ -1,8 +1,8 @@
 import { createRequire } from 'node:module'
+import fs from 'node:fs'
 import path from 'node:path'
 import { coraliteLanguagePlugin, extractScriptBlock } from './volar-plugin.js'
-
-const NODE_GLOBALS_NAME_PATTERN = /^Cannot find name '(?:process|Buffer|global|setImmediate|clearImmediate)'/
+import { isNodeGlobal } from '../../utils/node-global-surface.js'
 
 /**
  * @typedef {Object} Diagnostic
@@ -20,6 +20,141 @@ const NODE_GLOBALS_NAME_PATTERN = /^Cannot find name '(?:process|Buffer|global|s
  * @property {boolean} skipped
  * @property {string} [reason]
  */
+
+/**
+ * Determines whether TypeScript in this program can actually resolve the
+ * 'node' type package. Appending 'node' to compilerOptions.types without
+ * visibility would introduce a new TS2688 diagnostic instead of curing TS2580.
+ *
+ * @param {object} compilerOptions - Parsed compiler options
+ * @param {string} tsconfigDir - Directory of the active tsconfig (or cwd when none exists)
+ * @param {ReturnType<typeof import('node:module').createRequire>} requireUser - Require bound to the user project
+ * @returns {boolean} True when the 'node' types are visible to TypeScript
+ */
+function nodeTypesVisibleToProgram (compilerOptions, tsconfigDir, requireUser) {
+  if (Array.isArray(compilerOptions.typeRoots) && compilerOptions.typeRoots.length > 0) {
+    for (const typeRoot of compilerOptions.typeRoots) {
+      if (fs.existsSync(path.join(path.resolve(tsconfigDir, typeRoot), 'node'))) {
+        return true
+      }
+    }
+    return false
+  }
+
+  try {
+    requireUser.resolve('@types/node/package.json')
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Collects the character ranges of client() function declarations in a
+ * component or page module: named exports, const exports, function
+ * declarations, and the client property of definePage/defineComponent calls.
+ * Node-global tolerances must not apply inside these ranges — that is browser
+ * code, and CORALITE-E304 owns the deterministic diagnostics for it.
+ *
+ * @param {object} sourceFile - Parsed source file AST of the virtual module
+ * @param {object} ts - Loaded TypeScript compiler module
+ * @returns {Array<{ start: number, end: number }>} Character ranges of client functions
+ */
+function collectClientRanges (sourceFile, ts) {
+  const ranges = []
+
+  const pushFunction = (fn) => {
+    if (
+      fn &&
+      (fn.kind === ts.SyntaxKind.FunctionDeclaration ||
+        fn.kind === ts.SyntaxKind.FunctionExpression ||
+        fn.kind === ts.SyntaxKind.ArrowFunction)
+    ) {
+      ranges.push({
+        start: fn.getStart(sourceFile),
+        end: fn.end
+      })
+    }
+  }
+
+  const pushClientProp = (objExpr) => {
+    if (!objExpr || objExpr.kind !== ts.SyntaxKind.ObjectLiteralExpression) {
+      return
+    }
+    for (const prop of objExpr.properties) {
+      if (
+        prop.name &&
+        (prop.name.kind === ts.SyntaxKind.Identifier || prop.name.kind === ts.SyntaxKind.StringLiteral) &&
+        prop.name.text === 'client'
+      ) {
+        if (prop.kind === ts.SyntaxKind.MethodDeclaration) {
+          ranges.push({
+            start: prop.getStart(sourceFile),
+            end: prop.end
+          })
+        } else {
+          pushFunction(prop.initializer)
+        }
+      }
+    }
+  }
+
+  const pushDefineCall = (callExpr) => {
+    if (
+      !callExpr ||
+      callExpr.kind !== ts.SyntaxKind.CallExpression ||
+      !callExpr.expression ||
+      callExpr.expression.kind !== ts.SyntaxKind.Identifier ||
+      (callExpr.expression.text !== 'definePage' && callExpr.expression.text !== 'defineComponent')
+    ) {
+      return
+    }
+    pushClientProp(callExpr.arguments[0])
+  }
+
+  for (const stmt of sourceFile.statements) {
+    if (stmt.kind === ts.SyntaxKind.ExportDeclaration) {
+      const decl = stmt.declaration
+      if (decl) {
+        if (decl.kind === ts.SyntaxKind.FunctionDeclaration && decl.name && decl.name.text === 'client') {
+          pushFunction(decl)
+        } else if (decl.kind === ts.SyntaxKind.VariableStatement) {
+          for (const vDecl of decl.declarationList.declarations) {
+            if (vDecl.name && vDecl.name.kind === ts.SyntaxKind.Identifier && vDecl.name.text === 'client') {
+              pushFunction(vDecl.initializer)
+            }
+            pushDefineCall(vDecl.initializer)
+          }
+        }
+        continue
+      }
+      if (stmt.isExportEquals || !stmt.exportClause || stmt.exportClause.kind !== ts.SyntaxKind.NamedExports) {
+        continue
+      }
+      for (const name of stmt.exportClause.elements) {
+        const localName = name.originalName || name.name
+        if (localName && localName.text === 'client') {
+          pushFunction(name.initializer)
+        }
+      }
+    } else if (stmt.kind === ts.SyntaxKind.ExportAssignment) {
+      pushDefineCall(stmt.expression)
+    } else if (stmt.kind === ts.SyntaxKind.VariableStatement) {
+      for (const decl of stmt.declarationList.declarations) {
+        if (decl.name && decl.name.kind === ts.SyntaxKind.Identifier && decl.name.text === 'client') {
+          pushFunction(decl.initializer)
+        }
+        pushDefineCall(decl.initializer)
+      }
+    } else if (stmt.kind === ts.SyntaxKind.FunctionDeclaration) {
+      if (stmt.name && stmt.name.text === 'client') {
+        pushFunction(stmt)
+      }
+    }
+  }
+
+  return ranges
+}
 
 /**
  * Type-checks .html component and page files using a Volar-bridged TypeScript compiler program.
@@ -125,20 +260,10 @@ export async function typeCheck (files, options = {}) {
     }
   }
 
+  const tsconfigDir = tsconfigPath && ts.sys.fileExists(tsconfigPath) ? path.dirname(tsconfigPath) : cwd
+
   if (Array.isArray(compilerOptions.types) && !compilerOptions.types.includes('node')) {
-    let hasNodeTypes = false
-    try {
-      requireUser.resolve('@types/node/package.json')
-      hasNodeTypes = true
-    } catch {
-      try {
-        requireSelf.resolve('@types/node/package.json')
-        hasNodeTypes = true
-      } catch {
-        hasNodeTypes = false
-      }
-    }
-    if (hasNodeTypes) {
+    if (nodeTypesVisibleToProgram(compilerOptions, tsconfigDir, requireUser)) {
       compilerOptions.types = [...compilerOptions.types, 'node']
     }
   }
@@ -239,6 +364,8 @@ export async function typeCheck (files, options = {}) {
     const semanticDiagnostics = program.getSemanticDiagnostics(sourceFile)
     const allDiagnostics = [...syntaxDiagnostics, ...semanticDiagnostics]
 
+    const clientRanges = collectClientRanges(sourceFile, ts)
+
     for (const diag of allDiagnostics) {
       if (!diag.file) {
         continue
@@ -254,11 +381,12 @@ export async function typeCheck (files, options = {}) {
         continue
       }
 
-      if (diag.code === 2580 || diag.code === 2591) {
-        continue
-      }
+      const nameMatch = /^Cannot find name '([^']+)'/u.exec(message)
+      const isNodeGlobalName = nameMatch !== null && isNodeGlobal(nameMatch[1])
+      const insideClientRange = diag.file === sourceFile && clientRanges.some(range => diag.start >= range.start && diag.start < range.end
+      )
 
-      if (diag.code === 2304 && NODE_GLOBALS_NAME_PATTERN.test(message)) {
+      if (isNodeGlobalName && (diag.code === 2304 || diag.code === 2580 || diag.code === 2591) && !insideClientRange) {
         continue
       }
 
