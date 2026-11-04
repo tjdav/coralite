@@ -40,7 +40,9 @@ export default defineConfig({
   plugins: [
     router({
       base: '/',                   // String, default '/'
-      outlet: 'data-router-outlet' // String, default 'data-router-outlet'
+      outlet: 'data-router-outlet', // String, default 'data-router-outlet'
+      autoWrap: true,               // Boolean, default true
+      outletOnly: false             // Boolean, default false
     })
   ]
 })
@@ -71,6 +73,18 @@ export default defineConfig({
           <td><code>'data-router-outlet'</code></td>
           <td>The attribute name that marks the SPA swap region. Any element carrying this attribute — or the reserved <code>&lt;router-outlet&gt;</code> tag — is an outlet.</td>
         </tr>
+        <tr slot="body">
+          <td><code>autoWrap</code></td>
+          <td>Boolean</td>
+          <td><code>true</code></td>
+          <td>When <code>false</code>, the server-side render pipeline does not automatically wrap outlet-less pages in a <code>&lt;router-outlet&gt;</code>. The page renders exactly as authored. Fetched documents must still contain an outlet for client-side navigation to succeed.</td>
+        </tr>
+        <tr slot="body">
+          <td><code>outletOnly</code></td>
+          <td>Boolean</td>
+          <td><code>false</code></td>
+          <td>When <code>true</code>, link interception is skipped whenever the current document has no outlet at click time. The click falls through to the browser's native navigation. This guard is evaluated before link detection and does not affect <code>router.navigate()</code>.</td>
+        </tr>
       </coralite-table>
     </section>
 
@@ -80,7 +94,9 @@ export default defineConfig({
         <li>Any element bearing the configured outlet attribute (<code>[data-router-outlet]</code> by default) — or the reserved <code>&lt;router-outlet&gt;</code> tag name — is an outlet. The plugin registers a virtual <code>&lt;router-outlet&gt;</code> component (<code>virtual:router-outlet/outlet.html</code>, body <code>&lt;slot&gt;&lt;/slot&gt;</code>), so the outlet can be authored directly on a page or inside a layout component. Outlet detection also looks inside component templates, so an outlet living in a layout component satisfies the page and suppresses the automatic wrap.</li>
         <li>On client navigation, <strong>only the outlet's children are replaced</strong>. Elements outside the outlet — persistent navbars and footers, background audio players, live WebSockets — are never touched by the router.</li>
         <li>Pages that declare no outlet are <strong>automatically wrapped</strong> at render time: when the router is active, the plugin injects a <code>&lt;router-outlet data-router-outlet&gt;</code> element around the page's entire <code>&lt;body&gt;</code> content. Pages that already contain an outlet are never double-wrapped.</li>
-        <li>Both the live document and every fetched document must contain an outlet; a navigation whose fetched document has none fails with an error.</li>
+        <li>Set <code>autoWrap: false</code> to disable the automatic body wrap. With this flag, outlet-less pages render exactly as authored and still resolve page tokens normally. Link interception remains enabled unless <code>outletOnly: true</code> is also set; a fetched document without an outlet still fails the navigation.</li>
+        <li>Set <code>outletOnly: true</code> to make link interception conditional on the live document containing an outlet. This is useful when some routes are intentionally outside the SPA shell: on an outlet-less page, links navigate normally instead of failing inside the router.</li>
+        <li>Both the live document and every fetched document must contain an outlet for a client navigation to succeed; a navigation whose fetched document has none fails with an error. <code>navigate()</code> updates history before fetching, so do not call it from a page that has no outlet unless you handle the resulting rejected navigation.</li>
       </ul>
     </section>
 
@@ -192,6 +208,7 @@ export function client ({ signal }) {
       <p>While the router is active, left-clicks on same-origin <code>&lt;a href&gt;</code> links are converted into client-side navigations. Interception is <strong>skipped</strong> — leaving the browser's native behavior intact — in the following cases:</p>
 
       <ul>
+        <li><code>outletOnly: true</code> is configured and the live document has no outlet.</li>
         <li>The click is not the primary button (<code>button !== 0</code>).</li>
         <li>Any modifier key is held (<code>meta</code> / <code>ctrl</code> / <code>shift</code> / <code>alt</code>).</li>
         <li>The event has already been <code>preventDefault</code>ed by other code.</li>
@@ -212,6 +229,9 @@ export function client ({ signal }) {
       <coralite-heading level="2" text="Behavior Contract"></coralite-heading>
       <ul>
         <li><strong>Back/forward (<code>popstate</code>).</strong> Browser history navigation re-fetches and re-renders the current route's static HTML via <code>navigate(currentPath, { replace: true })</code>, so every back/forward step renders the route's canonical pre-built document.</li>
+        <li><strong><code>autoWrap: false</code>.</strong> The server-side <code>onBeforePageRender</code> hook skips the automatic outlet wrapper. Page rendering and token replacement are unchanged; the page simply has no outlet unless authored explicitly. Client navigation to such a page still fails because the fetched document has no outlet.</li>
+        <li><strong><code>outletOnly: true</code>.</strong> The click guard only affects native link interception. It is evaluated before link detection, so on an outlet-less page the click proceeds as a normal full-page navigation. It does not change <code>router.navigate()</code> or <code>popstate</code> handling.</li>
+        <li><strong>Programmatic navigation from outlet-less pages.</strong> <code>router.navigate()</code> pushes or replaces the history entry before fetching the target. If the live document has no outlet, the promise rejects after the URL has already changed. Prefer native links on outlet-less pages, or combine <code>autoWrap: false</code> with <code>outletOnly: true</code> so clicks stay native.</li>
         <li><strong>Head reconciliation.</strong> After each navigation the live document's <code>&lt;title&gt;</code> and <code>&lt;meta name|property&gt;</code> tags are reconciled against the fetched page: added, updated, and removed tags are the union of both sets keyed by <code>name</code>/<code>property</code>.</li>
         <li><strong>Hydration-store re-store.</strong> The fetched page's hydration payload (<code>&lt;script data-coralite-hydration&gt;</code>) is parsed and installed into the shared hydration store (<code>runtime.hydrationStore.replace()</code>) before the swap, so component state for the new route is current before upgrade.</li>
         <li><strong>Component re-hydration.</strong> After the swap, the new outlet content is upgraded (<code>runtime.upgrade(outlet)</code>), so every SPA navigation yields fully hydrated component instances; out-of-outlet elements are never re-instantiated.</li>

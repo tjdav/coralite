@@ -58,7 +58,9 @@ export default defineConfig({
   plugins: [
     router({
       base: '/',
-      outlet: 'data-router-outlet'
+      outlet: 'data-router-outlet',
+      autoWrap: true,
+      outletOnly: false
     })
   ]
 })
@@ -66,6 +68,8 @@ export default defineConfig({
 
       <ul>
         <li><strong><code>outlet</code></strong> (String, default <code>'data-router-outlet'</code>) — the attribute name that marks the SPA swap region. Rename it here and use the new attribute in your pages.</li>
+        <li><strong><code>autoWrap</code></strong> (Boolean, default <code>true</code>) — when <code>false</code>, pages without an outlet are rendered exactly as authored instead of being wrapped in a <code>&lt;router-outlet&gt;</code>. Token rendering is unchanged. Fetched SPA routes must still contain an outlet.</li>
+        <li><strong><code>outletOnly</code></strong> (Boolean, default <code>false</code>) — when <code>true</code>, link interception is skipped on pages that have no outlet, leaving navigation to the browser. This is the safe pairing with <code>autoWrap: false</code> for routes that should stay outside the SPA shell.</li>
         <li><strong><code>base</code></strong> (String, default <code>'/'</code>) — declared in the plugin's config schema, but it currently carries no behavioral wiring: routing performs no base-path stripping or prefixing. Do not rely on a non-<code>'/'</code> base today.</li>
       </ul>
 
@@ -142,6 +146,17 @@ export default defineConfig({
           <slot></slot>
         </router-outlet>
       </coralite-code-html>
+
+      <p><strong>Opting out of automatic wrapping:</strong> set <code>autoWrap: false</code> when some pages must render without a wrapper, for example a standalone checkout or a full-page third-party embed. With that flag, the page renders exactly as authored and tokens resolve normally. Because client navigation still requires an outlet in the fetched document, pair it with <code>outletOnly: true</code> so links on outlet-less pages use native browser navigation instead of being intercepted and failing.</p>
+
+      <coralite-code-highlight language="javascript" title="Mixed SPA and multi-page routing">
+router({
+  autoWrap: false,
+  outletOnly: true
+})
+      </coralite-code-highlight>
+
+      <p><strong>Important:</strong> <code>router.navigate()</code> updates the history entry before fetching and checking for an outlet. Calling it from a page without an outlet changes the URL and then rejects. Prefer plain links on outlet-less pages, or keep <code>outletOnly: true</code> so the click guard never hands those pages to the router.</p>
     </section>
 
     <section id="programmatic">
@@ -170,7 +185,7 @@ export function client ({ refs, router, signal }) {
 }
       </coralite-code-highlight>
 
-      <p>Every link inside the app <em>or</em> the outlet is intercepted the same way, so <code>router.navigate()</code> and a plain <code>&lt;a href&gt;</code> click produce identical behavior — guards, events, and history semantics included. That makes it rare to need programmatic navigation at all.</p>
+      <p>Every link inside the app <em>or</em> the outlet is intercepted the same way, so <code>router.navigate()</code> and a plain <code>&lt;a href&gt;</code> click produce identical behavior — guards, events, and history semantics included. That makes it rare to need programmatic navigation at all. With <code>outletOnly: true</code>, clicks are left to the browser whenever the current document has no outlet; programmatic <code>router.navigate()</code> calls are not affected by that guard.</p>
     </section>
 
     <section id="guards">
@@ -351,7 +366,8 @@ export function client ({ root, signal }) {
     <section id="production">
       <coralite-heading level="2" text="Production Pitfalls"></coralite-heading>
       <ul>
-        <li><strong>Every routed document must contain an outlet.</strong> A navigation to a route whose served HTML has no outlet fails with an error. Regular pages get one via auto-wrap, but server-level fallbacks (a static host's <code>404.html</code>, an edge-rewritten error page) do not. Ship a 404/fallback page <em>built by Coralite</em> so it carries an outlet like every other route.</li>
+        <li><strong>Every routed document must contain an outlet.</strong> A navigation to a route whose served HTML has no outlet fails with an error. Regular pages get one via auto-wrap, but server-level fallbacks (a static host's <code>404.html</code>, an edge-rewritten error page) do not, and pages built with <code>autoWrap: false</code> only get one if authored explicitly. Ship a 404/fallback page <em>built by Coralite</em> so it carries an outlet like every other route, or keep outlet-less routes outside the SPA with <code>outletOnly: true</code>.</li>
+        <li><strong>Do not call <code>router.navigate()</code> from an outlet-less page.</strong> History is updated before the target is fetched and the outlet is checked. If no outlet exists, the promise rejects after the URL has already changed. Use a plain <code>&lt;a href&gt;</code> link, or configure <code>autoWrap: false</code> with <code>outletOnly: true</code>, so those pages stay in the native multi-page flow.</li>
         <li><strong>Only <code>&lt;title&gt;</code> and <code>&lt;meta name|property&gt;</code> are reconciled in the head.</strong> The fetched page's <code>&lt;link&gt;</code> and <code>&lt;script&gt;</code> tags are never injected into the live document — its CSS must already be loaded (it is, since builds emit global per-project style bundles) and any third-party per-page scripts will not run on SPA navigation. Keep per-route JS in component <code>client()</code> blocks instead.</li>
         <li><strong>The <code>X-Coralite-Router: true</code> header distinguishes route fetches from initial page loads.</strong> Your host, CDN rule, or service worker must serve route documents (not a redirect to the content root, not a cached SPA shell) for that header. If caching is involved, verify a route fetch returns that route's HTML.</li>
         <li><strong>Third-party singletons inside the outlet silently go stale.</strong> Libraries that cache a DOM reference or bind to <code>window</code> globals during their first mount need to reinitialize after each swap — listen for <code>coralite:navigated</code> and rebind, or keep the singleton <em>outside</em> the outlet.</li>
