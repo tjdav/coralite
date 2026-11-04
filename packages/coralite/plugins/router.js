@@ -191,6 +191,14 @@ export const routerPlugin = definePlugin({
     outlet: {
       type: String,
       default: 'data-router-outlet'
+    },
+    autoWrap: {
+      type: Boolean,
+      default: true
+    },
+    outletOnly: {
+      type: Boolean,
+      default: false
     }
   },
 
@@ -210,7 +218,10 @@ export const routerPlugin = definePlugin({
     onBeforePageRender ({ component, config, app }) {
       const activeConfig = config || {}
       const outletAttr = activeConfig.outlet || 'data-router-outlet'
-      if (isRouterActive(app, outletAttr, component)) {
+      if (
+        isRouterActive(app, outletAttr, component) &&
+        activeConfig.autoWrap !== false
+      ) {
         wrapBodyInOutlet(component, outletAttr, app)
       }
     }
@@ -270,7 +281,8 @@ export const routerPlugin = definePlugin({
         return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
       }
 
-      const outletAttr = config.outlet || 'data-router-outlet'
+      const activeConfig = config || {}
+      const outletAttr = activeConfig.outlet || 'data-router-outlet'
       const outletSelector = `[${outletAttr}], router-outlet`
 
       let currentAbort = null
@@ -509,6 +521,9 @@ export const routerPlugin = definePlugin({
       }
 
       const handleLinkClick = (event) => {
+        if (activeConfig.outletOnly === true && !document.querySelector(outletSelector)) {
+          return
+        }
         /** @type {any} */
         const mouseEvent = event
         if (mouseEvent.defaultPrevented) {
