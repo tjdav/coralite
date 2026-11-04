@@ -5,6 +5,7 @@ import {
   createDiagnostic
 } from '../helpers.js'
 import { analyzeFunctionBlock } from '../function-analyzer.js'
+import { isNodeOnlyGlobal } from '../../../utils/node-global-surface.js'
 
 /**
  * Pass 9: Client block validation.
@@ -306,4 +307,153 @@ export function validateClientBlock (context) {
   }
 
   analyzeFunctionBlock(fnNode, stateReads, refsCalls, false, true, 0, false, false, context)
+}
+
+/**
+ * Pass 9b: Node global leak detection in client() (CORALITE-E304).
+ * Flags references to Node runtime globals that do not exist in the browser
+ * (process, Buffer, global, setImmediate, ...) inside client() blocks. Names
+ * shared with the Web platform (console, fetch, URL, crypto, ...) are allowed.
+ *
+ * @param {object} context - ValidationContext instance
+ */
+export function validateClientNodeGlobals (context) {
+  const {
+    configProps,
+    diagnostics,
+    filePath,
+    scriptStartLine,
+    sourceCode
+  } = context
+
+  const clientProp = configProps.get('client')
+  if (!clientProp) {
+    return
+  }
+
+  const fnNode = clientProp.value
+  if (!fnNode || (fnNode.type !== 'FunctionExpression' && fnNode.type !== 'ArrowFunctionExpression' && fnNode.type !== 'FunctionDeclaration')) {
+    return
+  }
+
+  const clientLocalVars = new Set()
+
+  const extractPatternNames = (pattern) => {
+    if (!pattern) {
+      return
+    }
+    if (pattern.type === 'Identifier') {
+      clientLocalVars.add(pattern.name)
+    } else if (pattern.type === 'ObjectPattern') {
+      for (const p of pattern.properties || []) {
+        if (p.type === 'Property') {
+          extractPatternNames(p.value)
+        } else if (p.type === 'RestElement') {
+          extractPatternNames(p.argument)
+        }
+      }
+    } else if (pattern.type === 'ArrayPattern') {
+      for (const el of pattern.elements || []) {
+        if (el) {
+          extractPatternNames(el)
+        }
+      }
+    } else if (pattern.type === 'AssignmentPattern') {
+      extractPatternNames(pattern.left)
+    } else if (pattern.type === 'RestElement') {
+      extractPatternNames(pattern.argument)
+    }
+  }
+
+  const extractParamNames = (fn) => {
+    for (const param of fn.params || []) {
+      extractPatternNames(param)
+    }
+  }
+
+  if (fnNode.params) {
+    extractParamNames(fnNode)
+  }
+
+  const clientFnBody = 'body' in fnNode ? fnNode.body : null
+  if (clientFnBody) {
+    walkJS(clientFnBody, {
+      VariableDeclarator (dNode) {
+        extractPatternNames(dNode.id)
+      },
+      FunctionDeclaration (fNode) {
+        if (fNode.id && fNode.id.type === 'Identifier') {
+          clientLocalVars.add(fNode.id.name)
+        }
+        extractParamNames(fNode)
+      },
+      FunctionExpression (fNode) {
+        extractParamNames(fNode)
+      },
+      ArrowFunctionExpression (aNode) {
+        extractParamNames(aNode)
+      },
+      ClassDeclaration (cNode) {
+        if (cNode.id && cNode.id.type === 'Identifier') {
+          clientLocalVars.add(cNode.id.name)
+        }
+      },
+      CatchClause (cClause) {
+        if (cClause.param) {
+          extractPatternNames(cClause.param)
+        }
+      }
+    })
+
+    const seenGlobals = new Set()
+
+    walkAncestorJS(clientFnBody, {
+      Identifier (idNode, ancestors) {
+        const idName = idNode.name
+        if (!isNodeOnlyGlobal(idName) || clientLocalVars.has(idName)) {
+          return
+        }
+
+        const parent = ancestors.length > 1 ? ancestors[ancestors.length - 2] : null
+        if (!parent) {
+          return
+        }
+
+        if (parent.type === 'MemberExpression' && parent.property === idNode && !parent.computed) {
+          return
+        }
+
+        if (parent.type === 'Property' && parent.key === idNode && !parent.computed && !parent.shorthand) {
+          return
+        }
+
+        if (
+          (parent.type === 'BreakStatement' || parent.type === 'ContinueStatement' || parent.type === 'LabeledStatement') &&
+          parent.label === idNode
+        ) {
+          return
+        }
+
+        if (parent.type === 'MetaProperty') {
+          return
+        }
+
+        if (!seenGlobals.has(idName)) {
+          seenGlobals.add(idName)
+
+          diagnostics.push(createDiagnostic({
+            code: 'CORALITE-E304',
+            severity: 'error',
+            message: `Node runtime global '${idName}' referenced inside client() block.`,
+            filePath,
+            line: idNode.loc.start.line + scriptStartLine,
+            column: idNode.loc.start.column + 1,
+            sourceCode,
+            cause: 'client() executes in the browser, where Node runtime globals do not exist. Fetch build-time data in server() or paths() instead, and pass it through state.',
+            fix: null
+          }))
+        }
+      }
+    })
+  }
 }
