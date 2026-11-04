@@ -181,6 +181,8 @@ Do NOT delete the `ref` attribute, and do NOT add an empty `client({ refs }) { r
 
 Top-level imports are reserved for `definePage` / `definePlugin` and modules used by isomorphic code (`getters`, `style`, `slots`). Modules used by `server()`, `client()`, or `paths()` must be loaded with dynamic `await import()` inside the block (`CORALITE-E301`).
 
+- **Lazy dependency stylesheets (`await import('*.css')`)**: Load dependency or local `.css` files lazily inside component and page `client()` blocks (or transitive client `.js` helpers) via `await import('pkg/styles.css', options)`, which bundles CSS at build time into hashed `assets/css/` assets, injects `<link rel="stylesheet">` into `<head>` in deterministic manifest order at runtime, and resolves to `{ default: link.sheet ?? null, link }`. Both flat options (`{ media, nonce, crossorigin, referrerPolicy, signal, force }`) and Import Attributes (`{ with: { type: 'css', ... }, signal, force }`) are supported. Static top-level `.css` imports or dynamic `.css` imports outside `client()` throw `CORALITE-E109`; unresolvable `.css` files throw `CORALITE-E403`.
+
 ## 4. Serialization boundary
 
 - `server()` runs in Node.js at build time and is stripped from the browser bundle. It returns an object to initialize/hydrate `state`.

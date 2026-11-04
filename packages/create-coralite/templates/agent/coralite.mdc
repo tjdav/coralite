@@ -99,6 +99,7 @@ alwaysApply: false
 - Top-level imports are reserved for `definePage` / `definePlugin` and modules used by isomorphic code (`getters`, `style`, `slots`).
 - `server()` runs in Node.js at build time and is stripped from the browser bundle. It returns an object to initialize/hydrate `state`.
 - `client()` is serialized to run in the browser and cannot reference module-scope variables or top-level imports. Modules used by `server()`, `client()`, or `paths()` must be loaded with dynamic `await import()` inside the block (`CORALITE-E301`).
+- **Lazy dependency stylesheets (`await import('*.css')`)**: Load dependency or local `.css` files lazily inside component and page `client()` blocks (or transitive client `.js` helpers) via `await import('pkg/styles.css', options)` (`{ default: link.sheet ?? null, link }`). Static top-level `.css` imports or dynamic `.css` imports outside `client()` throw `CORALITE-E109`; unresolvable `.css` files throw `CORALITE-E403`.
 
 ## 3. No defensive guards in deterministic blocks
 

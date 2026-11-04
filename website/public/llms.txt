@@ -10,7 +10,7 @@ Key words per RFC 2119:
 2. **Pages use flat named exports too**: Page files (`src/pages/*.html`) use `export function server`, `export const meta`, `export const getters`, `export function client`, and so on. Legacy `export default definePage({ ... })` remains supported and is migrated by `coralite fix --migrate-pages`. Pages declare page information and default state with `export const meta` (the page analog to component `attributes`); `attributes` itself is rejected on pages.
 3. **MUST author components in `.html`**: Components are single `.html` files in `src/components/<tag-name>.html` containing `<template id="<tag-name>">`, optional `<style>`, and optional `<script type="module">`.
 4. **MUST keep templates dumb**: Templates support flat identifier interpolations only: `{{ propertyName }}`. Expressions, dot-notation, function calls, and inline event handlers (`onclick`) are strictly forbidden. Compute all derived logic in `getters`.
-5. **MUST respect the Serialization Boundary**: `server()` runs strictly in Node.js at build time and is stripped from browser bundles. `client()` runs in the browser and cannot capture module-scope variables or static top-level imports; use dynamic `await import()` inside `client()`.
+5. **MUST respect the Serialization Boundary**: `server()` runs strictly in Node.js at build time and is stripped from browser bundles. `client()` runs in the browser and cannot capture module-scope variables or static top-level imports; use dynamic `await import()` inside `client()` (including lazy dependency stylesheets via `await import('pkg/styles.css', { signal })`; static or server-side `.css` imports trigger `CORALITE-E109`).
 6. **Flexible context parameters**: Context objects for `getters`, `style`, and `slots` can be destructured (`({ state }) => ...`) or accessed via a unified context parameter (`(context) => context.state...`).
 7. **MUST keep `style` getters synchronous**: Style property getters receive `CoraliteStyleContext` (`{ state, isServer, signal }`) and must be synchronous (`CORALITE-E303`).
 8. **MUST pass `{ signal }` to event listeners**: Always bind DOM events inside `client()` using `el.addEventListener('click', fn, { signal })` for automatic cleanup.
@@ -22,7 +22,7 @@ Key words per RFC 2119:
 - [Dynamic Components](/llms/components.md): Single-file HTML structure, named exports schema, attributes coercion, getters, client lifecycle, and slots.
 - [Serialization Boundary](/llms/serialization.md): Server/client isolation, SSR data fetching, hydration bridge, and dynamic imports.
 - [Form-Associated Custom Elements (FACE)](/llms/face.md): `formControl = true`, `setFormValue`, constraint validation, and form reset/restore lifecycles.
-- [CSS Scoping & Styling](/llms/css.md): `@layer components`, `:host` & `:host-context()` selectors, dynamic style variables, and slot layout transparency.
+- [CSS Scoping & Styling](/llms/css.md): `@layer components`, `:host` & `:host-context()` selectors, dynamic style variables, lazy dependency stylesheets (`await import('*.css')`), and slot layout transparency.
 - [Plugins Reference](/llms/plugins.md): `definePlugin`, two-phase context resolvers, and build/client lifecycle hooks.
 - [Diagnostics & Validation](/llms/diagnostics.md): Compiler diagnostics (`CORALITE-E1xx` to `E4xx`), root causes, and automated AST fixer (`coralite fix`).
 - [Configuration](/llms/config.md): `coralite.config.js`, `defineConfig` options, CSP policies, and build options.

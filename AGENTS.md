@@ -144,6 +144,8 @@ use whichever form you prefer in generated code.
 
 Top-level imports are reserved for page configuration modules / `definePlugin` and modules used by isomorphic code (getters, style, slots). Modules used by `server()`, `client()`, or `paths()` are loaded with `await import()` inside the block. Components author logic via named exports and do not import `defineComponent`.
 
+- **Lazy dependency stylesheets (`await import('*.css')`)**: Third-party or local dependency CSS files are loaded lazily inside component and page `client()` blocks (or transitive client `.js` helper modules) using native dynamic `await import('pkg/styles.css', options)`. Coralite bundles local and bare-package CSS files at build time via esbuild + PostCSS into hashed `assets/css/` assets, injects `<link rel="stylesheet">` into `<head>` in deterministic manifest order at runtime, deduplicates concurrent callers, and resolves to `{ default: link.sheet ?? null, link }`. Both flat options (`{ media, nonce, crossorigin, referrerPolicy, signal, force }`) and standard Import Attributes (`{ with: { type: 'css', media, nonce, crossorigin, referrerPolicy }, signal, force }`) are supported. Static top-level `.css` imports or dynamic `.css` imports outside `client()` throw `CORALITE-E109`; missing or unresolvable local/package `.css` specifiers throw `CORALITE-E403`.
+
 ## 4. Serialization boundary
 
 - `server` runs at build time, stripped from the browser bundle.

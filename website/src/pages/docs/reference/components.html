@@ -215,6 +215,8 @@ export function client ({ state }) {
 
     <p><strong>Event Binding & Emitters:</strong> Bind event listeners with an <code>AbortSignal</code> provided via <code>signal</code> for automatic cleanup upon component unmount. Use <code>emit('custom-event', detail)</code> instead of calling <code>dispatchEvent</code> directly.</p>
 
+    <p><strong>Lazy Dependency Stylesheets:</strong> Load third-party or local CSS files on demand inside <code>client()</code> via <code>await import('pkg/styles.css', { media, nonce, crossorigin, referrerPolicy, signal, force })</code> (or standard Import Attributes <code>{ with: { type: 'css', ... }, signal, force }</code>). Coralite bundles the stylesheet into a hashed asset under <code>assets/css/</code>, injects a global <code>&lt;link rel="stylesheet"&gt;</code> into <code>&lt;head&gt;</code>, and resolves to <code>{ default: link.sheet, link }</code>.</p>
+
     <coralite-code-highlight language="javascript" title="Interactive Client Counter Example">
 export const attributes = {
   initialCount: { type: Number, default: 0 }

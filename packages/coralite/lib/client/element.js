@@ -5271,46 +5271,49 @@ export class CoraliteElement extends BaseElement {
       try {
         await this.componentOptions.client(localContext)
       } catch (error) {
-        console.error(`Coralite Error: Component "${this.componentOptions.componentId}" script failed:`, error)
-        if (isDevRuntime()) {
-          const fatalError = new Error(`Coralite Component Error: Component "${this.componentOptions.componentId}" (${this._instanceId}) client() block failed: ${error.message}`)
-          fatalError.stack = error.stack
+        const isAbortError = error && error.name === 'AbortError' && this._abortController.signal.aborted
+        if (!isAbortError) {
+          console.error(`Coralite Error: Component "${this.componentOptions.componentId}" script failed:`, error)
+          if (isDevRuntime()) {
+            const fatalError = new Error(`Coralite Component Error: Component "${this.componentOptions.componentId}" (${this._instanceId}) client() block failed: ${error.message}`)
+            fatalError.stack = error.stack
 
-          if (typeof window['showCoraliteError'] === 'function') {
-            window['showCoraliteError'](fatalError)
-          } else {
-            const overlay = document.createElement('div')
-            overlay.style.position = 'fixed'
-            overlay.style.top = '0'
-            overlay.style.left = '0'
-            overlay.style.width = '100%'
-            overlay.style.height = '100%'
-            overlay.style.backgroundColor = 'rgba(127, 29, 29, 0.98)'
-            overlay.style.color = '#ffffff'
-            overlay.style.padding = '20px'
-            overlay.style.zIndex = '10000'
-            overlay.style.fontFamily = 'monospace'
-            overlay.style.whiteSpace = 'pre-wrap'
-            overlay.style.overflow = 'auto'
+            if (typeof window['showCoraliteError'] === 'function') {
+              window['showCoraliteError'](fatalError)
+            } else {
+              const overlay = document.createElement('div')
+              overlay.style.position = 'fixed'
+              overlay.style.top = '0'
+              overlay.style.left = '0'
+              overlay.style.width = '100%'
+              overlay.style.height = '100%'
+              overlay.style.backgroundColor = 'rgba(127, 29, 29, 0.98)'
+              overlay.style.color = '#ffffff'
+              overlay.style.padding = '20px'
+              overlay.style.zIndex = '10000'
+              overlay.style.fontFamily = 'monospace'
+              overlay.style.whiteSpace = 'pre-wrap'
+              overlay.style.overflow = 'auto'
 
-            const heading = document.createElement('h1')
-            heading.textContent = 'Coralite Component Error'
-            const desc = document.createElement('p')
-            desc.textContent = fatalError.message
+              const heading = document.createElement('h1')
+              heading.textContent = 'Coralite Component Error'
+              const desc = document.createElement('p')
+              desc.textContent = fatalError.message
 
-            overlay.appendChild(heading)
-            overlay.appendChild(desc)
+              overlay.appendChild(heading)
+              overlay.appendChild(desc)
 
-            if (fatalError.stack) {
-              const stackTrace = document.createElement('pre')
+              if (fatalError.stack) {
+                const stackTrace = document.createElement('pre')
 
-              stackTrace.textContent = fatalError.stack
-              overlay.appendChild(stackTrace)
+                stackTrace.textContent = fatalError.stack
+                overlay.appendChild(stackTrace)
+              }
+
+              document.body.appendChild(overlay)
             }
-
-            document.body.appendChild(overlay)
+            throw fatalError
           }
-          throw fatalError
         }
       }
     }

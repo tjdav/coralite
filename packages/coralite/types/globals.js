@@ -28,6 +28,7 @@
  * @property {any} [listStrategy]
  * @property {any} [hydrationStore]
  * @property {(tag: string) => Promise<any>} [loadComponent]
+ * @property {import('./core.js').CoraliteImportCSS} [importCSS]
  * @property {(el: Element) => Promise<void>} [upgrade]
  * @property {any} [store]
  * @property {any} [lifecycle]

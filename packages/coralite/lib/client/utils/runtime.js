@@ -54,7 +54,7 @@ export function generateClientRuntime ({
   );
 
   const [
-    { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, initPlugins, setupPageRuntime },
+    { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, initPlugins, setupPageRuntime, createImportCSS },
     { default: componentManifest }
   ] = await Promise.all([
     import('${base}assets/js/${sharedChunkPath}'),
@@ -82,6 +82,12 @@ export function generateClientRuntime ({
 
   const declarativeTags = ${JSON.stringify(declarativeTags)};
   window.__coralite_styles_loaded__ = window.__coralite_styles_loaded__ || new Set(${inlinedStyles});
+  if (typeof createImportCSS === 'function') {
+    window.__coralite__.importCSS = createImportCSS({
+      base: ${JSON.stringify(base)},
+      manifest: componentManifest
+    });
+  }
 
   const loadCache = {};
 

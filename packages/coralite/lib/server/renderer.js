@@ -27,6 +27,7 @@ import {
   astTransformer
 } from './utils/server.js'
 import { getHtmlFile } from './utils/html.js'
+import { extractScriptStylesheets } from './utils/dependency-stylesheets.js'
 import { parseHTML } from './utils/parse.js'
 import {
   findHeadAndBody,
@@ -144,10 +145,13 @@ export function computeRouteAndOutputPath (patternPath, cleanUrls, pagesRoot, is
  * @import { ScriptManager } from './script-manager.js'
  */
 
-const createManifestOutputFile = (manifest) => ({
+const createManifestOutputFile = (manifest, stylesheetManifest) => ({
   path: 'assets/js/manifest.js',
   hashedPath: 'manifest.js',
-  text: `export default ${JSON.stringify(manifest)};`
+  text: `export default ${JSON.stringify(stylesheetManifest && Object.keys(stylesheetManifest).length > 0 ? {
+    ...manifest,
+    stylesheets: stylesheetManifest
+  } : manifest)};`
 })
 
 /**
@@ -2414,12 +2418,19 @@ export function createRenderer ({
             }
           }
         }
+        let serializedPageClient = null
+        if (!isFallbackRender && pageExports.client) {
+          serializedPageClient = extractScriptStylesheets(pageExports.client.toString(), {
+            filePath: pageItem.path?.pathname,
+            allowAllFunctions: true
+          }).code
+        }
         pageConfigObj = {
           state: stateData,
           route: routeObj,
           getters: gettersSource,
           style: styleSource,
-          client: (!isFallbackRender && pageExports.client) ? pageExports.client.toString() : null,
+          client: serializedPageClient,
           tokens: isFallbackRender ? {} : pageTokenTemplates
         }
       }
@@ -2768,7 +2779,7 @@ export function createRenderer ({
       Object.assign(outputFiles, globalScriptResult.outputFiles)
 
       if (globalScriptResult.manifest) {
-        outputFiles['manifest.js'] = createManifestOutputFile(globalScriptResult.manifest)
+        outputFiles['manifest.js'] = createManifestOutputFile(globalScriptResult.manifest, globalScriptResult.stylesheetManifest)
 
         const newComponentManifest = globalScriptResult.manifest
         const oldComponentManifest = manifest.components
@@ -2830,7 +2841,7 @@ export function createRenderer ({
             Object.assign(outputFiles, result.outputFiles)
 
             if (result.manifest) {
-              outputFiles['manifest.js'] = createManifestOutputFile(result.manifest)
+              outputFiles['manifest.js'] = createManifestOutputFile(result.manifest, result.stylesheetManifest)
             }
           }
           return result
@@ -2841,7 +2852,7 @@ export function createRenderer ({
       if (globalScriptResult?.outputFiles) {
         Object.assign(outputFiles, globalScriptResult.outputFiles)
         if (globalScriptResult.manifest && !outputFiles['manifest.js']) {
-          outputFiles['manifest.js'] = createManifestOutputFile(globalScriptResult.manifest)
+          outputFiles['manifest.js'] = createManifestOutputFile(globalScriptResult.manifest, globalScriptResult.stylesheetManifest)
         }
       }
     }

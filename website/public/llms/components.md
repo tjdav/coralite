@@ -112,6 +112,7 @@ export function server ({ state }) {
 ### `client({ state, root, refs, signal, emit, observe, updateComplete, errors, internals })`
 * Executes in the browser when the component mounts.
 * **Serialization Boundary**: Cannot access module-scope variables or top-level static imports. Use dynamic `await import()` inside `client()`.
+* **Lazy Dependency Stylesheets**: Load third-party or local CSS lazily inside `client()` via `await import('pkg/styles.css', { media, nonce, crossorigin, referrerPolicy, signal, force })` (or `{ with: { type: 'css', ... }, signal, force }`), which injects `<link rel="stylesheet">` into `<head>` and resolves to `{ default: link.sheet ?? null, link }`.
 * Always pass `{ signal }` to event listeners for automatic cleanup.
 * Never mutate reactive `state` inside `observe()` (`CORALITE-E302`).
 

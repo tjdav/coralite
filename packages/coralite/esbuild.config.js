@@ -130,6 +130,10 @@ export const buildOptions = {
       out: 'lib/utils/client/devtools'
     },
     {
+      in: './lib/client/utils/stylesheets.js',
+      out: 'lib/utils/client/stylesheets'
+    },
+    {
       in: './lib/client/utils/dom.js',
       out: 'lib/client/utils/dom'
     },
@@ -140,6 +144,10 @@ export const buildOptions = {
     {
       in: './lib/client/utils/devtools.js',
       out: 'lib/client/utils/devtools'
+    },
+    {
+      in: './lib/client/utils/stylesheets.js',
+      out: 'lib/client/utils/stylesheets'
     },
     {
       in: './lib/client/utils/index.js',
@@ -154,6 +162,10 @@ export const buildOptions = {
     {
       in: './lib/client/utils/devtools.js',
       out: 'client/utils/devtools'
+    },
+    {
+      in: './lib/client/utils/stylesheets.js',
+      out: 'client/utils/stylesheets'
     },
     {
       in: './lib/shared/index.js',

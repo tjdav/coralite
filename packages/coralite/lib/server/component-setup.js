@@ -7,6 +7,7 @@ import {
   isCoraliteComment
 } from '../shared/types.js'
 import { findAndExtractScript, extractComponentProperty } from './utils/server.js'
+import { extractScriptStylesheets } from './utils/dependency-stylesheets.js'
 import { formatComponentCss } from './utils/style.js'
 import { inferTypeFromValues, validateAttributeValue } from '../shared/attributes.js'
 import { prepareAllComponentOps } from './utils/fragment.js'
@@ -210,6 +211,24 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
  *  CoraliteInstance
  * } from '../../types/index.js'
  */
+
+/**
+ * Validates and registers dependency stylesheet declarations for a component.
+ *
+ * @param {Object} module - Component module context.
+ * @param {Object} app - Global Coralite app instance.
+ */
+function _registerComponentStylesheets (module, app) {
+  if (!module || !module.script) {
+    return
+  }
+  const filePath = module.path?.pathname || module.filePath
+  const { declarations } = extractScriptStylesheets(module.script, { filePath })
+
+  if (app && typeof app.registerComponentStylesheets === 'function') {
+    app.registerComponentStylesheets(module.id, filePath, declarations)
+  }
+}
 
 /**
  * Validates the component style option.
@@ -796,6 +815,7 @@ export function createComponentDefinition ({ app }) {
     }
 
     _validateComponentStyle(style, module)
+    _registerComponentStylesheets(module, app)
 
     state.errors = state.errors || {}
 
@@ -903,13 +923,24 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
   let extractedComponents = []
 
   if (component.script) {
+    const componentFilePath = component.filePath || (component.path && component.path.pathname)
+    const { declarations } = extractScriptStylesheets(component.script, {
+      filePath: componentFilePath
+    })
+    if (scriptManager && typeof scriptManager.registerComponentStylesheets === 'function') {
+      scriptManager.registerComponentStylesheets(component.id, componentFilePath, declarations)
+    }
+
     if (!component._extractedClient) {
       component._extractedClient = findAndExtractScript(component.script)
     }
     const extractedClient = component._extractedClient
 
     if (extractedClient) {
-      scriptObj.content = extractedClient.content
+      scriptObj.content = extractScriptStylesheets(extractedClient.content, {
+        filePath: componentFilePath,
+        allowAllFunctions: true
+      }).code
       scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
       scriptObj.provideSource = extractedClient.provideSource
       scriptObj.consumeSource = extractedClient.consumeSource

@@ -120,6 +120,7 @@ export async function createCoralite ({
   concurrency,
   assets,
   externalStyles,
+  styles,
   baseURL = '/',
   projectRoot = process.cwd(),
   ignoreByAttribute,
@@ -214,6 +215,7 @@ export async function createCoralite ({
     concurrency: typeof concurrency === 'number' && concurrency > 0 ? Math.floor(concurrency) : undefined,
     assets,
     externalStyles,
+    styles,
     baseURL,
     projectRoot: normalize(projectRoot),
     ignoreByAttribute,
@@ -389,6 +391,8 @@ export async function createCoralite ({
   }
   const scriptManager = new ScriptManager(normalizedOptions)
   // @ts-ignore
+  app.registerComponentStylesheets = (id, filePath, stylesheets) => scriptManager.registerComponentStylesheets(id, filePath, stylesheets)
+  // @ts-ignore
   const serverGlobalContext = { app }
 
   const _handleErrorLocal = (data) => handleError({
@@ -549,14 +553,17 @@ export async function createCoralite ({
           const assetWrites = Object.values(renderer.outputFiles).map(async (file) => {
             const isCSS = file.path.endsWith('.css')
             const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
-            const outFile = join(baseAssetsDir, file.hashedPath)
+            const outFile = file.outputDir
+              ? join(outputDir, file.outputDir, file.hashedPath)
+              : join(baseAssetsDir, file.hashedPath)
             const outDir = dirname(outFile)
+            const contents = file.contents !== undefined ? file.contents : file.text
 
             if (!createdDir[outDir]) {
               await mkdir(outDir, { recursive: true }); createdDir[outDir] = true
             }
 
-            await writeFile(outFile, file.text, { signal })
+            await writeFile(outFile, contents, { signal })
 
             results.push({
               path: outFile,

@@ -74,6 +74,7 @@ export async function buildCommand (config, options, logger = null) {
     plugins: Array.isArray(config.plugins) ? config.plugins : [],
     concurrency: config.build?.concurrency ?? config.concurrency,
     assets: config.assets,
+    styles: config.styles,
     csp: config.csp,
     incremental,
     externalStyles: config.styles?.input?.map(input => {
@@ -176,12 +177,15 @@ export async function buildCommand (config, options, logger = null) {
       const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
         const isCSS = (file.path || file.hashedPath)?.endsWith('.css')
         const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
-        const outFile = join(baseAssetsDir, file.hashedPath)
+        const outFile = file.outputDir
+          ? join(config.output, file.outputDir, file.hashedPath)
+          : join(baseAssetsDir, file.hashedPath)
+        const contents = file.contents !== undefined ? file.contents : file.text
 
         validFiles.add(outFile)
 
         await mkdir(dirname(outFile), { recursive: true })
-        await writeFile(outFile, file.text)
+        await writeFile(outFile, contents)
         if (options.verbose) {
           log(toTime() + toMS(0) + dash + outFile + '\n')
         }

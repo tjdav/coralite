@@ -27,11 +27,13 @@ npx coralite fix --dry-run
 | `CORALITE-E103` | Error | Asynchronous attribute `transform` or `validate` function | Make attribute coercion functions synchronous. |
 | `CORALITE-E105` | Error | Context parameter misuse (e.g. (state) => state.prop, deprecated context.attributes, or legacy 2-arg slots) | Destructure ({ state }), use (context) => context.state.prop, or migrate slots to single parameter. |
 | `CORALITE-E108` | Error | Bare named exports in a page file (`src/pages/*.html`) | Wrap page exports in `export default definePage({ ... })`. |
+| `CORALITE-E109` | Error | Static top-level `.css` import, dynamic `.css` import outside `client()`, or invalid CSS import options | Load stylesheets exclusively inside `client()` via `await import('*.css', options)`. |
 | `CORALITE-E201` | Error | Non-flat identifier expression in `<template>` (`{{ a + b }}`) | Move expressions into a synchronous derived getter in `export const getters = { ... }`. |
 | `CORALITE-E203` | Error | Inline event handler attribute in `<template>` (`onclick="..."`) | Use `ref="btn"` in template and wire with `refs('btn').addEventListener('click', fn, { signal })` in `client()`. |
 | `CORALITE-E301` | Error | Module-scope static import referenced inside `client()` | Use dynamic `await import(...)` inside `client()`. |
 | `CORALITE-E302` | Error | State mutated inside `observe()` callback | Mutate state in event listeners or compute values via `getters`. `observe()` is strictly for external side-effects. |
 | `CORALITE-E303` | Error | Asynchronous getter function in `export const style` | Make the style function synchronous. |
 | `CORALITE-E304` | Error | Node runtime global referenced inside `client()` block | Web-platform globals (`console`, `fetch`, `URL`, ...) are shared and allowed. Fetch build-time data in `server()` or `paths()` and pass it through `state`. |
+| `CORALITE-E403` | Error | Unresolvable or missing dependency stylesheet (`.css`) specifier | Verify the package or relative `.css` path exists on disk. |
 | `CORALITE-W501` | Warning | Reserved prefix (`coralite-`, `c-`, `router-`) used in component tag ID | Use application prefixes like `site-`, `ui-`, or `app-`. |
 | `CORALITE-PAGE-201` | Error | Page script directly queries custom element internals | Communicate via declarative attributes, events, or W3C contexts. |

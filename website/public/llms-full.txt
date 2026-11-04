@@ -23,6 +23,7 @@
   - [§6.9 W3C Context Protocol (`provide`, `consume`, `createContext`)](#69-w3c-context-protocol-provide-consume-createcontext)
   - [§6.10 Form-Associated Custom Elements (`formControl = true`)](#610-form-associated-custom-elements-formcontrol--true)
   - [§6.11 CSS Scoping, Specificity Taming (`@layer`, `:where()`), Slot Transparency & `::slotted()`](#611-css-scoping-specificity-taming-layer-where-slot-transparency-slotted)
+  - [§6.12 Lazy Dependency Stylesheets (`await import('*.css')`)](#612-lazy-dependency-stylesheets-await-importcss)
 - [§7. Framework Extensibility (`definePlugin`)](#7-framework-extensibility-defineplugin)
   - [§7.1 Plugin Schema & Physical Source Error Mapping (`rootDir`, `filePath`)](#71-plugin-schema-physical-source-error-mapping-rootdir-filepath)
   - [§7.2 Context Resolver System (Static vs. Two-Phase Instance Context)](#72-context-resolver-system-static-vs-two-phase-instance-context)
@@ -835,6 +836,35 @@ export function client ({ state, signal, refs, setFormValue, setValidity, onForm
 - **Slot Layout Transparency (`display: contents`)**: Coralite injects `slot, c-token { display: contents; }` outside `@layer components`, allowing projected slotted children to participate directly in parent Flexbox/Grid layouts without extra box wrapping.
 - **`::slotted(selector)` Transformation**: Coralite's compiler transforms `::slotted(selector)` into Light DOM scoped selectors (`& > slot > selector` and `& > selector[slot]`).
 
+### 6.12 Lazy Dependency Stylesheets (`await import('*.css')`)
+
+Third-party libraries and heavy client widgets often ship global CSS that should only load when a component or page mounts. Use native ECMAScript dynamic `await import()` inside component or page `client()` blocks (or transitive client `.js` helper modules):
+
+```html
+<template id="venue-map">
+  <div class="leaflet-container" ref="map"></div>
+</template>
+
+<script type="module">
+  export async function client ({ refs, signal }) {
+    const [{ default: sheet, link }, L] = await Promise.all([
+      import('leaflet/dist/leaflet.css', { media: 'screen', signal }),
+      import('leaflet')
+    ])
+    L.map(refs('map'))
+  }
+</script>
+```
+
+- **Build-Time Bundling**: Local relative (`./map.css`), absolute, and bare npm package (`leaflet/dist/leaflet.css`) specifiers resolve from the declaring component, page, or helper module and are bundled at build time via esbuild + PostCSS into hashed `assets/css/[name]-[hash].css` files (rewriting `@import` and relative `url()` assets). No `<link>` is emitted during SSR.
+- **Global & Unscoped**: Dependency stylesheets are injected as global `<link rel="stylesheet">` tags in `<head>` in deterministic manifest order, independent of network completion timing. Multiple components or pages importing the same resolved stylesheet share a single bundled asset and `<link>` element.
+- **Remote URLs**: Remote `http(s)://` or `//` stylesheet URLs pass through to the browser runtime without build-time bundling.
+- **Options (2nd Argument)**: Supports both flat options (`{ media, nonce, crossorigin, referrerPolicy, signal, force }`) and standard Import Attributes (`{ with: { type: 'css', media, nonce, crossorigin, referrerPolicy }, signal, force }`).
+- **Return Value**: Resolves on browser `load` to `{ default: link.sheet ?? null, link }`. Aborting `signal` stops waiting for the caller without removing the shared `<link>`. Pass `{ force: true }` to retry a previously failed load.
+- **Diagnostics**:
+  - `CORALITE-E109`: Thrown if `.css` is imported via top-level static `import`, inside `server()` / `getters` / `style` / `slots` / `paths` / `onError`, or with unsupported option keys/types.
+  - `CORALITE-E403`: Thrown if a local or package `.css` specifier cannot be resolved on disk at build time.
+
 ---
 
 ## 7. Framework Extensibility (`definePlugin`)
@@ -1203,6 +1233,7 @@ Diagnostics emitted by the AST validator follow a three-level severity model:
   - `CORALITE-E104`: Attribute name collides with reserved context or slot key.
   - `CORALITE-E105`: Context parameter misuse (accidental (state) => state.prop, deprecated context.attributes, or legacy multi-arg slots).
   - `CORALITE-E106`: Invalid `provide` or `consume` configuration schema.
+  - `CORALITE-E109`: Static top-level `.css` import, dynamic `.css` import outside `client()`, or invalid CSS import options.
 - **Template Syntax**:
   - `CORALITE-E201`: Complex, arithmetic, or non-identifier template expression (e.g. `{{ a + b }}`). (Auto-fixer lifts expression to derived getter).
   - `CORALITE-E202`: Missing `ref` declaration referenced by `refs('name')`. (Auto-fixer injects `ref` on matching element).
@@ -1216,6 +1247,7 @@ Diagnostics emitted by the AST validator follow a three-level severity model:
 - **Dead Code & Coverage**:
   - `CORALITE-W401`: Unused getter, server property, or declared attribute.
   - `CORALITE-W402`: Dead CSS selectors or unused element `ref="..."` declaration.
+  - `CORALITE-E403`: Unresolvable or missing dependency stylesheet (`.css`) specifier.
 
 ### CLI Flags & Pragmas
 - **CLI Options**:
