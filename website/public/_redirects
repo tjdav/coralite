@@ -8,6 +8,7 @@
 /docs/guide/static-components.html /docs/guide/components.html 301
 /docs/guide/dynamic-components.html /docs/guide/components.html 301
 /docs/reference/plugins/define-component.html /docs/reference/define-component.html 301
-/docs/reference/plugins/create-plugin.html /docs/reference/plugins/define-plugin.html 301
+/docs/reference/plugins/create-plugin.html /docs/reference/define-plugin.html 301
 /docs/reference/plugins/refs-plugin.html /docs/reference/plugins/refs.html 301
 /docs/reference/create-plugin.html /docs/reference/define-plugin.html 301
+/docs/reference/plugins/define-plugin.html /docs/reference/define-plugin.html 301
