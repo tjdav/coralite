@@ -14,6 +14,7 @@ import {
   validateGetters,
   validateStyle,
   validateServerBlock,
+  validateClientNodeGlobals,
   validateDefensiveGuards
 } from '../validator/index.js'
 import { validateComponentSource } from '../component/validator.js'
@@ -505,6 +506,7 @@ function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnosti
     validateGetters(scriptCtx)
     validateStyle(scriptCtx)
     validateServerBlock(scriptCtx)
+    validateClientNodeGlobals(scriptCtx)
     validateDefensiveGuards(scriptCtx)
   }
   if (scriptCtx.diagnostics && scriptCtx.diagnostics.length > 0) {

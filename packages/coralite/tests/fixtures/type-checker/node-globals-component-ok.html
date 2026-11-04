@@ -1,0 +1,11 @@
+<template id="node-globals-component-ok">
+  <div>{{ flag }}</div>
+</template>
+
+<script type="module">
+export async function server () {
+  const isProd = process.env.NODE_ENV === 'production'
+  const buf = Buffer.from(process.env.API_URL || '')
+  return { flag: isProd && buf.length > 0 ? 'prod' : 'dev' }
+}
+</script>

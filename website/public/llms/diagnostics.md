@@ -32,5 +32,6 @@ npx coralite fix --dry-run
 | `CORALITE-E301` | Error | Module-scope static import referenced inside `client()` | Use dynamic `await import(...)` inside `client()`. |
 | `CORALITE-E302` | Error | State mutated inside `observe()` callback | Mutate state in event listeners or compute values via `getters`. `observe()` is strictly for external side-effects. |
 | `CORALITE-E303` | Error | Asynchronous getter function in `export const style` | Make the style function synchronous. |
+| `CORALITE-E304` | Error | Node runtime global referenced inside `client()` block | Web-platform globals (`console`, `fetch`, `URL`, ...) are shared and allowed. Fetch build-time data in `server()` or `paths()` and pass it through `state`. |
 | `CORALITE-W501` | Warning | Reserved prefix (`coralite-`, `c-`, `router-`) used in component tag ID | Use application prefixes like `site-`, `ui-`, or `app-`. |
 | `CORALITE-PAGE-201` | Error | Page script directly queries custom element internals | Communicate via declarative attributes, events, or W3C contexts. |

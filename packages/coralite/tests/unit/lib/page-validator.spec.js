@@ -462,6 +462,65 @@ describe('Coralite Page Validator (page-validator.js)', () => {
     })
   })
 
+  describe('CORALITE-E304: Node runtime globals in page client()', () => {
+    it('emits an error for Node globals referenced inside the page client() block', () => {
+      const source = `
+        <!DOCTYPE html>
+        <html>
+          <body>
+            <h1>Page</h1>
+          </body>
+        </html>
+        <script type="module">
+          import { definePage } from 'coralite'
+
+          export default definePage({
+            async server () {
+              return { title: 'Test' }
+            },
+            client () {
+              const token = process.env.CLIENT_TOKEN
+              console.log(token)
+            }
+          })
+        </script>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map()
+      })
+
+      const e304s = result.diagnostics.filter(d => d.code === 'CORALITE-E304')
+      assert.equal(e304s.length, 1)
+      assert.equal(e304s[0].severity, 'error')
+      assert.match(e304s[0].message, /process/)
+    })
+
+    it('does not flag Node globals in server() or web-platform globals in client()', () => {
+      const source = `
+        <script type="module">
+          import { definePage } from 'coralite'
+
+          export default definePage({
+            async server () {
+              const source = process.env.API_URL
+              const buf = Buffer.from(source || '')
+              return { source, buf: buf.length }
+            },
+            client () {
+              console.log(fetch, URL, crypto)
+            }
+          })
+        </script>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map()
+      })
+
+      const e304s = result.diagnostics.filter(d => d.code === 'CORALITE-E304')
+      assert.equal(e304s.length, 0)
+    })
+  })
+
   describe('validatePagesDir & formatPageValidationReport', () => {
     it('validates a directory of pages recursively', async () => {
       const tmpDir = join(tmpdir(), `coralite-page-val-test-${Date.now()}`)

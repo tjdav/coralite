@@ -54,6 +54,10 @@ const COMMON_ERROR_CODES = [
     label: 'E303 - Invalid client hook signature'
   },
   {
+    value: 'E304',
+    label: 'E304 - Node runtime global referenced in client script'
+  },
+  {
     value: 'W204',
     label: 'W204 - Unused component state property or getter'
   },

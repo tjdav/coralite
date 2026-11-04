@@ -534,7 +534,128 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(e303s[0].severity, 'error')
   })
 
-  // 11. Unused Symbols Warnings (CORALITE-W401)
+  // 11. Node Runtime Globals in client() (CORALITE-E304)
+  test('CORALITE-E304: detects Node runtime globals referenced inside client() block with deduplication', () => {
+    const code = `
+<template id="test-e304">
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client() {
+      const token = process.env.CLIENT_TOKEN
+      console.log(Buffer.from(String(token)).toString())
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e304.html')
+    assert.strictEqual(result.valid, false)
+
+    const e304s = result.diagnostics.filter(d => d.code === 'CORALITE-E304')
+    assert.strictEqual(e304s.length, 2)
+
+    const processDiag = e304s.find(d => d.message.includes("'process'"))
+    assert.ok(processDiag)
+    assert.strictEqual(processDiag.severity, 'error')
+    assert.strictEqual(processDiag.message, "Node runtime global 'process' referenced inside client() block.")
+    assert.strictEqual(processDiag.line, 11)
+    assert.ok(processDiag.cause.includes('browser'))
+
+    const bufferDiag = e304s.find(d => d.message.includes("'Buffer'"))
+    assert.ok(bufferDiag)
+    assert.strictEqual(bufferDiag.message, "Node runtime global 'Buffer' referenced inside client() block.")
+  })
+
+  test('CORALITE-E304: detects Node globals in named-export client() form', () => {
+    const code = `
+<template id="test-e304-export">
+  <button ref="run">Run</button>
+</template>
+
+<script>
+  export async function server() {
+    return {
+      label: 'start'
+    }
+  }
+
+  export function client({ refs, signal }) {
+    const run = refs('run')
+    run.addEventListener('click', () => {
+      console.log(setImmediate)
+    }, { signal })
+  }
+</script>
+`
+    const result = validateComponentSource(code, 'test-e304-export.html')
+
+    const e304s = result.diagnostics.filter(d => d.code === 'CORALITE-E304')
+    assert.strictEqual(e304s.length, 1)
+    assert.strictEqual(e304s[0].severity, 'error')
+    assert.strictEqual(e304s[0].message, "Node runtime global 'setImmediate' referenced inside client() block.")
+  })
+
+  test('CORALITE-E304: ignores web-platform globals shared with the browser and local shadowing', () => {
+    const code = `
+<template id="test-e304-safe">
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    async server() {
+      return {
+        api: process.env.API_URL
+      }
+    },
+    client() {
+      const process = { shadow: true }
+      const url = new URL('https://example.com')
+      fetch(url).then(() => console.log(crypto.subtle))
+      console.log(process.shadow)
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e304-safe.html')
+
+    const e304s = result.diagnostics.filter(d => d.code === 'CORALITE-E304')
+    assert.strictEqual(e304s.length, 0)
+  })
+
+  test('CORALITE-E304: does not flag Node globals outside client() (server and module scope)', () => {
+    const code = `
+<template id="test-e304-server-only">
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  const apiUrl = process.env.API_URL || 'http://localhost'
+
+  export default defineComponent({
+    async server() {
+      return {
+        buf: Buffer.from(apiUrl).length
+      }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e304-server-only.html')
+
+    const e304s = result.diagnostics.filter(d => d.code === 'CORALITE-E304')
+    assert.strictEqual(e304s.length, 0)
+  })
+
+  // 12. Unused Symbols Warnings (CORALITE-W401)
   test('CORALITE-W401: emits warning for unused getters, serverProps, and attributes', () => {
     const code = `
 <template id="test-w401">
@@ -566,7 +687,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(w401s[0].severity, 'warning')
   })
 
-  // 12. Unused Element Ref Warning (CORALITE-W402)
+  // 13. Unused Element Ref Warning (CORALITE-W402)
   test('CORALITE-W402: emits warning for element ref defined in template but never accessed', () => {
     const code = `
 <template id="test-w402">
@@ -586,7 +707,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(w402s[0].severity, 'warning')
   })
 
-  // 13. Component Validity Policy (result.valid)
+  // 14. Component Validity Policy (result.valid)
   test('evaluates result.valid based on errorCount === 0 && totalUnused === 0', () => {
     // Valid component: 0 errors, 0 unused
     const validCode = `
@@ -639,7 +760,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(resError.valid, false)
   })
 
-  // 14. AST Ref Determinism Verification (CORALITE-W204)
+  // 15. AST Ref Determinism Verification (CORALITE-W204)
   test('CORALITE-W204: emits warning for top-level if (btn) and if (refs("btn")) existence checks', () => {
     const code1 = `
 <template id="w204-1">
@@ -718,7 +839,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(w204s.length, 0)
   })
 
-  // 15. CORALITE-E105 & CORALITE-E107 Diagnostic Rule Tests
+  // 16. CORALITE-E105 & CORALITE-E107 Diagnostic Rule Tests
   test('CORALITE-E107: emits error on unknown component options, deprecated top-level state, non-boolean formAssociated, and non-function onError', () => {
     const code = `
 <template id="test-e107">
@@ -848,7 +969,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(e105s[1].fix.action, 'rewrite_context_attributes')
   })
 
-  // 16. state.errors.<prop> Attribute Usage Tracking Test
+  // 17. state.errors.<prop> Attribute Usage Tracking Test
   test('state.errors.<prop>: components consuming attributes solely via state.errors.myProp achieve 100% usage coverage', () => {
     const code = `
 <template id="test-errors-usage">
@@ -873,7 +994,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(result.valid, true)
   })
 
-  // 17. Single-File HTML Script Offset Accuracy
+  // 18. Single-File HTML Script Offset Accuracy
   test('Single-File HTML Script Offset Accuracy: reports file-relative line coordinates and codeframe previews', () => {
     const templateLines = Array.from({ length: 50 }, (_, i) => `  <div>Template line ${i + 1}</div>`).join('\n')
     const code = `<template id="offset-test">
@@ -901,7 +1022,7 @@ ${templateLines}
     assert.ok(w204.codeframe.includes('60 |       if (btn) {'))
   })
 
-  // 18. Precision Ref Selectors (Positive Test Cases)
+  // 19. Precision Ref Selectors (Positive Test Cases)
   test('Precision Ref Selectors: recognizes ref selectors in JS strings, template literals, and <style>', () => {
     // 1. DOM Event Delegation (closest)
     const code1 = `
@@ -991,7 +1112,7 @@ ${templateLines}
     assert.strictEqual(w402s5.length, 0)
   })
 
-  // 19. Precision Ref Selectors (Negative Test Cases - Must Emit CORALITE-W402)
+  // 20. Precision Ref Selectors (Negative Test Cases - Must Emit CORALITE-W402)
   test('Precision Ref Selectors: continues to warn CORALITE-W402 for non-ref selectors, comments, and invalid accesses', () => {
     // 1. Coincidental getElementById / data-ref
     const code1 = `

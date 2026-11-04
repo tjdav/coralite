@@ -14,6 +14,7 @@ import {
   validateSlots,
   validateStyle,
   validateClientBlock,
+  validateClientNodeGlobals,
   validateDefensiveGuards,
   collectDeadCode
 } from '../validator/index.js'
@@ -27,7 +28,7 @@ import {
 
 /**
  * Validates component source code for unused getters, server state, attributes, refs, top-level client imports,
- * template expressions, serialization boundaries, reactive loops, and attribute mutexes.
+ * template expressions, serialization boundaries, Node globals in client(), reactive loops, and attribute mutexes.
  *
  * @param {string} sourceCode - Raw component file content
  * @param {string} [filePath=''] - Path to component file for context
@@ -48,6 +49,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
     validateSlots(context)
     validateStyle(context)
     validateClientBlock(context)
+    validateClientNodeGlobals(context)
     validateDefensiveGuards(context)
   }
 

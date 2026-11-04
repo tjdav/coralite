@@ -1,5 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
+import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { typeCheck } from '../../../../lib/server/type-checker/index.js'
@@ -107,5 +109,108 @@ describe('typeCheck', () => {
 
     assert.strictEqual(result.skipped, false)
     assert.deepStrictEqual(result.diagnostics, [])
+  })
+
+  it('returns zero diagnostics for a page accessing Node globals (process, Buffer) in paths() and server()', async () => {
+    const file = path.join(fixturesDir, 'node-globals-ok.html')
+    const result = await typeCheck([file])
+
+    assert.strictEqual(result.skipped, false)
+    assert.deepStrictEqual(result.diagnostics, [])
+  })
+
+  it('returns zero diagnostics for Node globals when tsconfig specifies types array omitting node', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'coralite-types-test-'))
+    const tsconfigPath = path.join(tmpDir, 'tsconfig.json')
+    fs.writeFileSync(tsconfigPath, JSON.stringify({
+      compilerOptions: {
+        types: []
+      }
+    }))
+
+    const file = path.join(fixturesDir, 'node-globals-ok.html')
+    try {
+      const result = await typeCheck([file], { tsconfig: tsconfigPath })
+      assert.strictEqual(result.skipped, false)
+      assert.deepStrictEqual(result.diagnostics, [])
+    } finally {
+      fs.rmSync(tmpDir, {
+        recursive: true,
+        force: true
+      })
+    }
+  })
+
+  it('suppresses TS2580 diagnostics for Node globals when typeRoots is empty', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'coralite-typeroots-test-'))
+    const tsconfigPath = path.join(tmpDir, 'tsconfig.json')
+    fs.writeFileSync(tsconfigPath, JSON.stringify({
+      compilerOptions: {
+        typeRoots: []
+      }
+    }))
+
+    const file = path.join(fixturesDir, 'node-globals-ok.html')
+    try {
+      const result = await typeCheck([file], { tsconfig: tsconfigPath })
+      assert.strictEqual(result.skipped, false)
+      assert.deepStrictEqual(result.diagnostics, [])
+    } finally {
+      fs.rmSync(tmpDir, {
+        recursive: true,
+        force: true
+      })
+    }
+  })
+
+  it('returns zero diagnostics for a component accessing Node globals (process, Buffer) in server()', async () => {
+    const file = path.join(fixturesDir, 'node-globals-component-ok.html')
+    const result = await typeCheck([file])
+
+    assert.strictEqual(result.skipped, false)
+    assert.deepStrictEqual(result.diagnostics, [])
+  })
+
+  it('still reports a Node global referenced inside client() when Node types are unavailable', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'coralite-client-leak-test-'))
+    const tsconfigPath = path.join(tmpDir, 'tsconfig.json')
+    fs.writeFileSync(tsconfigPath, JSON.stringify({
+      compilerOptions: {
+        typeRoots: []
+      }
+    }))
+
+    const file = path.join(fixturesDir, 'node-globals-client-leak.html')
+    try {
+      const result = await typeCheck([file], { tsconfig: tsconfigPath })
+      assert.strictEqual(result.skipped, false)
+      assert.strictEqual(result.diagnostics.length, 1)
+
+      const diag = result.diagnostics[0]
+      assert.strictEqual(diag.file, file)
+      assert.strictEqual(diag.line, 18)
+      assert.strictEqual(diag.severity, 'error')
+      assert.ok(diag.code === 2580 || diag.code === 2304)
+      assert.ok(diag.message.includes("Cannot find name 'process'"))
+    } finally {
+      fs.rmSync(tmpDir, {
+        recursive: true,
+        force: true
+      })
+    }
+  })
+
+  it('still reports unknown non-Node identifiers (plain TS2304) outside client ranges', async () => {
+    const file = path.join(fixturesDir, 'node-globals-negative.html')
+    const result = await typeCheck([file])
+
+    assert.strictEqual(result.skipped, false)
+    assert.strictEqual(result.diagnostics.length, 1)
+
+    const diag = result.diagnostics[0]
+    assert.strictEqual(diag.file, file)
+    assert.strictEqual(diag.severity, 'error')
+    assert.strictEqual(diag.code, 2304)
+    assert.ok(diag.message.includes("Cannot find name 'foobro'"))
   })
 })
