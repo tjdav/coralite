@@ -320,3 +320,87 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
     }
   })
 })
+
+describe('getClientContext isomorphic plugins (page client context)', () => {
+  /** @type {any} */
+  const win = window
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    delete win.__coralite_hydration__
+    delete win.__coralite__
+  })
+
+  it('exposes isomorphic plugins through descriptors, Object.keys, and spread', async () => {
+    const scriptManager = new ScriptManager()
+
+    try {
+      const mod = await importCompiledRuntime(scriptManager)
+      win.__coralite__.isomorphicPlugins = {
+        $t: () => (key) => `translated:${key}`
+      }
+
+      const ctx = await mod.getClientContext({ id: 'page-iso' })
+      const descriptor = Object.getOwnPropertyDescriptor(ctx, '$t')
+
+      assert.ok(descriptor, 'descriptor must be defined for isomorphic key')
+      assert.strictEqual(descriptor.enumerable, true)
+      assert.ok(Object.keys(ctx).includes('$t'))
+      assert.strictEqual({ ...ctx }.$t('hello'), 'translated:hello')
+    } finally {
+      await scriptManager.disposeContext()
+    }
+  })
+
+  it('injects isomorphic plugins into page client() when resolved via getClientContext', async () => {
+    const scriptManager = new ScriptManager()
+
+    try {
+      const mod = await importCompiledRuntime(scriptManager)
+      win.__coralite__.isomorphicPlugins = {
+        $t: () => (key) => `translated:${key}`
+      }
+
+      let clientCtx = null
+      await mod.setupPageRuntime({
+        client (ctx) {
+          clientCtx = ctx
+        }
+      }, mod.getClientContext)
+
+      assert.ok(clientCtx)
+      assert.strictEqual(typeof clientCtx.$t, 'function')
+      assert.strictEqual(clientCtx.$t('hello'), 'translated:hello')
+    } finally {
+      await scriptManager.disposeContext()
+    }
+  })
+
+  it('injects a registered top-level context plugin into page client()', async () => {
+    const tPlugin = definePlugin({
+      name: '$t',
+      context: () => () => (key) => `translated:${key}`
+    })
+
+    const scriptManager = new ScriptManager()
+    await scriptManager.use(tPlugin())
+
+    try {
+      const mod = await importCompiledRuntime(scriptManager)
+      assert.ok(win.__coralite__.isomorphicPlugins.$t, 'compiled runtime must register $t')
+
+      let clientCtx = null
+      await mod.setupPageRuntime({
+        client (ctx) {
+          clientCtx = ctx
+        }
+      }, mod.getClientContext)
+
+      assert.ok(clientCtx)
+      assert.strictEqual(typeof clientCtx.$t, 'function')
+      assert.strictEqual(clientCtx.$t('hello'), 'translated:hello')
+    } finally {
+      await scriptManager.disposeContext()
+    }
+  })
+})

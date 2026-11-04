@@ -78,4 +78,4 @@ Plugin context properties are injected into Component and Page handlers:
 
 ## 5. Built-In Plugins
 
-Coralite ships core plugins importable from `coralite/plugins/*` (metadata, static assets, testing, SPA router). The normative SPA router contract — registration, outlet semantics, `navigate`/`current`/`beforeEach` guard API, navigation events, head reconciliation, hydration re-store, and View Transitions interplay — is documented in `llms-full.txt` §10 "Built-In Plugins" and §10.1 "SPA Router (`coralite/plugins/router`)".
+Coralite ships core plugins importable from `coralite/plugins/*` (metadata, static assets, testing, SPA router). The normative SPA router contract — registration, outlet semantics, `navigate`/`current`/`beforeEach` guard API, navigation events, head reconciliation, hydration re-store, and View Transitions interplay — is documented in `llms-full.txt` §10 "Built-In Plugins" and §10.1 "SPA Router (`coralite/plugins/router`)". Dedicated pages: [Router Plugin Reference](https://coralite.dev/docs/reference/plugins/router.html) and [SPA Router Guide](https://coralite.dev/docs/guide/spa-router.html).

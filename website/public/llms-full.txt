@@ -999,6 +999,8 @@ Coralite ships core plugins, importable from `coralite/plugins/*` and registered
 
 ### 10.1 SPA Router (`coralite/plugins/router`)
 
+The complete API reference is published at [Router Plugin Reference](https://coralite.dev/docs/reference/plugins/router.html). The patterns guide (guard placement, state across swaps, production pitfalls) is at [SPA Router Guide](https://coralite.dev/docs/guide/spa-router.html).
+
 #### Registration (Required)
 
 Every SPA navigation behavior (link interception, popstate handling, guards, head reconciliation) lives in the plugin itself. A `data-router-outlet` marker WITHOUT plugin registration is inert — the page behaves as a standard MPA. Register in `coralite.config.js`:
@@ -1019,6 +1021,8 @@ export default defineConfig({
 
 Invalid config types throw at plugin instantiation (e.g. `Invalid config value for "base"`).
 
+`base` is declared in the config schema but carries no behavioral wiring in the current release: routing performs no base-path stripping or prefixing, so a non-`'/'` base is not honored — do not rely on it today.
+
 #### Outlet (Swap Region)
 
 - Any element bearing the outlet attribute (`[data-router-outlet]` by default) or the reserved `router-outlet` tag is an outlet. The plugin registers a virtual component `<router-outlet>` (`virtual:router-outlet/outlet.html`, body: `<slot></slot>`), so outlets can also be authored inside layout components.
@@ -1037,6 +1041,16 @@ Available as `router` in component and page `client()` blocks — `client({ rout
   - `return '/some/path'` — redirect: resolves relative to the current URL and re-navigates client-side with `replace: true`. Nested redirects are allowed up to depth 10; deeper chains are aborted (dev runtime logs `Redirect loop detected`).
   - `return 'http://…'` / `return 'https://…'` — hard redirect via `window.location.replace()`.
   - `return true` or `undefined` — allow the navigation.
+
+- `router.viewTransitions`: read-only getter. Mirrors the project's `viewTransitions` flag from the hydration payload; when true (and the browser supports `document.startViewTransition`, without `prefers-reduced-motion: reduce`), the outlet swap runs inside a native View Transition. Also available on `window.__coralite_router__`.
+
+#### Guard placement
+
+The guard list lives in the router's client-init scope and PERSISTS for the whole SPA session: an outlet swap does not reset it, and nothing unregisters a guard when its route leaves. Therefore:
+
+- A guard registered inside a route component's `client()` re-registers on every connect of that component, so per-route registration accumulates one guard per visit — app-wide guards MUST NOT be registered from route components.
+- App-wide guards (auth, redirects) belong in a persistent shell component OUTSIDE the outlet — it connects once per document load, so its guard registers exactly once per SPA session.
+- Route-scoped guards MUST be unregistered on route exit: capture the function returned by `router.beforeEach(guard)` and call it from a `signal` abort listener (the component `signal` aborts when the route is torn down).
 
 #### Navigation Events (window, bubbling, composed)
 
@@ -1058,6 +1072,12 @@ When the project's hydration store advertises `viewTransitions: true` (set via t
 #### Server Contract
 
 SPA navigation fetches carry the header `X-Coralite-Router: true`, so static servers, service workers, or edge functions can distinguish client-side route fetches from initial page loads. A non-OK response fails the navigation with an error.
+
+#### State across swaps
+
+- Component `state` is ROUTE-SCOPED: on each navigation the old outlet's instances are disconnected (their `signal` aborts, cleaning up listeners and `observe()` subscriptions) and the new route hydrates from that route's pre-built HTML. Mutations that live only in component `state` are lost when the route leaves — promote app-scoped state.
+- The global `store` (declared in `coralite.config.js`) is a single client-runtime instance the router never touches: its values and reactivity SURVIVE every outlet swap, making it the canonical home for app-scoped state in an SPA.
+- Imperative resources a component allocates (workers, WebGL/canvas contexts, external library handles) MUST be released when the component is torn down: hook teardown to the component `signal`'s `abort` event.
 
 ---
 

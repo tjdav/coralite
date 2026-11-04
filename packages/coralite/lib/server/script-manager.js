@@ -791,6 +791,11 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
     const factories = await resolvedContextFactoriesPromise;
     const cache = new Map();
     const clientMocks = ${clientMocksStr};
+    const getIsoPlugins = () => (typeof window !== 'undefined' && window.__coralite__?.isomorphicPlugins) || null;
+    const isIsoKey = (prop) => {
+      const isoPlugins = getIsoPlugins();
+      return Boolean(isoPlugins && prop in isoPlugins);
+    };
 
     return new Proxy(instanceContext, {
       get(target, prop, receiver) {
@@ -798,8 +803,8 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         if (Reflect.has(target, prop)) return Reflect.get(target, prop, receiver);
         if (cache.has(prop)) return cache.get(prop);
 
-        if (typeof window !== 'undefined' && window.__coralite__?.isomorphicPlugins && prop in window.__coralite__.isomorphicPlugins) {
-          const isoFn = window.__coralite__.isomorphicPlugins[prop];
+        if (isIsoKey(prop)) {
+          const isoFn = getIsoPlugins()[prop];
           const resolved = typeof isoFn === 'function' ? isoFn(receiver) : isoFn;
           cache.set(prop, resolved);
           return resolved;
@@ -826,10 +831,11 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         return resolved;
       },
       has(target, prop) {
-        return Reflect.has(target, prop) || prop in factories || (typeof window !== 'undefined' && Boolean(window.__coralite__?.isomorphicPlugins && prop in window.__coralite__.isomorphicPlugins));
+        return Reflect.has(target, prop) || prop in factories || isIsoKey(prop);
       },
       ownKeys(target) {
-        const isoKeys = (typeof window !== 'undefined' && window.__coralite__?.isomorphicPlugins) ? Object.keys(window.__coralite__.isomorphicPlugins) : [];
+        const isoPlugins = getIsoPlugins();
+        const isoKeys = isoPlugins ? Object.keys(isoPlugins) : [];
         return Array.from(new Set([
           ...Reflect.ownKeys(target),
           ...Object.keys(factories),
@@ -840,7 +846,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         if (Reflect.has(target, prop)) {
           return Reflect.getOwnPropertyDescriptor(target, prop);
         }
-        if (prop in factories) {
+        if (prop in factories || isIsoKey(prop)) {
           return {
             enumerable: true,
             configurable: true,

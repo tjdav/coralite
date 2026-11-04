@@ -1,6 +1,7 @@
 import { createReadOnlyProxy, normalizeStyleKey, isAsyncFunction, createCombinedSignal, normalizeFunction } from '../shared/core.js'
 import { isDevRuntime } from '../utils/dev-mode.js'
 import { CoraliteError } from '../shared/errors.js'
+import { createIsoPluginProxy } from './utils/iso-plugin-proxy.js'
 
 
 /**
@@ -165,41 +166,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
    * @param {Object} rawContext - Raw getter context object
    * @returns {Proxy} Wrapped getter context proxy
    */
-  const wrapPageGetterContext = (rawContext) => {
-    const isoCache = new Map()
-    return new Proxy(rawContext, {
-      get (target, prop, receiver) {
-        if (Reflect.has(target, prop)) {
-          return Reflect.get(target, prop, receiver)
-        }
-        const isoPlugins = typeof window !== 'undefined' && window['__coralite__']?.isomorphicPlugins
-        if (isoPlugins && typeof prop === 'string' && prop in isoPlugins) {
-          if (isoCache.has(prop)) {
-            return isoCache.get(prop)
-          }
-          const fn = isoPlugins[prop]
-          const resolved = typeof fn === 'function' ? fn(receiver) : fn
-          isoCache.set(prop, resolved)
-          return resolved
-        }
-        return Reflect.get(target, prop, receiver)
-      },
-      has (target, prop) {
-        const isoPlugins = typeof window !== 'undefined' && window['__coralite__']?.isomorphicPlugins
-        return Reflect.has(target, prop) || (isoPlugins && typeof prop === 'string' && prop in isoPlugins)
-      },
-      ownKeys (target) {
-        const keys = new Set(Reflect.ownKeys(target))
-        const isoPlugins = typeof window !== 'undefined' && window['__coralite__']?.isomorphicPlugins
-        if (isoPlugins) {
-          for (const k of Object.keys(isoPlugins)) {
-            keys.add(k)
-          }
-        }
-        return Array.from(keys)
-      }
-    })
-  }
+  const wrapPageGetterContext = (rawContext) => createIsoPluginProxy(rawContext)
 
   const runAsyncPageGetter = (key, getterFn, entry) => {
     if (entry.controller) {

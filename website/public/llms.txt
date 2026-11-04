@@ -30,4 +30,4 @@ Key words per RFC 2119:
 
 ## Full Reference
 
-- [Complete Reference Dump](/llms-full.txt): Comprehensive single-file reference containing all APIs, schemas, and specifications for large-context models, including the built-in plugin references and the opt-in SPA router contract (§10.1 `coralite/plugins/router`: registration, outlet semantics, `navigate`/`current`/`beforeEach`, navigation guards & events).
+- [Complete Reference Dump](/llms-full.txt): Comprehensive single-file reference containing all APIs, schemas, and specifications for large-context models, including the built-in plugin references and the opt-in SPA router contract (§10.1 `coralite/plugins/router`: registration, outlet semantics, `navigate`/`current`/`beforeEach`, navigation guards & events). The dedicated router documentation is published at [Router Plugin Reference](https://coralite.dev/docs/reference/plugins/router.html) and [SPA Router Guide](https://coralite.dev/docs/guide/spa-router.html).
