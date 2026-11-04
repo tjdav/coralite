@@ -1012,8 +1012,10 @@ import router from 'coralite/plugins/router'
 export default defineConfig({
   plugins: [
     router({
-      base: '/',                   // String, default '/'
-      outlet: 'data-router-outlet' // String, default 'data-router-outlet' — the attribute name marking outlet elements
+      base: '/',                    // String, default '/'
+      outlet: 'data-router-outlet', // String, default 'data-router-outlet' — the attribute name marking outlet elements
+      autoWrap: true,               // Boolean, default true — set false to disable automatic body wrapping
+      outletOnly: false             // Boolean, default false — when true, skip link interception if the live document has no outlet
     })
   ]
 })
@@ -1023,12 +1025,15 @@ Invalid config types throw at plugin instantiation (e.g. `Invalid config value f
 
 `base` is declared in the config schema but carries no behavioral wiring in the current release: routing performs no base-path stripping or prefixing, so a non-`'/'` base is not honored — do not rely on it today.
 
+`autoWrap` (default `true`) controls server-side automatic outlet wrapping. `outletOnly` (default `false`) controls whether link interception requires a live outlet. Both are boolean config options validated at plugin instantiation.
+
 #### Outlet (Swap Region)
 
 - Any element bearing the outlet attribute (`[data-router-outlet]` by default) or the reserved `router-outlet` tag is an outlet. The plugin registers a virtual component `<router-outlet>` (`virtual:router-outlet/outlet.html`, body: `<slot></slot>`), so outlets can also be authored inside layout components.
 - On client navigation ONLY the outlet's content is replaced. Elements OUTSIDE the outlet (persistent headers/footers, background audio players, live sockets) survive every navigation.
-- Pages that declare no outlet are automatically wrapped at render time: the plugin injects a `<router-outlet data-router-outlet>` around the page's entire body (no double-wrap when an outlet already exists).
-- Both the live document and every fetched document MUST contain an outlet; a fetched document without one fails the navigation.
+- Pages that declare no outlet are automatically wrapped at render time: the plugin injects a `<router-outlet data-router-outlet>` around the page's entire body (no double-wrap when an outlet already exists). Set `autoWrap: false` to skip the wrapper; outlet-less pages then render exactly as authored and page tokens resolve normally.
+- Set `outletOnly: true` to skip link interception whenever the live document has no outlet. The click guard runs before link detection, so links on outlet-less pages use native browser navigation. This guard does not affect `router.navigate()` or `popstate` handling.
+- Both the live document and every fetched document MUST contain an outlet for client navigation to succeed; a fetched document without one fails the navigation. `router.navigate()` pushes or replaces history before fetching and checking for an outlet, so calling it from an outlet-less page rejects after the URL has already changed. Prefer native links there, or pair `autoWrap: false` with `outletOnly: true`.
 
 #### Client Router API
 

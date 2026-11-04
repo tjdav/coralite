@@ -242,7 +242,9 @@ export default defineConfig({
   plugins: [
     router({
       base: '/',
-      outlet: 'data-router-outlet'
+      outlet: 'data-router-outlet',
+      autoWrap: true,
+      outletOnly: false
     })
   ]
 })
@@ -252,7 +254,7 @@ export default defineConfig({
 
     <coralite-heading level="3" text="Configuration Options"></coralite-heading>
 
-    <p>The plugin factory accepts two string options (invalid types throw at registration):</p>
+    <p>The plugin factory accepts two string options and two boolean options (invalid types throw at registration):</p>
 
     <coralite-table>
       <tr slot="head">
@@ -273,13 +275,27 @@ export default defineConfig({
         <td><code>'data-router-outlet'</code></td>
         <td>The attribute name marking a page element as the outlet. Any element carrying this attribute (or a <code>&lt;router-outlet&gt;</code> tag) defines the SPA swap region.</td>
       </tr>
+      <tr slot="body">
+        <td><code>autoWrap</code></td>
+        <td>Boolean</td>
+        <td><code>true</code></td>
+        <td>When <code>false</code>, outlet-less pages are not automatically wrapped in a <code>&lt;router-outlet&gt;</code>. The page renders as authored; fetched SPA routes still need an outlet.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>outletOnly</code></td>
+        <td>Boolean</td>
+        <td><code>false</code></td>
+        <td>When <code>true</code>, link interception is skipped when the current document has no outlet, so clicks use native browser navigation. This guard does not affect <code>router.navigate()</code>.</td>
+      </tr>
     </coralite-table>
 
     <coralite-heading level="3" text="Outlet &amp; Swap Region"></coralite-heading>
 
-    <p>During page renders, if the router is active and a page declares no outlet, the plugin automatically wraps the page's full body content in a <code>&lt;router-outlet data-router-outlet&gt;</code> element (pages that already contain an outlet are never double-wrapped). The plugin also registers a virtual <code>&lt;router-outlet&gt;</code> component, so outlets can live inside layout components as well as directly in pages.</p>
+    <p>During page renders, if the router is active and a page declares no outlet, the plugin automatically wraps the page's full body content in a <code>&lt;router-outlet data-router-outlet&gt;</code> element (pages that already contain an outlet are never double-wrapped). Set <code>autoWrap: false</code> to skip that wrapper; outlet-less pages then render as authored and still resolve tokens normally. The plugin also registers a virtual <code>&lt;router-outlet&gt;</code> component, so outlets can live inside layout components as well as directly in pages.</p>
 
     <p>On each client-side navigation, only the outlet's children are replaced. Elements outside the outlet — persistent navbars and footers, background audio players, live WebSockets — are never touched by the router.</p>
+
+    <p>Client navigation requires an outlet in both the live and fetched documents. Combine <code>autoWrap: false</code> with <code>outletOnly: true</code> for routes that should stay outside the SPA shell: their links fall through to native browser navigation, while <code>router.navigate()</code> remains unaffected and will still reject after updating history if called without an outlet.</p>
 
     <p><em>Note:</em> Registration is required — a <code>data-router-outlet</code> element without a registered plugin is inert and does not alter navigation behavior.</p>
 
