@@ -212,3 +212,16 @@ Top-level imports are reserved for `definePage` / `definePlugin` and modules use
 - `tests/fixtures/` — component test fixtures (`.html`)
 - `public/` — static assets copied verbatim to output
 - `coralite.config.js` — project & plugin configuration
+
+## 8. SPA Router (opt-in)
+
+The opt-in router plugin (`coralite/plugins/router`) provides single-page application navigation. Register it in `coralite.config.js` under `plugins` (`plugins: [router({ ... })]`). Registration gates ALL SPA behavior — without it, every SPA navigation behavior (link interception, popstate, guards, head reconciliation) is inert: a `data-router-outlet` marker alone does nothing, and the page behaves as a standard multi-page app.
+
+- **Outlets**: Any element carrying the outlet attribute (default `data-router-outlet`) or the reserved `<router-outlet>` tag is an outlet. Every routed page MUST have an outlet; pages without one fail the build. Everything outside the outlet (navbar, background audio, open sockets) is never touched by the router — those component instances and their state persist across every route swap.
+- **Client API**: `client({ router })` injects the router: `navigate(path, { replace })`, `current()`, `beforeEach(guard)` (returns the unregister function), and the `viewTransitions` getter. Also available on `window.__coralite_router__`.
+- **Guards**: `beforeEach` guards may return `true`/`undefined` (allow), `false` (block), a relative or same-origin path (soft redirect; redirect chains are capped at depth 10), or an `http(s)` URL (hard redirect via `window.location.replace()`).
+- **Guard placement**: The guard list lives in the router's client-init scope and PERSISTS across the whole SPA session — an outlet swap does not reset it, and nothing auto-unregisters a guard when its route leaves. App-wide guards (auth, redirects) MUST be registered in a persistent shell component OUTSIDE the outlet (it connects once, so the guard registers exactly once). Route-scoped guards MUST capture the function returned by `beforeEach` and call it on their component `signal` abort. Registering guards inside a route component's `client()` without unregistering accumulates one extra guard per visit.
+- **State scoping**: Component `state` is route-scoped — on navigation the old outlet is disconnected (its `signal` aborts), and the new route hydrates from its pre-built HTML, so `state` mutations are lost when the route leaves. App-scoped state belongs in the global `store` (declared in `coralite.config.js`), which the router never touches and which survives every swap. Release imperative resources a component allocates (workers, canvas/WebGL contexts, external library handles) when the component is torn down — hook teardown to the `signal` `abort` event.
+- **Navigation events**: Cancelable `coralite:navigating` (fired before the swap) and post-swap `coralite:navigated` on `window`, both with `detail: { from, to }`.
+
+Full contract: https://coralite.dev/docs/reference/plugins/router.html — patterns guide: https://coralite.dev/docs/guide/spa-router.html

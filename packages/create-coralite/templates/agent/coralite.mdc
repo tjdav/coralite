@@ -111,3 +111,14 @@ alwaysApply: false
 
 - **Factory functions over classes**: Default to factory functions (`createX`). No `this` outside class bodies; always use destructured context (`state`, `refs`, `emit`, `root`).
 - **Scoped CSS**: Use `:host` for the custom element root and `:host-context(.selector)` for ancestor themes. Write `.child` directly instead of `:host .child`.
+
+## 5. SPA Router (opt-in)
+
+The opt-in router plugin (`coralite/plugins/router`) gates ALL SPA behavior: without registration in `coralite.config.js`, a `data-router-outlet` marker is inert and the app stays multi-page.
+
+- **Outlets**: The routed region is any element with the outlet attribute (default `data-router-outlet`) or the reserved `<router-outlet>` tag. Every routed page MUST have an outlet or the build fails. Elements OUTSIDE the outlet are untouched by the router and persist across route swaps.
+- **Client API**: `client({ router })` injects `navigate(path, { replace })`, `current()`, `beforeEach(guard)` (returns the unregister function), and the `viewTransitions` getter.
+- **Guard placement**: The guard list persists for the whole SPA session — outlet swaps never reset it, and nothing auto-unregisters. App-wide guards MUST be registered in a persistent shell component OUTSIDE the outlet; route-scoped guards MUST unregister on component `signal` abort, or every visit accumulates another guard.
+- **State scoping**: Component `state` is route-scoped (lost when the route leaves; the new route re-hydrates from its pre-built HTML). App-scoped state MUST live in the global `store`, which survives every swap. Teardown imperative resources on `signal` abort.
+
+Full contract: https://coralite.dev/docs/reference/plugins/router.html — patterns guide: https://coralite.dev/docs/guide/spa-router.html
