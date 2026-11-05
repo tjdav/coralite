@@ -46,7 +46,10 @@ const EXPECTED_BUILD_FAILURES = new Set([
   'dedup/same-source-duplicate',
 
   // Validator tests: fixture intentionally triggers CORALITE-E401
-  'server-with-headers'
+  'server-with-headers',
+
+  // Page meta validation: invalid defaults fail the build
+  'page-meta-invalid'
 ])
 
 /**
@@ -111,6 +114,7 @@ const coralite = await createCoralite({
     if (error.level === 'ERR') {
       if (
         error.message.includes('definePage does not support') ||
+        error.message.includes('invalid default') ||
         error.message.includes('Malformed dynamic segment') ||
         error.message.includes('has more than one <script type="module"> block') ||
         (error.filePath && (error.filePath.includes('rejected-block') || error.filePath.includes('unknown-block') || error.filePath.includes('error-handling') || error.filePath.includes('patterns') || error.filePath.includes('script-both-places')))

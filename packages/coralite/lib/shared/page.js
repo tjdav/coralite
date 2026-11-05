@@ -5,6 +5,7 @@
 export const PAGE_EXPORTS = [
   'paths',
   'server',
+  'meta',
   'getters',
   'style',
   'provide',
@@ -28,6 +29,7 @@ export const PAGE_HANDLER_EXPORTS = new Set([
  * @type {Set<string>}
  */
 export const PAGE_CONFIG_EXPORTS = new Set([
+  'meta',
   'getters',
   'style',
   'provide'
@@ -38,7 +40,7 @@ export const PAGE_CONFIG_EXPORTS = new Set([
  * @type {Record<string, string>}
  */
 export const REJECTED_PAGE_EXPORTS = {
-  attributes: 'definePage does not support "attributes". Use "server" to fetch page data.',
+  attributes: 'definePage does not support "attributes". Use "meta" for declared page state.',
   slots: 'definePage does not support "slots". Pages are the outermost layer.',
   consume: 'definePage does not support "consume". Pages are the root provider — use "provide".',
   formAssociated: 'definePage does not support "formAssociated". Use a form-associated component instead.'

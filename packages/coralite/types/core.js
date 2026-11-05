@@ -249,7 +249,7 @@
  * @property {string} file.pathname - The file path name.
  * @property {string} file.dirname - The directory name of the file.
  * @property {string} file.filename - The filename.
- * @property {Object.<string, any>} meta - Extracted metadata from the page.
+ * @property {Object.<string, any>} meta - Extracted document metadata, with page meta defaults filling missing keys.
  * @property {Object} [route] - The route object for the page.
  */
 
@@ -258,12 +258,13 @@
  * Includes all registered server plugins alongside core page routing context.
  *
  * @typedef {Record<string, any> & {
+ *   state: any,
  *   route: import('./globals.js').CoraliteRoute,
  *   app: CoraliteInstance,
  *   session: CoraliteSession,
  *   signal: AbortSignal,
  *   store?: any,
- *   page?: any
+ *   page?: CoralitePage
  * }} CoralitePageServerContext
  */
 

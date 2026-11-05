@@ -211,7 +211,7 @@
       <li>
         <p><strong><code>--migrate-pages</code></strong> (optional)</p>
         <ul>
-          <li>Description: Migrates page <code>export default definePage({ ... })</code> configuration to flat named exports (<code>export function server</code>, <code>export const getters</code>, …), and normalizes legacy <code>export const server</code>/<code>export const paths</code> handlers. Implies the pages domain when no page path is supplied; works with <code>--dry-run</code>. Files with unsupported constructs are left unchanged and reported.</li>
+          <li>Description: Migrates page <code>export default definePage({ ... })</code> configuration to flat named exports (<code>export function server</code>, <code>export const meta</code>, <code>export const getters</code>, …), and normalizes legacy <code>export const server</code>/<code>export const paths</code> handlers. Implies the pages domain when no page path is supplied; works with <code>--dry-run</code>. Files with unsupported constructs are left unchanged and reported.</li>
           <li>Example: <code>coralite fix --migrate-pages --dry-run</code></li>
         </ul>
       </li>

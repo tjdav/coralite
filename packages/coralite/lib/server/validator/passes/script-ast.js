@@ -523,7 +523,7 @@ export function parseScriptAST (context) {
               context.diagnostics.push(createDiagnostic({
                 code: 'CORALITE-E107',
                 severity: 'error',
-                message: `Unknown block "${keyName}" in definePage. Valid blocks are: paths, server, getters, style, provide, client, onError.`,
+                message: `Unknown block "${keyName}" in definePage. Valid blocks are: paths, server, meta, getters, style, provide, client, onError.`,
                 filePath: context.filePath,
                 line,
                 column,

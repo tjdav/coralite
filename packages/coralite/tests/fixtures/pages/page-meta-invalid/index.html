@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Invalid meta</title>
+</head>
+<body>
+  <h1>{{ count }}</h1>
+  <script type="module">
+    export const meta = {
+      count: { type: Number, default: 'not-a-number' }
+    }
+  </script>
+</body>
+</html>

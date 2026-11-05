@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Literal title</title>
+  <meta name="description" content="Literal description">
+</head>
+<body>
+  <h1 data-testid="meta-title">{{ title }}</h1>
+  <p data-testid="meta-description">{{ description }}</p>
+  <p data-testid="meta-count">{{ count }}</p>
+  <p data-testid="meta-campaign">{{ campaign }}</p>
+  <p data-testid="meta-doc-title">{{ docTitle }}</p>
+  <p data-testid="meta-doc-description">{{ docDescription }}</p>
+  <p data-testid="meta-doc-lang">{{ docLang }}</p>
+  <p data-testid="meta-doc-campaign">{{ docCampaign }}</p>
+  <button ref="bump" type="button" data-testid="meta-bump">bump</button>
+
+  <script type="module">
+    export const meta = {
+      title: { type: String, default: 'Default title' },
+      description: { type: String, default: 'Default description' },
+      lang: { type: String, default: 'fr' },
+      count: { type: Number, default: 3 },
+      campaign: { type: String, default: 'organic' }
+    }
+
+    export const getters = {
+      docTitle: ({ state }) => state.page.meta.title,
+      docDescription: ({ state }) => state.page.meta.description,
+      docLang: ({ state }) => state.page.meta.lang,
+      docCampaign: ({ state }) => state.page.meta.campaign
+    }
+
+    export function client ({ state, refs, signal }) {
+      const countEl = document.querySelector('[data-testid="meta-count"]')
+
+      refs('bump').addEventListener('click', () => {
+        state.count += 1
+        countEl.textContent = String(state.count)
+      }, { signal })
+    }
+  </script>
+</body>
+</html>

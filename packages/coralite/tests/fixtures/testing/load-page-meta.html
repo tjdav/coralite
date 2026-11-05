@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Load meta</title>
+</head>
+<body>
+  <h1>{{ title }}</h1>
+  <p>{{ count }}</p>
+  <script type="module">
+    export const meta = {
+      title: { type: String, default: 'Meta Page Title' },
+      count: { type: Number, default: 2 }
+    }
+
+    export async function server ({ state }) {
+      return {
+        title: `${state.title}!`,
+        count: state.count + 1
+      }
+    }
+  </script>
+</body>
+</html>

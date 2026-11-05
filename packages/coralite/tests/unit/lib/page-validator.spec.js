@@ -712,4 +712,84 @@ describe('Page Validator — Flat Named Exports', () => {
     assert.equal(errors.length, 1)
     assert.match(errors[0].message, /definePage does not support "attributes"/)
   })
+
+  it('accepts a flat meta declaration', () => {
+    const source = `
+      <!DOCTYPE html><html><body></body></html>
+      <script type="module">
+        export const meta = {
+          title: { type: String, default: 'Untitled' },
+          count: { type: Number, default: 0 }
+        }
+      </script>
+    `
+
+    const result = validatePageSource(source, { knownComponents: new Map() })
+    const errors = result.diagnostics.filter(d => d.code === 'CORALITE-E107')
+    assert.deepStrictEqual(errors, [])
+  })
+
+  it('rejects a function-form meta declaration', () => {
+    const source = `
+      <!DOCTYPE html><html><body></body></html>
+      <script type="module">
+        export function meta () { return {} }
+      </script>
+    `
+
+    const result = validatePageSource(source, { knownComponents: new Map() })
+    const errors = result.diagnostics.filter(d => d.code === 'CORALITE-E107')
+    assert.equal(errors.length, 1)
+    assert.match(errors[0].message, /Page declaration "meta" must use "export const"/)
+  })
+
+  it('rejects required meta schemas', () => {
+    const source = `
+      <!DOCTYPE html><html><body></body></html>
+      <script type="module">
+        export const meta = {
+          title: { type: String, required: true }
+        }
+      </script>
+    `
+
+    const result = validatePageSource(source, { knownComponents: new Map() })
+    const errors = result.diagnostics.filter(d => d.code === 'CORALITE-E107')
+    assert.equal(errors.length, 1)
+    assert.match(errors[0].message, /Page meta "title" cannot set "required: true"/)
+  })
+
+  it('rejects non-object meta declarations', () => {
+    const source = `
+      <!DOCTYPE html><html><body></body></html>
+      <script type="module">
+        export const meta = 'Untitled'
+      </script>
+    `
+
+    const result = validatePageSource(source, { knownComponents: new Map() })
+    const errors = result.diagnostics.filter(d => d.code === 'CORALITE-E107')
+    assert.equal(errors.length, 1)
+    assert.match(errors[0].message, /Page "meta" must be an object literal/)
+  })
+
+  it('rejects blocked meta types and async validators', () => {
+    const source = `
+      <!DOCTYPE html><html><body></body></html>
+      <script type="module">
+        export const meta = {
+          list: { type: Array },
+          title: { type: String, validate: async () => true }
+        }
+      </script>
+    `
+
+    const result = validatePageSource(source, { knownComponents: new Map() })
+    const blocked = result.diagnostics.filter(d => d.code === 'CORALITE-E101')
+    const asyncValidator = result.diagnostics.filter(d => d.code === 'CORALITE-E103')
+    assert.equal(blocked.length, 1)
+    assert.match(blocked[0].message, /Page meta "list" defines blocked type "Array"/)
+    assert.equal(asyncValidator.length, 1)
+    assert.match(asyncValidator[0].message, /Page meta "title" specifies an async validate function/)
+  })
 })

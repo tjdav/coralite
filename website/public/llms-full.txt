@@ -50,7 +50,7 @@
 
 When generating code or providing instructions for Coralite applications, you MUST, SHOULD, and MUST NEVER adhere to the following normative rules:
 
-1. **MUST use Named Exports for Components**: Component `<script type="module">` blocks must declare behavior using standard top-level named exports (`export function`, `export const`). Handlers use `export function` (`server`, `client`, `onError`). Declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`). Never author new components with `class extends HTMLElement` or legacy `defineComponent({ ... })` (which is retained strictly for backward compatibility). `definePage` and `definePlugin` continue to use `export default define*`.
+1. **MUST use Named Exports**: Component `<script type="module">` blocks must declare behavior using standard top-level named exports (`export function`, `export const`). Handlers use `export function` (`server`, `client`, `onError`). Declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`). Never author new components with `class extends HTMLElement` or legacy `defineComponent({ ... })` (which is retained strictly for backward compatibility). Pages use the same flat named-export form; legacy `export default definePage({ ... })` remains supported and is migrated by `coralite fix --migrate-pages`. Plugins use `export default definePlugin({ ... })`.
 2. **MUST author components in `.html`**: Component definitions are strictly HTML files (`.html`) containing `<template id="tag-name">`, optional `<style>`, and optional `<script type="module">`. Never create `.js` or `.jsx` component files.
 3. **MUST respect the Serialization Boundary**: The `server()` block runs strictly in Node.js during build/SSR and is stripped from browser client bundles. The `client()` block runs in the browser and cannot capture outer module-scope variables or imports from the server context. Bridge data through `server()` return values.
 4. **MUST obey the "Smart State, Dumb Template" rule**: Coralite templates strictly permit flat identifier interpolations (`{{ propertyName }}`). Never write expressions (`{{ a + b }}`), function calls (`{{ format(val) }}`), or negations (`{{ !isActive }}`) inside template curlies. All logic must be lifted to getters.
@@ -413,6 +413,7 @@ Coralite components operate across a strict boundary between Node.js server eval
 ## 3. File Structure: Pages vs. Components
 
 * **Pages (`src/pages/*.html`)**: Pages are standard `.html` files that represent route entry points. Pages contain HTML document structure (`<!DOCTYPE html>`, `<html>`, `<head>`, `<body>`) and declare custom element component tags as consumers (e.g. `<counter-card></counter-card>`). Pages must never contain component internal logic or manipulate custom element internals.
+* **Page information and default state (`export const meta`)**: Pages declare page metadata and arbitrary key/value default state with `export const meta`, the page analog to component `attributes`. Meta schemas use `{ type, default, values, validate }`; resolved defaults seed page state, and missing keys fall back into `page.meta` while literal `<title>`/`<meta>` tags remain authoritative. `required` is rejected on pages, and invalid defaults fail the build.
 * **Components (`src/components/*.html`)**: Components are single-file HTML definitions consisting of up to three root tags:
   1. `<template id="component-name">` (**Required**): Defines the element markup structure. The template ID MUST match the component's custom element tag name.
   2. `<style>` (**Optional**): Defines component CSS. Automatically scoped under `@layer components`.
@@ -888,12 +889,12 @@ Plugin context properties are injected into Component and Page handlers:
   - Injected synchronously across **all** component and page execution blocks: `server()`, `getters`, `client()`, `slots`, and `style`.
 - **Server Context Injection**:
   - **Components**: `export function server ({ ...plugins, ...props, route, state, store })`
-  - **Pages**: `export default definePage({ server ({ ...plugins, route, app, session, signal, store, page }) })`
+  - **Pages**: `export async function server ({ ...plugins, state, route, app, session, signal, store, page })`
 - **Client Context Injection**:
   - **Components**: `export function client ({ ...plugins, refs, signal, state, store, ... })`
-  - **Pages**: `export default definePage({ client ({ ...plugins, route, state, signal, ... }) })`
+  - **Pages**: `export function client ({ ...plugins, route, state, signal, ... })`
 - **Reserved Framework Key Precedence**:
-  - Core framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) are guaranteed and take strict precedence over plugin keys. If a plugin exports a key colliding with a reserved framework key, Coralite emits a warning in development and testing modes and preserves the framework key.
+  - Core framework keys (`state`, `route`, `app`, `session`, `signal`, `store`, `page`) are guaranteed and take strict precedence over plugin keys. If a plugin exports a key colliding with a reserved framework key, Coralite emits a warning in development and testing modes and preserves the framework key.
 - **Getter Isomorphism Invariant**:
   - Getters are isomorphic pure derivation functions that execute synchronously both during SSR (Node.js) and during reactive client mutations (Browser).
   - Getters strictly receive `{ state, route, root, refs, slots, signal, isServer, store }` plus any ambient utilities provided by top-level plugin `context` (e.g. `({ state, $t })`).

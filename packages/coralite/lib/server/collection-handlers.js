@@ -6,6 +6,7 @@ import { registerBaseComponent } from './component-setup.js'
 import { prepareAllComponentOps } from './utils/fragment.js'
 import { validateEnumeratedPaths, validatePluginEnumeratedPaths, deduplicateEnumeratedPaths } from './route.js'
 import { parsePagePattern } from './page/pattern.js'
+import { resolvePageMetaDefaults } from '../shared/page-meta.js'
 import { CoraliteError } from '../shared/errors.js'
 
 /**
@@ -116,6 +117,7 @@ export function createPageHandlers ({
     }
 
     const contributions = []
+    let pageMetaDefaults = {}
 
     if (parsedScript.script && evaluate) {
       try {
@@ -141,6 +143,17 @@ export function createPageHandlers ({
             writable: true,
             configurable: true
           })
+          if (pageExports.meta !== undefined) {
+            pageMetaDefaults = resolvePageMetaDefaults(pageExports.meta, {
+              filePath: data.path.pathname
+            })
+            Object.defineProperty(page, 'metaDefaults', {
+              value: pageMetaDefaults,
+              enumerable: false,
+              writable: true,
+              configurable: true
+            })
+          }
           if (typeof pageExports.paths === 'function') {
             const rawPaths = await pageExports.paths({ app })
             validateEnumeratedPaths(rawPaths, routeParams, data.path.pathname)
@@ -168,7 +181,7 @@ export function createPageHandlers ({
             app.onError({
               level: 'ERR',
               code: pageErr.code,
-              message: `Failed to evaluate paths block for page "${data.path.pathname}": ${pageErr.message}`,
+              message: `Failed to evaluate page configuration for "${data.path.pathname}": ${pageErr.message}`,
               error: pageErr,
               filePath: data.path.pathname
             })
@@ -176,7 +189,7 @@ export function createPageHandlers ({
             handleError({
               level: 'ERR',
               code: pageErr.code,
-              message: `Failed to evaluate paths block for page "${data.path.pathname}": ${pageErr.message}`,
+              message: `Failed to evaluate page configuration for "${data.path.pathname}": ${pageErr.message}`,
               error: pageErr,
               filePath: data.path.pathname
             })
@@ -188,6 +201,7 @@ export function createPageHandlers ({
     }
 
     const state = {
+      ...pageMetaDefaults,
       ...data.state,
       page
     }

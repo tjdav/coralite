@@ -110,6 +110,27 @@ describe('Page Flat-Export Codemod (applyPageFixes)', () => {
     assert.match(result.skipped[0], /not a valid page export/)
   })
 
+  it('rewrites a definePage meta block to a flat export', () => {
+    const input = `<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    meta: {
+      title: { type: String, default: 'Untitled' },
+      count: { type: Number, default: 0 }
+    }
+  })
+</script>`
+
+    const result = applyPageFixes(input, null, FLAT_OPTIONS)
+
+    assert.strictEqual(result.modified, true)
+    assert.match(result.outputCode, /export const meta = \{/)
+    assert.match(result.outputCode, /title: \{ type: String, default: 'Untitled' \}/)
+    assert.doesNotMatch(result.outputCode, /definePage/)
+    assert.deepStrictEqual(result.skipped, [])
+  })
+
   it('is idempotent', () => {
     const input = `<script type="module">
   import { definePage } from 'coralite'
