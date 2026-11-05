@@ -199,7 +199,7 @@ export function generateTokenUpdaterCode (binding, bindingIndex, tokenKey, isGet
     : `const _rawValue = this._stateRaw[${JSON.stringify(tokenKey)}]\n    const value = typeof _rawValue === 'function' ? this._state[${JSON.stringify(tokenKey)}] : _rawValue`
 
   const bindingRef = `const binding = this._bindings[${bindingIndex}]`
-  const nodeRef = 'const node = binding.node'
+  const nodeRef = 'const node = this._resolveBindingNode(binding)'
 
   if (binding.type === 'text') {
     if (binding.isSingleToken) {
@@ -224,14 +224,14 @@ export function generateTokenUpdaterCode (binding, bindingIndex, tokenKey, isGet
   if (binding.type === 'attribute' || (!binding.type && binding.name)) {
     const kind = binding.attrKind ?? 0
     if (kind === 1) {
-      return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const strVal = String(value)\n    const isFalsy = strVal === '' || strVal === 'false' || strVal === 'null' || strVal === '0' || strVal === 'undefined'\n    if (isFalsy) {\n      element.removeAttribute(binding.name)\n    } else {\n      element.setAttribute(binding.name, '')\n    }`
+      return `    ${readState}\n    ${bindingRef}\n    const element = this._resolveBindingNode(binding)\n    if (!element) return\n    const strVal = String(value)\n    const isFalsy = strVal === '' || strVal === 'false' || strVal === 'null' || strVal === '0' || strVal === 'undefined'\n    if (isFalsy) {\n      element.removeAttribute(binding.name)\n    } else {\n      element.setAttribute(binding.name, '')\n    }`
     } else if (kind === 2) {
-      return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const targetVal = value === true || value === 'true' ? 'true' : (value === false || value === 'false' ? 'false' : null)\n    if (targetVal === null) {\n      element.removeAttribute(binding.name)\n    } else if (element.getAttribute(binding.name) !== targetVal) {\n      element.setAttribute(binding.name, targetVal)\n    }`
+      return `    ${readState}\n    ${bindingRef}\n    const element = this._resolveBindingNode(binding)\n    if (!element) return\n    const targetVal = value === true || value === 'true' ? 'true' : (value === false || value === 'false' ? 'false' : null)\n    if (targetVal === null) {\n      element.removeAttribute(binding.name)\n    } else if (element.getAttribute(binding.name) !== targetVal) {\n      element.setAttribute(binding.name, targetVal)\n    }`
     } else if (kind === 3) {
-      return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const strVal = String(value)\n    const isFalsy = strVal === '' || strVal === 'false' || strVal === 'null' || strVal === 'undefined'\n    if (isFalsy) {\n      element.removeAttribute(binding.name)\n    } else if (element.getAttribute(binding.name) !== strVal) {\n      element.setAttribute(binding.name, strVal)\n    }`
+      return `    ${readState}\n    ${bindingRef}\n    const element = this._resolveBindingNode(binding)\n    if (!element) return\n    const strVal = String(value)\n    const isFalsy = strVal === '' || strVal === 'false' || strVal === 'null' || strVal === 'undefined'\n    if (isFalsy) {\n      element.removeAttribute(binding.name)\n    } else if (element.getAttribute(binding.name) !== strVal) {\n      element.setAttribute(binding.name, strVal)\n    }`
     } else {
       if (binding.isSingleToken) {
-        return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    if (value == null) {\n      if (element.hasAttribute(binding.name)) element.removeAttribute(binding.name)\n    } else {\n      const strVal = String(value)\n      if (element.getAttribute(binding.name) !== strVal) element.setAttribute(binding.name, strVal)\n    }`
+        return `    ${readState}\n    ${bindingRef}\n    const element = this._resolveBindingNode(binding)\n    if (!element) return\n    if (value == null) {\n      if (element.hasAttribute(binding.name)) element.removeAttribute(binding.name)\n    } else {\n      const strVal = String(value)\n      if (element.getAttribute(binding.name) !== strVal) element.setAttribute(binding.name, strVal)\n    }`
       } else if (binding.segments) {
         const segExprs = binding.segments.map(seg => {
           if (seg[0] === 0) {
@@ -239,9 +239,9 @@ export function generateTokenUpdaterCode (binding, bindingIndex, tokenKey, isGet
           }
           return `String(this._stateRaw[${JSON.stringify(seg[1])}] ?? '')`
         })
-        return `    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const strVal = ${segExprs.join(' + ')}\n    if (element.getAttribute(binding.name) !== strVal) element.setAttribute(binding.name, strVal)`
+        return `    ${bindingRef}\n    const element = this._resolveBindingNode(binding)\n    if (!element) return\n    const strVal = ${segExprs.join(' + ')}\n    if (element.getAttribute(binding.name) !== strVal) element.setAttribute(binding.name, strVal)`
       } else {
-        return `    ${readState}\n    ${bindingRef}\n    const element = binding.node || (binding.path ? this.getNodeByPath(binding.path) : null)\n    if (!element) return\n    const rawMap = this._stateRaw || {}\n    const strVal = binding.template.replace(/\\{\\{\\s*(.+?)\\s*\\}\\}/g, (_, k) => rawMap[k] ?? '')\n    if (element.getAttribute(binding.name) !== strVal) element.setAttribute(binding.name, strVal)`
+        return `    ${readState}\n    ${bindingRef}\n    const element = this._resolveBindingNode(binding)\n    if (!element) return\n    const rawMap = this._stateRaw || {}\n    const strVal = binding.template.replace(/\\{\\{\\s*(.+?)\\s*\\}\\}/g, (_, k) => rawMap[k] ?? '')\n    if (element.getAttribute(binding.name) !== strVal) element.setAttribute(binding.name, strVal)`
       }
     }
   }

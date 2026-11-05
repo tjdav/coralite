@@ -485,6 +485,21 @@ export class CoraliteElement extends BaseElement {
     this._pendingBindingRetries = 0
 
     /**
+     * Binding records whose target node could not be resolved yet.
+     * Retried on later render passes until resolved.
+     * @type {Set<Object>}
+     * @protected
+     */
+    this._unresolvedBindings = new Set()
+
+    /**
+     * Whether the binding marker map should be rebuilt on the next resolution miss.
+     * @type {boolean}
+     * @protected
+     */
+    this._bindingMarkerRefreshPending = true
+
+    /**
      * Per-instance MutationObserver for dynamic Light DOM slot reconciliation.
      * @type {MutationObserver|null}
      * @protected
@@ -1138,6 +1153,9 @@ export class CoraliteElement extends BaseElement {
     this._slotHasInternalObservers = new Map()
     this._contextUnsubscribers = []
     this._contextCallbacks = []
+    this._bindingMarkerMap = null
+    this._bindingMarkerRefreshPending = true
+    this._unresolvedBindings.clear()
 
     this._setupState()
 
@@ -1327,6 +1345,11 @@ export class CoraliteElement extends BaseElement {
       this._getterDeps.clear()
       this._getterDeps = null
     }
+
+    this._bindingMarkerMap = null
+    this._bindingMarkerRefreshPending = true
+    this._unresolvedBindings.clear()
+    this._pendingBindingRetries = 0
 
     if (this._getterContexts) {
       this._getterContexts.clear()
@@ -3090,6 +3113,81 @@ export class CoraliteElement extends BaseElement {
   }
 
   /**
+   * Resolves the current target node for a binding, re-resolving missing or detached nodes.
+   *
+   * @param {Object} binding - Binding record from `_bindings`.
+   * @returns {Node|null} Resolved node, or null when it cannot be resolved yet.
+   * @protected
+   */
+  _resolveBindingNode (binding) {
+    const node = binding.node
+    if (node && isNodeConnected(node)) {
+      if (this._unresolvedBindings.size > 0) {
+        this._unresolvedBindings.delete(binding)
+      }
+      return node
+    }
+
+    let resolved = null
+    if (binding.id) {
+      const refresh = this._bindingMarkerRefreshPending
+      this._bindingMarkerRefreshPending = false
+      resolved = this._findBindingMarker(binding.id, refresh)
+      if (resolved && !isNodeConnected(resolved)) {
+        resolved = this._findBindingMarker(binding.id, true)
+      }
+    } else if (binding.path) {
+      resolved = this.getNodeByPath(binding.path)
+    }
+
+    if (resolved && isNodeConnected(resolved)) {
+      binding.node = resolved
+      this._unresolvedBindings.delete(binding)
+      return resolved
+    }
+
+    this._unresolvedBindings.add(binding)
+    return null
+  }
+
+  /**
+   * Collects tokens bound to records that still await node resolution.
+   *
+   * @returns {Set<string>} Tokens to retry on the next render pass.
+   * @protected
+   */
+  _collectUnresolvedBindingTokens () {
+    const tokens = new Set()
+    for (const binding of this._unresolvedBindings) {
+      if (binding.singleTokenKey) {
+        tokens.add(binding.singleTokenKey)
+      }
+      if (binding.tokens) {
+        for (const token of binding.tokens) {
+          tokens.add(token)
+        }
+      }
+    }
+    return tokens
+  }
+
+  /**
+   * Schedules a bounded follow-up render when bindings remain unresolved.
+   * @protected
+   */
+  _scheduleBindingRetryIfNeeded () {
+    if (this._unresolvedBindings.size === 0) {
+      this._pendingBindingRetries = 0
+      return
+    }
+    if (this._pendingBindingRetries < MAX_PENDING_BINDING_RETRIES) {
+      this._pendingBindingRetries++
+      this._needsDOMUpdate = true
+      this._scheduleUpdate()
+    }
+  }
+
+  /**
    * Initializes DOM bindings based on the compiler's hydration map.
    * Caches physical DOM references to text nodes and attributes that contain template tokens.
    * @private
@@ -3188,6 +3286,8 @@ export class CoraliteElement extends BaseElement {
     this._evaluatedTokens = {}
     this._cachedOwnSlots = null
     this._pendingBindingRetries = 0
+    this._bindingMarkerRefreshPending = true
+    this._unresolvedBindings.clear()
     this._updaters = this.componentOptions?._updaters || null
 
     const map = this.componentOptions?.hydrationMap
@@ -3661,15 +3761,17 @@ export class CoraliteElement extends BaseElement {
     if (this._updaters && this.componentOptions?.compilerOptimizations !== 'none') {
       let hasUnhandledKey = false
       const changedKeys = this._changedStateKeys
-      if (isFirstRender || (changedKeys && changedKeys.size > 0)) {
+      const retryTokens = this._collectUnresolvedBindingTokens()
+      if (isFirstRender || (changedKeys && changedKeys.size > 0) || retryTokens.size > 0) {
         let keysToRun
         if (isFirstRender) {
           keysToRun = Object.keys(this._updaters || {})
         } else {
-          const allDirtyKeys = new Set(changedKeys)
+          const dirtyKeys = changedKeys || new Set()
+          const allDirtyKeys = new Set(dirtyKeys)
           if (this._getterDeps) {
             for (const [getterKey, deps] of this._getterDeps) {
-              for (const key of changedKeys) {
+              for (const key of dirtyKeys) {
                 if (deps.has(key)) {
                   allDirtyKeys.add(getterKey)
                   break
@@ -3685,8 +3787,12 @@ export class CoraliteElement extends BaseElement {
               }
             }
           }
+          for (const token of retryTokens) {
+            allDirtyKeys.add(token)
+          }
           keysToRun = allDirtyKeys
         }
+        this._bindingMarkerRefreshPending = true
         for (const key of keysToRun) {
           const updater = this._updaters[key]
           if (updater) {
@@ -3694,6 +3800,9 @@ export class CoraliteElement extends BaseElement {
           } else if (this._tokenBindings && this._tokenBindings[key]) {
             hasUnhandledKey = true
           }
+        }
+        if (!hasUnhandledKey) {
+          this._scheduleBindingRetryIfNeeded()
         }
       }
       this._applyStylesIfDirty()
@@ -3800,26 +3909,16 @@ export class CoraliteElement extends BaseElement {
         }
       }
 
-      let unresolvedBindings = 0
+      if (this._unresolvedBindings.size > 0) {
+        targetBindings = this._bindings
+      }
+
+      this._bindingMarkerRefreshPending = true
 
       for (let i = 0; i < targetBindings.length; i++) {
         const binding = targetBindings[i]
-        let node = binding.node
-        if (!node || !isNodeConnected(node)) {
-          let resolved = null
-          if (binding.id) {
-            resolved = this._findBindingMarker(binding.id, true)
-          } else if (binding.path) {
-            resolved = this.getNodeByPath(binding.path)
-          }
-          if (resolved) {
-            binding.node = resolved
-            node = resolved
-          }
-        }
-
+        const node = this._resolveBindingNode(binding)
         if (!node) {
-          unresolvedBindings++
           continue
         }
 
@@ -3929,11 +4028,7 @@ export class CoraliteElement extends BaseElement {
         }
       }
 
-      if (unresolvedBindings > 0 && this._pendingBindingRetries < MAX_PENDING_BINDING_RETRIES) {
-        this._pendingBindingRetries++
-        this._needsDOMUpdate = true
-        this._scheduleUpdate()
-      }
+      this._scheduleBindingRetryIfNeeded()
 
       this._applyStylesIfDirty()
 
