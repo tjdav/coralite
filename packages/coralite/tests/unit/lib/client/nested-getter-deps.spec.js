@@ -65,6 +65,20 @@ function getterDeps (element, key) {
   return deps ? [...deps] : []
 }
 
+function createBareComponent ({ componentId, defaultValues, getters }) {
+  const ComponentClass = createCoraliteClass({
+    componentId,
+    defaultValues,
+    getters
+  })
+  const tagName = `${componentId}-${Math.random().toString(36).slice(2, 8)}`
+  customElements.define(tagName, ComponentClass)
+
+  const element = document.createElement(tagName)
+  document.body.appendChild(element)
+  return element
+}
+
 describe('Client Runtime - Nested Getter Dependency Tracking', () => {
   it('updates a nested getter chain after a cached reactive read', async () => {
     const { element, node } = createComponent({
@@ -179,6 +193,103 @@ describe('Client Runtime - Nested Getter Dependency Tracking', () => {
     assert.strictEqual(node.getAttribute('data-pick'), 'B')
     assert.ok(getterDeps(element, 'pick').includes('b'), 'new branch dependency is tracked')
     assert.ok(!getterDeps(element, 'pick').includes('a'), 'inactive branch dependency is dropped')
+
+    document.body.removeChild(element)
+  })
+
+  it('unions previous and partial dependencies when a getter throws', () => {
+    const element = createBareComponent({
+      componentId: 'getter-dep-error',
+      defaultValues: {
+        source: 'a',
+        extra: 'x',
+        fail: false
+      },
+      getters: {
+        value: ({ state }) => {
+          if (state.fail) {
+            state.extra
+            throw new Error('boom')
+          }
+          return state.source
+        }
+      }
+    })
+
+    assert.strictEqual(element._state.value, 'a')
+    assert.deepStrictEqual(new Set(getterDeps(element, 'value')), new Set(['source', 'fail']))
+
+    element._state.fail = true
+    assert.throws(() => element._state.value, /boom/)
+
+    const afterThrow = getterDeps(element, 'value')
+    assert.ok(afterThrow.includes('source'), 'last successful dependency is retained')
+    assert.ok(afterThrow.includes('fail'), 'the failing flag remains tracked')
+    assert.ok(afterThrow.includes('extra'), 'the newly-read dependency is retained')
+
+    element._state.fail = false
+    assert.strictEqual(element._state.value, 'a')
+    assert.ok(!getterDeps(element, 'value').includes('extra'), 'successful evaluation drops the failed branch dependency')
+
+    document.body.removeChild(element)
+  })
+
+  it('writes dependencies to the current getter dependency entry', () => {
+    const element = createBareComponent({
+      componentId: 'getter-dep-current-entry',
+      defaultValues: {
+        loading: true
+      },
+      getters: {
+        showChrome: ({ state }) => !state.loading
+      }
+    })
+
+    assert.strictEqual(element._stateRaw.showChrome, false)
+    assert.deepStrictEqual(new Set(getterDeps(element, 'showChrome')), new Set(['loading']))
+
+    const replacement = new Set()
+    element._getterDeps.set('showChrome', replacement)
+    element._state.loading = false
+
+    assert.strictEqual(element._stateRaw.showChrome, true)
+    assert.ok(replacement.has('loading'), 'tracking targets the replaced dependency set')
+
+    document.body.removeChild(element)
+  })
+
+  it('retains the dependency union through a getter re-init on reconnect', () => {
+    const element = createBareComponent({
+      componentId: 'getter-dep-reinit',
+      defaultValues: {
+        source: 'a',
+        extra: 'x',
+        fail: false
+      },
+      getters: {
+        value: ({ state }) => {
+          if (state.fail) {
+            state.extra
+            throw new Error('boom')
+          }
+          return state.source
+        }
+      }
+    })
+
+    assert.strictEqual(element._state.value, 'a')
+
+    element.remove()
+    document.body.appendChild(element)
+
+    assert.strictEqual(element._state.value, 'a')
+
+    element._state.fail = true
+    assert.throws(() => element._state.value, /boom/)
+
+    const deps = getterDeps(element, 'value')
+    assert.ok(deps.includes('source'), 'last successful dependency survives re-init')
+    assert.ok(deps.includes('extra'), 'failed branch dependency survives re-init')
 
     document.body.removeChild(element)
   })
