@@ -1687,6 +1687,7 @@ export class CoraliteElement extends BaseElement {
             directDeps = new Set()
             this._getterDeps.set(key, directDeps)
           }
+          directDeps.clear()
 
           if (!this._getterContexts) {
             this._getterContexts = new Map()
@@ -1801,6 +1802,7 @@ export class CoraliteElement extends BaseElement {
             this._getterDeps.set(key, directDeps)
           }
         }
+        directDeps.clear()
 
         if (!this._getterContexts) {
           this._getterContexts = new Map()
@@ -2620,7 +2622,6 @@ export class CoraliteElement extends BaseElement {
             directDeps = new Set()
             self._getterDeps.set(getterKey, directDeps)
           }
-          directDeps.clear()
 
           const parentCollecting = self._collectingDependencies
           self._collectingDependencies = directDeps
@@ -2632,6 +2633,8 @@ export class CoraliteElement extends BaseElement {
             if (options.getters && getterKey in options.getters) {
               value = Reflect.get(t, p, receiver)
             } else {
+              directDeps.clear()
+
               if (!self._getterContexts) {
                 self._getterContexts = new Map()
               }
