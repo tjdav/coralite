@@ -73,6 +73,7 @@ export function createPageHandlers ({
 
     let parsedScript = {
       hasDefinePage: false,
+      hasPageExports: false,
       blocks: null,
       script: null
     }
@@ -105,6 +106,7 @@ export function createPageHandlers ({
       meta: data.state?.page?.meta || {},
       blocks: parsedScript.blocks,
       hasDefinePage: parsedScript.hasDefinePage,
+      hasPageExports: parsedScript.hasPageExports,
       script: parsedScript.script,
       routePattern,
       routeParams,
@@ -128,7 +130,8 @@ export function createPageHandlers ({
           page,
           app,
           source: app.source || { utils: {} },
-          mode: app.options.mode
+          mode: app.options.mode,
+          isPage: true
         })
 
         if (pageExports) {

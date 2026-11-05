@@ -106,6 +106,10 @@ export async function fixCommand (config, options = {}, logger = null) {
     }
   }
 
+  if (options.migratePages) {
+    pageOpt = options.pages === false ? false : (options.pages || true)
+  }
+
   const compDir = resolvePath(compOpt, 'components', ['src/components', 'tests/fixtures/components', 'components'], config, cwd)
   const pluginTarget = resolvePath(pluginOpt, 'plugins', ['src/plugins', 'tests/fixtures/plugins', 'plugins'], config, cwd)
   const pageDir = resolvePath(pageOpt, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'], config, cwd)
@@ -176,8 +180,15 @@ export async function fixCommand (config, options = {}, logger = null) {
         const rawCode = await readFile(pageRes.filePath, 'utf8')
         const fixResult = applyPageFixes(rawCode, diagnostics, {
           filePath: pageRes.filePath,
-          dryRun: Boolean(options.dryRun)
+          dryRun: Boolean(options.dryRun),
+          migratePages: Boolean(options.migratePages)
         })
+
+        if (fixResult.skipped && fixResult.skipped.length > 0) {
+          for (const reason of fixResult.skipped) {
+            log(colours.yellow(`Skipped ${pageRes.filePath}: ${reason}\n`))
+          }
+        }
 
         if (fixResult.modified) {
           totalFixesCount += fixResult.fixesApplied.length

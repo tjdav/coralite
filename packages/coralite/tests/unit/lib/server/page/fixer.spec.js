@@ -1,77 +1,125 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { readFile } from 'node:fs/promises'
-import { join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { applyPageFixes } from '#lib/server/page/fixer.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const fixturesDir = join(__dirname, '../../../../fixtures/pages/codemod')
+const FLAT_OPTIONS = {
+  filePath: 'src/pages/example.html',
+  migratePages: true
+}
 
-describe('Page Bare-Exports Codemod (applyPageFixes)', () => {
-  it('rewrites paths-only bare export to definePage({ paths: ... })', async () => {
-    const input = await readFile(join(fixturesDir, 'before-paths-only.html'), 'utf8')
-    const expected = await readFile(join(fixturesDir, 'expected-paths-only.html'), 'utf8')
+describe('Page Flat-Export Codemod (applyPageFixes)', () => {
+  it('rewrites definePage configuration to flat named exports', () => {
+    const input = `<script type="module">
+  import { definePage } from 'coralite'
 
-    const result = applyPageFixes(input, null, { filePath: 'packages/coralite/tests/fixtures/pages/codemod/before-paths-only.html' })
+  export default definePage({
+    async paths ({ app }) {
+      return []
+    },
+    async server ({ route }) {
+      return { title: route.path }
+    },
+    getters: {
+      heading: ({ state }) => state.title
+    },
+    client ({ state }) {
+      state.ready = true
+    }
+  })
+</script>`
+
+    const result = applyPageFixes(input, null, FLAT_OPTIONS)
+
     assert.strictEqual(result.modified, true)
-    assert.strictEqual(result.outputCode, expected)
-    assert.strictEqual(result.fixesApplied.length, 1)
-    assert.strictEqual(result.fixesApplied[0].code, 'CORALITE-E108')
+    assert.match(result.outputCode, /export async function paths \(/)
+    assert.match(result.outputCode, /export async function server \(/)
+    assert.match(result.outputCode, /export const getters = \{/)
+    assert.match(result.outputCode, /export function client \(/)
+    assert.doesNotMatch(result.outputCode, /definePage/)
+    assert.doesNotMatch(result.outputCode, /import \{ definePage \}/)
+    assert.deepStrictEqual(result.skipped, [])
   })
 
-  it('rewrites server-only bare export to definePage({ server: ... })', async () => {
-    const input = await readFile(join(fixturesDir, 'before-server-only.html'), 'utf8')
-    const expected = await readFile(join(fixturesDir, 'expected-server-only.html'), 'utf8')
+  it('normalizes legacy bare const handlers to function declarations', () => {
+    const input = `<script type="module">
+  export const paths = async () => [{ id: 'one' }]
+  export const server = async ({ route }) => ({ title: route.params.id })
+</script>`
 
-    const result = applyPageFixes(input, null, { filePath: 'packages/coralite/tests/fixtures/pages/codemod/before-server-only.html' })
+    const result = applyPageFixes(input, null, FLAT_OPTIONS)
+
     assert.strictEqual(result.modified, true)
-    assert.strictEqual(result.outputCode, expected)
+    assert.match(result.outputCode, /export async function paths \(\) \{ return \[\{ id: 'one' \}\] \}/)
+    assert.match(result.outputCode, /export async function server \(\{ route \}\) \{ return \{ title: route\.params\.id \} \}/)
+    assert.doesNotMatch(result.outputCode, /export const paths/)
+    assert.doesNotMatch(result.outputCode, /export const server/)
   })
 
-  it('rewrites both bare exports to definePage({ paths, server })', async () => {
-    const input = await readFile(join(fixturesDir, 'before-both.html'), 'utf8')
-    const expected = await readFile(join(fixturesDir, 'expected-both.html'), 'utf8')
+  it('does nothing unless migratePages is enabled', () => {
+    const input = `<script type="module">
+  import { definePage } from 'coralite'
+  export default definePage({ server () { return {} } })
+</script>`
 
-    const result = applyPageFixes(input, null, { filePath: 'packages/coralite/tests/fixtures/pages/codemod/before-both.html' })
-    assert.strictEqual(result.modified, true)
-    assert.strictEqual(result.outputCode, expected)
-  })
+    const result = applyPageFixes(input, null, { filePath: 'src/pages/example.html' })
 
-  it('preserves top-level code and imports when converting bare exports', async () => {
-    const input = await readFile(join(fixturesDir, 'before-with-imports.html'), 'utf8')
-    const expected = await readFile(join(fixturesDir, 'expected-with-imports.html'), 'utf8')
-
-    const result = applyPageFixes(input, null, { filePath: 'packages/coralite/tests/fixtures/pages/codemod/before-with-imports.html' })
-    assert.strictEqual(result.modified, true)
-    assert.strictEqual(result.outputCode, expected)
-  })
-
-  it('does not duplicate import { definePage } if already present', () => {
-    const input = `<script type="module">\n  import { definePage } from 'coralite'\n  export const paths = () => []\n</script>`
-    const result = applyPageFixes(input, null, { filePath: 'already-imported.html' })
-    assert.strictEqual(result.modified, true)
-    assert.strictEqual((result.outputCode.match(/import { definePage }/g) || []).length, 1)
-  })
-
-  it('skips files carrying <!-- coralite-ignore E108 -->', async () => {
-    const input = await readFile(join(fixturesDir, 'before-ignore-pragma.html'), 'utf8')
-    const result = applyPageFixes(input, null, { filePath: 'before-ignore-pragma.html' })
     assert.strictEqual(result.modified, false)
     assert.strictEqual(result.outputCode, input)
   })
 
-  it('skips files in tests/fixtures/ directory unless under codemod', () => {
-    const input = `<script type="module">\n  export const paths = () => []\n</script>`
-    const result = applyPageFixes(input, null, { filePath: 'packages/coralite/tests/fixtures/pages/bare-exports.html' })
+  it('bails with a reason when the definePage block contains comments', () => {
+    const input = `<script type="module">
+  import { definePage } from 'coralite'
+  export default definePage({
+    // keep me
+    server () { return {} }
+  })
+</script>`
+
+    const result = applyPageFixes(input, null, FLAT_OPTIONS)
+
     assert.strictEqual(result.modified, false)
-    assert.strictEqual(result.outputCode, input)
+    assert.strictEqual(result.skipped.length, 1)
+    assert.match(result.skipped[0], /comments/)
   })
 
-  it('skips files with no bare exports', () => {
-    const input = `<script type="module">\n  import { definePage } from 'coralite'\n  export default definePage({ server: () => ({}) })\n</script>`
-    const result = applyPageFixes(input, null, { filePath: 'valid-page.html' })
+  it('bails with a reason for identifier handler references', () => {
+    const input = `<script type="module">
+  import { definePage } from 'coralite'
+  const run = async () => ({})
+  export default definePage({ server: run })
+</script>`
+
+    const result = applyPageFixes(input, null, FLAT_OPTIONS)
+
     assert.strictEqual(result.modified, false)
-    assert.strictEqual(result.outputCode, input)
+    assert.strictEqual(result.skipped.length, 1)
+    assert.match(result.skipped[0], /not an inline function/)
+  })
+
+  it('bails with a reason for invalid page export names', () => {
+    const input = `<script type="module">
+  import { definePage } from 'coralite'
+  export default definePage({ attributes: {} })
+</script>`
+
+    const result = applyPageFixes(input, null, FLAT_OPTIONS)
+
+    assert.strictEqual(result.modified, false)
+    assert.strictEqual(result.skipped.length, 1)
+    assert.match(result.skipped[0], /not a valid page export/)
+  })
+
+  it('is idempotent', () => {
+    const input = `<script type="module">
+  import { definePage } from 'coralite'
+  export default definePage({ server () { return {} } })
+</script>`
+
+    const first = applyPageFixes(input, null, FLAT_OPTIONS)
+    assert.strictEqual(first.modified, true)
+
+    const second = applyPageFixes(first.outputCode, null, FLAT_OPTIONS)
+    assert.strictEqual(second.modified, false)
   })
 })

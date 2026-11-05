@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+</head>
+<body>
+  <h1 data-testid="flat-title">{{ title }}</h1>
+  <p data-testid="flat-summary">{{ summary }}</p>
+  <button ref="increment" data-testid="flat-increment" type="button">{{ countLabel }}</button>
+  <p data-testid="flat-client" hidden>client idle</p>
+  <script type="module">
+    export async function server () {
+      return { title: 'Flat Page', count: 0 }
+    }
+
+    export const getters = {
+      summary: ({ state }) => `Summary: ${state.title}`,
+      countLabel: ({ state }) => `count: ${state.count}`
+    }
+
+    export function client ({ state, refs, signal }) {
+      const output = document.querySelector('[data-testid="flat-client"]')
+      output.hidden = false
+      output.textContent = 'client ready'
+
+      refs('increment').addEventListener('click', () => {
+        state.count += 1
+        output.textContent = `client count: ${state.count}`
+      }, { signal })
+    }
+  </script>
+</body>
+</html>

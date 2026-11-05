@@ -649,3 +649,67 @@ describe('Coralite Page Validator (page-validator.js)', () => {
     })
   })
 })
+
+describe('Page Validator — Flat Named Exports', () => {
+  it('accepts flat page exports using mirrored declaration forms', () => {
+    const source = `
+      <!DOCTYPE html>
+      <html><body><h1>{{ title }}</h1></body></html>
+      <script type="module">
+        export function paths () { return [] }
+        export async function server () { return { title: 'Flat' } }
+        export const getters = { upper: ({ state }) => state.title.toUpperCase() }
+        export const style = { '--flat': 'red' }
+        export const provide = { theme: 'dark' }
+        export function client () {}
+        export function onError () { return '<h1>Error</h1>' }
+      </script>
+    `
+
+    const result = validatePageSource(source, { knownComponents: new Map() })
+    const pageErrors = result.diagnostics.filter(d => d.code === 'CORALITE-E107')
+    assert.deepStrictEqual(pageErrors, [])
+  })
+
+  it('rejects const page handlers', () => {
+    const source = `
+      <!DOCTYPE html><html><body></body></html>
+      <script type="module">
+        export const server = () => ({})
+      </script>
+    `
+
+    const result = validatePageSource(source, { knownComponents: new Map() })
+    const errors = result.diagnostics.filter(d => d.code === 'CORALITE-E107')
+    assert.equal(errors.length, 1)
+    assert.match(errors[0].message, /Page handler "server" must use "export function"/)
+  })
+
+  it('rejects function declarations for page configuration exports', () => {
+    const source = `
+      <!DOCTYPE html><html><body></body></html>
+      <script type="module">
+        export function getters () {}
+      </script>
+    `
+
+    const result = validatePageSource(source, { knownComponents: new Map() })
+    const errors = result.diagnostics.filter(d => d.code === 'CORALITE-E107')
+    assert.equal(errors.length, 1)
+    assert.match(errors[0].message, /Page declaration "getters" must use "export const"/)
+  })
+
+  it('rejects component-only exports on pages', () => {
+    const source = `
+      <!DOCTYPE html><html><body></body></html>
+      <script type="module">
+        export const attributes = {}
+      </script>
+    `
+
+    const result = validatePageSource(source, { knownComponents: new Map() })
+    const errors = result.diagnostics.filter(d => d.code === 'CORALITE-E107')
+    assert.equal(errors.length, 1)
+    assert.match(errors[0].message, /definePage does not support "attributes"/)
+  })
+})

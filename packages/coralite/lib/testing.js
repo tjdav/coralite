@@ -200,6 +200,8 @@ export async function loadComponent (filePath, options = {}) {
  *   source: string,
  *   routePattern: string | null,
  *   routeParams: string[],
+ *   hasDefinePage: boolean,
+ *   hasPageExports: boolean,
  *   errors: string[]
  * }>}
  */
@@ -269,6 +271,8 @@ export async function loadPage (filePath, options = {}) {
       source,
       routePattern,
       routeParams,
+      hasDefinePage: Boolean(parsedScript && parsedScript.hasDefinePage),
+      hasPageExports: Boolean(parsedScript && parsedScript.hasPageExports),
       errors
     }
   }
@@ -289,7 +293,8 @@ export async function loadPage (filePath, options = {}) {
     routePattern,
     routeParams,
     blocks: parsedScript.blocks,
-    hasDefinePage: parsedScript.hasDefinePage
+    hasDefinePage: parsedScript.hasDefinePage,
+    hasPageExports: parsedScript.hasPageExports
   }
 
   let pageExports = null
@@ -298,7 +303,8 @@ export async function loadPage (filePath, options = {}) {
       module,
       page: pageObj,
       mode: 'development',
-      source: { utils: {} }
+      source: { utils: {} },
+      isPage: true
     })
   } catch (err) {
     const coraliteErr = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
@@ -369,6 +375,8 @@ export async function loadPage (filePath, options = {}) {
     source,
     routePattern,
     routeParams,
+    hasDefinePage: parsedScript.hasDefinePage,
+    hasPageExports: parsedScript.hasPageExports,
     errors
   }
 }

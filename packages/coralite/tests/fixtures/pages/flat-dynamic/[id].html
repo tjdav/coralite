@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+</head>
+<body>
+  <h1 data-testid="flat-dynamic-title">{{ title }}</h1>
+  <script type="module">
+    export function paths () {
+      return [{ id: 'one' }, { id: 'two' }]
+    }
+
+    export async function server ({ route }) {
+      return { title: `Flat ${route.params.id}` }
+    }
+  </script>
+</body>
+</html>

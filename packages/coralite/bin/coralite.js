@@ -679,10 +679,11 @@ async function main () {
 
   program
     .command('fix')
-    .description('Run workspace auto-fixers across Components and Plugins')
+    .description('Run workspace auto-fixers across Components, Pages, and Plugins')
     .option('-c, --components <path>', 'Path to component file or directory')
     .option('-p, --plugins <path>', 'Path to plugin file or directory')
     .option('--pages <path>', 'Path to pages directory')
+    .option('--migrate-pages', 'Migrate page definePage(...) configuration to flat named exports', false)
     .option('-e, --error-code <codes...>', 'Only apply auto-fixes for specified error code(s)')
     .option('--code <codes...>', 'Alias for --error-code')
     .option('--status <status>', 'Filter post-fix output by status: "failed", "passed", or "all"')
@@ -698,6 +699,7 @@ async function main () {
         cmd.getOptionValueSource('components') === 'cli' ||
       cmd.getOptionValueSource('plugins') === 'cli' ||
       cmd.getOptionValueSource('pages') === 'cli' ||
+      cmd.getOptionValueSource('migratePages') === 'cli' ||
       cmd.getOptionValueSource('errorCode') === 'cli' ||
       cmd.getOptionValueSource('code') === 'cli' ||
       cmd.getOptionValueSource('status') === 'cli' ||
@@ -742,6 +744,10 @@ async function main () {
           if (!opts.domains.includes('pages') && !opts.pages) {
             pageOpt = false
           }
+        }
+
+        if (opts.migratePages) {
+          pageOpt = opts.pages === false ? false : (opts.pages || true)
         }
 
         const compDir = resolvePath(compOpt, 'components', ['src/components', 'tests/fixtures/components'])
@@ -809,8 +815,15 @@ async function main () {
               const rawCode = await readFile(pageRes.filePath, 'utf8')
               const fixResult = applyPageFixes(rawCode, diagnostics, {
                 filePath: pageRes.filePath,
-                dryRun: opts.dryRun
+                dryRun: opts.dryRun,
+                migratePages: Boolean(opts.migratePages)
               })
+
+              if (fixResult.skipped && fixResult.skipped.length > 0) {
+                for (const reason of fixResult.skipped) {
+                  process.stdout.write(kleur.yellow(`Skipped ${pageRes.filePath}: ${reason}\n`))
+                }
+              }
 
               if (fixResult.modified) {
                 totalFixesCount += fixResult.fixesApplied.length

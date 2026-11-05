@@ -7,7 +7,7 @@ import { extractGlobals } from './utils/server.js'
 import * as serverUtilsBase from './utils/index.js'
 import { CoraliteError } from '../shared/errors.js'
 import { createContext as createContextUtil, ContextRequestEvent } from '../shared/core.js'
-import { definePage } from '../shared/page.js'
+import { definePage, PAGE_EXPORTS } from '../shared/page.js'
 import { createStore, createServerStore } from '../utils/store.js'
 
 /**
@@ -30,6 +30,8 @@ export const RECOGNIZED_COMPONENT_EXPORTS = [
   'formControl',
   'listStrategy'
 ]
+
+export const RECOGNIZED_PAGE_EXPORTS = PAGE_EXPORTS
 
 const isValidIdentifier = (name) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
 
@@ -173,6 +175,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
  * @param {Object} options.source - Framework source context
  * @param {Function} options.bindPlugins - Function to bind plugins
  * @param {Function} options.defineComponent - Function to define component
+ * @param {boolean} [options.isPage=false] - Whether the module is a page script
  * @param {Function} options.createExecutionError - Function to create execution error
  * @param {Function} options.getComponent - Function to get component
  * @param {Array<Record<string|symbol, any>>} [options.contextFrames] - Threaded context frames
@@ -192,6 +195,7 @@ export async function evaluateDevelopment ({
   source,
   bindPlugins,
   defineComponent,
+  isPage = false,
   createExecutionError,
   getComponent,
   contextFrames = []
@@ -342,6 +346,18 @@ export async function evaluateDevelopment ({
     return script.namespace.default
   }
 
+  if (isPage) {
+    const pageExports = {}
+    let hasPageExport = false
+    for (const key of RECOGNIZED_PAGE_EXPORTS) {
+      if (key in script.namespace && script.namespace[key] !== undefined) {
+        pageExports[key] = script.namespace[key]
+        hasPageExport = true
+      }
+    }
+    return hasPageExport ? pageExports : {}
+  }
+
   if (defineComponent) {
     const namedExports = {}
     let hasRecognizedExport = false
@@ -378,6 +394,7 @@ export async function evaluateDevelopment ({
  * @param {Object} options.source - Framework source context
  * @param {Function} options.bindPlugins - Function to bind plugins
  * @param {Function} options.defineComponent - Function to define component
+ * @param {boolean} [options.isPage=false] - Whether the module is a page script
  * @param {Function} options.createExecutionError - Function to create execution error
  * @param {Function} options.getComponent - Function to get component
  * @param {Array<Record<string|symbol, any>>} [options.contextFrames] - Threaded context frames
@@ -397,6 +414,7 @@ export async function evaluateProduction ({
   source,
   bindPlugins,
   defineComponent,
+  isPage = false,
   createExecutionError,
   getComponent,
   contextFrames = []
@@ -549,6 +567,18 @@ export async function evaluateProduction ({
   // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
   if (moduleMock.exports.default != null) {
     return moduleMock.exports.default
+  }
+
+  if (isPage) {
+    const pageExports = {}
+    let hasPageExport = false
+    for (const key of RECOGNIZED_PAGE_EXPORTS) {
+      if (key in moduleMock.exports && moduleMock.exports[key] !== undefined) {
+        pageExports[key] = moduleMock.exports[key]
+        hasPageExport = true
+      }
+    }
+    return hasPageExport ? pageExports : {}
   }
 
   if (defineComponent) {
