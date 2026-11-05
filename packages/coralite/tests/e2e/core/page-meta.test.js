@@ -37,6 +37,7 @@ test.describe('Page meta declarations', () => {
     await expect(page.getByTestId('meta-server-title')).toHaveText('Default title from server')
     await expect(page.getByTestId('meta-server-count')).toHaveText('2')
     await expect(page.getByTestId('meta-server-derived')).toHaveText('20')
+    await expect(page.getByTestId('meta-server-campaign')).toHaveText('server-meta')
     await expect(page.getByTestId('meta-server-doc-title')).toHaveText('Server literal title')
   })
 })

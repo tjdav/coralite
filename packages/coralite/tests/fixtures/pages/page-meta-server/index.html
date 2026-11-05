@@ -8,18 +8,21 @@
   <h1 data-testid="meta-server-title">{{ title }}</h1>
   <p data-testid="meta-server-count">{{ count }}</p>
   <p data-testid="meta-server-derived">{{ derived }}</p>
+  <p data-testid="meta-server-campaign">{{ metaCampaign }}</p>
   <p data-testid="meta-server-doc-title">{{ docTitle }}</p>
 
   <script type="module">
     export const meta = {
       title: { type: String, default: 'Default title' },
-      count: { type: Number, default: 2 }
+      count: { type: Number, default: 2 },
+      campaign: { type: String, default: 'server-meta' }
     }
 
-    export async function server ({ state }) {
+    export async function server ({ state, page }) {
       return {
         title: `${state.title} from server`,
-        derived: state.count * 10
+        derived: state.count * 10,
+        metaCampaign: page.meta.campaign
       }
     }
 
