@@ -22,12 +22,12 @@
     <coralite-code-highlight language="html" title="Component Structure">
 <template id="user-profile">
   <div class="card">
-    <h2>{{ state.name }}</h2>
-    <p>{{ state.role }}</p>
+    <h2>{{ name }}</h2>
+    <p>{{ role }}</p>
   </div>
 </template>
 
-<script type="module">
+&lt;script type="module">
   export const attributes = {
     userId: {
       type: String,
@@ -42,7 +42,7 @@
       id: state.userId
     }
   }
-</script>
+&lt;/script&gt;
 
 <style>
   .card {

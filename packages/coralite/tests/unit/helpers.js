@@ -62,6 +62,16 @@ export function assertSame (actual, expected, message) {
 }
 
 /**
+ * Removes SSR page-token marker attributes from rendered HTML for stable assertions.
+ *
+ * @param {string} html - Rendered HTML.
+ * @returns {string} HTML without `data-coralite-page-token` attributes.
+ */
+export function stripPageTokenMarkers (html) {
+  return html.replace(/\sdata-coralite-page-token="[^"]*"/g, '')
+}
+
+/**
  * Asserts that two references are different without deep-inspecting either
  * operand when the assertion fails.
  * @param {unknown} actual - Observed reference.

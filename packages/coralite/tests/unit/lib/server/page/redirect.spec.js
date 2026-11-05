@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
+import { stripPageTokenMarkers } from '../../../helpers.js'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
@@ -89,7 +90,7 @@ describe('__redirect page marker', () => {
     assert.ok(!path1.content.includes('Page ID: 1'))
 
     // Path 2 renders template normally
-    assert.ok(path2.content.includes('<h1>Page ID: 2</h1>'))
+    assert.ok(stripPageTokenMarkers(path2.content).includes('<h1>Page ID: 2</h1>'))
     assert.ok(!path2.content.includes('Redirecting...'))
   })
 

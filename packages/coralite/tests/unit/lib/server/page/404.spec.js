@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
+import { stripPageTokenMarkers } from '../../../helpers.js'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { mkdir, mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
@@ -225,8 +226,8 @@ describe('404 Convention (P2.10)', () => {
     const fourOhFourResult = buildResults.find(r => r.path.filename === '404.html' && !r.path.pathname.includes('blog'))
 
     assert.ok(fourOhFourResult, '404 page build result must exist')
-    assert.ok(fourOhFourResult.content.includes('<h1>CUSTOM 404 PAGE</h1>'), 'Getter formattedMessage must be rendered')
-    assert.ok(fourOhFourResult.content.includes('<p>Requested: /404</p>'), 'Route path /404 must be rendered')
+    assert.ok(stripPageTokenMarkers(fourOhFourResult.content).includes('<h1>CUSTOM 404 PAGE</h1>'), 'Getter formattedMessage must be rendered')
+    assert.ok(stripPageTokenMarkers(fourOhFourResult.content).includes('<p>Requested: /404</p>'), 'Route path /404 must be rendered')
     assert.ok(fourOhFourResult.content.includes('--bg-color'), 'Style block must apply inline style property')
   })
 })

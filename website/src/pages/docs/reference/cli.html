@@ -181,7 +181,7 @@
 
     <coralite-heading level="2" text="coralite fix (Unified AST Auto-Fixer)"></coralite-heading>
     <p>
-      The <code>coralite fix</code> command executes deterministic AST auto-fixers across Components and Plugins. It modifies source files in-place and re-audits the codebase to confirm issues are resolved.
+      The <code>coralite fix</code> command executes deterministic AST auto-fixers across Components, Pages, and Plugins. It modifies source files in-place and re-audits the codebase to confirm issues are resolved.
     </p>
 
     <coralite-code language="bash">coralite fix [options]</coralite-code>
@@ -206,6 +206,13 @@
         <ul>
           <li>Description: Path to the pages directory to fix.</li>
           <li>Example: <code>coralite fix --pages src/pages</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--migrate-pages</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Migrates page <code>export default definePage({ ... })</code> configuration to flat named exports (<code>export function server</code>, <code>export const getters</code>, …), and normalizes legacy <code>export const server</code>/<code>export const paths</code> handlers. Implies the pages domain when no page path is supplied; works with <code>--dry-run</code>. Files with unsupported constructs are left unchanged and reported.</li>
+          <li>Example: <code>coralite fix --migrate-pages --dry-run</code></li>
         </ul>
       </li>
       <li>

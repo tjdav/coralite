@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
+import { stripPageTokenMarkers } from '../../helpers.js'
 import { join } from 'node:path'
 import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -77,7 +78,7 @@ describe('Server-side Route Context in Page Blocks', () => {
     assert.equal(results.length, 1)
 
     const html = results[0].content
-    assert.ok(html.includes('<h1>Alice at /about (dynamic:false)</h1>'), 'Page getter output depending on route must be baked into HTML')
+    assert.ok(stripPageTokenMarkers(html).includes('<h1>Alice at /about (dynamic:false)</h1>'), 'Page getter output depending on route must be baked into HTML')
   })
 
   it('page getters receives route with correct shape for a dynamic page per enumerated path', async () => {
@@ -133,7 +134,7 @@ describe('Server-side Route Context in Page Blocks', () => {
     assert.equal(results.length, 1)
 
     const html = results[0].content
-    assert.ok(html.includes('<h2>Post intro at /posts/intro (pattern:/posts/[id], dynamic:true)</h2>'))
+    assert.ok(stripPageTokenMarkers(html).includes('<h2>Post intro at /posts/intro (pattern:/posts/[id], dynamic:true)</h2>'))
   })
 
   it('page provide receives route and descendant components consuming page-provided context read route values correctly', async () => {

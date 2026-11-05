@@ -92,7 +92,14 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
     }
   }
 
-  const updatePageTokens = (node = rootEl) => {
+  const pageTokens = pageConfig.tokens || {}
+
+  const renderTokenTemplate = (raw) => raw.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, k) => {
+    const val = resolveTokenVal(k)
+    return val !== undefined && val !== null ? String(val) : ''
+  })
+
+  const updateLegacyPageTokens = (node = rootEl) => {
     if (!node) {
       return
     }
@@ -105,10 +112,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
         }
       }
       if (n._rawTemplate) {
-        n.data = n._rawTemplate.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, k) => {
-          const val = resolveTokenVal(k)
-          return val !== undefined && val !== null ? String(val) : ''
-        })
+        n.data = renderTokenTemplate(n._rawTemplate)
       }
     } else if (n.nodeType === 1) {
       if (n.attributes) {
@@ -121,17 +125,57 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
             }
           }
           if (a._rawTemplate) {
-            a.value = a._rawTemplate.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, k) => {
-              const val = resolveTokenVal(k)
-              return val !== undefined && val !== null ? String(val) : ''
-            })
+            a.value = renderTokenTemplate(a._rawTemplate)
           }
         }
       }
       for (const child of Array.from(n.childNodes)) {
-        updatePageTokens(child)
+        updateLegacyPageTokens(child)
       }
     }
+  }
+
+  const updatePageTokens = () => {
+    if (Object.keys(pageTokens).length > 0) {
+      const marked = document.querySelectorAll('[data-coralite-page-token]')
+      for (const element of marked) {
+        const id = element.getAttribute('data-coralite-page-token')
+        const entry = pageTokens[id]
+        if (!entry) {
+          continue
+        }
+
+        for (const [name, raw] of Object.entries(entry.attrs || {})) {
+          const next = renderTokenTemplate(raw)
+          if (element.getAttribute(name) !== next) {
+            element.setAttribute(name, next)
+          }
+        }
+
+        if (entry.texts && entry.texts.length > 0) {
+          /** @type {any[]} */
+          const textNodes = []
+          for (const child of Array.from(element.childNodes)) {
+            if (child.nodeType === 3) {
+              textNodes.push(child)
+            }
+          }
+          for (const { textIndex, raw } of entry.texts) {
+            /** @type {any} */
+            const textNode = textNodes[textIndex]
+            if (!textNode) {
+              continue
+            }
+            const next = renderTokenTemplate(raw)
+            if (textNode.nodeValue !== next) {
+              textNode.nodeValue = next
+            }
+          }
+        }
+      }
+    }
+
+    updateLegacyPageTokens(rootEl)
   }
 
   const schedulePageFlush = (changedProp, oldVal, newVal) => {
@@ -152,7 +196,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
     queueMicrotask(() => {
       isUpdatePending = false
       applyPageStyles()
-      updatePageTokens(rootEl)
+      updatePageTokens()
     })
   }
 
@@ -305,7 +349,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
   })
 
   applyPageStyles()
-  updatePageTokens(rootEl)
+  updatePageTokens()
 
   const clientFn = parseFn(pageConfig.client)
   if (typeof clientFn === 'function') {

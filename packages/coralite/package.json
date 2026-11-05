@@ -82,6 +82,7 @@
   "exports": {
     ".": {
       "types": "./dist/lib/index.d.ts",
+      "development": "./lib/index.js",
       "default": "./dist/lib/index.js"
     },
     "./types": {
