@@ -85,6 +85,8 @@ const myPlugin = definePlugin({
         <li><strong>Phase 2 (Instance)</strong>: Receives <code>instanceContext</code> (contains <code>page</code>, <code>route</code>, <code>app</code>). Returns the object exposed to the component or page. Use <code>instanceContext</code> to access other plugins.</li>
       </ul>
 
+      <p><em>Testing:</em> To mock <code>server.context</code> or <code>client.context</code>, see <a href="/docs/guide/e2e-testing.html#plugin-mocking">Plugin Mocking</a>. The real Phase 1 and Phase 2 functions still run; use a stub plugin for full isolation. For focused unit tests, see <a href="/docs/guide/testing.html#mocking-plugin-context-in-unit-tests">Mocking Plugin Context in Unit Tests</a>.</p>
+
       <coralite-code-highlight language="JavaScript">
 export default definePlugin({
   name: 'logger-plugin',

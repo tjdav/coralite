@@ -199,13 +199,138 @@
       });
     </coralite-code-highlight>
 
-    <coralite-heading level="3" text="Plugin Mocking (testing.mocks.plugins)"></coralite-heading>
+    <coralite-heading level="3" text="Plugin Mocking"></coralite-heading>
 
-    <p>Plugins injected into the application can also be mocked. Under the <code>testing.mocks.plugins</code> key, you can map the plugin's name to a definition containing <code>server</code> and/or <code>client</code> mock configurations:</p>
-    <ul>
-      <li><strong><code>server.context</code></strong>: An object containing mock properties or methods to be merged into the plugin's server-side context (the return value of the plugin's Phase 2 resolver during the server build).</li>
-      <li><strong><code>client.context</code></strong>: An object containing mock properties or methods to be merged into the plugin's client-side context (the return value of the plugin's Phase 2 resolver in the browser).</li>
-    </ul>
+    <p>Plugins injected into the application can also be mocked under <code>testing.mocks.plugins</code>. Mocks apply only in <code>mode: 'testing'</code>. Each key must match the plugin name used for context injection, or the plugin's <code>server.name</code> / <code>client.name</code> when those are set explicitly.</p>
+
+    <coralite-code-highlight language="javascript" title="Plugin and Mock Definitions">
+import { createCoralite, definePlugin } from 'coralite'
+
+const analyticsPlugin = definePlugin({
+  name: 'analytics',
+  server: {
+    context: () => () => ({
+      track: event => `real:${event}`
+    })
+  },
+  client: {
+    context: () => () => ({
+      track: event => `real-client:${event}`
+    })
+  }
+})
+
+const app = await createCoralite({
+  mode: 'testing',
+  plugins: [analyticsPlugin],
+  testing: {
+    mocks: {
+      plugins: {
+        analytics: {
+          server: {
+            context: {
+              track: event => `mocked:${event}`
+            }
+          },
+          client: {
+            context: {
+              track: event => `mocked-client:${event}`
+            }
+          }
+        }
+      }
+    }
+  }
+})
+    </coralite-code-highlight>
+
+    <p>A component consuming the plugin can use it directly in <code>server()</code> and <code>client()</code>:</p>
+
+    <coralite-code-highlight language="html" title="Consuming Component">
+&lt;script type="module"&gt;
+  export async function server ({ analytics }) {
+    return { event: analytics.track('page_view') }
+  }
+
+  export function client ({ analytics }) {
+    analytics.track('click')
+  }
+&lt;/script&gt;
+    </coralite-code-highlight>
+
+    <p>With the mock above, <code>server()</code> receives <code>mocked:page_view</code> and client code receives <code>mocked-client:click</code>.</p>
+
+    <coralite-heading level="4" text="How Mocks Merge"></coralite-heading>
+
+    <p>Mock context objects are shallow-merged over the resolved Phase 2 context:</p>
+
+    <coralite-code-highlight language="javascript">
+resolved = Object.assign({}, realContext, mock.context)
+    </coralite-code-highlight>
+
+    <p>Only the keys you provide are replaced. Methods that are not mocked continue to use the real plugin implementation.</p>
+
+    <coralite-heading level="4" text="Plugin Setup Still Runs"></coralite-heading>
+
+    <p><strong>Important:</strong> <code>testing.mocks.plugins</code> does not skip plugin setup. The real plugin's Phase 1 and Phase 2 context functions still execute before the mock is merged. Do not use this mechanism to avoid database connections, secret reads, or external API calls inside the plugin itself. For full isolation, replace the plugin with a stub in the <code>plugins</code> array.</p>
+
+    <coralite-code-highlight language="javascript" title="Stub Plugin for Full Isolation">
+const stubAnalytics = definePlugin({
+  name: 'analytics',
+  server: {
+    context: () => () => ({
+      track: event => `stubbed:${event}`
+    })
+  },
+  client: {
+    context: () => () => ({
+      track: event => `stubbed-client:${event}`
+    })
+  }
+})
+
+const app = await createCoralite({
+  mode: 'testing',
+  plugins: [stubAnalytics]
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="4" text="Top-Level Context"></coralite-heading>
+
+    <p><code>testing.mocks.plugins</code> targets <code>server.context</code> and <code>client.context</code>. Top-level <code>plugin.context</code> is resolved through a separate isomorphic path used by getters and the client runtime. For tests that must override top-level context, register a stub plugin instead of relying on built-in mocks.</p>
+
+    <coralite-heading level="4" text="Component vs. Plugin Mocks"></coralite-heading>
+
+    <p>If a component has both a component mock and a plugin mock, the component mock takes precedence for that component's <code>server()</code> result.</p>
+
+    <coralite-heading level="4" text="Choosing a Mocking Strategy"></coralite-heading>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Goal</th>
+        <th>Mechanism</th>
+      </tr>
+      <tr slot="body">
+        <td>Override a component's server result</td>
+        <td><code>testing.mocks.components</code></td>
+      </tr>
+      <tr slot="body">
+        <td>Override plugin server context</td>
+        <td><code>testing.mocks.plugins.&lt;name&gt;.server.context</code></td>
+      </tr>
+      <tr slot="body">
+        <td>Override plugin client context</td>
+        <td><code>testing.mocks.plugins.&lt;name&gt;.client.context</code></td>
+      </tr>
+      <tr slot="body">
+        <td>Unit test a consumer with injected plugin context</td>
+        <td><code>loadComponent</code> / <code>loadPage</code> <code>options.context</code></td>
+      </tr>
+      <tr slot="body">
+        <td>Replace a plugin completely</td>
+        <td>Stub plugin in the <code>plugins</code> array</td>
+      </tr>
+    </coralite-table>
 
     <coralite-heading level="2" text="Incremental Builds &amp; ISR Cache Invalidation"></coralite-heading>
 

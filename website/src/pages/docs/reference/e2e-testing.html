@@ -99,6 +99,20 @@
       </tr>
     </coralite-table>
 
+    <p>Mocks are shallow-merged over the resolved Phase 2 context: only the keys you provide are replaced, and all other methods remain the real implementation.</p>
+
+    <p><strong>Execution:</strong> The real plugin's Phase 1 and Phase 2 functions still run before the mock is merged. Use a stub plugin when the real plugin performs side effects or external I/O during setup.</p>
+
+    <p><strong>Name matching:</strong> The mock key must match the plugin's resolved context name: <code>plugin.name</code>, or <code>server.name</code> / <code>client.name</code> when set explicitly. A mock for an unregistered name emits a warning and has no effect.</p>
+
+    <p><strong>Top-level context:</strong> This mechanism targets <code>server.context</code> and <code>client.context</code>. Top-level <code>plugin.context</code> is resolved through a separate isomorphic path; use a stub plugin to override it in getters and the client runtime.</p>
+
+    <p><strong>Precedence:</strong> Component mocks under <code>testing.mocks.components</code> take precedence over plugin mocks for the components they cover.</p>
+
+    <p><strong>Availability:</strong> Plugin mocks apply only when Coralite runs with <code>mode: 'testing'</code>. Both <code>server.context</code> and <code>client.context</code> mock values must be plain objects.</p>
+
+    <p>For a complete example and the unit-testing approach, see <a href="/docs/guide/e2e-testing.html#plugin-mocking">Plugin Mocking</a> and <a href="/docs/guide/testing.html#mocking-plugin-context-in-unit-tests">Mocking Plugin Context in Unit Tests</a>.</p>
+
     <coralite-heading level="3" text="Compiler Cache &amp; ISR Integration"></coralite-heading>
 
     <p>To avoid running tests against stale data during incremental builds, the compiler generates a cryptographic hash of the entire <code>testing.mocks</code> configuration. Any modification to the mock definitions, implementations, or configuration invalidates the Incremental Static Regeneration (ISR) cache and triggers a rebuild of only the pages consuming the mocked components or plugins.</p>
