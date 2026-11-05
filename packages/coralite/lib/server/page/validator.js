@@ -11,6 +11,7 @@ import { getIgnoreAttributeMap, findAttributesToIgnore } from '../utils/parse.js
 import {
   createValidationContext,
   parseScriptAST,
+  validatePageMeta,
   validateGetters,
   validateStyle,
   validateServerBlock,
@@ -503,6 +504,7 @@ function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnosti
   const scriptCtx = createValidationContext(scriptContent, filePath, { kind: 'page' })
   parseScriptAST(scriptCtx)
   if (scriptCtx.configObj) {
+    validatePageMeta(scriptCtx)
     validateGetters(scriptCtx)
     validateStyle(scriptCtx)
     validateServerBlock(scriptCtx)

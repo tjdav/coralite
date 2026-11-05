@@ -27,6 +27,7 @@ describe('html.js (extractPageScript)', () => {
         export default definePage({
           paths () { return [] },
           server () { return { msg: 'hi' } },
+          meta: { title: { type: String, default: 'Untitled' } },
           getters: { title: ({ state }) => state.msg },
           style: { '--color': 'red' },
           provide: { key: 'val' },
@@ -42,6 +43,7 @@ describe('html.js (extractPageScript)', () => {
     assert.ok(result.blocks)
     assert.ok('paths' in result.blocks)
     assert.ok('server' in result.blocks)
+    assert.ok('meta' in result.blocks)
     assert.ok('getters' in result.blocks)
     assert.ok('style' in result.blocks)
     assert.ok('provide' in result.blocks)
@@ -62,7 +64,7 @@ describe('html.js (extractPageScript)', () => {
       (err) => {
         return (
           err.code === 'CORALITE-E107' &&
-          err.message.includes('definePage does not support "attributes". Use "server" to fetch page data.')
+          err.message.includes('definePage does not support "attributes". Use "meta" for declared page state.')
         )
       }
     )
@@ -138,7 +140,7 @@ describe('html.js (extractPageScript)', () => {
       (err) => {
         return (
           err.code === 'CORALITE-E107' &&
-          err.message.includes('Unknown block "unknownBlock" in definePage. Valid blocks are: paths, server, getters, style, provide, client, onError.')
+          err.message.includes('Unknown block "unknownBlock" in definePage. Valid blocks are: paths, server, meta, getters, style, provide, client, onError.')
         )
       }
     )
@@ -149,6 +151,7 @@ describe('html.js (extractPageScript)', () => {
       <script type="module">
         export function paths () { return [] }
         export async function server () { return {} }
+        export const meta = { title: { type: String, default: 'Untitled' } }
         export const getters = { title: () => 'hi' }
         export const style = { '--color': 'red' }
         export const provide = { key: 'val' }

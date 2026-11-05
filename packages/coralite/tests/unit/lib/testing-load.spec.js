@@ -92,6 +92,21 @@ describe('coralite/testing helpers', () => {
       assert.strictEqual(state.title, 'Basic Page Title')
     })
 
+    it('should expose meta defaults and pass them to server()', async () => {
+      const pagePath = resolve(fixturesDir, 'load-page-meta.html')
+      const page = await loadPage(pagePath)
+
+      assert.strictEqual(page.errors.length, 0)
+      assert.deepStrictEqual(page.metaDefaults, {
+        title: 'Meta Page Title',
+        count: 2
+      })
+
+      const state = await page.server()
+      assert.strictEqual(state.title, 'Meta Page Title!')
+      assert.strictEqual(state.count, 3)
+    })
+
     it('should load a page with both paths() and server() blocks', async () => {
       const pagePath = resolve(fixturesDir, 'load-page-paths.html')
       const page = await loadPage(pagePath)

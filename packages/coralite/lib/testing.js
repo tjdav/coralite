@@ -3,6 +3,7 @@ import { resolve, dirname, basename } from 'node:path'
 import { parseModule } from './server/utils/parse.js'
 import { extractPageScript } from './server/parser/html.js'
 import { parsePagePattern } from './server/page/pattern.js'
+import { resolvePageMetaDefaults } from './shared/page-meta.js'
 import { evaluate } from './server/compiler.js'
 import { CoraliteError } from './shared/errors.js'
 
@@ -202,6 +203,7 @@ export async function loadComponent (filePath, options = {}) {
  *   routeParams: string[],
  *   hasDefinePage: boolean,
  *   hasPageExports: boolean,
+ *   metaDefaults: Record<string, unknown>,
  *   errors: string[]
  * }>}
  */
@@ -273,6 +275,7 @@ export async function loadPage (filePath, options = {}) {
       routeParams,
       hasDefinePage: Boolean(parsedScript && parsedScript.hasDefinePage),
       hasPageExports: Boolean(parsedScript && parsedScript.hasPageExports),
+      metaDefaults: {},
       errors
     }
   }
@@ -315,6 +318,10 @@ export async function loadPage (filePath, options = {}) {
     throw coraliteErr
   }
 
+  const pageMetaDefaults = pageExports?.meta !== undefined
+    ? resolvePageMetaDefaults(pageExports.meta, { filePath: absolutePath })
+    : {}
+
   const pathsWrapper = async (ctx = {}) => {
     if (!pageExports || typeof pageExports.paths !== 'function') {
       return []
@@ -349,7 +356,7 @@ export async function loadPage (filePath, options = {}) {
     }
     const mergedCtx = {
       route: defaultRoute,
-      state: {},
+      state: { ...pageMetaDefaults },
       isServer: true,
       isClient: false,
       app: {},
@@ -377,6 +384,7 @@ export async function loadPage (filePath, options = {}) {
     routeParams,
     hasDefinePage: parsedScript.hasDefinePage,
     hasPageExports: parsedScript.hasPageExports,
+    metaDefaults: pageMetaDefaults,
     errors
   }
 }

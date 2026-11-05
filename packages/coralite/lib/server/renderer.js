@@ -52,6 +52,7 @@ import { formatComponentCss, buildComponentStylesheet } from './utils/style.js'
 import { transformNode } from './parser/html.js'
 import { CoraliteError, CoraliteBuildError } from '../shared/errors.js'
 import { RESERVED_DOM_ATTRIBUTES } from '../shared/attributes.js'
+import { resolvePageMetaDefaults } from '../shared/page-meta.js'
 import { checkFileChange, hash } from './utils/manifest.js'
 import {
   isCoraliteElement,
@@ -1312,6 +1313,19 @@ export function createRenderer ({
     const startTime = performance.now()
     const buildSignal = buildOptions?.buildSignal || buildOptions?.signal || NOOP_SIGNAL
     const originalDocument = pageItem.result
+    const originalPage = originalDocument?.page || null
+    const sourceResultPage = pageItem.result?.page || null
+    const originalPageExports = originalPage?.exports || sourceResultPage?.exports || null
+    const cachedPageMetaDefaults = Object.hasOwn(originalPage || {}, 'metaDefaults')
+      ? originalPage.metaDefaults
+      : null
+    const hasDeclaredMeta = originalPageExports ? Object.hasOwn(originalPageExports, 'meta') : false
+    const pageMetaDefaults = cachedPageMetaDefaults || (hasDeclaredMeta
+      ? resolvePageMetaDefaults(originalPageExports.meta, {
+        filePath: pageItem.path?.pathname || originalPage?.file?.pathname
+      })
+      : {})
+    const hasPageMetaDefaults = Object.keys(pageMetaDefaults).length > 0
     let component
     let pageContext = originalDocument.page
 
@@ -1347,6 +1361,7 @@ export function createRenderer ({
       }
 
       const pageState = {
+        ...pageMetaDefaults,
         ...originalDocument.state,
         page: pageContext
       }
@@ -1380,7 +1395,26 @@ export function createRenderer ({
       pageContext = component.page
     }
 
-    const initialPageState = Object.assign({}, originalDocument.state, component.state, state)
+    const applyPageMetaDefaults = (targetPage) => {
+      if (!hasPageMetaDefaults || !targetPage) {
+        return
+      }
+      if (!targetPage.meta) {
+        targetPage.meta = {}
+      }
+      for (const [key, value] of Object.entries(pageMetaDefaults)) {
+        const current = targetPage.meta[key]
+        const isMissing = current === undefined || current === null || (key === 'lang' && current === '')
+        if (isMissing) {
+          targetPage.meta[key] = value
+        }
+      }
+    }
+
+    pageContext = component.page || pageContext
+    applyPageMetaDefaults(pageContext)
+
+    const initialPageState = Object.assign({}, pageMetaDefaults, originalDocument.state, component.state, state)
     component.state = initialPageState
 
     if (targetRoute && pageContext) {
@@ -1405,6 +1439,7 @@ export function createRenderer ({
     mappedSessionObject.mode = normalizedOptions.mode
 
     pageContext = mappedSession.page || mappedComponent?.page || pageContext
+    applyPageMetaDefaults(pageContext)
     const pageExports = pageContext?.exports || originalDocument?.page?.exports || pageItem.result?.page?.exports || null
     const rawRoute = pageContext?.route || targetRoute
     const routeObj = typeof rawRoute === 'object' && rawRoute !== null
@@ -1431,6 +1466,7 @@ export function createRenderer ({
       if (activePageState.page.url) {
         activePageState.page.url.pathname = routeObj.path
       }
+      applyPageMetaDefaults(activePageState.page)
     }
     if (mappedComponent) {
       mappedComponent.page = pageContext
@@ -1546,7 +1582,8 @@ export function createRenderer ({
             session: mappedSessionObject,
             signal: NOOP_SIGNAL,
             store: serverStore,
-            page: pageItem
+            page: pageContext || pageItem,
+            state: activePageState
           }
 
           let boundPlugins = {}

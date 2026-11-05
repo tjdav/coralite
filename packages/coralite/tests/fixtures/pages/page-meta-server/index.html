@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Server literal title</title>
+</head>
+<body>
+  <h1 data-testid="meta-server-title">{{ title }}</h1>
+  <p data-testid="meta-server-count">{{ count }}</p>
+  <p data-testid="meta-server-derived">{{ derived }}</p>
+  <p data-testid="meta-server-doc-title">{{ docTitle }}</p>
+
+  <script type="module">
+    export const meta = {
+      title: { type: String, default: 'Default title' },
+      count: { type: Number, default: 2 }
+    }
+
+    export async function server ({ state }) {
+      return {
+        title: `${state.title} from server`,
+        derived: state.count * 10
+      }
+    }
+
+    export const getters = {
+      docTitle: ({ state }) => state.page.meta.title
+    }
+  </script>
+</body>
+</html>
