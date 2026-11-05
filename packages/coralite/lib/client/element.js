@@ -3676,7 +3676,8 @@ export class CoraliteElement extends BaseElement {
           }
           if (this.componentOptions.getters) {
             for (const getterKey of Object.keys(this.componentOptions.getters)) {
-              if (!this._getterDeps || !this._getterDeps.has(getterKey)) {
+              const deps = this._getterDeps ? this._getterDeps.get(getterKey) : undefined
+              if (!deps || deps.size === 0) {
                 allDirtyKeys.add(getterKey)
               }
             }
@@ -3770,7 +3771,8 @@ export class CoraliteElement extends BaseElement {
 
         if (this.componentOptions.getters) {
           for (const getterKey of Object.keys(this.componentOptions.getters)) {
-            if (!this._getterDeps || !this._getterDeps.has(getterKey)) {
+            const deps = this._getterDeps ? this._getterDeps.get(getterKey) : undefined
+            if (!deps || deps.size === 0) {
               allDirtyKeys.add(getterKey)
             }
           }

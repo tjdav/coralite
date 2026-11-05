@@ -190,8 +190,12 @@ export function hasMultipleTagInSingleParent (nodes, tag) {
  * @returns {string} JS code snippet.
  */
 export function generateTokenUpdaterCode (binding, bindingIndex, tokenKey, isGetter) {
+  /*
+   * Derived getters are read from raw state so the computed value is evaluated
+   * without clearing its tracked dependencies in the reactive state proxy.
+   */
   const readState = isGetter
-    ? `const value = this._state[${JSON.stringify(tokenKey)}]`
+    ? `const value = this._stateRaw[${JSON.stringify(tokenKey)}]`
     : `const _rawValue = this._stateRaw[${JSON.stringify(tokenKey)}]\n    const value = typeof _rawValue === 'function' ? this._state[${JSON.stringify(tokenKey)}] : _rawValue`
 
   const bindingRef = `const binding = this._bindings[${bindingIndex}]`
