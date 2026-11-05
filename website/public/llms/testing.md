@@ -45,3 +45,43 @@ await element.updateComplete
 2. **No Source Directory Pollution**: Never place test fixtures or test files inside `src/pages/` or `src/components/` (e.g. `__test__`, `*.test.html`, `*.fixture.html`).
 3. **Routing & Component Registration**: In `coralite dev` and `coralite test`, fixture pages are accessed via `/__fixtures__/<name>`, and fixture components are automatically registered into `app.components`.
 4. **Build Guarantee**: Test fixtures and test files (`DEFAULT_TEST_EXCLUSIONS`: `__test__`, `__tests__`, `*.test.html`, `*.spec.html`, `*.fixture.html`) are never emitted to `dist/` or registered in production component bundles.
+
+## 5. Plugin Context Mocking
+
+### E2E builds (`testing.mocks.plugins`)
+
+In `mode: 'testing'`, override resolved plugin context methods:
+
+```javascript
+testing: {
+  mocks: {
+    plugins: {
+      analytics: {
+        server: { context: { track: () => 'mocked' } },
+        client: { context: { track: () => 'mocked-client' } }
+      }
+    }
+  }
+}
+```
+
+- Mocks are shallow-merged over the real Phase 2 context; unmocked methods remain real.
+- The real Phase 1 and Phase 2 functions still run. Use a stub plugin in `plugins: [...]` when the real plugin performs external I/O or side effects during setup.
+- Mock keys must match `plugin.name` (or `server.name` / `client.name`).
+- Built-in mocks target `server.context` and `client.context`. Use a stub plugin for top-level isomorphic `context`.
+
+### Unit tests (`options.context`)
+
+```javascript
+import { loadPage } from 'coralite/testing'
+
+const page = await loadPage('src/pages/index.html', {
+  context: {
+    analytics: {
+      track: event => `mocked:${event}`
+    }
+  }
+})
+```
+
+`loadComponent` and `loadPage` inject context into `server()`/`client()` wrappers and bypass plugin setup entirely. For getters, style, slots, or top-level context, use a stub plugin with `createCoralite`.

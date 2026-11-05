@@ -911,7 +911,23 @@ To test a server plugin:
 1. Register the plugin in `coralite.config.js` via `plugins: [myPlugin]`.
 2. Create an isolated fixture component (e.g. `tests/fixtures/components/test-plugin-consumer.html`) or fixture page (`tests/fixtures/pages/test-plugin.html`) consuming the plugin in `server({ myPlugin })`.
 3. In tests, use `createCoralite` with custom `plugins: [...]` or test against the fixture route (`/__fixtures__/test-plugin`).
-4. To mock plugins during tests, pass mocks into `plugins: [...]` in the test configuration or use `plugin.server.context = () => () => ({ ...mocks })`.
+4. To override resolved plugin context methods in `mode: 'testing'`, use `testing.mocks.plugins`:
+
+```js
+testing: {
+  mocks: {
+    plugins: {
+      'my-plugin': {
+        server: { context: { fetchData: () => mockData } },
+        client: { context: { track: () => {} } }
+      }
+    }
+  }
+}
+```
+
+Mocks are shallow-merged over the real Phase 2 result. The real Phase 1 and Phase 2 functions still execute; use a stub plugin in `plugins: [...]` when the real plugin performs external I/O or side effects during setup. Mock keys must match `plugin.name` (or `server.name` / `client.name`). Built-in mocks target `server.context` and `client.context`; use a stub plugin for top-level isomorphic `context`.
+5. For focused unit tests, inject a plugin-shaped object with `loadComponent(path, { context: { ... } })` or `loadPage(path, { context: { ... } })`. This bypasses plugin setup entirely.
 
 ---
 

@@ -248,6 +248,18 @@
       });
     </coralite-code-highlight>
 
+    <coralite-heading level="2" text="Testing Plugin Context"></coralite-heading>
+
+    <p>Use <code>testing.mocks.plugins</code> in <code>mode: 'testing'</code> to shallow-merge mocked methods over a plugin's resolved <code>server.context</code> or <code>client.context</code>. The real Phase 1 and Phase 2 functions still run, so use a stub plugin when the real plugin performs external I/O or side effects during setup.</p>
+
+    <p>For focused unit tests, inject a plugin-shaped object directly with <code>options.context</code> on <code>loadComponent</code> or <code>loadPage</code>. This bypasses plugin setup entirely.</p>
+
+    <ul>
+      <li><a href="/docs/guide/e2e-testing.html#plugin-mocking">Plugin mocking in E2E builds</a></li>
+      <li><a href="/docs/guide/testing.html#mocking-plugin-context-in-unit-tests">Mocking plugin context in unit tests</a></li>
+      <li><a href="/docs/reference/e2e-testing.html#plugin-mocks-testingmocksplugins">Plugin mock reference</a></li>
+    </ul>
+
     <coralite-heading level="2" text="Zero-Config Dependencies"></coralite-heading>
 
     <p>Unlike earlier versions of Coralite, V1 removes the need for manual dependency arrays like <code>client.imports</code> or <code>client.components</code>. The underlying AST parser automatically detects dynamic imports (e.g., <code>await import('my-analytics-sdk')</code>) inside the actual runtime logic of your context utilities and bundles them automatically.</p>

@@ -64,7 +64,7 @@ Plugin context properties are injected into Component and Page handlers:
   - `server.context` is injected into Component `server({ ...plugins, ...props, route, state, store })` and Page `definePage({ server })`.
   - `client.context` is injected into Component `client({ ...plugins, refs, signal, state, store, ... })` and Page `definePage({ client })`.
 - **Reserved Key Precedence**:
-  - Reserved framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) are guaranteed and take precedence over plugin keys. Collisions trigger a warning in dev/test mode.
+  - Reserved framework keys (`state`, `route`, `app`, `session`, `signal`, `store`, `page`) are guaranteed and take precedence over plugin keys. Collisions trigger a warning in dev/test mode.
 - **Getter Isomorphism Invariant**:
   - Getters strictly receive `{ state, route, root, refs, slots, signal, isServer, store }` plus any ambient utilities provided by top-level plugin `context` (e.g. `({ state, $t })`).
   - **Getters NEVER receive environment-specific plugin context** (`server.context` or `client.context`). Getters are isomorphic and evaluate synchronously during both SSR and reactive browser state updates.
@@ -74,7 +74,9 @@ Plugin context properties are injected into Component and Page handlers:
 
 1. Register the plugin under `plugins: [...]` in `coralite.config.js`.
 2. Author testing fixtures under `tests/fixtures/pages/` or `tests/fixtures/components/`.
-3. In tests, invoke `createCoralite({ plugins: [...] })` or mount fixture routes (`/__fixtures__/<name>`). Mocks can be passed directly via the plugin context resolver.
+3. In tests, invoke `createCoralite({ plugins: [...] })` or mount fixture routes (`/__fixtures__/<name>`).
+4. In `mode: 'testing'`, override resolved context methods with `testing.mocks.plugins`. Mocks shallow-merge over the real Phase 2 result; the real Phase 1/Phase 2 functions still run. Use a stub plugin for full isolation or top-level `context`.
+5. For focused unit tests, inject a plugin-shaped object via `loadComponent(path, { context })` or `loadPage(path, { context })`; this bypasses plugin setup.
 
 ## 5. Built-In Plugins
 

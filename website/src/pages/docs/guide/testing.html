@@ -54,6 +54,80 @@ test('blog page exports enumerated paths', async () => {
 })
     </coralite-code-highlight>
 
+    <coralite-heading level="3" text="Mocking Plugin Context in Unit Tests"></coralite-heading>
+
+    <p>When a component or page consumes a plugin context, you can inject a mock-shaped object directly with <code>options.context</code> on <code>loadComponent</code> or <code>loadPage</code>. This bypasses the plugin system entirely and is the fastest way to test the consumer.</p>
+
+    <p>Assuming the page's <code>server()</code> block calls <code>analytics.track('page_view')</code>:</p>
+
+    <coralite-code-highlight language="javascript" title="Page Unit Test">
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { loadPage } from 'coralite/testing'
+
+test('page uses mocked analytics', async () => {
+  const page = await loadPage('src/pages/index.html', {
+    context: {
+      analytics: {
+        track: event => `mocked:${event}`
+      }
+    }
+  })
+
+  const result = await page.server()
+  assert.equal(result.event, 'mocked:page_view')
+})
+    </coralite-code-highlight>
+
+    <p>Assuming the component's <code>server()</code> block calls <code>api.getData()</code>:</p>
+
+    <coralite-code-highlight language="javascript" title="Component Unit Test">
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { loadComponent } from 'coralite/testing'
+
+test('component uses mocked API', async () => {
+  const component = await loadComponent('src/components/user-card.html', {
+    context: {
+      api: {
+        getData: async () => ({ name: 'Mock User' })
+      }
+    }
+  })
+
+  const state = await component.server()
+  assert.equal(state.name, 'Mock User')
+})
+    </coralite-code-highlight>
+
+    <p>A per-call context overrides <code>options.context</code>:</p>
+
+    <coralite-code-highlight language="javascript">
+await page.server({
+  analytics: {
+    track: () => 'per-call-mock'
+  }
+})
+    </coralite-code-highlight>
+
+    <p><strong>Scope:</strong> <code>loadComponent</code> and <code>loadPage</code> inject context into <code>server()</code> and <code>client()</code> wrappers. They do not execute the plugin's Phase 1/Phase 2 setup. For getters, style, slots, or top-level plugin context, use a stub plugin registered through <code>createCoralite</code> (see the <a href="/docs/guide/e2e-testing.html#plugin-mocking">Plugin Mocking</a> section of the E2E guide).</p>
+
+    <coralite-code-highlight language="javascript" title="Stub Plugin for Isomorphic Context">
+import { createCoralite, definePlugin } from 'coralite'
+
+const i18nStub = definePlugin({
+  name: 'i18n',
+  context: () => () => ({
+    $t: key => `mocked:${key}`
+  })
+})
+
+const app = await createCoralite({
+  mode: 'testing',
+  plugins: [i18nStub]
+})
+    </coralite-code-highlight>
+
     <coralite-heading level="2" text="2. End-to-End (E2E) Testing"></coralite-heading>
 
     <p>For end-to-end verification in real browser environments (such as Playwright or Cypress), Coralite exposes hydration testing helpers when built in testing mode (<code>mode: 'testing'</code>).</p>
