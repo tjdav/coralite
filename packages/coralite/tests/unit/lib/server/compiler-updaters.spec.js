@@ -41,6 +41,25 @@ describe('Compiler - Per-Token Updaters', () => {
     assert.strictEqual(code.includes('typeof _rawValue === \'function\' ? this._state["disableSubmit"] : _rawValue'), true)
   })
 
+  it('compiled getter updater reads the derived value from _stateRaw', () => {
+    const hydrationMap = {
+      tokenBindings: { showChrome: [0] },
+      attributes: [{
+        type: 'attribute',
+        path: [0],
+        name: 'hidden',
+        template: '{{ showChrome }}',
+        tokens: ['showChrome'],
+        isSingleToken: true,
+        singleTokenKey: 'showChrome',
+        attrKind: 1
+      }]
+    }
+    const code = generateCompiledUpdaters(hydrationMap, new Set(['showChrome']))
+    assert.strictEqual(code.includes('const value = this._stateRaw["showChrome"]'), true)
+    assert.strictEqual(code.includes('const value = this._state["showChrome"]'), false)
+  })
+
   it('generates updaters for both text and attribute tokens in co-existing components', async () => {
     const sm = new ScriptManager({ compilerOptimizations: 'all' })
     sm.registerComponent({
