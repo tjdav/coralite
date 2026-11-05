@@ -9,7 +9,8 @@ All source is `.js` (ESM). No `.ts`, `.tsx`, `.jsx`, or `.mjs` in the source tre
 ## 2. Authoring pattern
 
 - **Components**: Use top-level named exports (`export function`, `export const`). Never use `defineComponent` for new components (`defineComponent` is retained strictly for legacy backwards compatibility).
-- **Pages and Plugins**: Use `definePage` and `definePlugin` (`export default definePage({...})` and `export default definePlugin({...})`). Never bare objects.
+- **Pages**: Use top-level named exports (`export function server`, `export const getters`, …). `export default definePage({...})` is retained strictly for legacy backwards compatibility. **Plugins**: Use `definePlugin` (`export default definePlugin({...})`). Never bare objects.
+- **Page export form rule**: Handlers use `export function` (`paths`, `server`, `client`, `onError`). Configuration declarations use `export const` (`getters`, `style`, `provide`). Component-only exports (`attributes`, `slots`, `consume`, `formAssociated`) are rejected on pages.
 - **Test fixtures**: Author testing fixtures under `tests/fixtures/` (`tests/fixtures/pages` for test pages, `tests/fixtures/components` for mock/harness components) and configure `fixtures` in `coralite.config.js`. Never author test fixtures inside `src/pages/` or `src/components/` (e.g. `__test__`, `*.test.html`, `*.fixture.html`). In development and testing servers (`coralite dev` / `coralite test`), fixture pages are routed at `/__fixtures__/<name>` and fixture components are registered in `app.components`. Production builds (`coralite build`) strictly exclude test fixture patterns (`DEFAULT_TEST_EXCLUSIONS`) from both pages and components output.
 - **Component export form rule**: Handlers use `export function` (`server`, `client`, `onError`). Configuration declarations use `export const` (`attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`). Extra/helper exports are ignored by the compiler and preserved in module scope.
 - Templates use flat `{{ token }}` only. No expressions, dot notation, or function calls.
@@ -17,7 +18,7 @@ All source is `.js` (ESM). No `.ts`, `.tsx`, `.jsx`, or `.mjs` in the source tre
 - Getter signature: `({ state, route, ... })` or `(context) => context.state...`.
 - Style function signature: `({ state }) => ...` or `(context) => context.state...`.
 - Slots function signature: `({ nodes, state }) => ...` or `(context) => context.nodes`.
-- **Plugin context injection targets**: Top-level `context` is ubiquitous across Component and Page `server`, `getters`, `client`, `slots`, and `style`. `server.context` is injected into Component `server()` and Page `definePage({ server })`. `client.context` is injected into Component `client()` and Page `definePage({ client })`. Core framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) take precedence over plugin keys.
+- **Plugin context injection targets**: Top-level `context` is ubiquitous across Component and Page `server`, `getters`, `client`, `slots`, and `style`. `server.context` is injected into Component `server()` and Page `server`. `client.context` is injected into Component `client()` and Page `client`. Core framework keys (`route`, `app`, `session`, `signal`, `store`, `page`) take precedence over plugin keys.
 - **Getter isomorphism invariant**: Getters are isomorphic pure derivation functions that evaluate synchronously during SSR and reactive browser updates. Getters strictly receive `{ state, route, root, refs, slots, isServer, signal, store }` plus any ubiquitous properties provided by top-level plugin `context` (e.g. `({ state, $t })`). Getters **never** receive environment-specific plugin context (`server.context` or `client.context`). To use data from `server.context`, perform plugin operations in `server()`, persist to `state`, and read from `state` in getters.
 
 ### Zero-JS static components
@@ -141,7 +142,7 @@ use whichever form you prefer in generated code.
 
 ## 3. Import rule
 
-Top-level imports are reserved for `definePage` / `definePlugin` and modules used by isomorphic code (getters, style, slots). Modules used by `server()`, `client()`, or `paths()` are loaded with `await import()` inside the block. Components author logic via named exports and do not import `defineComponent`.
+Top-level imports are reserved for page configuration modules / `definePlugin` and modules used by isomorphic code (getters, style, slots). Modules used by `server()`, `client()`, or `paths()` are loaded with `await import()` inside the block. Components author logic via named exports and do not import `defineComponent`.
 
 ## 4. Serialization boundary
 
@@ -209,7 +210,7 @@ No bare classes. Classes are allowed only when extending a base class:
 
 ### No `this` outside classes
 
-`this` is only valid inside a class body. In `defineComponent`, `definePage`, and
+`this` is only valid inside a class body. In `defineComponent`, `definePage`, page named exports, and
 `definePlugin` blocks, use the destructured context instead:
 
 - `this.state` → `state`

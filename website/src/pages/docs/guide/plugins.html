@@ -21,7 +21,7 @@
 
     <ol>
       <li><strong>Registration & Bootstrapping:</strong> Coralite loads your plugin via <code>definePlugin</code>. It initializes both <code>server</code> and <code>client</code> configurations, setting up global contexts that will be available to components and pages.</li>
-      <li><strong>Server Execution:</strong> During the build process, Coralite triggers server-side lifecycle hooks (like <code>onPageSet</code> or <code>onBeforeBuild</code>). If your plugin provides a <code>server.context</code>, its methods become available to component <code>server()</code> blocks and page <code>definePage({ server })</code> handlers.</li>
+      <li><strong>Server Execution:</strong> During the build process, Coralite triggers server-side lifecycle hooks (like <code>onPageSet</code> or <code>onBeforeBuild</code>). If your plugin provides a <code>server.context</code>, its methods become available to component <code>server()</code> blocks and page <code>server</code> handlers.</li>
       <li><strong>Discovery & Bundling:</strong> Coralite analyzes components and pages, identifying which plugin utilities are being used. It automatically bundles necessary dependencies and prepares the client-side runtime.</li>
       <li><strong>Client Hydration & Execution:</strong> In the browser, Coralite initializes the <code>client.context</code>. Plugin hooks like <code>onBeforeComponentRender</code> fire as components mount, and your utilities become available via the context object in component <code>client()</code> and page <code>client()</code> blocks.</li>
     </ol>
@@ -62,7 +62,7 @@
 
     <coralite-heading level="2" text="Server-Side Context"></coralite-heading>
 
-    <p>While <code>client.context</code> is for the browser, <code>server.context</code> allows you to provide utilities to the <code>server</code> block of components and pages (<code>definePage({ server })</code>). This is useful for providing data fetching helpers, logging, or shared business logic that should only run during the build.</p>
+    <p>While <code>client.context</code> is for the browser, <code>server.context</code> allows you to provide utilities to the <code>server</code> block of components and pages (<code>server</code>). This is useful for providing data fetching helpers, logging, or shared business logic that should only run during the build.</p>
 
     <p>Just like the client context, <code>server.context</code> uses a <strong>Two-Phase Resolver</strong>. The first phase allows for global setup and inter-plugin registration, while the second phase provides the actual utilities to the component or page instance.</p>
 
@@ -157,7 +157,7 @@
 
     <p>The most powerful feature of Coralite plugins is the ability to provide reusable functionality directly to component and page client blocks using <code>client.context</code>.</p>
 
-    <p>Context utilities are namespaced on the <code>context</code> object available in component <code>client()</code> and page <code>definePage({ client })</code> execution blocks (e.g. <code>context['my-plugin']</code>). However, because Coralite is a static site generator, there is a strict boundary between server code and client code.</p>
+    <p>Context utilities are namespaced on the <code>context</code> object available in component <code>client()</code> and page <code>client</code> execution blocks (e.g. <code>context['my-plugin']</code>). However, because Coralite is a static site generator, there is a strict boundary between server code and client code.</p>
 
     <coralite-heading level="3" text="The Two-Phase Resolver"></coralite-heading>
 

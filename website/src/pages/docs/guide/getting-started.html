@@ -91,7 +91,7 @@ my-app/
 
     <coralite-heading level="2" text="4. First Page"></coralite-heading>
 
-    <p>Pages are authored inside the <code>pages/</code> directory. Pages can include a <code>&lt;script type="module"&gt;</code> exporting <code>definePage</code> to manage build-time data loading via <code>server()</code>.</p>
+    <p>Pages are authored inside the <code>pages/</code> directory. Pages can include a <code>&lt;script type="module"&gt;</code> with flat named exports such as <code>export function server</code> to manage build-time data loading via <code>server()</code>.</p>
 
     <coralite-code-highlight language="javascript" title="pages/index.html">
 <!DOCTYPE html>
@@ -106,15 +106,13 @@ my-app/
 </html>
 
 <script type="module">
-  import { definePage } from 'coralite'
-
-  export default definePage({
-    server: () => ({
+  export function server () {
+    return {
       pageTitle: 'Home — My Coralite Site',
       headline: 'Build Fast Static & SSR Websites',
       description: 'Coralite combines native Web Components with build-time SSR.'
-    })
-  })
+    }
+  }
 </script>
     </coralite-code-highlight>
 

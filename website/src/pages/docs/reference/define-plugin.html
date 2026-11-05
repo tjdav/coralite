@@ -78,7 +78,7 @@ const myPlugin = definePlugin({
       <p><em>Note:</em> Top-level <code>context</code> is mutually exclusive with <code>server.context</code> and <code>client.context</code> (<code>CORALITE-P211</code>).</p>
 
       <coralite-heading level="2" text="Context Binding (`server.context`)"></coralite-heading>
-      <p>The <code>server.context</code> property defines methods and data injected into component <code>server()</code> blocks and page <code>definePage({ server })</code> handlers (e.g. <code>context['logger-plugin']</code> or <code>server ({ 'logger-plugin': logger })</code>). It follows the <strong>Two-Phase Resolver</strong> pattern.</p>
+      <p>The <code>server.context</code> property defines methods and data injected into component <code>server()</code> blocks and page <code>server</code> handlers (e.g. <code>context['logger-plugin']</code> or <code>server ({ 'logger-plugin': logger })</code>). It follows the <strong>Two-Phase Resolver</strong> pattern.</p>
       
       <ul>
         <li><strong>Phase 1 (Global)</strong>: Receives <code>pluginContext</code>. Used for global initialization and sharing data with other plugins via mutation.</li>
@@ -136,7 +136,7 @@ export default definePlugin({
 
 
       <coralite-heading level="3" text="client.context"></coralite-heading>
-      <p>Define utilities that will be available via the plugin's namespace on the context object in component <code>client()</code> blocks and page <code>definePage({ client })</code> scripts.</p>
+      <p>Define utilities that will be available via the plugin's namespace on the context object in component <code>client()</code> blocks and page <code>client</code> scripts.</p>
 
       <coralite-code-highlight language="JavaScript">
         definePlugin({
