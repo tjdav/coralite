@@ -88,4 +88,51 @@ test.describe('binding marker slot collision', () => {
     await expect(status).toHaveJSProperty('hidden', false)
     await expect(status).toHaveText('active')
   })
+
+  test('re-resolves a replaced binding node in the optimized runtime', async ({ page }) => {
+    const parent = page.getByTestId('parent-custom')
+    const toggle = parent.getByTestId('toggle')
+    const status = parent.getByTestId('status')
+
+    await expect(status).toHaveJSProperty('hidden', true)
+    await expect(status).toHaveText('idle')
+
+    await status.evaluate((node) => {
+      node.replaceWith(node.cloneNode(true))
+    })
+
+    await toggle.click()
+
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    await expect(parent.getByTestId('status')).toHaveJSProperty('hidden', false)
+    await expect(parent.getByTestId('status')).toHaveText('active')
+  })
+
+  test('resolves a binding node that is removed and re-added', async ({ page }) => {
+    const parent = page.getByTestId('parent-custom')
+    const toggle = parent.getByTestId('toggle')
+
+    await toggle.click()
+    await expect(parent.getByTestId('status')).toHaveJSProperty('hidden', false)
+    await expect(parent.getByTestId('status')).toHaveText('active')
+
+    await parent.getByTestId('status').evaluate((node) => {
+      window.__removedStatus = node.cloneNode(true)
+      node.remove()
+    })
+
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+
+    await page.evaluate(() => {
+      document.querySelector('.marker-parent').appendChild(window.__removedStatus)
+      delete window.__removedStatus
+    })
+
+    await toggle.click()
+    await toggle.click()
+
+    await expect(parent.getByTestId('status')).toHaveJSProperty('hidden', true)
+    await expect(parent.getByTestId('status')).toHaveText('idle')
+  })
 })
