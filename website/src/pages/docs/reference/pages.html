@@ -120,6 +120,16 @@ export const meta = {
       <li><strong>Component-only blocks:</strong> <code>attributes</code> remains component-only and is rejected on pages.</li>
     </ul>
 
+    <p><strong>Key rules:</strong></p>
+
+    <ul>
+      <li><strong>Verbatim keys:</strong> keys are used exactly as written in both state and <code>page.meta</code>. Only identifier-safe keys are directly addressable as template tokens; use a getter for keys such as <code>og:title</code>, <code>campaign-name</code>, or dotted keys.</li>
+      <li><strong>Reserved collisions:</strong> a <code>page</code> default is available at <code>page.meta.page</code> but cannot seed <code>state.page</code> because the page object wins. A <code>route</code> default is available at <code>page.meta.route</code>, but <code>{{ route }}</code> always resolves the active route object. A <code>state</code> default creates <code>state.state</code>.</li>
+      <li><strong>No default, no value:</strong> a schema entry without a default creates no state key and no <code>page.meta</code> entry.</li>
+      <li><strong>server() return values:</strong> returned keys update state only. To change page metadata, mutate <code>page.meta</code> directly inside <code>server()</code> or a hook.</li>
+      <li><strong>Render-scoped metadata:</strong> when defaults are declared, the effective <code>page.meta</code> is assembled per render. The page's literal metadata remains the source of truth, so removing a default does not leave a stale <code>page.meta</code> value.</li>
+    </ul>
+
     <p>The block is optional. A page that only needs static defaults can declare <code>meta</code> without a <code>server()</code> function.</p>
 
     <coralite-heading level="2" text="6. server() on Pages"></coralite-heading>
@@ -139,7 +149,7 @@ export async function server ({ state, route }) {
 }
     </coralite-code-highlight>
 
-    <p>Data returned from <code>server()</code> is merged into the page's reactive state and serialized for hydration in the browser.</p>
+    <p>Data returned from <code>server()</code> is merged into the page's reactive state and serialized for hydration in the browser. Returned keys do not update <code>page.meta</code> automatically; mutate <code>page.meta</code> directly when you need to change page metadata.</p>
 
     <coralite-heading level="2" text="7. getters, style, provide, client, onError on Pages"></coralite-heading>
 

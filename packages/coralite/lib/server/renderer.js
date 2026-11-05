@@ -1395,26 +1395,44 @@ export function createRenderer ({
       pageContext = component.page
     }
 
-    const applyPageMetaDefaults = (targetPage) => {
+    const withPageMetaDefaults = (targetPage) => {
       if (!hasPageMetaDefaults || !targetPage) {
-        return
+        return targetPage
       }
-      if (!targetPage.meta) {
-        targetPage.meta = {}
-      }
+
+      const meta = { ...(targetPage.meta || {}) }
       for (const [key, value] of Object.entries(pageMetaDefaults)) {
-        const current = targetPage.meta[key]
+        const current = meta[key]
         const isMissing = current === undefined || current === null || (key === 'lang' && current === '')
         if (isMissing) {
-          targetPage.meta[key] = value
+          meta[key] = value
         }
       }
+
+      const mergedPage = Object.create(
+        Object.getPrototypeOf(targetPage),
+        Object.getOwnPropertyDescriptors(targetPage)
+      )
+      Object.defineProperty(mergedPage, 'meta', {
+        value: meta,
+        enumerable: true,
+        writable: true,
+        configurable: true
+      })
+
+      return mergedPage
     }
 
-    pageContext = component.page || pageContext
-    applyPageMetaDefaults(pageContext)
+    const preHookPage = component.page || pageContext
+    pageContext = withPageMetaDefaults(preHookPage)
+    component.page = pageContext
 
     const initialPageState = Object.assign({}, pageMetaDefaults, originalDocument.state, component.state, state)
+    if (initialPageState.page && initialPageState.page !== preHookPage) {
+      initialPageState.page = withPageMetaDefaults(initialPageState.page)
+    } else {
+      initialPageState.page = pageContext
+    }
     component.state = initialPageState
 
     if (targetRoute && pageContext) {
@@ -1438,8 +1456,9 @@ export function createRenderer ({
     const activePageState = mappedSession.state
     mappedSessionObject.mode = normalizedOptions.mode
 
-    pageContext = mappedSession.page || mappedComponent?.page || pageContext
-    applyPageMetaDefaults(pageContext)
+    const previousPageContext = pageContext
+    const mappedPageSource = mappedSession.page || mappedComponent?.page || pageContext
+    pageContext = withPageMetaDefaults(mappedPageSource)
     const pageExports = pageContext?.exports || originalDocument?.page?.exports || pageItem.result?.page?.exports || null
     const rawRoute = pageContext?.route || targetRoute
     const routeObj = typeof rawRoute === 'object' && rawRoute !== null
@@ -1462,11 +1481,15 @@ export function createRenderer ({
       }
     }
     if (activePageState && activePageState.page) {
+      if (activePageState.page === previousPageContext || activePageState.page === mappedPageSource) {
+        activePageState.page = pageContext
+      } else {
+        activePageState.page = withPageMetaDefaults(activePageState.page)
+      }
       activePageState.page.route = routeObj
       if (activePageState.page.url) {
         activePageState.page.url.pathname = routeObj.path
       }
-      applyPageMetaDefaults(activePageState.page)
     }
     if (mappedComponent) {
       mappedComponent.page = pageContext
