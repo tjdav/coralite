@@ -49,6 +49,13 @@ export default definePlugin({ /* plugin blocks */ })
         <td>Input schema for host attributes</td>
       </tr>
       <tr slot="body">
+        <td><code>meta</code></td>
+        <td>—</td>
+        <td>✓</td>
+        <td>—</td>
+        <td>Declared page information and default state; keys become <code>page.meta</code> fallbacks and seed page state</td>
+      </tr>
+      <tr slot="body">
         <td><code>paths</code></td>
         <td>—</td>
         <td>✓</td>
@@ -119,6 +126,8 @@ export default definePlugin({ /* plugin blocks */ })
         <td>SSR build-time error boundary fallback state</td>
       </tr>
     </coralite-table>
+
+    <p>The component <code>attributes</code> block describes inputs supplied by a host element. Pages have no host element, so their equivalent surface is <code>meta</code>: arbitrary key/value page information using the same schema syntax (<code>type</code>, <code>default</code>, <code>values</code>, <code>validate</code>). <code>meta</code> defaults seed page state, and missing keys fall back into <code>page.meta</code> after literal <code>&lt;title&gt;</code>/<code>&lt;meta&gt;</code> tags are extracted. <code>required</code> is rejected on pages because there is no external input.</p>
 
     <coralite-heading level="2" text="3. Context Keys"></coralite-heading>
 

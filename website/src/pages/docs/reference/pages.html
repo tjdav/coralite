@@ -16,7 +16,7 @@
 
     <coralite-heading level="2" text="1. Page Structure"></coralite-heading>
 
-    <p>A Coralite page file can combine static HTML markup, server-side data fetching, path enumeration, and optional client scripts. Pages are configured with flat named exports inside a <code>&lt;script type="module"&gt;</code> block: <code>export function server</code>, <code>export const getters</code>, <code>export function client</code>, and so on. <code>export default definePage({ ... })</code> remains supported as a legacy shape.</p>
+    <p>A Coralite page file can combine static HTML markup, server-side data fetching, path enumeration, declared page information, and optional client scripts. Pages are configured with flat named exports inside a <code>&lt;script type="module"&gt;</code> block: <code>export function server</code>, <code>export const meta</code>, <code>export const getters</code>, <code>export function client</code>, and so on. <code>export default definePage({ ... })</code> remains supported as a legacy shape.</p>
 
     <coralite-code-highlight language="html" title="Page File Structure">
 &lt;!DOCTYPE html&gt;
@@ -96,19 +96,44 @@ export async function server ({ route }) {
 
     <p><strong>Plugin Path Enumeration:</strong> Plugins can also contribute route paths during collection by returning <code>{ paths: [...] }</code> from an <code>onPageSet</code> hook. Paths returned by the page <code>paths()</code> function and plugin <code>onPageSet</code> returns are deduplicated automatically. If duplicate parameter sets originate from different sources or within the same source, Coralite raises a build error identifying the conflicting sources.</p>
 
-    <coralite-heading level="2" text="5. server() on Pages"></coralite-heading>
+    <coralite-heading level="2" text="5. meta on Pages"></coralite-heading>
+
+    <p>Components declare host inputs with <code>attributes</code>. Pages have no host element, so their public information surface is the document itself: <code>&lt;title&gt;</code>, <code>&lt;meta&gt;</code>, <code>&lt;html lang&gt;</code>, and any other page-level key/value information. The <code>meta</code> block declares that information and seeds the page's default state.</p>
+
+    <p><code>meta</code> uses the same schema syntax as component attributes (<code>type</code>, <code>default</code>, <code>values</code>, <code>validate</code>). Keys are arbitrary because meta tags are generic key/value properties; keys are not limited to SEO fields.</p>
+
+    <coralite-code-highlight language="javascript" title="Page meta Block Example">
+export const meta = {
+  title: { type: String, default: 'Untitled' },
+  description: { type: String, default: '' },
+  lang: { type: String, default: 'en' },
+  count: { type: Number, default: 0 },
+  campaign: { type: String, default: 'organic' }
+}
+    </coralite-code-highlight>
+
+    <ul>
+      <li><strong>State defaults:</strong> every resolved <code>meta</code> value seeds page state. Templates, getters, and client code read it as <code>{{ title }}</code>, <code>state.count</code>, and so on.</li>
+      <li><strong>State precedence:</strong> <code>meta</code> defaults are the base; existing render state and <code>onPageSet</code>/<code>onBeforePageRender</code> hooks override them; the <code>server()</code> return value overrides last.</li>
+      <li><strong>page.meta precedence:</strong> literal <code>&lt;title&gt;</code>/<code>&lt;meta&gt;</code> tags remain authoritative. <code>meta</code> defaults fill in missing keys only. No <code>&lt;title&gt;</code> or <code>&lt;meta&gt;</code> tags are rendered automatically.</li>
+      <li><strong>Validation:</strong> <code>required</code> is rejected on pages because there is no external input. Invalid defaults (failing type coercion, <code>values</code>, or <code>validate</code>) fail the build.</li>
+      <li><strong>Component-only blocks:</strong> <code>attributes</code> remains component-only and is rejected on pages.</li>
+    </ul>
+
+    <p>The block is optional. A page that only needs static defaults can declare <code>meta</code> without a <code>server()</code> function.</p>
+
+    <coralite-heading level="2" text="6. server() on Pages"></coralite-heading>
 
     <p>The <code>server()</code> block executes once for each enumerated path during build-time rendering. It retrieves page-level data, reads filesystem files, or runs build queries to construct the page's initial state object.</p>
 
-    <p><strong>Context Object:</strong> Receives <code>{ route, app, session, signal, isServer, ...pluginContext }</code>.</p>
+    <p><strong>Context Object:</strong> Receives <code>{ state, route, app, session, signal, page, ...pluginContext }</code>. <code>state</code> contains the resolved <code>meta</code> defaults plus any earlier render state, and <code>page.meta</code> contains the extracted document metadata.</p>
 
     <coralite-code-highlight language="javascript" title="Page server() Block Example">
-export async function server ({ route, isServer }) {
-  if (!isServer) return {}
-
+export async function server ({ state, route }) {
   const { id } = route.params
   return {
-    title: `Article #${id}`,
+    title: state.title,
+    articleId: id,
     fetchedAt: new Date().toISOString()
   }
 }
@@ -116,7 +141,7 @@ export async function server ({ route, isServer }) {
 
     <p>Data returned from <code>server()</code> is merged into the page's reactive state and serialized for hydration in the browser.</p>
 
-    <coralite-heading level="2" text="6. getters, style, provide, client, onError on Pages"></coralite-heading>
+    <coralite-heading level="2" text="7. getters, style, provide, client, onError on Pages"></coralite-heading>
 
     <p>Pages support the same core context blocks as components, acting as the root node of the application context tree:</p>
 
@@ -128,7 +153,7 @@ export async function server ({ route, isServer }) {
       <li><code>onError</code>: Build-time error boundary returning fallback template markup and state if server rendering fails: <code>onError ({ error }) { return { template: '<h1>Page Unavailable</h1>', state: { err: error.message } } }</code>.</li>
     </ul>
 
-    <coralite-heading level="2" text="7. The route Context Key"></coralite-heading>
+    <coralite-heading level="2" text="8. The route Context Key"></coralite-heading>
 
     <p>The <code>route</code> object provides normalized route metadata and parameters across server rendering, getters, client logic, and error boundaries.</p>
 
@@ -154,7 +179,7 @@ export function client ({ route }) {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="2" text="8. URL Conventions (cleanUrls)"></coralite-heading>
+    <coralite-heading level="2" text="9. URL Conventions (cleanUrls)"></coralite-heading>
 
     <p>The <code>cleanUrls</code> option in <code>coralite.config.js</code> controls how build output files are named and how <code>route.path</code> is represented:</p>
 
@@ -172,7 +197,7 @@ export default defineConfig({
       <li>Root page (<code>pages/index.html</code>) always compiles to <code>dist/index.html</code> with <code>route.path = '/'</code> regardless of <code>cleanUrls</code> configuration.</li>
     </ul>
 
-    <coralite-heading level="2" text="9. Navigation"></coralite-heading>
+    <coralite-heading level="2" text="10. Navigation"></coralite-heading>
 
     <p>By default, navigation between pages uses standard HTML anchor tags (<code>&lt;a href="..."&gt;</code>) triggering full document loads accompanied by smooth View Transitions (crossfade animation):</p>
 
@@ -186,13 +211,13 @@ export default defineConfig({
 
     <p>View Transitions are enabled by default via the <code>viewTransitions: true</code> option in project configuration, delivering native CSS crossfade transitions without client-side routing overhead.</p>
 
-    <coralite-heading level="2" text="10. 404 Convention"></coralite-heading>
+    <coralite-heading level="2" text="11. 404 Convention"></coralite-heading>
 
     <p>Creating a <code>pages/404.html</code> file at the root of your pages directory defines the standard 404 error page. It compiles directly to <code>dist/404.html</code> with <code>route.path = '/404'</code>, making it instantly compatible with static web hosts (GitHub Pages, Netlify, Vercel, Cloudflare Pages).</p>
 
     <p><em>Note: Subdirectory 404 files (such as <code>pages/docs/404.html</code>) are treated as standard content pages rather than root fallback pages.</em></p>
 
-    <coralite-heading level="2" text="11. Redirects"></coralite-heading>
+    <coralite-heading level="2" text="12. Redirects"></coralite-heading>
 
     <p>While host-level web server redirects (e.g. <code>_redirects</code> or server headers) are recommended for production performance, pages can emit static HTML redirect stubs directly from their <code>server()</code> block by returning a <code>__redirect</code> object:</p>
 
@@ -210,7 +235,7 @@ export async function server ({ route }) {
 
     <p>When <code>__redirect</code> is returned, Coralite generates a lightweight HTML stub containing a <code>&lt;meta http-equiv="refresh"&gt;</code> tag, canonical <code>&lt;link&gt;</code> header, and instant <code>location.replace()</code> JavaScript fallback.</p>
 
-    <coralite-heading level="2" text="12. SPA Router (opt-in)"></coralite-heading>
+    <coralite-heading level="2" text="13. SPA Router (opt-in)"></coralite-heading>
 
     <p>For applications requiring persistent client-side state, audio playback, or continuous DOM trees across page navigations, Coralite provides an opt-in single-page application (SPA) router plugin via <code>coralite/plugins/router</code>.</p>
 
