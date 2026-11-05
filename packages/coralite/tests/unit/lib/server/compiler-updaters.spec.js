@@ -60,6 +60,36 @@ describe('Compiler - Per-Token Updaters', () => {
     assert.strictEqual(code.includes('const value = this._state["showChrome"]'), false)
   })
 
+  it('compiled updaters re-resolve binding nodes at runtime', () => {
+    const textCode = generateCompiledUpdaters({
+      tokenBindings: { label: [0] },
+      texts: [{
+        type: 'text',
+        path: [0],
+        template: '{{ label }}',
+        tokens: ['label'],
+        isSingleToken: true,
+        singleTokenKey: 'label'
+      }]
+    }, new Set())
+    assert.strictEqual(textCode.includes('const node = this._resolveBindingNode(binding)'), true)
+
+    const attributeCode = generateCompiledUpdaters({
+      tokenBindings: { label: [0] },
+      attributes: [{
+        type: 'attribute',
+        path: [0],
+        name: 'data-label',
+        template: '{{ label }}',
+        tokens: ['label'],
+        isSingleToken: true,
+        singleTokenKey: 'label',
+        attrKind: 0
+      }]
+    }, new Set())
+    assert.strictEqual(attributeCode.includes('const element = this._resolveBindingNode(binding)'), true)
+  })
+
   it('generates updaters for both text and attribute tokens in co-existing components', async () => {
     const sm = new ScriptManager({ compilerOptimizations: 'all' })
     sm.registerComponent({
