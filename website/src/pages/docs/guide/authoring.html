@@ -129,6 +129,8 @@ export default definePlugin({ /* plugin blocks */ })
 
     <p>The component <code>attributes</code> block describes inputs supplied by a host element. Pages have no host element, so their equivalent surface is <code>meta</code>: arbitrary key/value page information using the same schema syntax (<code>type</code>, <code>default</code>, <code>values</code>, <code>validate</code>). <code>meta</code> defaults seed page state, and missing keys fall back into <code>page.meta</code> after literal <code>&lt;title&gt;</code>/<code>&lt;meta&gt;</code> tags are extracted. <code>required</code> is rejected on pages because there is no external input.</p>
 
+    <p>Meta keys are used verbatim in <code>state</code> and <code>page.meta</code>; only identifier-safe keys are directly usable in templates, so use a getter for names such as <code>og:title</code>. <code>page</code> and <code>route</code> defaults remain available in <code>page.meta</code> but do not override the page object or active route. <code>server()</code> return values update state only; mutate <code>page.meta</code> directly to change document metadata.</p>
+
     <coralite-heading level="2" text="3. Context Keys"></coralite-heading>
 
     <p>Block functions receive a single destructured context object containing framework utilities, state references, and route metadata.</p>
