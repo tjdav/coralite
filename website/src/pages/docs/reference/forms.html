@@ -72,18 +72,18 @@ setFormValue(null)
     <coralite-code-highlight language="html" title="custom-input.html">
 <template id="custom-input">
   <div class="field">
-    <label for="input-element">{{ state.label }}</label>
+    <label for="input-element">{{ label }}</label>
     <input
       id="input-element"
       ref="input"
       type="text"
-      value="{{ state.value }}"
-      placeholder="{{ state.placeholder }}"
+      value="{{ value }}"
+      placeholder="{{ placeholder }}"
     >
   </div>
 </template>
 
-<script type="module">
+&lt;script type="module">
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
@@ -132,7 +132,7 @@ setFormValue(null)
       })
     }
   })
-</script>
+&lt;/script&gt;
     </coralite-code-highlight>
 
     <coralite-heading level="2" text="3. Form Lifecycle Hooks"></coralite-heading>

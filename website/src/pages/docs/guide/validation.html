@@ -81,11 +81,14 @@
       Execute 1-shot AST auto-fixing across your workspace using `coralite fix` or domain-specific commands:
     </p>
 
-    <coralite-code language="bash"># Auto-fix all workspace components and plugins
+    <coralite-code language="bash"># Auto-fix all workspace components, pages, and plugins
 coralite fix
 
 # Preview proposed fixes in unified colorized diff format without modifying disk
 coralite fix --dry-run
+
+# Migrate page definePage({ ... }) configuration to flat named exports
+coralite fix --migrate-pages
 
 # Auto-fix components directly
 coralite validate-components --fix</coralite-code>

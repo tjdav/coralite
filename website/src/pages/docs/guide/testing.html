@@ -40,7 +40,7 @@ test('user-card component evaluates server state', async () => {
 
     <coralite-heading level="3" text="Testing Pages with loadPage"></coralite-heading>
 
-    <p>Similarly, <code>loadPage(path, options)</code> isolates page definitions and returns evaluated route patterns, enumerated paths, and server return values.</p>
+    <p>Similarly, <code>loadPage(path, options)</code> isolates page definitions and returns evaluated route patterns, enumerated paths, and server return values. The result also reports <code>hasDefinePage</code> (legacy <code>definePage</code> wrapper) and <code>hasPageExports</code> (flat named exports).</p>
 
     <coralite-code-highlight language="javascript" title="Testing Page Definition">
 import test from 'node:test'
@@ -49,7 +49,8 @@ import { loadPage } from 'coralite/testing'
 
 test('blog page exports enumerated paths', async () => {
   const result = await loadPage('src/pages/blog/[slug].html')
-  assert.equal(typeof result.definition.paths, 'function')
+  assert.equal(typeof result.paths, 'function')
+  assert.equal(result.hasPageExports, true)
 })
     </coralite-code-highlight>
 
