@@ -1710,49 +1710,60 @@ export class CoraliteElement extends BaseElement {
             directDeps = new Set()
             this._getterDeps.set(key, directDeps)
           }
+          const previousDeps = new Set(directDeps)
           directDeps.clear()
 
-          if (!this._getterContexts) {
-            this._getterContexts = new Map()
-          }
+          try {
+            if (!this._getterContexts) {
+              this._getterContexts = new Map()
+            }
 
-          let context = this._getterContexts.get(key)
-          if (!context) {
-            const tracker = {
-              activeCollector: (p) => {
-                if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
-                  directDeps.add(p)
-                  if (this._collectingDependencies) {
-                    this._collectingDependencies.add(p)
-                  }
-                  if (this._getterDeps?.has(p)) {
-                    for (const subDep of this._getterDeps.get(p)) {
-                      directDeps.add(subDep)
-                      if (this._collectingDependencies) {
-                        this._collectingDependencies.add(subDep)
+            let context = this._getterContexts.get(key)
+            if (!context) {
+              const tracker = {
+                activeCollector: (p) => {
+                  if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
+                    const deps = this._getterDeps?.get(key) || directDeps
+                    deps.add(p)
+                    if (this._collectingDependencies) {
+                      this._collectingDependencies.add(p)
+                    }
+                    const nested = this._getterDeps?.get(p)
+                    if (nested) {
+                      for (const subDep of nested) {
+                        deps.add(subDep)
+                        if (this._collectingDependencies) {
+                          this._collectingDependencies.add(subDep)
+                        }
                       }
                     }
                   }
                 }
               }
+              const roState = this._getTrackedReadOnlyState(key, tracker)
+              context = this._wrapGetterContext({
+                state: roState,
+                route: _getClientRoute(),
+                root: this,
+                refs: getRef,
+                slots: this._getSlotsHelper(),
+                isServer: false,
+                signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal,
+                // @ts-ignore
+                store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
+              })
+              this._getterContexts.set(key, context)
             }
-            const roState = this._getTrackedReadOnlyState(key, tracker)
-            context = this._wrapGetterContext({
-              state: roState,
-              route: _getClientRoute(),
-              root: this,
-              refs: getRef,
-              slots: this._getSlotsHelper(),
-              isServer: false,
-              signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal,
-              // @ts-ignore
-              store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
-            })
-            this._getterContexts.set(key, context)
-          }
 
-          context.signal = this._getterAbortControllers[key].signal
-          return getter(context)
+            context.signal = this._getterAbortControllers[key].signal
+            return getter(context)
+          } catch (err) {
+            const restoreDeps = this._getterDeps?.get(key) || directDeps
+            for (const dep of previousDeps) {
+              restoreDeps.add(dep)
+            }
+            throw err
+          }
         })
 
         if (!this._computedGetters) {
@@ -1825,49 +1836,60 @@ export class CoraliteElement extends BaseElement {
             this._getterDeps.set(key, directDeps)
           }
         }
+        const previousDeps = new Set(directDeps)
         directDeps.clear()
 
-        if (!this._getterContexts) {
-          this._getterContexts = new Map()
-        }
+        try {
+          if (!this._getterContexts) {
+            this._getterContexts = new Map()
+          }
 
-        let context = this._getterContexts.get(key)
-        if (!context) {
-          const tracker = {
-            activeCollector: (p) => {
-              if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
-                directDeps.add(p)
-                if (this._collectingDependencies) {
-                  this._collectingDependencies.add(p)
-                }
-                if (this._getterDeps?.has(p)) {
-                  for (const subDep of this._getterDeps.get(p)) {
-                    directDeps.add(subDep)
-                    if (this._collectingDependencies) {
-                      this._collectingDependencies.add(subDep)
+          let context = this._getterContexts.get(key)
+          if (!context) {
+            const tracker = {
+              activeCollector: (p) => {
+                if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
+                  const deps = this._getterDeps?.get(key) || directDeps
+                  deps.add(p)
+                  if (this._collectingDependencies) {
+                    this._collectingDependencies.add(p)
+                  }
+                  const nested = this._getterDeps?.get(p)
+                  if (nested) {
+                    for (const subDep of nested) {
+                      deps.add(subDep)
+                      if (this._collectingDependencies) {
+                        this._collectingDependencies.add(subDep)
+                      }
                     }
                   }
                 }
               }
             }
+            const roState = this._getTrackedReadOnlyState(key, tracker)
+            context = this._wrapGetterContext({
+              state: roState,
+              route: _getClientRoute(),
+              root: this,
+              refs: getRef,
+              slots: this._getSlotsHelper(),
+              isServer: false,
+              signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal,
+              // @ts-ignore
+              store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
+            })
+            this._getterContexts.set(key, context)
           }
-          const roState = this._getTrackedReadOnlyState(key, tracker)
-          context = this._wrapGetterContext({
-            state: roState,
-            route: _getClientRoute(),
-            root: this,
-            refs: getRef,
-            slots: this._getSlotsHelper(),
-            isServer: false,
-            signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal,
-            // @ts-ignore
-            store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
-          })
-          this._getterContexts.set(key, context)
-        }
 
-        context.signal = this._getterAbortControllers[key].signal
-        return getter(context)
+          context.signal = this._getterAbortControllers[key].signal
+          return getter(context)
+        } catch (err) {
+          const restoreDeps = this._getterDeps?.get(key) || directDeps
+          for (const dep of previousDeps) {
+            restoreDeps.add(dep)
+          }
+          throw err
+        }
       })
 
       this._computedGetters.set(key, computedSignal)
@@ -1962,13 +1984,15 @@ export class CoraliteElement extends BaseElement {
       const tracker = {
         activeCollector: (p) => {
           if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
-            directDeps.add(p)
+            const deps = this._getterDeps?.get(key) || directDeps
+            deps.add(p)
             if (this._collectingDependencies) {
               this._collectingDependencies.add(p)
             }
-            if (this._getterDeps?.has(p)) {
-              for (const subDep of this._getterDeps.get(p)) {
-                directDeps.add(subDep)
+            const nested = this._getterDeps?.get(p)
+            if (nested) {
+              for (const subDep of nested) {
+                deps.add(subDep)
                 if (this._collectingDependencies) {
                   this._collectingDependencies.add(subDep)
                 }
@@ -2667,13 +2691,15 @@ export class CoraliteElement extends BaseElement {
                 const tracker = {
                   activeCollector: (subProp) => {
                     if (typeof subProp === 'string' && (subProp in target || (options.getters && subProp in options.getters))) {
-                      directDeps.add(subProp)
+                      const deps = self._getterDeps?.get(getterKey) || directDeps
+                      deps.add(subProp)
                       if (self._collectingDependencies) {
                         self._collectingDependencies.add(subProp)
                       }
-                      if (self._getterDeps?.has(subProp)) {
-                        for (const subDep of self._getterDeps.get(subProp)) {
-                          directDeps.add(subDep)
+                      const nested = self._getterDeps?.get(subProp)
+                      if (nested) {
+                        for (const subDep of nested) {
+                          deps.add(subDep)
                           if (self._collectingDependencies) {
                             self._collectingDependencies.add(subDep)
                           }
