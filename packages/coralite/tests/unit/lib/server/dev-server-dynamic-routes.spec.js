@@ -1,6 +1,7 @@
 import '../../setup.js'
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert'
+import { stripPageTokenMarkers } from '../../helpers.js'
 import { join } from 'node:path'
 import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -218,15 +219,15 @@ describe('Dev and test server dynamic route resolution', () => {
       const resCa = await getRequest(`http://127.0.0.1:${port}/ca/events/don-giovanni`)
       assert.strictEqual(resCa.status, 200)
       const htmlCa = await resCa.text()
-      assert.ok(htmlCa.includes('<p>Language: ca</p>'), 'Rendered HTML should contain language ca')
-      assert.ok(htmlCa.includes('<p>Slug: don-giovanni</p>'), 'Rendered HTML should contain slug don-giovanni')
-      assert.ok(htmlCa.includes('<h1>Event: don-giovanni</h1>'), 'Rendered HTML should contain server() generated title')
+      assert.ok(stripPageTokenMarkers(htmlCa).includes('<p>Language: ca</p>'), 'Rendered HTML should contain language ca')
+      assert.ok(stripPageTokenMarkers(htmlCa).includes('<p>Slug: don-giovanni</p>'), 'Rendered HTML should contain slug don-giovanni')
+      assert.ok(stripPageTokenMarkers(htmlCa).includes('<h1>Event: don-giovanni</h1>'), 'Rendered HTML should contain server() generated title')
 
       // 2. Request alternative enumerated route /es/events/don-giovanni
       const resEs = await getRequest(`http://127.0.0.1:${port}/es/events/don-giovanni`)
       assert.strictEqual(resEs.status, 200)
       const htmlEs = await resEs.text()
-      assert.ok(htmlEs.includes('<p>Language: es</p>'), 'Rendered HTML should contain language es')
+      assert.ok(stripPageTokenMarkers(htmlEs).includes('<p>Language: es</p>'), 'Rendered HTML should contain language es')
 
       // 3. Request unenumerated route /ca/events/nonexistent -> 404
       const res404 = await getRequest(`http://127.0.0.1:${port}/ca/events/nonexistent`)

@@ -1439,6 +1439,10 @@ export function createRenderer ({
     let isFallbackRender = false
     let pageContextFrames = []
 
+    const pageTokenTemplates = {}
+    let nextPageTokenId = 0
+    const pageTokenScope = hash(`${buildId}:${routeObj?.path || pageItem?.path?.pathname || pageContext?.file?.pathname || 'page'}`).slice(0, 8)
+
     const resolvePageTokenKey = (key, stateObj, routeObjParam) => {
       if (key === 'route') {
         return routeObjParam
@@ -1462,33 +1466,73 @@ export function createRenderer ({
       return stateObj ? stateObj[key] : undefined
     }
 
+    const replaceTokenString = (value, stateObj, routeObjParam) => value.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
+      const val = resolvePageTokenKey(key, stateObj, routeObjParam)
+      return val !== undefined && val !== null ? String(val) : ''
+    })
+
     const replaceTokensInAST = (node, stateObj, routeObjParam) => {
       if (!node) {
         return
       }
       if (node.type === 'text') {
         if (node.data && node.data.includes('{{')) {
-          node.data = node.data.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
-            const val = resolvePageTokenKey(key, stateObj, routeObjParam)
-            return val !== undefined && val !== null ? String(val) : ''
-          })
+          node.data = replaceTokenString(node.data, stateObj, routeObjParam)
         }
-      } else if (node.type === 'tag' || node.type === 'root') {
-        if (node.attribs) {
-          for (const [attrName, attrVal] of Object.entries(node.attribs)) {
-            if (typeof attrVal === 'string' && attrVal.includes('{{')) {
-              node.attribs[attrName] = attrVal.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
-                const val = resolvePageTokenKey(key, stateObj, routeObjParam)
-                return val !== undefined && val !== null ? String(val) : ''
+        return
+      }
+      if (node.type !== 'tag' && node.type !== 'root') {
+        return
+      }
+
+      const isComponentTag = node.type === 'tag' && (node.name.includes('-') || app?.components?.getItem(node.name))
+      const canMark = node.type === 'tag' && node.name !== 'script' && node.name !== 'style'
+      let markerId = null
+      const tokenEntry = {
+        attrs: {},
+        texts: []
+      }
+      const ensureMarker = () => {
+        if (!canMark || markerId !== null) {
+          return
+        }
+        markerId = `${pageTokenScope}-${nextPageTokenId++}`
+        node.attribs = node.attribs || {}
+        node.attribs['data-coralite-page-token'] = markerId
+      }
+
+      if (node.attribs) {
+        for (const [attrName, attrVal] of Object.entries(node.attribs)) {
+          if (attrName === 'data-coralite-page-token') {
+            continue
+          }
+          if (typeof attrVal === 'string' && attrVal.includes('{{')) {
+            tokenEntry.attrs[attrName] = attrVal
+            ensureMarker()
+            node.attribs[attrName] = replaceTokenString(attrVal, stateObj, routeObjParam)
+          }
+        }
+      }
+
+      if (node.children && !isComponentTag) {
+        let textIndex = 0
+        for (const child of node.children) {
+          if (child.type === 'text') {
+            if (child.data && child.data.includes('{{')) {
+              tokenEntry.texts.push({
+                textIndex,
+                raw: child.data
               })
+              ensureMarker()
             }
+            textIndex++
           }
+          replaceTokensInAST(child, stateObj, routeObjParam)
         }
-        if (node.children && !(node.type === 'tag' && (node.name.includes('-') || app?.components?.getItem(node.name)))) {
-          for (const child of node.children) {
-            replaceTokensInAST(child, stateObj, routeObjParam)
-          }
-        }
+      }
+
+      if (markerId !== null) {
+        pageTokenTemplates[markerId] = tokenEntry
       }
     }
 
@@ -2315,7 +2359,8 @@ export function createRenderer ({
           route: routeObj,
           getters: gettersSource,
           style: styleSource,
-          client: (!isFallbackRender && pageExports.client) ? pageExports.client.toString() : null
+          client: (!isFallbackRender && pageExports.client) ? pageExports.client.toString() : null,
+          tokens: isFallbackRender ? {} : pageTokenTemplates
         }
       }
 

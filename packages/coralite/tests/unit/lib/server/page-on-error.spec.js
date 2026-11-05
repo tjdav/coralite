@@ -1,6 +1,7 @@
 import '../../setup.js'
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
+import { stripPageTokenMarkers } from '../../helpers.js'
 import { join } from 'node:path'
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -81,7 +82,7 @@ describe('Page onError block execution', () => {
     })
     assert.strictEqual(results.length, 1)
     const res = results[0]
-    assert.ok(res.content.includes('<div class="fallback"><h1>Error</h1><p>Loaded fallback state.</p></div>'))
+    assert.ok(stripPageTokenMarkers(res.content).includes('<div class="fallback"><h1>Error</h1><p>Loaded fallback state.</p></div>'))
   })
 
   it('onError returning a string renders it as the fallback template', async () => {
@@ -105,7 +106,7 @@ describe('Page onError block execution', () => {
     const results = await app.build(pagePath, { continueOnError: true })
     assert.strictEqual(results.length, 1)
     const res = results[0]
-    assert.ok(res.content.includes('<div class="fallback-string"><h1>String Fallback</h1></div>'))
+    assert.ok(stripPageTokenMarkers(res.content).includes('<div class="fallback-string"><h1>String Fallback</h1></div>'))
   })
 
   it('onError returning null or undefined marks the page as failed', async () => {
@@ -346,7 +347,7 @@ describe('Page onError block execution', () => {
     const results = await app.build(pagePath, { continueOnError: true })
     assert.strictEqual(results.length, 1)
     const res = results[0]
-    assert.ok(res.content.includes('<div class="fallback-getter">Fallback from getter failure</div>'))
+    assert.ok(stripPageTokenMarkers(res.content).includes('<div class="fallback-getter">Fallback from getter failure</div>'))
   })
 
   it('A page without onError whose server throws is marked failed', async () => {
@@ -451,7 +452,7 @@ describe('Page onError block execution', () => {
     const results = await app.build(pagePath, { continueOnError: true })
     assert.strictEqual(results.length, 1)
     const res = results[0]
-    assert.ok(res.content.includes('<h1>Page OK</h1>'))
-    assert.ok(res.content.includes('<div class="comp-fallback">Component Fallback</div>'))
+    assert.ok(stripPageTokenMarkers(res.content).includes('<h1>Page OK</h1>'))
+    assert.ok(stripPageTokenMarkers(res.content).includes('<div class="comp-fallback">Component Fallback</div>'))
   })
 })

@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
   <meta charset="UTF-8">
   <title>{{ title }}</title>
 </head>
-<body>
+<body data-count-label="{{ countLabel }}">
   <h1 data-testid="flat-title">{{ title }}</h1>
   <p data-testid="flat-summary">{{ summary }}</p>
   <button ref="increment" data-testid="flat-increment" type="button">{{ countLabel }}</button>
+  <button ref="lang" data-testid="flat-lang" type="button">lang: {{ lang }}</button>
   <p data-testid="flat-client" hidden>client idle</p>
   <script type="module">
     export async function server () {
-      return { title: 'Flat Page', count: 0 }
+      return { title: 'Flat Page', count: 0, lang: 'en' }
     }
 
     export const getters = {
@@ -27,6 +28,10 @@
       refs('increment').addEventListener('click', () => {
         state.count += 1
         output.textContent = `client count: ${state.count}`
+      }, { signal })
+
+      refs('lang').addEventListener('click', () => {
+        state.lang = state.lang === 'en' ? 'fr' : 'en'
       }, { signal })
     }
   </script>

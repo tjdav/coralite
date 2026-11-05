@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
+import { stripPageTokenMarkers } from '../../helpers.js'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
@@ -87,10 +88,10 @@ describe('Multi-Path Rendering (P2.05)', () => {
     assert.equal(htmlResults.length, 2)
 
     const introHtml = await readFile(join(OUTPUT_DIR, 'posts', 'intro', 'index.html'), 'utf8')
-    assert.ok(introHtml.includes('<p>intro</p>'))
+    assert.ok(stripPageTokenMarkers(introHtml).includes('<p>intro</p>'))
 
     const advHtml = await readFile(join(OUTPUT_DIR, 'posts', 'advanced', 'index.html'), 'utf8')
-    assert.ok(advHtml.includes('<p>advanced</p>'))
+    assert.ok(stripPageTokenMarkers(advHtml).includes('<p>advanced</p>'))
   })
 
   it('page with empty enumeratedPaths produces zero output files', async () => {
