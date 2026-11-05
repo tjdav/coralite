@@ -35,7 +35,7 @@ import {
  * @returns {CoraliteComponentValidationResult} Validation result with diagnostics, defined, unused, and coverage metrics
  */
 export function validateComponentSource (sourceCode, filePath = '') {
-  const context = createValidationContext(sourceCode, filePath)
+  const context = createValidationContext(sourceCode, filePath, { kind: 'component' })
 
   parseIgnoreDirectives(context)
   parseScriptAST(context)

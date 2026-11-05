@@ -500,7 +500,7 @@ export function validatePageSource (sourceCode, options = {}) {
  * @param {number} _scriptSearchOffset - Search index offset
  */
 function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnostics, knownMap, _scriptSearchOffset) {
-  const scriptCtx = createValidationContext(scriptContent, filePath)
+  const scriptCtx = createValidationContext(scriptContent, filePath, { kind: 'page' })
   parseScriptAST(scriptCtx)
   if (scriptCtx.configObj) {
     validateGetters(scriptCtx)

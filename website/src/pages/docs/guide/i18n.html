@@ -24,21 +24,21 @@ pages/
     about.html
     </coralite-code-highlight>
 
-    <p>Use <code>definePage</code> with the <code>paths</code> function to enumerate supported locales and inject the active locale parameter into the page state via the <code>server</code> block:</p>
+    <p>Use flat named exports with the <code>paths</code> function to enumerate supported locales and inject the active locale parameter into the page state via the <code>server</code> block:</p>
 
     <coralite-code-highlight language="javascript" title="pages/[lang]/index.html">
-import { definePage } from 'coralite'
-
 const locales = ['en', 'fr', 'de', 'ar']
 
-export default definePage({
-  paths: () => locales.map(lang => ({ lang })),
+export function paths () {
+  return locales.map(lang => ({ lang }))
+}
 
-  server: ({ route }) => ({
+export function server ({ route }) {
+  return {
     lang: route.params.lang,
     supported: locales.includes(route.params.lang)
-  })
-})
+  }
+}
     </coralite-code-highlight>
 
     <p>Using <code>pages/[lang]/</code> guarantees that locale paths are statically rendered as separate pages (for example <code>/en/</code>, <code>/fr/</code>, <code>/de/</code>, and <code>/ar/</code>) without duplicating template files.</p>
@@ -50,11 +50,11 @@ export default definePage({
     <coralite-code-highlight language="javascript">
 import messages from '../../../content/messages.json' with { type: 'json' }
 
-export default definePage({
-  server: ({ route }) => ({
+export function server ({ route }) {
+  return {
     t: messages[route.params.lang] ?? messages.en
-  })
-})
+  }
+}
     </coralite-code-highlight>
 
     <p>In your HTML template, bind translation strings using flat template tokens:</p>
@@ -73,15 +73,13 @@ export default definePage({
     <p>For formatting dates, numbers, currencies, or lists, rely directly on browser and Node.js native <code>Intl.*</code> APIs inside <code>getters</code> or <code>server()</code>. Do not wrap <code>Intl</code> in framework-specific helper utilities—native platform APIs are already built-in and performant.</p>
 
     <coralite-code-highlight language="javascript">
-export default definePage({
-  getters: {
-    formattedDate: ({ state }) =>
-      new Intl.DateTimeFormat(state.lang, { dateStyle: 'long' }).format(state.publishedAt),
+export const getters = {
+  formattedDate: ({ state }) =>
+    new Intl.DateTimeFormat(state.lang, { dateStyle: 'long' }).format(state.publishedAt),
 
-    formattedPrice: ({ state }) =>
-      new Intl.NumberFormat(state.lang, { style: 'currency', currency: 'EUR' }).format(state.price)
-  }
-})
+  formattedPrice: ({ state }) =>
+    new Intl.NumberFormat(state.lang, { style: 'currency', currency: 'EUR' }).format(state.price)
+}
     </coralite-code-highlight>
 
     <coralite-heading level="2" text="4. Right-to-Left (RTL) Support"></coralite-heading>
@@ -89,11 +87,11 @@ export default definePage({
     <p>Support right-to-left languages (like Arabic or Hebrew) by determining text direction in your <code>server()</code> function and binding the <code>dir</code> attribute on the <code>&lt;html&gt;</code> element:</p>
 
     <coralite-code-highlight language="javascript">
-export default definePage({
-  server: ({ route }) => ({
+export function server ({ route }) {
+  return {
     dir: route.params.lang === 'ar' ? 'rtl' : 'ltr'
-  })
-})
+  }
+}
     </coralite-code-highlight>
 
     <coralite-code-html>

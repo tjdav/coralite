@@ -152,7 +152,7 @@
         <li><strong>Declarations:</strong> <code>export const attributes = {}</code>, <code>export const getters = {}</code>, <code>export const style = {}</code>, <code>export const slots = {}</code>, <code>export const provide = ...</code>, <code>export const consume = ...</code>, <code>export const formControl = true</code>, <code>export const listStrategy = ...</code></li>
       </ul>
       <p>
-        <strong>defineComponent Compatibility:</strong> The legacy <code>export default defineComponent({ ... })</code> syntax remains fully supported for existing components. If both are present, <code>defineComponent</code> takes precedence. Note that <code>definePage</code> and <code>definePlugin</code> continue to use their respective <code>export default define*</code> wrappers.
+        <strong>Wrapper Compatibility:</strong> The legacy <code>export default defineComponent({ ... })</code> and <code>export default definePage({ ... })</code> syntaxes remain fully supported for existing code. If both a wrapper and flat exports are present, the wrapper takes precedence. New components and pages should use flat named exports; plugins continue to use <code>definePlugin</code>.
       </p>
     </coralite-alert>
 

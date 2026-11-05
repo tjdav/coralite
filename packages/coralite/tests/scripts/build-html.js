@@ -45,10 +45,6 @@ const EXPECTED_BUILD_FAILURES = new Set([
   'dedup/cross-source-duplicate',
   'dedup/same-source-duplicate',
 
-  // Bare-export tests: fixture intentionally uses deprecated page export shape
-  'bare-exports',
-  'codemod/before-ignore-pragma',
-
   // Validator tests: fixture intentionally triggers CORALITE-E401
   'server-with-headers'
 ])
@@ -114,11 +110,10 @@ const coralite = await createCoralite({
     console.log(`[CORALITE-${error.level}]: ${error.message}`)
     if (error.level === 'ERR') {
       if (
-        error.message.includes('bare-export') ||
         error.message.includes('definePage does not support') ||
         error.message.includes('Malformed dynamic segment') ||
         error.message.includes('has more than one <script type="module"> block') ||
-        (error.filePath && (error.filePath.includes('rejected-block') || error.filePath.includes('bare-exports') || error.filePath.includes('unknown-block') || error.filePath.includes('error-handling') || error.filePath.includes('patterns') || error.filePath.includes('script-both-places')))
+        (error.filePath && (error.filePath.includes('rejected-block') || error.filePath.includes('unknown-block') || error.filePath.includes('error-handling') || error.filePath.includes('patterns') || error.filePath.includes('script-both-places')))
       ) {
         return
       }

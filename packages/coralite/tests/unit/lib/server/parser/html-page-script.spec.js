@@ -13,6 +13,7 @@ describe('html.js (extractPageScript)', () => {
     const result = extractPageScript(html)
     assert.deepStrictEqual(result, {
       hasDefinePage: false,
+      hasPageExports: false,
       blocks: null,
       script: null
     })
@@ -143,23 +144,23 @@ describe('html.js (extractPageScript)', () => {
     )
   })
 
-  it('should throw CORALITE-E108 when bare exports are used without definePage', () => {
+  it('should recognize flat page exports without definePage', () => {
     const html = `
       <script type="module">
-        export const paths = () => []
-        export const server = () => ({})
+        export function paths () { return [] }
+        export async function server () { return {} }
+        export const getters = { title: () => 'hi' }
+        export const style = { '--color': 'red' }
+        export const provide = { key: 'val' }
+        export function client () {}
+        export function onError () {}
       </script>
     `
 
-    assert.throws(
-      () => extractPageScript(html),
-      (err) => {
-        return (
-          err.code === 'CORALITE-E108' &&
-          err.message.includes('Page uses the deprecated bare-export shape. Use export default definePage({ ... }) instead.')
-        )
-      }
-    )
+    const result = extractPageScript(html)
+    assert.strictEqual(result.hasDefinePage, false)
+    assert.strictEqual(result.hasPageExports, true)
+    assert.ok(result.script)
   })
 
   it('should process created page fixtures from disk correctly', async () => {
@@ -178,10 +179,9 @@ describe('html.js (extractPageScript)', () => {
 
     const bareExportsContent = await readFile(resolve(fixturesDir, 'bare-exports.html'), 'utf8')
     const bareExportsStripped = bareExportsContent.replace(/<!--\s*coralite-ignore\s+E108\s*-->/g, '')
-    assert.throws(
-      () => extractPageScript(bareExportsStripped),
-      (err) => err.code === 'CORALITE-E108'
-    )
+    const bareExportsResult = extractPageScript(bareExportsStripped)
+    assert.strictEqual(bareExportsResult.hasDefinePage, false)
+    assert.strictEqual(bareExportsResult.hasPageExports, true)
 
     const rejectedBlockContent = await readFile(resolve(fixturesDir, 'rejected-block.html'), 'utf8')
     assert.throws(

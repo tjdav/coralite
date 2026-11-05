@@ -4,9 +4,11 @@ import { getLocForSubstring } from '../../shared/diagnostics.js'
  *
  * @param {string} sourceCode - Raw component file content
  * @param {string} [filePath=''] - Path to component file for context
+ * @param {Object} [options={}] - Validation options
+ * @param {string} [options.kind] - Module kind ('component' or 'page')
  * @returns {object} The initialized ValidationContext
  */
-export function createValidationContext (sourceCode, filePath = '') {
+export function createValidationContext (sourceCode, filePath = '', options = {}) {
   let scriptContent = ''
   if (sourceCode.includes('<script')) {
     const scriptMatch = sourceCode.match(/<script[\s\S]*?>([\s\S]*?)<\/script>/i)
@@ -21,7 +23,10 @@ export function createValidationContext (sourceCode, filePath = '') {
     ? getLocForSubstring(sourceCode, scriptContent).line - 1
     : 0
 
+  const kind = options.kind || (sourceCode.includes('<template') ? 'component' : 'page')
+
   return {
+    kind,
     sourceCode,
     filePath,
     scriptContent,

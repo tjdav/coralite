@@ -62,13 +62,11 @@ export default defineComponent({
     <p>To declare a canonical URL manually, add a standard <code>&lt;link rel="canonical"&gt;</code> element to your page's <code>&lt;head&gt;</code> or generate it dynamically in a <code>server()</code> block using <code>route.path</code>:</p>
 
     <coralite-code-highlight language="javascript" title="pages/about.html">
-import { definePage } from 'coralite'
-
-export default definePage({
-  server: ({ route }) => ({
+export function server ({ route }) {
+  return {
     canonicalUrl: `https://example.com${route.path}`
-  })
-})
+  }
+}
     </coralite-code-highlight>
 
     <coralite-code-html>

@@ -4,6 +4,7 @@ import { simple as walkJS } from 'acorn-walk'
 import { parseHTML } from '../utils/parse.js'
 import { relinkChildren } from '../utils/dom.js'
 import { CoraliteError } from '../../shared/errors.js'
+import { PAGE_EXPORTS, REJECTED_PAGE_EXPORTS } from '../../shared/page.js'
 
 /**
  * @import { CoraliteElement, CoraliteAnyNode, CoraliteComponentRoot, Attribute, CoraliteModule, CoraliteSession } from '../../../types/index.js'
@@ -112,35 +113,21 @@ export async function processTokenValue (value, context) {
   return result.root.children
 }
 
-const ALLOWED_PAGE_BLOCKS = new Set([
-  'paths',
-  'server',
-  'getters',
-  'style',
-  'provide',
-  'client',
-  'onError'
-])
-
-const REJECTED_PAGE_BLOCKS = {
-  attributes: 'definePage does not support "attributes". Use "server" to fetch page data.',
-  slots: 'definePage does not support "slots". Pages are the outermost layer.',
-  consume: 'definePage does not support "consume". Pages are the root provider — use "provide".',
-  formAssociated: 'definePage does not support "formAssociated". Use a form-associated component instead.'
-}
+const ALLOWED_PAGE_BLOCKS = new Set(PAGE_EXPORTS)
 
 /**
  * Parses and extracts definePage configuration from page HTML scripts.
  *
  * @param {string} content - Raw page HTML content
  * @param {Object} [options={}] - Options containing filePath
- * @returns {{ hasDefinePage: boolean, blocks: Record<string, any> | null, script: string | null }}
+ * @returns {{ hasDefinePage: boolean, hasPageExports: boolean, blocks: Record<string, any> | null, script: string | null }}
  */
 export function extractPageScript (content, options = {}) {
   const filePath = options.filePath || ''
   if (!content || typeof content !== 'string') {
     return {
       hasDefinePage: false,
+      hasPageExports: false,
       blocks: null,
       script: null
     }
@@ -160,6 +147,7 @@ export function extractPageScript (content, options = {}) {
   if (!scriptContent || !scriptContent.trim()) {
     return {
       hasDefinePage: false,
+      hasPageExports: false,
       blocks: null,
       script: null
     }
@@ -175,6 +163,7 @@ export function extractPageScript (content, options = {}) {
   } catch {
     return {
       hasDefinePage: false,
+      hasPageExports: false,
       blocks: null,
       script: scriptContent
     }
@@ -182,7 +171,7 @@ export function extractPageScript (content, options = {}) {
 
   let definePageCall = null
   let definePageArg = null
-  let hasBareExports = false
+  let hasPageExports = false
 
   if (ast && ast.body) {
     for (const node of ast.body) {
@@ -190,15 +179,13 @@ export function extractPageScript (content, options = {}) {
         if (node.declaration) {
           if (node.declaration.type === 'VariableDeclaration') {
             for (const decl of node.declaration.declarations) {
-              if (decl.id && decl.id.type === 'Identifier') {
-                if (decl.id.name === 'paths' || decl.id.name === 'server') {
-                  hasBareExports = true
-                }
+              if (decl.id && decl.id.type === 'Identifier' && ALLOWED_PAGE_BLOCKS.has(decl.id.name)) {
+                hasPageExports = true
               }
             }
           } else if (node.declaration.type === 'FunctionDeclaration') {
-            if (node.declaration.id && (node.declaration.id.name === 'paths' || node.declaration.id.name === 'server')) {
-              hasBareExports = true
+            if (node.declaration.id && ALLOWED_PAGE_BLOCKS.has(node.declaration.id.name)) {
+              hasPageExports = true
             }
           }
         }
@@ -210,8 +197,8 @@ export function extractPageScript (content, options = {}) {
             } else if (spec.local) {
               exportedName = spec.local.type === 'Identifier' ? spec.local.name : String(spec.local.value)
             }
-            if (exportedName === 'paths' || exportedName === 'server') {
-              hasBareExports = true
+            if (ALLOWED_PAGE_BLOCKS.has(exportedName)) {
+              hasPageExports = true
             }
           }
         }
@@ -249,16 +236,10 @@ export function extractPageScript (content, options = {}) {
     }
   }
 
-  if (hasBareExports && !definePageCall && !content.includes('coralite-ignore E108')) {
-    throw new CoraliteError('Page uses the deprecated bare-export shape. Use export default definePage({ ... }) instead.', {
-      code: 'CORALITE-E108',
-      filePath
-    })
-  }
-
   if (!definePageCall || !definePageArg || definePageArg.type !== 'ObjectExpression') {
     return {
       hasDefinePage: false,
+      hasPageExports,
       blocks: null,
       script: scriptContent
     }
@@ -282,8 +263,8 @@ export function extractPageScript (content, options = {}) {
       continue
     }
 
-    if (REJECTED_PAGE_BLOCKS[keyName] && !content.includes('coralite-ignore E107')) {
-      throw new CoraliteError(REJECTED_PAGE_BLOCKS[keyName], {
+    if (REJECTED_PAGE_EXPORTS[keyName] && !content.includes('coralite-ignore E107')) {
+      throw new CoraliteError(REJECTED_PAGE_EXPORTS[keyName], {
         code: 'CORALITE-E107',
         filePath
       })
@@ -301,6 +282,7 @@ export function extractPageScript (content, options = {}) {
 
   return {
     hasDefinePage: true,
+    hasPageExports,
     blocks,
     script: scriptContent
   }

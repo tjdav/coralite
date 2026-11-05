@@ -2,28 +2,20 @@ import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
 import { kebabToCamel } from '../../../shared/core.js'
 import {
+  PAGE_EXPORTS,
+  PAGE_HANDLER_EXPORTS,
+  PAGE_CONFIG_EXPORTS,
+  REJECTED_PAGE_EXPORTS
+} from '../../../shared/page.js'
+import {
   ALLOWED_COMPONENT_CONFIG_KEYS,
   TOP_LEVEL_CONFIG_KEYS,
   getPropKeyName,
   createDiagnostic
 } from '../helpers.js'
 
-const ALLOWED_PAGE_CONFIG_KEYS = new Set([
-  'paths',
-  'server',
-  'getters',
-  'style',
-  'provide',
-  'client',
-  'onError'
-])
-
-const REJECTED_PAGE_CONFIG_KEYS = {
-  attributes: 'definePage does not support "attributes". Use "server" to fetch page data.',
-  slots: 'definePage does not support "slots". Pages are the outermost layer.',
-  consume: 'definePage does not support "consume". Pages are the root provider — use "provide".',
-  formAssociated: 'definePage does not support "formAssociated". Use a form-associated component instead.'
-}
+const ALLOWED_PAGE_CONFIG_KEYS = new Set(PAGE_EXPORTS)
+const PAGE_FLAT_EXPORT_NAMES = new Set([...PAGE_EXPORTS, ...Object.keys(REJECTED_PAGE_EXPORTS)])
 
 /**
  * Pass 1: Single Acorn AST parse of script content.
@@ -54,9 +46,7 @@ export function parseScriptAST (context) {
     return
   }
 
-  let hasDefinePageCall = false
-  let hasBarePageExports = false
-  let bareExportLoc = null
+  const isPage = context.kind === 'page'
 
   try {
     const ast = parseJS(scriptContent, {
@@ -163,41 +153,6 @@ export function parseScriptAST (context) {
       })
 
       for (const node of ast.body) {
-        if (node.type === 'ExportNamedDeclaration') {
-          const isComponent = context.sourceCode.includes('<template')
-          if (node.declaration) {
-            if (node.declaration.type === 'VariableDeclaration') {
-              for (const decl of node.declaration.declarations) {
-                if (decl.id && decl.id.type === 'Identifier') {
-                  if (decl.id.name === 'paths' || (!isComponent && decl.id.name === 'server')) {
-                    hasBarePageExports = true
-                    bareExportLoc = decl.loc
-                  }
-                }
-              }
-            } else if (node.declaration.type === 'FunctionDeclaration') {
-              if (node.declaration.id && (node.declaration.id.name === 'paths' || (!isComponent && node.declaration.id.name === 'server'))) {
-                hasBarePageExports = true
-                bareExportLoc = node.declaration.id.loc
-              }
-            }
-          }
-          if (node.specifiers) {
-            for (const spec of node.specifiers) {
-              let exportedName = ''
-              if (spec.exported) {
-                exportedName = spec.exported.type === 'Identifier' ? spec.exported.name : String(spec.exported.value)
-              } else if (spec.local) {
-                exportedName = spec.local.type === 'Identifier' ? spec.local.name : String(spec.local.value)
-              }
-              if (exportedName === 'paths' || (!isComponent && exportedName === 'server')) {
-                hasBarePageExports = true
-                bareExportLoc = spec.loc
-              }
-            }
-          }
-        }
-
         if (node.type === 'ImportDeclaration') {
           const source = node.source ? node.source.value : ''
           for (const spec of node.specifiers || []) {
@@ -427,6 +382,104 @@ export function parseScriptAST (context) {
       }
     }
 
+    const processPageProperty = (keyName, prop) => {
+      if (keyName === 'server') {
+        context.hasServerBlock = true
+        if (
+          prop.value &&
+          (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression' || prop.value.type === 'FunctionDeclaration')
+        ) {
+          let hasReturn = false
+          walkJS(prop.value.body, {
+            ReturnStatement (retNode) {
+              hasReturn = true
+              if (retNode.argument && retNode.argument.type === 'ObjectExpression') {
+                for (const retProp of retNode.argument.properties) {
+                  if (retProp.type === 'Property') {
+                    if (retProp.computed) {
+                      context.hasUnresolvableServer = true
+                    } else {
+                      const propName = getPropKeyName(retProp)
+                      if (propName) {
+                        definedServerProps.add(propName)
+                        definedServerProps.add(kebabToCamel(propName))
+                        const targetNode = retProp.key || retProp
+                        serverPropLocations.set(propName, {
+                          line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+                          column: targetNode.loc ? targetNode.loc.start.column + 1 : 1
+                        })
+                      } else {
+                        context.hasUnresolvableServer = true
+                      }
+                    }
+                  } else {
+                    context.hasUnresolvableServer = true
+                  }
+                }
+              } else {
+                context.hasUnresolvableServer = true
+              }
+            }
+          })
+          if (!hasReturn) {
+            context.hasUnresolvableServer = true
+          }
+        } else {
+          context.hasUnresolvableServer = true
+        }
+      }
+    }
+
+    const processPageExport = (exportName, prop, declaredKind) => {
+      if (REJECTED_PAGE_EXPORTS[exportName]) {
+        const targetNode = prop.key || prop
+        context.diagnostics.push(createDiagnostic({
+          code: 'CORALITE-E107',
+          severity: 'error',
+          message: REJECTED_PAGE_EXPORTS[exportName],
+          filePath: context.filePath,
+          line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+          column: targetNode.loc ? targetNode.loc.start.column + 1 : 1,
+          sourceCode: context.sourceCode,
+          cause: REJECTED_PAGE_EXPORTS[exportName]
+        }))
+        return
+      }
+
+      if (!ALLOWED_PAGE_CONFIG_KEYS.has(exportName)) {
+        return
+      }
+
+      if (PAGE_HANDLER_EXPORTS.has(exportName) && declaredKind !== 'function') {
+        const targetNode = prop.key || prop
+        context.diagnostics.push(createDiagnostic({
+          code: 'CORALITE-E107',
+          severity: 'error',
+          message: `Page handler "${exportName}" must use "export function", not "export ${declaredKind}".`,
+          filePath: context.filePath,
+          line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+          column: targetNode.loc ? targetNode.loc.start.column + 1 : 1,
+          sourceCode: context.sourceCode,
+          cause: `Handler function "${exportName}" must be declared using export function.`
+        }))
+      } else if (PAGE_CONFIG_EXPORTS.has(exportName) && declaredKind !== 'const') {
+        const targetNode = prop.key || prop
+        context.diagnostics.push(createDiagnostic({
+          code: 'CORALITE-E107',
+          severity: 'error',
+          message: `Page declaration "${exportName}" must use "export const", not "export ${declaredKind === 'function' ? 'function' : declaredKind}".`,
+          filePath: context.filePath,
+          line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+          column: targetNode.loc ? targetNode.loc.start.column + 1 : 1,
+          sourceCode: context.sourceCode,
+          cause: `Declaration data "${exportName}" must be declared using export const.`
+        }))
+      }
+
+      context.configProps.set(exportName, prop)
+      processPageProperty(exportName, prop)
+    }
+
     walkAncestorJS(ast, {
       CallExpression (node) {
         if (
@@ -435,7 +488,6 @@ export function parseScriptAST (context) {
           node.arguments.length > 0 &&
           node.arguments[0].type === 'ObjectExpression'
         ) {
-          hasDefinePageCall = true
           const configObj = node.arguments[0]
           context.configObj = configObj
 
@@ -450,19 +502,19 @@ export function parseScriptAST (context) {
 
             context.configProps.set(keyName, prop)
 
-            if (REJECTED_PAGE_CONFIG_KEYS[keyName]) {
+            if (REJECTED_PAGE_EXPORTS[keyName]) {
               const targetNode = prop.key || prop
               const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
               const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
               context.diagnostics.push(createDiagnostic({
                 code: 'CORALITE-E107',
                 severity: 'error',
-                message: REJECTED_PAGE_CONFIG_KEYS[keyName],
+                message: REJECTED_PAGE_EXPORTS[keyName],
                 filePath: context.filePath,
                 line,
                 column,
                 sourceCode: context.sourceCode,
-                cause: REJECTED_PAGE_CONFIG_KEYS[keyName]
+                cause: REJECTED_PAGE_EXPORTS[keyName]
               }))
             } else if (!ALLOWED_PAGE_CONFIG_KEYS.has(keyName)) {
               const targetNode = prop.key || prop
@@ -482,52 +534,7 @@ export function parseScriptAST (context) {
 
 
 
-            if (keyName === 'server') {
-              context.hasServerBlock = true
-              if (
-                prop.value &&
-                (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression')
-              ) {
-                let hasReturn = false
-                walkJS(prop.value.body, {
-                  ReturnStatement (retNode) {
-                    hasReturn = true
-                    if (retNode.argument && retNode.argument.type === 'ObjectExpression') {
-                      for (const retProp of retNode.argument.properties) {
-                        if (retProp.type === 'Property') {
-                          if (retProp.computed) {
-                            context.hasUnresolvableServer = true
-                          } else {
-                            const propName = getPropKeyName(retProp)
-                            if (propName) {
-                              definedServerProps.add(propName)
-                              definedServerProps.add(kebabToCamel(propName))
-                              const targetNode = retProp.key || retProp
-                              serverPropLocations.set(propName, {
-                                line: targetNode.loc.start.line + scriptStartLine,
-                                column: targetNode.loc.start.column + 1
-                              })
-                            } else {
-                              context.hasUnresolvableServer = true
-                            }
-                          }
-                        } else {
-                          context.hasUnresolvableServer = true
-                        }
-                      }
-                    } else {
-                      context.hasUnresolvableServer = true
-                    }
-                  }
-                })
-                if (!hasReturn) {
-                  context.hasUnresolvableServer = true
-                }
-              } else {
-                context.hasUnresolvableServer = true
-              }
-            }
-
+            processPageProperty(keyName, prop)
           }
         }
 
@@ -601,12 +608,27 @@ export function parseScriptAST (context) {
         }
       }
 
+      const flatExportNames = isPage ? PAGE_FLAT_EXPORT_NAMES : ALLOWED_COMPONENT_CONFIG_KEYS
+
       for (const node of ast.body) {
-        if (node.type === 'ExportNamedDeclaration') {
-          if (node.declaration) {
-            if (node.declaration.type === 'FunctionDeclaration') {
-              const exportName = node.declaration.id?.name
-              if (exportName && ALLOWED_COMPONENT_CONFIG_KEYS.has(exportName)) {
+        if (node.type !== 'ExportNamedDeclaration') {
+          continue
+        }
+
+        if (node.declaration) {
+          if (node.declaration.type === 'FunctionDeclaration') {
+            const exportName = node.declaration.id?.name
+            if (exportName && flatExportNames.has(exportName)) {
+              const prop = {
+                type: 'Property',
+                key: node.declaration.id,
+                value: node.declaration,
+                loc: node.declaration.loc,
+                kind: 'init'
+              }
+              if (isPage) {
+                processPageExport(exportName, prop, 'function')
+              } else {
                 if (exportName !== 'server' && exportName !== 'client' && exportName !== 'onError') {
                   const targetNode = node.declaration.id || node.declaration
                   context.diagnostics.push(createDiagnostic({
@@ -620,85 +642,89 @@ export function parseScriptAST (context) {
                     cause: `Declaration data "${exportName}" must be declared using export const.`
                   }))
                 }
-                const prop = {
-                  type: 'Property',
-                  key: node.declaration.id,
-                  value: node.declaration,
-                  loc: node.declaration.loc,
-                  kind: 'init'
+                context.configProps.set(exportName, prop)
+                processComponentProperty(exportName, prop)
+              }
+            }
+          } else if (node.declaration.type === 'VariableDeclaration') {
+            for (const decl of node.declaration.declarations) {
+              const exportName = decl.id?.type === 'Identifier' ? decl.id.name : null
+              if (!exportName || !flatExportNames.has(exportName)) {
+                continue
+              }
+              const prop = {
+                type: 'Property',
+                key: decl.id,
+                value: decl.init,
+                loc: decl.loc,
+                kind: 'init'
+              }
+              if (isPage) {
+                processPageExport(exportName, prop, node.declaration.kind)
+              } else {
+                if (exportName === 'server' || exportName === 'client' || exportName === 'onError') {
+                  const targetNode = decl.id || decl
+                  context.diagnostics.push(createDiagnostic({
+                    code: 'CORALITE-E107',
+                    severity: 'error',
+                    message: `Component handler "${exportName}" must use "export function", not "export const".`,
+                    filePath: context.filePath,
+                    line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+                    column: targetNode.loc ? targetNode.loc.start.column + 1 : 1,
+                    sourceCode: context.sourceCode,
+                    cause: `Handler function "${exportName}" must be declared using export function.`
+                  }))
+                } else if (node.declaration.kind !== 'const') {
+                  const targetNode = decl.id || decl
+                  context.diagnostics.push(createDiagnostic({
+                    code: 'CORALITE-E107',
+                    severity: 'error',
+                    message: `Component declaration "${exportName}" must use "export const".`,
+                    filePath: context.filePath,
+                    line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
+                    column: targetNode.loc ? targetNode.loc.start.column + 1 : 1,
+                    sourceCode: context.sourceCode,
+                    cause: `Declaration data "${exportName}" must be declared using export const.`
+                  }))
                 }
                 context.configProps.set(exportName, prop)
                 processComponentProperty(exportName, prop)
               }
-            } else if (node.declaration.type === 'VariableDeclaration') {
-              for (const decl of node.declaration.declarations) {
-                const exportName = decl.id?.type === 'Identifier' ? decl.id.name : null
-                if (exportName && ALLOWED_COMPONENT_CONFIG_KEYS.has(exportName)) {
-                  if (exportName === 'server' || exportName === 'client' || exportName === 'onError') {
-                    const targetNode = decl.id || decl
-                    context.diagnostics.push(createDiagnostic({
-                      code: 'CORALITE-E107',
-                      severity: 'error',
-                      message: `Component handler "${exportName}" must use "export function", not "export const".`,
-                      filePath: context.filePath,
-                      line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
-                      column: targetNode.loc ? targetNode.loc.start.column + 1 : 1,
-                      sourceCode: context.sourceCode,
-                      cause: `Handler function "${exportName}" must be declared using export function.`
-                    }))
-                  } else if (node.declaration.kind !== 'const') {
-                    const targetNode = decl.id || decl
-                    context.diagnostics.push(createDiagnostic({
-                      code: 'CORALITE-E107',
-                      severity: 'error',
-                      message: `Component declaration "${exportName}" must use "export const".`,
-                      filePath: context.filePath,
-                      line: targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1,
-                      column: targetNode.loc ? targetNode.loc.start.column + 1 : 1,
-                      sourceCode: context.sourceCode,
-                      cause: `Declaration data "${exportName}" must be declared using export const.`
-                    }))
-                  }
-                  const prop = {
-                    type: 'Property',
-                    key: decl.id,
-                    value: decl.init,
-                    loc: decl.loc,
-                    kind: 'init'
-                  }
-                  context.configProps.set(exportName, prop)
-                  processComponentProperty(exportName, prop)
-                }
-              }
             }
-          } else if (node.specifiers) {
-            for (const spec of node.specifiers) {
-              let exportName = ''
-              if (spec.exported?.type === 'Identifier') {
-                exportName = spec.exported.name
-              } else if (spec.exported?.value) {
-                exportName = String(spec.exported.value)
-              }
-              if (exportName && ALLOWED_COMPONENT_CONFIG_KEYS.has(exportName)) {
-                let localName = ''
-                if (spec.local?.type === 'Identifier') {
-                  localName = spec.local.name
-                } else if (spec.local?.value) {
-                  localName = String(spec.local.value)
-                }
-                const target = topLevelBindings.get(localName)
-                if (target) {
-                  const prop = {
-                    type: 'Property',
-                    key: spec.exported || spec.local,
-                    value: target.node,
-                    loc: spec.loc,
-                    kind: 'init'
-                  }
-                  context.configProps.set(exportName, prop)
-                  processComponentProperty(exportName, prop)
-                }
-              }
+          }
+        } else if (node.specifiers) {
+          for (const spec of node.specifiers) {
+            let exportName = ''
+            if (spec.exported?.type === 'Identifier') {
+              exportName = spec.exported.name
+            } else if (spec.exported?.value) {
+              exportName = String(spec.exported.value)
+            }
+            if (!exportName || !flatExportNames.has(exportName)) {
+              continue
+            }
+            let localName = ''
+            if (spec.local?.type === 'Identifier') {
+              localName = spec.local.name
+            } else if (spec.local?.value) {
+              localName = String(spec.local.value)
+            }
+            const target = topLevelBindings.get(localName)
+            if (!target) {
+              continue
+            }
+            const prop = {
+              type: 'Property',
+              key: spec.exported || spec.local,
+              value: target.node,
+              loc: spec.loc,
+              kind: 'init'
+            }
+            if (isPage) {
+              processPageExport(exportName, prop, target.kind)
+            } else {
+              context.configProps.set(exportName, prop)
+              processComponentProperty(exportName, prop)
             }
           }
         }
@@ -710,25 +736,6 @@ export function parseScriptAST (context) {
           properties: Array.from(context.configProps.values())
         }
       }
-    }
-
-    if (hasBarePageExports && !hasDefinePageCall) {
-      const line = bareExportLoc ? bareExportLoc.start.line + scriptStartLine : scriptStartLine + 1
-      const column = bareExportLoc ? bareExportLoc.start.column + 1 : 1
-      context.diagnostics.push(createDiagnostic({
-        code: 'CORALITE-E108',
-        severity: 'error',
-        message: 'Page uses the deprecated bare-export shape. Use export default definePage({ ... }) instead.',
-        filePath: context.filePath,
-        line,
-        column,
-        sourceCode: context.sourceCode,
-        cause: 'Page uses deprecated bare exports ("paths", "server"). Use export default definePage({ ... }) instead.',
-        fix: {
-          action: 'migrate_bare_exports',
-          description: 'Convert bare exports to definePage({ ... })'
-        }
-      }))
     }
   } catch {
     // Fallback for invalid script syntax

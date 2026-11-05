@@ -11,17 +11,21 @@
   <main class="container content">
     <h1 class="display">Authoring Pattern</h1>
 
-    <p>Coralite enforces a single, predictable authoring pattern across every layer of the application. Whether you are defining a Web Component, an HTML page, or a custom plugin, code is organized into named blocks inside a default export function imported from <code>coralite</code>.</p>
+    <p>Coralite enforces a single, predictable authoring pattern across every layer of the application. Components and pages are authored with flat named exports, while plugins use the <code>definePlugin</code> default export imported from <code>coralite</code>.</p>
 
     <coralite-heading level="2" text="1. The Unified Pattern"></coralite-heading>
 
-    <p>Every entry point in Coralite—<code>defineComponent</code>, <code>definePage</code>, and <code>definePlugin</code>—accepts a configuration object composed of standard blocks. They share the same import source, default export convention, and static validation model.</p>
+    <p>Components and pages share the same flat named-export vocabulary; plugins use <code>definePlugin</code>. All three layers share the same blocks and static validation model. <code>defineComponent</code> and <code>definePage</code> wrappers remain supported for legacy code.</p>
 
     <coralite-code-highlight language="javascript" title="Unified Declarations">
-import { defineComponent, definePage, definePlugin } from 'coralite'
+import { definePlugin } from 'coralite'
 
-export default defineComponent({ /* component blocks */ })
-export default definePage({ /* page blocks */ })
+// Component or page: flat named exports
+export function server (context) { /* ... */ }
+export const getters = { /* ... */ }
+export function client (context) { /* ... */ }
+
+// Plugin: default export
 export default definePlugin({ /* plugin blocks */ })
     </coralite-code-highlight>
 
@@ -216,31 +220,27 @@ export default definePlugin({ /* plugin blocks */ })
 
     <coralite-heading level="2" text="5. Import Rule"></coralite-heading>
 
-    <p>Top-level imports are reserved for <code>defineComponent</code>, <code>definePage</code>, <code>definePlugin</code>, and ESM modules used by isomorphic blocks (such as <code>getters</code>, <code>style</code>, or <code>slots</code>). Node-only dependencies used strictly in <code>server()</code> or <code>paths()</code>, and browser-only dependencies used in <code>client()</code>, must be imported dynamically using <code>await import(...)</code> inside the respective block.</p>
+    <p>Top-level imports are reserved for <code>definePlugin</code>, page configuration modules, and ESM modules used by isomorphic blocks (such as <code>getters</code>, <code>style</code>, or <code>slots</code>). Node-only dependencies used strictly in <code>server()</code> or <code>paths()</code>, and browser-only dependencies used in <code>client()</code>, must be imported dynamically using <code>await import(...)</code> inside the respective block.</p>
 
     <coralite-code-highlight language="javascript" title="Correct Dynamic Imports">
-import { definePage } from 'coralite'
+export async function server () {
+  // Correct: Node module loaded inside server()
+  const fs = await import('node:fs/promises')
+  const data = await fs.readFile('data.json', 'utf8')
+  return { content: JSON.parse(data) }
+}
 
-export default definePage({
-  async server () {
-    // Correct: Node module loaded inside server()
-    const fs = await import('node:fs/promises')
-    const data = await fs.readFile('data.json', 'utf8')
-    return { content: JSON.parse(data) }
-  },
-  async client () {
-    // Correct: Browser module loaded inside client()
-    const { animate } = await import('https://esm.sh/motion')
-    animate('.card', { opacity: 1 })
-  }
-})
+export async function client () {
+  // Correct: Browser module loaded inside client()
+  const { animate } = await import('https://esm.sh/motion')
+  animate('.card', { opacity: 1 })
+}
     </coralite-code-highlight>
 
     <coralite-code-highlight language="javascript" title="Incorrect Top-Level Server/Client Imports">
 // Bad: Importing Node/Browser modules at top-level pollutes bundle scope
 import fs from 'node:fs/promises'
 import { animate } from 'motion'
-import { definePage } from 'coralite'
     </coralite-code-highlight>
 
     <coralite-heading level="2" text="6. Serialization Boundary"></coralite-heading>

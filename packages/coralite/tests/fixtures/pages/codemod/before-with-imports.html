@@ -2,8 +2,7 @@
   import { readFile } from 'node:fs/promises'
 
   export const paths = async () => {
-    const data = JSON.parse(await readFile('content/posts.json', 'utf-8'))
-    return data.map(p => ({ id: String(p.id) }))
+    return []
   }
 
   export const server = async ({ route }) => {
