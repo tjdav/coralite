@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.1.0
+
+> Comparing `create-coralite-v1.0.0` to `HEAD`
+
+**Summary:** 4 commits
+
+### ✨ Features
+
+- support lazy dependency stylesheets (component) ([ef783e5](https://github.com/tjdav/coralite/commit/ef783e5a901884cedd31882d9d1423d6a4911f21))
+
+### 📚 Documentation
+
+- sync llms and agent guidance (router) ([1f5dcc5](https://github.com/tjdav/coralite/commit/1f5dcc5dbcfd860dccab07f18ad2df69fc20059e))
+- align llms and AGENTS agent files with SPA router documentation (router) ([51dbea6](https://github.com/tjdav/coralite/commit/51dbea6050a5c8647253b776e1399cd7c12df25f))
+
+### 🔨 Other Changes
+
+- release(coralite): version 1.1.0 ([d49fda9](https://github.com/tjdav/coralite/commit/d49fda9285fe35052abafb3ce00d61cefa094f56))
+
+
 ## v1.0.0
 
 > Comparing `create-coralite-v0.47.1` to `HEAD`
