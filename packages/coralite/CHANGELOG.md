@@ -1,5 +1,61 @@
 # Changelog
 
+## v1.1.0
+
+> Comparing `coralite-v1.0.0` to `HEAD`
+
+**Summary:** 27 commits, 1 pull request
+
+### ✨ Features
+
+- support lazy dependency stylesheets (component) ([ef783e5](https://github.com/tjdav/coralite/commit/ef783e5a901884cedd31882d9d1423d6a4911f21))
+- support meta as declared page state (page) ([bfbeb31](https://github.com/tjdav/coralite/commit/bfbeb3121d76c6d5664814f181e6a284f28586b4))
+- update SSR page tokens from marker map (page) ([6e19269](https://github.com/tjdav/coralite/commit/6e19269f58da3489864891d9e5fe940bde69b7b7))
+- support flat named exports (page) ([779f6d9](https://github.com/tjdav/coralite/commit/779f6d9530130e1a149eea1aa6398d7f3c66aa22))
+- detect Node built-in globals in client() (CORALITE-E304) (validator) ([3057815](https://github.com/tjdav/coralite/commit/30578153e527ab7142b22702c08f8ba11cb4d7a2))
+
+### 🐛 Bug Fixes
+
+- resolve page tokens in slotted children during SSR (renderer) ([d2141ec](https://github.com/tjdav/coralite/commit/d2141ec764ca73d5118f39b8969f5877c7a00f03))
+- resolve CLI commands against source in development (cli) ([758e09d](https://github.com/tjdav/coralite/commit/758e09d85c48e494a5d7801d1184cdb77a1bdccc))
+- preserve getter deps when evaluation throws (signals) ([293f4e6](https://github.com/tjdav/coralite/commit/293f4e62fbdbd8df71b0770a4fd7909c822a640d))
+- re-resolve compiled binding nodes by marker (hydration) ([df356f1](https://github.com/tjdav/coralite/commit/df356f1c4c9b460d0b7acf2732244ff97bcb0d2a))
+- preserve getter deps across cached reads (signals) ([5ea0d82](https://github.com/tjdav/coralite/commit/5ea0d8246ceb019c1958b3f6bdf6ff43c0dad98c))
+- preserve getter deps in compiled updaters (hydration) ([6cfba66](https://github.com/tjdav/coralite/commit/6cfba66917a6aab585abe1122f7cbaaf35753871))
+- resolve bindings by stable markers (hydration) ([ede9796](https://github.com/tjdav/coralite/commit/ede9796f99d5117e32b1a45fd09f04bc3d192877))
+- add autoWrap and outletOnly config options (router) ([b2ec92d](https://github.com/tjdav/coralite/commit/b2ec92da444cc7387b8326facad4b52cd4a62e25))
+- expose isomorphic plugins via getOwnPropertyDescriptor in context proxies (hydration) ([b88c6ce](https://github.com/tjdav/coralite/commit/b88c6ce107cc20d85c425cd099a700ab44f8e342))
+- generalize Node globals handling to runtime surface & server regions (type-checker) ([eed6fc6](https://github.com/tjdav/coralite/commit/eed6fc69eb126fb8480b021b01953ebb25abf43f))
+- support Node globals in paths() and server() without TS2580/TS2591 errors (type-checker) ([659e576](https://github.com/tjdav/coralite/commit/659e5767f43f24a28e6442ecadf58af72fe3da5b))
+- resolve dynamic route parameters in dev and test server (cli) ([9c4177f](https://github.com/tjdav/coralite/commit/9c4177fb175a90dc798e130dea8839b026c5f78e))
+- skip testing hydration check for zero-JS static components (hydration) ([63006df](https://github.com/tjdav/coralite/commit/63006df13fbcf3d895f81058cf05f2df05ebf93f))
+- preserve existing window.__coralite__ properties during setup (devtools) ([e3faf1f](https://github.com/tjdav/coralite/commit/e3faf1f23c0d30f22a168d15d5f3abc0e5c0e9c6))
+- retain attribute updaters by typing attributes in hydration map (compiler) ([43470d9](https://github.com/tjdav/coralite/commit/43470d943a8c4155d26fb60de555eb7f2f7efa42))
+
+### 🎨 Styles
+
+- add blank lines between logical code blocks (element) ([65a53cc](https://github.com/tjdav/coralite/commit/65a53cc0519a88aac56aa92d287a62611239f691))
+
+### ♻️ Code Refactoring
+
+- isolate page meta defaults per render (renderer) ([92e3516](https://github.com/tjdav/coralite/commit/92e3516708e5230a31d70bfb65689d935cc318de))
+- extract createIsoPluginProxy for getter contexts (hydration) ([ecf199b](https://github.com/tjdav/coralite/commit/ecf199b7d5bfae648aadb48a8cc7ea2512c64271))
+
+### ✅ Tests
+
+- verify page meta render isolation (page) ([5568356](https://github.com/tjdav/coralite/commit/5568356462d19714450d762756422abe0003cfe9))
+- assert page meta defaults in server context (page) ([1f243d4](https://github.com/tjdav/coralite/commit/1f243d435dd4176dce5ea7daeaad7da09d393a2a))
+- cover compiled binding re-resolution in the browser (hydration) ([74e6b35](https://github.com/tjdav/coralite/commit/74e6b352b11a774a933df9f26b2aa849a64c8410))
+
+### 🔨 Other Changes
+
+- Merge pull request #207 from tjdav/docs/p3-llms-agents-router ([#207](https://github.com/tjdav/coralite/pull/207)) ([0389c56](https://github.com/tjdav/coralite/commit/0389c563406df6f9015586de4deaadde4db6873a))
+
+### 🔗 Pull Requests
+
+- [#207](https://github.com/tjdav/coralite/pull/207)
+
+
 ## v1.0.0
 
 > Comparing `coralite-v0.47.1` to `HEAD`

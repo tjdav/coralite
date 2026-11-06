@@ -18,6 +18,6 @@
     "node": ">=22.22.2"
   },
   "devDependencies": {
-    "coralite": "^1.0.0"
+    "coralite": "^1.1.0"
   }
 }
