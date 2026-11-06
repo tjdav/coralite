@@ -1577,20 +1577,59 @@ export function createRenderer ({
         }
       }
 
-      if (node.children && !isComponentTag) {
-        let textIndex = 0
-        for (const child of node.children) {
-          if (child.type === 'text') {
-            if (child.data && child.data.includes('{{')) {
-              tokenEntry.texts.push({
-                textIndex,
-                raw: child.data
-              })
-              ensureMarker()
+      if (node.children) {
+        if (!isComponentTag) {
+          let textIndex = 0
+          for (const child of node.children) {
+            if (child.type === 'text') {
+              if (child.data && child.data.includes('{{')) {
+                tokenEntry.texts.push({
+                  textIndex,
+                  raw: child.data
+                })
+                ensureMarker()
+              }
+              textIndex++
             }
-            textIndex++
+            replaceTokensInAST(child, stateObj, routeObjParam)
           }
-          replaceTokensInAST(child, stateObj, routeObjParam)
+        } else {
+          for (let cIdx = 0; cIdx < node.children.length; cIdx++) {
+            const child = node.children[cIdx]
+            if (child.type === 'text') {
+              if (child.data && child.data.includes('{{')) {
+                const cTokenMarkerId = `${pageTokenScope}-${nextPageTokenId++}`
+                pageTokenTemplates[cTokenMarkerId] = {
+                  attrs: {},
+                  texts: [{
+                    textIndex: 0,
+                    raw: child.data
+                  }]
+                }
+                child.data = replaceTokenString(child.data, stateObj, routeObjParam)
+                const cToken = createCoraliteElement({
+                  type: 'tag',
+                  name: 'c-token',
+                  parent: node,
+                  attribs: {
+                    'data-coralite-page-token': cTokenMarkerId
+                  },
+                  children: [child]
+                })
+                child.parent = cToken
+                node.children[cIdx] = cToken
+                if (Array.isArray(node.slots)) {
+                  const slotEntry = node.slots.find(s => s.node === child)
+                  if (slotEntry) {
+                    slotEntry.node = cToken
+                  }
+                }
+              }
+            } else {
+              replaceTokensInAST(child, stateObj, routeObjParam)
+            }
+          }
+          relinkChildren(node)
         }
       }
 
