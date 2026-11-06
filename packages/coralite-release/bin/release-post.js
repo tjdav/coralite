@@ -44,12 +44,14 @@ Your task is to generate a structured GitHub Release Post based on provided git 
 
 function callAgy (promptText, model) {
   const agyModel = (model && model !== 'local-model') ? model : 'gemini-3.8-flash-high'
+  // Stay safely under Linux single-arg limit (MAX_ARG_STRLEN = 128 KB)
+  const safePrompt = promptText.length > 100000 ? promptText.slice(0, 100000) : promptText
   const args = [
     '--dangerously-skip-permissions',
     '--model',
     agyModel,
     '--print',
-    promptText
+    safePrompt
   ]
   try {
     const output = execFileSync('agy', args, {
@@ -111,14 +113,14 @@ program
     try {
       const git = simpleGit()
 
-      // Load framework context
+      // Load framework context (prefer concise llms.txt to prevent prompt bloat and execve E2BIG)
       let frameworkContext = ''
-      const llmsFullPath = path.join(process.cwd(), 'website/public/llms-full.txt')
       const llmsPath = path.join(process.cwd(), 'website/public/llms.txt')
-      if (existsSync(llmsFullPath)) {
-        frameworkContext = readFileSync(llmsFullPath, 'utf8')
-      } else if (existsSync(llmsPath)) {
+      const llmsFullPath = path.join(process.cwd(), 'website/public/llms-full.txt')
+      if (existsSync(llmsPath)) {
         frameworkContext = readFileSync(llmsPath, 'utf8')
+      } else if (existsSync(llmsFullPath)) {
+        frameworkContext = readFileSync(llmsFullPath, 'utf8')
       }
 
       // Prompt for package if not provided
