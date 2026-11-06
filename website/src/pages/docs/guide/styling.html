@@ -378,6 +378,58 @@ slot, c-token { display: contents; }
       You can use global utility classes (like Bootstrap or Tailwind) within your components alongside your scoped styles. Because component styles are automatically placed in <code>@layer components</code>, global utility classes and unlayered styles take precedence naturally without specificity conflicts.
     </p>
 
+    <coralite-heading level="2" text="Lazy Dependency Stylesheets"></coralite-heading>
+
+    <p>
+      Third-party JavaScript libraries often ship CSS that must be present when the library initialises. Declaring that CSS in the global
+      <code>styles.input</code> makes it eager on every route, while copying it into <code>public/</code> requires hardcoded output paths and
+      manual link management. Coralite lets you lazily load dependency CSS directly inside <code>client()</code> using standard ECMAScript dynamic
+      <code>await import()</code>.
+    </p>
+
+    <coralite-code-html>
+      <template id="venue-map">
+        <div class="leaflet-container" ref="map"></div>
+      </template>
+
+      <script type="module">
+        export async function client ({ refs, signal }) {
+          try {
+            const [, L] = await Promise.all([
+              import('leaflet/dist/leaflet.css', { signal }),
+              import('leaflet')
+            ])
+            L.map(refs('map'))
+          } catch (error) {
+            if (error.name !== 'AbortError') {
+              // render a fallback
+            }
+          }
+        }
+      </script>
+    </coralite-code-html>
+
+    <p>
+      Specifiers resolve from the declaring component, page, or client helper module. Bare package paths, relative files, and absolute files are supported.
+      At build time, Coralite discovers dynamic <code>import('*.css')</code> expressions and bundles each stylesheet with esbuild (plus configured PostCSS plugins)
+      so <code>@import</code> rules and relative <code>url()</code> references are resolved and emitted as hashed assets under <code>assets/css/</code>.
+      The CSS is never added to the component's eager CSS bundle and no <code>&lt;link&gt;</code> is emitted during SSR.
+    </p>
+
+    <p>
+      Dependency CSS is intentionally <strong>global and unscoped</strong>: third-party libraries expect selectors such as
+      <code>.leaflet-container</code> to apply at document level. Multiple components or pages importing the same resolved stylesheet share a single
+      bundled asset and a single injected <code>&lt;link rel="stylesheet"&gt;</code> in <code>&lt;head&gt;</code>. Lazy stylesheets are inserted in
+      deterministic manifest order, independent of network completion timing, and persist for the lifetime of the document.
+    </p>
+
+    <p>
+      Dynamic CSS imports resolve to <code>{ default: link.sheet, link }</code> once the browser fires <code>load</code>, reject on <code>error</code> or abort,
+      and deduplicate concurrent callers. The optional second argument supports both flat options (<code>{ media, nonce, crossorigin, referrerPolicy, signal, force }</code>)
+      and standard Import Attributes (<code>{ with: { type: 'css', media, nonce, crossorigin, referrerPolicy }, signal, force }</code>).
+      Pass <code>{ force: true }</code> to retry a previously failed load. When CSP is enabled, provide a <code>nonce</code> that satisfies your <code>style-src</code> policy.
+    </p>
+
     <coralite-heading level="2" text="Using Preprocessors"></coralite-heading>
 
     <p>

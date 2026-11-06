@@ -1,28 +1,7 @@
 import { definePlugin } from '../lib/server/plugin/define.js'
-import { createRequire } from 'node:module'
-import { dirname, join, parse, isAbsolute } from 'node:path'
-import { existsSync } from 'node:fs'
+import { dirname, join, isAbsolute } from 'node:path'
 import { cp, mkdir, stat } from 'node:fs/promises'
-
-/**
- * Finds the nearest package.json starting from a given directory.
- * @param {string} startDir - The directory to start searching from.
- * @returns {string} The path to the directory containing package.json.
- * @throws {Error} If package.json is not found up to the root.
- */
-function findPackageRoot (startDir) {
-  let currentDir = startDir
-  const rootDir = parse(currentDir).root
-
-  while (currentDir !== rootDir) {
-    if (existsSync(join(currentDir, 'package.json'))) {
-      return currentDir
-    }
-    currentDir = dirname(currentDir)
-  }
-
-  throw new Error('package.json not found')
-}
+import { resolvePackageFile } from '../lib/server/utils/package.js'
 
 /**
  * @import { CoraliteStaticAsset } from '../types/index.js'
@@ -60,21 +39,7 @@ export const staticAssetPlugin = (assets = []) => {
               throw new Error('staticAssetPlugin requires assets to have pkg and path state when src is not provided.')
             }
 
-            const require = createRequire(join(projectRoot, 'package.json'))
-            let pkgPath
-
-            try {
-              pkgPath = dirname(require.resolve(`${asset.pkg}/package.json`))
-            } catch {
-              try {
-                const resolvedPath = require.resolve(asset.pkg)
-                pkgPath = findPackageRoot(dirname(resolvedPath))
-              } catch {
-                throw new Error(`staticAssetPlugin could not resolve package.json for package: ${asset.pkg}`)
-              }
-            }
-
-            src = join(pkgPath, asset.path)
+            src = resolvePackageFile(asset.pkg, asset.path, projectRoot)
           }
 
           if (inFlight.has(dest)) {

@@ -1,6 +1,7 @@
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
 import { kebabToCamel } from '../../../shared/core.js'
+import { isCssSpecifier } from '../../../shared/stylesheets.js'
 import {
   PAGE_EXPORTS,
   PAGE_HANDLER_EXPORTS,
@@ -155,6 +156,21 @@ export function parseScriptAST (context) {
       for (const node of ast.body) {
         if (node.type === 'ImportDeclaration') {
           const source = node.source ? node.source.value : ''
+          if (isCssSpecifier(source)) {
+            const targetNode = node.source || node
+            const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
+            const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
+            context.diagnostics.push(createDiagnostic({
+              code: 'CORALITE-E109',
+              severity: 'error',
+              message: `Static CSS import '${source}' is not allowed at module scope. Use dynamic await import('${source}') inside client() instead.`,
+              filePath: context.filePath,
+              line,
+              column,
+              sourceCode: context.sourceCode,
+              cause: 'CSS stylesheets can only be loaded lazily inside client() via dynamic import().'
+            }))
+          }
           for (const spec of node.specifiers || []) {
             if (spec.local && spec.local.name) {
               topLevelImports.set(spec.local.name, source)

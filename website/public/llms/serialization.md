@@ -15,13 +15,17 @@ Coralite separates component logic cleanly between build time and client runtime
 ## 2. Invariants
 
 1. **Client Isolation (`CORALITE-E301`)**: `client()` is serialized and executed in isolation in the browser. It cannot close over module-scope variables or top-level static `import` declarations.
-2. **Dynamic Imports in Client**: Any external libraries required in the browser must be dynamically imported inside `client()` using `await import(...)`:
+2. **Dynamic Imports in Client**: Any external JavaScript libraries or lazy dependency stylesheets (`.css`) required in the browser must be dynamically imported inside `client()` using `await import(...)`:
    ```javascript
    export async function client ({ refs, signal }) {
-     const { default: confetti } = await import('https://esm.sh/canvas-confetti')
+     const [, { default: confetti }] = await Promise.all([
+       import('./celebrate.css', { signal }),
+       import('https://esm.sh/canvas-confetti')
+     ])
      refs('celebrate').addEventListener('click', () => confetti(), { signal })
    }
    ```
+   * Static top-level `.css` imports or dynamic `.css` imports outside `client()` throw `CORALITE-E109`.
 3. **Data Hydration Bridge**: Data produced on the server (database queries, filesystem reads, API calls) is transferred to the client by returning an object from `server()`. This object is serialized into the component's initial state:
    ```javascript
    export async function server () {

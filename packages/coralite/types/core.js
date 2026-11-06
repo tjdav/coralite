@@ -240,6 +240,41 @@
  */
 
 /**
+ * @typedef {Object} CoraliteCssImportWithAttributes
+ * @property {'css'} [type] - Standard CSS module import attribute.
+ * @property {string} [media] - Media attribute applied to the injected link.
+ * @property {string} [nonce] - CSP nonce applied to the injected link.
+ * @property {'anonymous' | 'use-credentials'} [crossorigin] - Crossorigin attribute applied to the injected link.
+ * @property {string} [referrerPolicy] - Referrer policy applied to the injected link.
+ * @property {string} [referrerpolicy] - Lowercase referrer policy alias applied to the injected link.
+ */
+
+/**
+ * @typedef {Object} CoraliteCssImportOptions
+ * @property {CoraliteCssImportWithAttributes} [with] - Import attributes for the stylesheet.
+ * @property {AbortSignal} [signal] - Stops waiting without cancelling the shared stylesheet load.
+ * @property {string} [media] - Media attribute applied to the injected link.
+ * @property {string} [nonce] - CSP nonce applied to the injected link.
+ * @property {'anonymous' | 'use-credentials'} [crossorigin] - Crossorigin attribute applied to the injected link.
+ * @property {string} [referrerPolicy] - Referrer policy applied to the injected link.
+ * @property {string} [referrerpolicy] - Lowercase referrer policy alias applied to the injected link.
+ * @property {boolean} [force] - Bypasses cached load failures.
+ */
+
+/**
+ * @typedef {Object} CoraliteCssImportResult
+ * @property {any} default - The loaded CSSStyleSheet instance (or null for cross-origin sheets without CORS).
+ * @property {Element} link - The injected <link rel="stylesheet"> element.
+ */
+
+/**
+ * @callback CoraliteImportCSS
+ * @param {string} handleOrUrl - Bundled stylesheet handle or stylesheet URL.
+ * @param {CoraliteCssImportOptions} [options] - Load options and import attributes.
+ * @returns {Promise<CoraliteCssImportResult>} Resolves when the stylesheet is applied, rejects on failure or abort.
+ */
+
+/**
  * Represents structured page URL, file, and meta information.
  * @typedef {Object} CoralitePage
  * @property {Object} url - URL path info.
@@ -283,6 +318,19 @@
  *   observe: (key: string, callback: Function) => () => void,
  *   updateComplete: Promise<boolean>
  * }} CoralitePageClientContext
+ */
+
+/**
+ * Options accepted by definePage.
+ *
+ * @typedef {Object} CoralitePageConfig
+ * @property {Function} [paths] - Enumerated route paths.
+ * @property {Function} [server] - Server-side page data loader.
+ * @property {Object} [getters] - Isomorphic page getters.
+ * @property {Object} [style] - Reactive page style definitions.
+ * @property {Object} [provide] - W3C context providers.
+ * @property {Function} [client] - Browser page lifecycle function.
+ * @property {Function} [onError] - Page error boundary.
  */
 
 /**
@@ -375,7 +423,7 @@
  * @property {CoraliteOnError} [onError] - Internal or configured error/warning handler.
  * @property {(options: CoraliteStaticAsset) => Promise<string>} [registerAsset] - Copies/writes a static asset and registers optional declarative injection.
  * @property {(structural?: boolean) => Promise<void>} clearCache - Clears the internal script cache and disposes esbuild context.
- * @property {Record<string, { path: string, hashedPath: string, text: string }>} outputFiles - The record of generated output files.
+ * @property {Record<string, { path: string, hashedPath: string, text: string, outputDir?: string, contents?: Uint8Array | Buffer }>} outputFiles - The record of generated output files.
  * @property {Object} _dependencyGraph - The internal dependency graph for the project.
  * @property {Record<string, Set<string>>} _dependencyGraph.pageCustomElements - The mapping of custom elements to the pages that use them.
  * @property {Record<string, string[]>} _dependencyGraph.directPageComponents - The mapping of pages to their direct custom element dependencies.

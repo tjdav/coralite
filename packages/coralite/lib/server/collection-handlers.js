@@ -7,6 +7,7 @@ import { prepareAllComponentOps } from './utils/fragment.js'
 import { validateEnumeratedPaths, validatePluginEnumeratedPaths, deduplicateEnumeratedPaths } from './route.js'
 import { parsePagePattern } from './page/pattern.js'
 import { resolvePageMetaDefaults } from '../shared/page-meta.js'
+import { extractScriptStylesheets } from './utils/dependency-stylesheets.js'
 import { CoraliteError } from '../shared/errors.js'
 
 /**
@@ -121,9 +122,16 @@ export function createPageHandlers ({
 
     if (parsedScript.script && evaluate) {
       try {
+        const { code: transformedPageScript, declarations } = extractScriptStylesheets(parsedScript.script, {
+          filePath: data.path.pathname
+        })
+        if (scriptManager && typeof scriptManager.registerPageStylesheets === 'function') {
+          scriptManager.registerPageStylesheets(data.path.pathname, declarations)
+        }
+
         const module = {
           id: data.path.pathname,
-          script: parsedScript.script,
+          script: transformedPageScript,
           path: data.path
         }
 
@@ -162,8 +170,13 @@ export function createPageHandlers ({
               paths: rawPaths
             })
           }
+        } else if (scriptManager && typeof scriptManager.unregisterPageStylesheets === 'function') {
+          scriptManager.unregisterPageStylesheets(data.path.pathname)
         }
       } catch (err) {
+        if (scriptManager && typeof scriptManager.unregisterPageStylesheets === 'function') {
+          scriptManager.unregisterPageStylesheets(data.path.pathname)
+        }
         const pageErr = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
           code: err.code || 'CORALITE-E402',
           cause: err,
@@ -320,6 +333,35 @@ export function createPageHandlers ({
     }
   }
 
+  const refreshPageStylesheets = (value) => {
+    if (!scriptManager || typeof scriptManager.registerPageStylesheets !== 'function') {
+      return
+    }
+
+    const filePath = value.path?.pathname
+    if (!filePath || !value.content) {
+      if (filePath && typeof scriptManager.unregisterPageStylesheets === 'function') {
+        scriptManager.unregisterPageStylesheets(filePath)
+      }
+      return
+    }
+
+    const parsedScript = extractPageScript(value.content, { filePath })
+    if (!parsedScript.script) {
+      if (typeof scriptManager.unregisterPageStylesheets === 'function') {
+        scriptManager.unregisterPageStylesheets(filePath)
+      }
+      return
+    }
+
+    try {
+      const { declarations } = extractScriptStylesheets(parsedScript.script, { filePath })
+      scriptManager.registerPageStylesheets(filePath, declarations)
+    } catch {
+      /* keep existing registrations when dev re-evaluation fails */
+    }
+  }
+
   const onPageUpdateLocal = async (newValue, oldValue) => {
     if (app.options.mode === 'production' || app.options.mode === 'testing') {
       if (!newValue.result) {
@@ -332,6 +374,8 @@ export function createPageHandlers ({
       const res = await onFileSetLocal(newValue)
       newValue.result = res.value
     }
+
+    refreshPageStylesheets(newValue)
 
     const mappedContext = await triggerHook('onPageUpdate', {
       elements: newValue.result,
@@ -383,6 +427,10 @@ export function createPageHandlers ({
     const finalData = res?.data || value
     const pathname = finalData?.path?.pathname
     const directPageComponents = app._dependencyGraph.directPageComponents
+
+    if (pathname && scriptManager && typeof scriptManager.unregisterPageStylesheets === 'function') {
+      scriptManager.unregisterPageStylesheets(pathname)
+    }
 
     if (pathname && directPageComponents) {
       const hadPrevious = Object.hasOwn(directPageComponents, pathname)

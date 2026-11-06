@@ -159,7 +159,7 @@ export async function server ({ state, route }) {
       <li><code>getters</code>: Synchronous derived state functions destructuring <code>({ state, route, refs, slots, signal, isServer })</code>.</li>
       <li><code>style</code>: Dynamic CSS Custom Property map applied synchronously to the <code>&lt;html&gt;</code> element scope: <code>(state) => ({ '--page-theme': state.theme })</code>.</li>
       <li><code>provide</code>: Broadcasts context values down to descendant components via W3C Context protocol: <code>provide ({ state }) { return { theme: state.theme } }</code>.</li>
-      <li><code>client</code>: Client-side runtime logic executed on <code>document.documentElement</code> receiving <code>{ state, route, refs, signal, emit, observe }</code>.</li>
+      <li><code>client</code>: Client-side runtime logic executed on <code>document.documentElement</code> receiving <code>{ state, route, refs, signal, emit, observe }</code> (supports lazy dependency stylesheet imports via <code>await import('*.css')</code>).</li>
       <li><code>onError</code>: Build-time error boundary returning fallback template markup and state if server rendering fails: <code>onError ({ error }) { return { template: '<h1>Page Unavailable</h1>', state: { err: error.message } } }</code>.</li>
     </ul>
 

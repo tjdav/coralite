@@ -50,8 +50,8 @@ export const REJECTED_PAGE_EXPORTS = {
  * Defines a Coralite page configuration object.
  * Acts as an identity function at runtime for type inference and build-time analysis.
  *
- * @param {Object} options - Page configuration options
- * @returns {Object} Page options
+ * @param {import('../../types/core.js').CoralitePageConfig} options - Page configuration options
+ * @returns {import('../../types/core.js').CoralitePageConfig} Page options
  */
 export function definePage (options = {}) {
   return options

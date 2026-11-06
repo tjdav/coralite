@@ -2,9 +2,11 @@ import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, hasContextEntries, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap, generateBindingTree, validateSerializable } from '../shared/core.js'
 import { findAndExtractImperativeComponents, astTransformer } from './utils/server.js'
+import { buildDependencyStylesheets, createStylesheetHandle, extractScriptStylesheets } from './utils/dependency-stylesheets.js'
 import { CoraliteError } from '../shared/errors.js'
+import { readFile } from 'node:fs/promises'
 import { pathToFileURL, fileURLToPath } from 'node:url'
-import { resolve, parse, dirname, basename, isAbsolute } from 'node:path'
+import { resolve, parse, dirname, basename, isAbsolute, join } from 'node:path'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
 import render from 'dom-serializer'
 
@@ -378,6 +380,8 @@ export function ScriptManager (options = {}) {
   this.options = options
   this.context = null
   this.virtualModules = new Map()
+  this.componentStylesheets = new Map()
+  this.pageStylesheets = new Map()
 }
 
 /**
@@ -468,6 +472,75 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
   this.contextProps[name] = normalizeFunction(method)
 
   return this
+}
+
+/**
+ * Registers dependency stylesheet declarations for a component.
+ *
+ * @param {string} id - Component identifier.
+ * @param {string} filePath - Component source file path.
+ * @param {Array<Object>|null|undefined} declarations - Extracted component stylesheet declarations.
+ * @returns {void}
+ */
+ScriptManager.prototype.registerComponentStylesheets = function (id, filePath, declarations) {
+  if (!Array.isArray(declarations) || declarations.length === 0) {
+    this.componentStylesheets.delete(id)
+    return
+  }
+
+  this.componentStylesheets.set(id, {
+    filePath,
+    declarations
+  })
+}
+
+/**
+ * Registers dependency stylesheet declarations for a page.
+ *
+ * @param {string} filePath - Page source file path.
+ * @param {Array<Object>|null|undefined} declarations - Extracted page stylesheet declarations.
+ * @returns {void}
+ */
+ScriptManager.prototype.registerPageStylesheets = function (filePath, declarations) {
+  if (!Array.isArray(declarations) || declarations.length === 0) {
+    this.pageStylesheets.delete(filePath)
+    return
+  }
+
+  this.pageStylesheets.set(filePath, declarations)
+}
+
+/**
+ * Removes dependency stylesheet declarations for a page.
+ *
+ * @param {string} filePath - Page source file path.
+ * @returns {void}
+ */
+ScriptManager.prototype.unregisterPageStylesheets = function (filePath) {
+  this.pageStylesheets.delete(filePath)
+}
+
+/**
+ * Collects all registered dependency stylesheet declarations in deterministic order.
+ *
+ * @returns {Array<Object>} Normalized stylesheet declarations.
+ */
+ScriptManager.prototype.collectStylesheetDeclarations = function () {
+  const declarations = []
+  const componentIds = Array.from(this.componentStylesheets.keys()).sort()
+
+  for (const id of componentIds) {
+    const entry = this.componentStylesheets.get(id)
+    declarations.push(...entry.declarations)
+  }
+
+  const pagePaths = Array.from(this.pageStylesheets.keys()).sort()
+
+  for (const filePath of pagePaths) {
+    declarations.push(...this.pageStylesheets.get(filePath))
+  }
+
+  return declarations
 }
 
 /**
@@ -656,7 +729,7 @@ ScriptManager.prototype.disposeContext = async function () {
  * Compiles and bundles all registered components and the coralite-runtime client module using esbuild.
  * Eagerly bundles the entire component registry to support declarative rendering and lazy imperative loading.
  * @param {string} [mode='production'] - Build mode ('development', 'production', or 'testing')
- * @returns {Promise<{ manifest: Object, outputFiles: Object, importMap: Object }>}
+ * @returns {Promise<{ manifest: Object, stylesheetManifest: Object, outputFiles: Object, importMap: Object }>}
  */
 ScriptManager.prototype.compileComponents = async function (mode = 'production') {
   const entryCodeParts = []
@@ -864,6 +937,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
 
   const coraliteElementPath = fileURLToPath(import.meta.resolve('../client/element.js'))
   const devToolsPath = fileURLToPath(import.meta.resolve('../client/utils/devtools.js'))
+  const stylesheetsPath = fileURLToPath(import.meta.resolve('../client/utils/stylesheets.js'))
 
   entryCodeParts.push(`const globalClientHooks = {
     onBeforeComponentRender: [${this.scriptModules.map((_, i) => `onBeforeComponentRender_${i}`).join(', ')}].filter(Boolean),
@@ -926,8 +1000,9 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
   };\n`)
 
   entryCodeParts.push(`import { createCoraliteClass, setupPageRuntime } from ${JSON.stringify(coraliteElementPath)};\n`)
+  entryCodeParts.push(`import { createImportCSS } from ${JSON.stringify(stylesheetsPath)};\n`)
   entryCodeParts.push(`import { setupDevTools, registerDevToolsComponent } from ${JSON.stringify(devToolsPath)};\n`)
-  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, setupPageRuntime, globalClientHooks, setupDevTools, registerDevToolsComponent, clientPluginConfigs, initPlugins };\n')
+  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, setupPageRuntime, globalClientHooks, setupDevTools, registerDevToolsComponent, clientPluginConfigs, initPlugins, createImportCSS };\n')
 
   this.virtualModules.clear()
   this.virtualModules.set('coralite-runtime', entryCodeParts.join('').trimEnd())
@@ -1140,6 +1215,8 @@ export default {
 
   const injectPath = fileURLToPath(import.meta.resolve('../client/utils/inject.js'))
 
+  const helperStylesheetDeclarations = []
+
   // Build and bundle
   /** @type {import('esbuild').BuildOptions} */
   const esbuildOptions = {
@@ -1172,6 +1249,44 @@ export default {
         setup: (pluginBuild) => {
           pluginBuild.onResolve({ filter: /\.(spec|test)\.js$|\.md$/ }, () => {
             return { external: true }
+          })
+        }
+      },
+      {
+        name: 'coralite-css-dynamic-imports',
+        setup: (pluginBuild) => {
+          pluginBuild.onResolve({ filter: /\.css(?:[?#].*)?$/i }, (args) => {
+            if (args.kind !== 'dynamic-import') {
+              return null
+            }
+            let importerPath
+            if (args.importer && !args.importer.startsWith(virtualPrefix)) {
+              importerPath = args.importer
+            } else if (args.resolveDir) {
+              importerPath = join(args.resolveDir, '_importer.js')
+            }
+            const declaration = {
+              handle: '',
+              from: args.path,
+              filePath: importerPath
+            }
+            declaration.handle = createStylesheetHandle(declaration)
+            helperStylesheetDeclarations.push(declaration)
+            return {
+              path: declaration.handle,
+              namespace: 'coralite-css-import'
+            }
+          })
+
+          pluginBuild.onLoad({
+            filter: /.*/,
+            namespace: 'coralite-css-import'
+          }, (args) => {
+            const handleJson = JSON.stringify(args.path)
+            return {
+              contents: `const result = await window.__coralite__.importCSS(${handleJson});\nexport const link = result.link;\nexport default result.default;\n`,
+              loader: 'js'
+            }
           })
         }
       },
@@ -1276,10 +1391,33 @@ export default {
           pluginBuild.onLoad({
             filter: /.*/,
             namespace: 'file'
-          }, args => {
+          }, async args => {
             // Returning undefined falls through to esbuild's default file loader (esbuild plugin contract).
             // This ensures standard source files and node_modules are loaded normally from disk.
             if (!args.pluginData?.isCoraliteComponent && !args.pluginData?.isScriptModule) {
+              if (args.path.endsWith('.js') && !args.path.includes('node_modules')) {
+                try {
+                  const raw = await readFile(args.path, 'utf8')
+                  if (raw.includes('.css') || raw.includes("'css'") || raw.includes('"css"')) {
+                    const transformed = extractScriptStylesheets(raw, {
+                      filePath: args.path,
+                      allowAllFunctions: true
+                    })
+                    if (transformed.declarations.length > 0 || transformed.code !== raw) {
+                      helperStylesheetDeclarations.push(...transformed.declarations)
+                      return {
+                        contents: transformed.code,
+                        loader: 'js',
+                        resolveDir: dirname(args.path)
+                      }
+                    }
+                  }
+                } catch (err) {
+                  if (err && err.code && String(err.code).startsWith('CORALITE-')) {
+                    throw err
+                  }
+                }
+              }
               return undefined
             }
 
@@ -1298,8 +1436,12 @@ export default {
                 }
 
                 if (sharedFn.script.content) {
+                  const transformedClient = extractScriptStylesheets(sharedFn.script.content, {
+                    filePath: sharedFn.filePath,
+                    allowAllFunctions: true
+                  })
                   const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
-                  contents += `${padding}export const script = ${sharedFn.script.content};\n`
+                  contents += `${padding}export const script = ${transformedClient.code};\n`
                 } else {
                   contents += 'export const script = null;\n'
                 }
@@ -1613,8 +1755,12 @@ export default {
                 }
 
                 if (sharedFn.script.content) {
+                  const transformedClient = extractScriptStylesheets(sharedFn.script.content, {
+                    filePath: sharedFn.filePath,
+                    allowAllFunctions: true
+                  })
                   const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
-                  contents += `${padding}export const script = ${sharedFn.script.content};\n`
+                  contents += `${padding}export const script = ${transformedClient.code};\n`
                 } else {
                   contents += 'export const script = null;\n'
                 }
@@ -1808,8 +1954,24 @@ export default {
     }
   }
 
+  const stylesheetDeclarations = [
+    ...this.collectStylesheetDeclarations(),
+    ...helperStylesheetDeclarations
+  ]
+  const stylesConfig = this.options.styles
+  const processors = stylesConfig ? stylesConfig.processors : null
+  const postcssConfig = processors ? processors.postcss : null
+  const postcssPlugins = (postcssConfig && postcssConfig.plugins) || []
+  const stylesheetResult = await buildDependencyStylesheets(stylesheetDeclarations, {
+    mode,
+    postcssPlugins
+  })
+
+  Object.assign(outputFiles, stylesheetResult.outputFiles)
+
   return {
     manifest,
+    stylesheetManifest: stylesheetResult.manifest,
     outputFiles,
     importMap: resolvedImportMap
   }

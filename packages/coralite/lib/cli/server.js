@@ -383,6 +383,7 @@ async function server (config, options, runMode = 'dev') {
         exclude: currentConfig.exclude,
         plugins: Array.isArray(currentConfig.plugins) ? currentConfig.plugins : [],
         assets: currentConfig.assets,
+        styles: currentConfig.styles,
         csp: currentConfig.csp,
         externalStyles: currentConfig.styles?.input?.map(input => {
           const ext = input.split('.').pop()
@@ -445,10 +446,13 @@ async function server (config, options, runMode = 'dev') {
               const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
                 const isCSS = (file.path || file.hashedPath)?.endsWith('.css')
                 const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
-                const outFile = join(baseAssetsDir, file.hashedPath)
+                const outFile = file.outputDir
+                  ? join(config.output, file.outputDir, file.hashedPath)
+                  : join(baseAssetsDir, file.hashedPath)
+                const contents = file.contents !== undefined ? file.contents : file.text
 
                 await mkdir(dirname(outFile), { recursive: true })
-                await writeFile(outFile, file.text)
+                await writeFile(outFile, contents)
               })
 
               await Promise.all(assetWrites)
@@ -694,10 +698,13 @@ async function server (config, options, runMode = 'dev') {
               const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
                 const isCSS = (file.path || file.hashedPath)?.endsWith('.css')
                 const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
-                const outFile = join(baseAssetsDir, file.hashedPath)
+                const outFile = file.outputDir
+                  ? join(config.output, file.outputDir, file.hashedPath)
+                  : join(baseAssetsDir, file.hashedPath)
+                const contents = file.contents !== undefined ? file.contents : file.text
 
                 await mkdir(dirname(outFile), { recursive: true })
-                await writeFile(outFile, file.text)
+                await writeFile(outFile, contents)
               })
 
               await Promise.all(assetWrites)

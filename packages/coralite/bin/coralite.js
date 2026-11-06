@@ -997,6 +997,7 @@ async function main () {
    - The \`export function client()\` block is serialized into browser runtime code.
    - Top-level static ES imports or outer module variables CANNOT be closed over inside \`client()\`.
    - Use dynamic \`await import(...)\` inside \`async function client()\` or \`async function server()\`.
+   - Lazy dependency stylesheets (\`.css\`) MUST be loaded dynamically inside \`client()\` via \`await import('pkg/styles.css', { signal })\` (never via top-level static \`import\` or inside \`server()\`, which triggers \`CORALITE-E109\`).
 
 3. **Attribute Primitives**:
    - Component attributes (\`export const attributes = { ... }\`) strictly support \`String\`, \`Number\`, and \`Boolean\` primitives.

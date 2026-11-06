@@ -162,20 +162,21 @@
     <coralite-heading level="2" text="Using External Libraries"></coralite-heading>
 
     <p>
-      Because Coralite leverages standard ESM, you can use dynamic <code>import()</code> statements directly inside your <code>client</code> function to load client-side dependencies. These are automatically detected by the build tool and bundled for the browser.
+      Because Coralite leverages standard ESM, you can use dynamic <code>import()</code> statements directly inside your <code>client</code> function to load client-side JavaScript dependencies and lazy dependency stylesheets (<code>.css</code>). Local and npm package imports are automatically detected by the build tool and bundled for the browser.
     </p>
 
     <coralite-code-highlight language="javascript">
-      export default defineComponent({
-        async client({ state, signal, refs, ...pluginContext }) {
-            const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
+      export async function client({ state, signal, refs }) {
+          const [, { default: confetti }] = await Promise.all([
+              import('canvas-confetti/confetti.css', { signal }),
+              import('https://esm.sh/canvas-confetti@1.6.0')
+          ])
 
-            const btn = refs('celebrateBtn')
-            btn.addEventListener('click', () => {
-                confetti();
-            }, { signal })
-        }
-      })
+          const btn = refs('celebrateBtn')
+          btn.addEventListener('click', () => {
+              confetti();
+          }, { signal })
+      }
     </coralite-code-highlight>
 
     <coralite-heading level="2" text="Component Communication & Event Dispatching"></coralite-heading>
