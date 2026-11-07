@@ -6,6 +6,7 @@ import postcssImport from 'postcss-import'
 import autoprefixer from 'autoprefixer'
 
 export default defineConfig({
+  cleanUrls: false,
   public: 'public',
   output: 'dist',
   pages: 'src/pages',
