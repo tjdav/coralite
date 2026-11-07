@@ -38,8 +38,10 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
   const stateTarget = { ...(pageConfig.state || {}) }
   const getterFns = pageConfig.getters || {}
   const styleFns = pageConfig.style || {}
-  // @ts-ignore
-  const routeObj = (typeof window !== 'undefined' && window.__coralite_hydration__ && window.__coralite_hydration__.__route__) || pageConfig.route || { path: (typeof window !== 'undefined' && window.location ? window.location.pathname : '/') }
+  /** @type {import('../../types/globals.js').CoraliteGlobalThis | null} */
+  const win = typeof window !== 'undefined' ? window : null
+  const runtimeState = win?.__coralite__?.state
+  const routeObj = runtimeState?.route || pageConfig.route || { path: (win && win.location ? win.location.pathname : '/') }
 
   const observersMap = new Map()
   let isUpdatePending = false
@@ -282,8 +284,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
               refs: (id) => rootEl.querySelector(`[ref="${id}"]`),
               isServer: false,
               signal: getterAbortControllers[key].signal,
-              // @ts-ignore
-              store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
+              store: runtimeState?.store || undefined
             }))
           },
           enumerable: true,
@@ -324,8 +325,8 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
 
   const clientFn = parseFn(pageConfig.client)
   if (typeof clientFn === 'function') {
-    // @ts-ignore
-    const routerCtx = typeof window !== 'undefined' ? window.__coralite_router__ : undefined
+    const runtimePlugins = win?.__coralite__?.plugins
+    const routerCtx = runtimePlugins?.router
 
     const baseContext = {
       state: stateProxy,
@@ -335,8 +336,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
         return rootEl.querySelector(`[ref="${id}"]`)
       },
       signal: new AbortController().signal,
-      // @ts-ignore
-      store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined,
+      store: runtimeState?.store || undefined,
       emit (name, detail, options = {}) {
         const CustomEventCtor = typeof window !== 'undefined' && window.CustomEvent ? window.CustomEvent : CustomEvent
         const event = new CustomEventCtor(name, {
@@ -357,8 +357,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
       updateComplete: Promise.resolve(true)
     }
 
-    // @ts-ignore
-    const resolveClientContext = getClientContext || (typeof window !== 'undefined' ? window['__coralite__']?.getClientContext : undefined)
+    const resolveClientContext = getClientContext || runtimePlugins?.getClientContext
     let clientPluginContext = {}
     if (typeof resolveClientContext === 'function') {
       try {
@@ -370,7 +369,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
         console.error('Coralite Plugin Error resolving client context for page:', err)
       }
     } else {
-      const isoPlugins = typeof window !== 'undefined' && window['__coralite__']?.isomorphicPlugins
+      const isoPlugins = runtimePlugins?.isomorphic
       if (isoPlugins) {
         for (const [key, fn] of Object.entries(isoPlugins)) {
           try {

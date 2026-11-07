@@ -2,6 +2,7 @@ import '../setup.js'
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import { generateClientRuntime } from '../../../lib/client/utils/runtime.js'
+import { formatCoraliteHTML } from '../../../lib/client/utils/inject.js'
 import serialize from 'serialize-javascript'
 
 function getProcessHTML (mode) {
@@ -13,31 +14,32 @@ function getProcessHTML (mode) {
     mode
   })
 
-  // Extract window.processHTML definition
-  const startIdx = runtimeCode.indexOf('window.processHTML = ')
+  // Extract coralite.dom.processHTML definition
+  const startIdx = runtimeCode.indexOf('coralite.dom.processHTML = ')
   if (startIdx === -1) {
-    throw new Error('Could not find window.processHTML in generated client runtime')
+    throw new Error('Could not find coralite.dom.processHTML in generated client runtime')
   }
-  const endIdx = runtimeCode.lastIndexOf('})();')
+  const endIdx = runtimeCode.indexOf('if (typeof getClientContext === \'function\')', startIdx)
   if (endIdx === -1) {
-    throw new Error('Could not find end of IIFE in generated client runtime')
+    throw new Error('Could not find end of processHTML block in generated client runtime')
   }
   const fnCode = runtimeCode.substring(startIdx, endIdx).trim()
 
   // Evaluate function in a mocked context
-  const windowMock = {
-    __coralite__: { mode }
+  const coralite = {
+    mode,
+    dom: {}
   }
   const componentManifestMock = {}
   const loadComponentMock = () => {
   }
 
-  const run = new Function('window', 'componentManifest', 'loadComponent', `${fnCode}\nreturn window.processHTML;`)
-  return run(windowMock, componentManifestMock, loadComponentMock)
+  const run = new Function('coralite', 'componentManifest', 'loadComponent', 'formatCoraliteHTML', `${fnCode}\nreturn coralite.dom.processHTML;`)
+  return run(coralite, componentManifestMock, loadComponentMock, formatCoraliteHTML)
 }
 
 describe('generateClientRuntime inlinedStyles initialization', () => {
-  it('should initialize window.__coralite_styles_loaded__ Set with realistic serialized inlinedStyles', () => {
+  it('should initialize coralite.state.stylesLoaded Set with realistic serialized inlinedStyles', () => {
     const serializedStyles = serialize(['my-card', 'header-comp'])
     const runtimeCode = generateClientRuntime({
       base: '/',
@@ -49,13 +51,13 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
       inlinedStyles: serializedStyles
     })
 
-    assert.ok(runtimeCode.includes(`window.__coralite_styles_loaded__ = window.__coralite_styles_loaded__ || new Set(${serializedStyles});`))
-    assert.ok(runtimeCode.includes('window.__coralite_styles_loaded__.has(componentId)'))
-    assert.ok(runtimeCode.includes('window.__coralite_styles_loaded__.has(id)'))
+    assert.ok(runtimeCode.includes(`coralite.state.stylesLoaded = coralite.state.stylesLoaded || new Set(${serializedStyles});`))
+    assert.ok(runtimeCode.includes('coralite.state.stylesLoaded.has(componentId)'))
+    assert.ok(runtimeCode.includes('coralite.state.stylesLoaded.has(id)'))
     assert.ok(!runtimeCode.includes('inlineStyles.textContent.includes'))
   })
 
-  it('should inject dynamic stylesheet even if #coralite-inline-styles contains matching selector text when ID is not in __coralite_styles_loaded__', async () => {
+  it('should inject dynamic stylesheet even if #coralite-inline-styles contains matching selector text when ID is not in stylesLoaded', async () => {
     const rawRuntimeCode = generateClientRuntime({
       base: '/',
       sharedChunkPath: 'shared.js',
@@ -127,7 +129,7 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
         return 'Promise.resolve({ default: { "style-imperative-only": { js: "style-imperative-only.js", css: "style-imperative-only.css" } } })'
       }
       if (path.includes('shared.js')) {
-        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, formatCoraliteHTML: (h) => h })'
       }
       return 'Promise.resolve({ default: { componentId: "style-imperative-only" } })'
     })
@@ -139,24 +141,22 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
       // Wait for async execution
       await new Promise(r => setTimeout(r, 50))
 
-      // Manually trigger loadComponent via window.createElement or processHTML
-      if (typeof globalThis.window.createCoraliteElement === 'function') {
-        globalThis.window.createCoraliteElement('style-imperative-only')
+      // Manually trigger loadComponent via coralite.dom.createElement
+      if (typeof globalThis.window.__coralite__?.dom?.createElement === 'function') {
+        globalThis.window.__coralite__.dom.createElement('style-imperative-only')
       }
 
       await new Promise(r => setTimeout(r, 50))
 
       // Assert that <link rel="stylesheet"> was appended despite textContent collision
       assert.strictEqual(appendedLinkHref, '/assets/css/style-imperative-only.css')
-      assert.strictEqual(globalThis.window.__coralite_styles_loaded__.has('style-imperative-only'), true)
+      assert.strictEqual(globalThis.window.__coralite__.state.stylesLoaded.has('style-imperative-only'), true)
     } finally {
       globalThis.HTMLElement = origHTMLElement
       globalThis.HTMLUnknownElement = origHTMLUnknownElement
       globalThis.customElements = origCustomElements
       globalThis.document = origDoc
-      delete globalThis.window.__coralite_styles_loaded__
-      delete globalThis.window.createCoraliteElement
-      delete globalThis.window.processHTML
+      delete globalThis.window.__coralite__
     }
   })
 })
@@ -249,8 +249,8 @@ describe('mode-restricted runtime DOM prototype patching', () => {
     assert.strictEqual(runtimeCode.includes('Object.defineProperty(Element.prototype, \'innerHTML\''), false)
     assert.strictEqual(runtimeCode.includes('document.createElement = function'), false)
 
-    // Verify window.createCoraliteElement is defined in runtime string
-    assert.strictEqual(runtimeCode.includes('window.createCoraliteElement ='), true)
+    // Verify coralite.dom.createElement is defined in runtime string
+    assert.strictEqual(runtimeCode.includes('coralite.dom.createElement ='), true)
   })
 
   it('should emit prototype patching code in development and testing mode', () => {
@@ -308,7 +308,7 @@ describe('mode-restricted runtime DOM prototype patching', () => {
         return `Promise.resolve({ default: ${JSON.stringify(mockManifest)} })`
       }
       if (path.includes('shared.js')) {
-        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, formatCoraliteHTML: (h) => h, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
       }
       const tagMatch = path.match(/([a-zA-Z0-9-]+)\.js/)
       const tag = tagMatch ? tagMatch[1] : 'test-card'
@@ -415,7 +415,7 @@ describe('mode-restricted runtime DOM prototype patching', () => {
         return `Promise.resolve({ default: ${JSON.stringify(mockManifest)} })`
       }
       if (path.includes('shared.js')) {
-        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, formatCoraliteHTML: (h) => h, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
       }
       return 'Promise.resolve({ default: { componentId: "shadow-child" } })'
     })
@@ -472,7 +472,7 @@ describe('testing-mode hydration validation', () => {
         return `Promise.resolve({ default: ${JSON.stringify(mockManifest)} })`
       }
       if (path.includes('shared.js')) {
-        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, formatCoraliteHTML: (h) => h, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
       }
       return 'Promise.resolve({ default: { componentId: "my-interactive-card" } })'
     })
@@ -493,7 +493,7 @@ describe('testing-mode hydration validation', () => {
       )
     } finally {
       document.body.removeChild(staticEl)
-      delete window.__coralite_hydration__
+      delete window.__coralite__
     }
   })
 
@@ -515,7 +515,7 @@ describe('testing-mode hydration validation', () => {
         return `Promise.resolve({ default: ${JSON.stringify(mockManifest)} })`
       }
       if (path.includes('shared.js')) {
-        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, formatCoraliteHTML: (h) => h, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
       }
       return 'Promise.resolve({ default: { componentId: "my-interactive-card" } })'
     })
@@ -542,7 +542,7 @@ describe('testing-mode hydration validation', () => {
       if (overlay) {
         document.body.removeChild(overlay)
       }
-      delete window.__coralite_hydration__
+      delete window.__coralite__
     }
 
     assert.ok(caughtError, 'Expected hydration mismatch error to be thrown')

@@ -132,14 +132,14 @@ const app = await createCoralite({
 
     <p>For end-to-end verification in real browser environments (such as Playwright or Cypress), Coralite exposes hydration testing helpers when built in testing mode (<code>mode: 'testing'</code>).</p>
 
-    <coralite-heading level="3" text="The window.__coralite_test__ API"></coralite-heading>
+    <coralite-heading level="3" text="The window.__coralite__.test API"></coralite-heading>
 
-    <p>When mode is set to <code>'testing'</code> (or when using <code>coralite test</code>), the browser exposes <code>window.__coralite_test__</code> on the global scope:</p>
+    <p>When mode is set to <code>'testing'</code> (or when using <code>coralite test</code>), the browser exposes <code>window.__coralite__.test</code> on the global runtime namespace:</p>
 
     <ul>
-      <li><code>window.__coralite_test__.ready</code>: A Promise resolving when <code>data-coralite-ready</code> is set on <code>&lt;html&gt;</code> and all initial component <code>client()</code> controllers finish execution.</li>
-      <li><code>window.__coralite_test__.reset()</code>: Clears <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB databases, and service worker registrations without triggering a hard page reload.</li>
-      <li><code>window.__coralite_test__.flush()</code>: Awaits active microtask DOM batch updates across all custom element instances.</li>
+      <li><code>window.__coralite__.test.ready</code>: A Promise resolving when <code>data-coralite-ready</code> is set on <code>&lt;html&gt;</code> and all initial component <code>client()</code> controllers finish execution.</li>
+      <li><code>window.__coralite__.test.reset()</code>: Clears <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB databases, and service worker registrations without triggering a hard page reload.</li>
+      <li><code>window.__coralite__.test.flush()</code>: Awaits active microtask DOM batch updates across all custom element instances.</li>
     </ul>
 
     <coralite-heading level="3" text="Playwright Test Example"></coralite-heading>
@@ -151,7 +151,7 @@ test('counter button increments state post-hydration', async ({ page }) => {
   await page.goto('http://localhost:4200/')
 
   // 1. Wait for framework hydration readiness
-  await page.evaluate(() => window.__coralite_test__.ready)
+  await page.evaluate(() => window.__coralite__.test.ready)
 
   // 2. Interact with hydrated component
   const button = page.locator('button[ref="counter"]')

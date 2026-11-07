@@ -93,14 +93,18 @@ describe('Router Plugin ViewTransitions Config Unit Tests', () => {
   })
 
   it('router reads viewTransitions: true from payload', () => {
-    mockWindow.__coralite_hydration__ = {
-      __route__: {
-        path: '/',
-        pattern: '/',
-        params: {},
-        dynamic: false
+    mockWindow.__coralite__ = {
+      config: {
+        viewTransitions: true
       },
-      viewTransitions: true
+      state: {
+        route: {
+          path: '/',
+          pattern: '/',
+          params: {},
+          dynamic: false
+        }
+      }
     }
 
     const pluginInstance = routerPlugin()
@@ -109,18 +113,22 @@ describe('Router Plugin ViewTransitions Config Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    assert.strictEqual(mockWindow.__coralite_router__.viewTransitions, true)
+    assert.strictEqual(mockWindow.__coralite__.plugins.router.viewTransitions, true)
   })
 
   it('router reads viewTransitions: false from payload', () => {
-    mockWindow.__coralite_hydration__ = {
-      __route__: {
-        path: '/',
-        pattern: '/',
-        params: {},
-        dynamic: false
+    mockWindow.__coralite__ = {
+      config: {
+        viewTransitions: false
       },
-      viewTransitions: false
+      state: {
+        route: {
+          path: '/',
+          pattern: '/',
+          params: {},
+          dynamic: false
+        }
+      }
     }
 
     const pluginInstance = routerPlugin()
@@ -129,6 +137,6 @@ describe('Router Plugin ViewTransitions Config Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    assert.strictEqual(mockWindow.__coralite_router__.viewTransitions, false)
+    assert.strictEqual(mockWindow.__coralite__.plugins.router.viewTransitions, false)
   })
 })

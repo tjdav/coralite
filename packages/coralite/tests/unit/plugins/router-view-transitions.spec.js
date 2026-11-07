@@ -46,15 +46,17 @@ describe('Router Plugin View Transitions Unit Tests', () => {
     }
 
     mockRuntime = {
-      hydrationStore: {
+      state: {
         replaced: null,
-        replace (data) {
+        replaceHydration (data) {
           this.replaced = data
         }
       },
-      upgraded: [],
-      async upgrade (el) {
-        this.upgraded.push(el)
+      dom: {
+        upgraded: [],
+        async upgrade (el) {
+          this.upgraded.push(el)
+        }
       }
     }
 
@@ -139,7 +141,7 @@ describe('Router Plugin View Transitions Unit Tests', () => {
   })
 
   it('uses startViewTransition when viewTransitions true and API available', async () => {
-    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+    mockWindow.__coralite__ = { config: { viewTransitions: true } }
     let vtCalled = 0
     mockDom.startViewTransition = (cb) => {
       vtCalled++
@@ -156,14 +158,14 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    await mockWindow.__coralite_router__.navigate('/vt-page')
+    await mockWindow.__coralite__.plugins.router.navigate('/vt-page')
 
     assert.strictEqual(vtCalled, 1, 'startViewTransition was called once')
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-vt-child'], 'Outlet swapped')
   })
 
   it('reads viewTransitions dynamically at navigate time', async () => {
-    mockWindow.__coralite_hydration__ = { viewTransitions: false }
+    mockWindow.__coralite__ = { config: { viewTransitions: false } }
     let vtCalled = 0
     mockDom.startViewTransition = (cb) => {
       vtCalled++
@@ -180,16 +182,16 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    mockWindow.__coralite_hydration__.viewTransitions = true
+    mockWindow.__coralite__.config.viewTransitions = true
 
-    await mockWindow.__coralite_router__.navigate('/vt-page')
+    await mockWindow.__coralite__.plugins.router.navigate('/vt-page')
 
     assert.strictEqual(vtCalled, 1, 'startViewTransition was called after viewTransitions updated to true')
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-vt-child'], 'Outlet swapped')
   })
 
   it('bypasses startViewTransition when viewTransitions false', async () => {
-    mockWindow.__coralite_hydration__ = { viewTransitions: false }
+    mockWindow.__coralite__ = { config: { viewTransitions: false } }
     let vtCalled = 0
     mockDom.startViewTransition = (cb) => {
       vtCalled++
@@ -206,14 +208,14 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    await mockWindow.__coralite_router__.navigate('/vt-page')
+    await mockWindow.__coralite__.plugins.router.navigate('/vt-page')
 
     assert.strictEqual(vtCalled, 0, 'startViewTransition was not called')
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-vt-child'], 'Outlet swapped sync')
   })
 
   it('bypasses startViewTransition when API unavailable', async () => {
-    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+    mockWindow.__coralite__ = { config: { viewTransitions: true } }
     delete mockDom.startViewTransition
 
     const pluginInstance = routerPlugin()
@@ -222,13 +224,13 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    await mockWindow.__coralite_router__.navigate('/vt-page')
+    await mockWindow.__coralite__.plugins.router.navigate('/vt-page')
 
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-vt-child'], 'Outlet swapped sync without VT API')
   })
 
   it('bypasses startViewTransition when prefers-reduced-motion is reduce', async () => {
-    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+    mockWindow.__coralite__ = { config: { viewTransitions: true } }
     let vtCalled = 0
     mockDom.startViewTransition = (cb) => {
       vtCalled++
@@ -252,14 +254,14 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    await mockWindow.__coralite_router__.navigate('/vt-page')
+    await mockWindow.__coralite__.plugins.router.navigate('/vt-page')
 
     assert.strictEqual(vtCalled, 0, 'startViewTransition was not called due to prefers-reduced-motion')
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-vt-child'], 'Outlet swapped sync')
   })
 
   it('awaits transition.updateCallbackDone before upgrading components', async () => {
-    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+    mockWindow.__coralite__ = { config: { viewTransitions: true } }
     const sequence = []
 
     let resolveDone
@@ -284,9 +286,9 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       }
     }
 
-    mockRuntime.upgrade = async (el) => {
+    mockRuntime.dom.upgrade = async (el) => {
       sequence.push('upgrade')
-      mockRuntime.upgraded.push(el)
+      mockRuntime.dom.upgraded.push(el)
     }
 
     const pluginInstance = routerPlugin()
@@ -295,7 +297,7 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const navPromise = mockWindow.__coralite_router__.navigate('/vt-page')
+    const navPromise = mockWindow.__coralite__.plugins.router.navigate('/vt-page')
 
     await vtStartedPromise
     assert.deepStrictEqual(sequence, ['vt-start'], 'Transition started, upgrade not called yet')
@@ -307,7 +309,7 @@ describe('Router Plugin View Transitions Unit Tests', () => {
   })
 
   it('dispatches coralite:navigated after transition callback completes', async () => {
-    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+    mockWindow.__coralite__ = { config: { viewTransitions: true } }
     const sequence = []
 
     let resolveDone
@@ -348,7 +350,7 @@ describe('Router Plugin View Transitions Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const navPromise = mockWindow.__coralite_router__.navigate('/vt-page')
+    const navPromise = mockWindow.__coralite__.plugins.router.navigate('/vt-page')
 
     await vtStartedPromise
     assert.deepStrictEqual(sequence, ['vt-start'], 'Transition started, event not dispatched yet')

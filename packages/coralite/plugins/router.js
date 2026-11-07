@@ -411,6 +411,7 @@ export const routerPlugin = definePlugin({
           }
 
           let newData = null
+          let newRoute = null
           const hydrationMatch = doc.querySelector('script[data-coralite-hydration]')
           if (hydrationMatch) {
             try {
@@ -422,21 +423,34 @@ export const routerPlugin = definePlugin({
             const scripts = doc.querySelectorAll('script')
             for (let i = 0; i < scripts.length; i++) {
               const text = scripts[i].textContent || ''
-              if (text.includes('__coralite_hydration__')) {
-                const match = text.match(/window\.__coralite_hydration__\s*=\s*Object\.assign\(\s*\{\}\s*,\s*window\.__coralite_hydration__\s*\|\|\s*\{\}\s*,\s*([\s\S]*?)\n\s*\);/)
+              if (text.includes('coralite.state.hydration')) {
+                const match = text.match(/coralite\.state\.hydration\s*=\s*Object\.assign\(\s*\{\}\s*,\s*coralite\.state\.hydration\s*\|\|\s*\{\}\s*,\s*([\s\S]*?)\n\s*\);/)
                 if (match && match[1]) {
                   try {
                     newData = JSON.parse(match[1])
-                    break
                   } catch {
                     // ignore malformed hydration JSON
                   }
                 }
+                const routeMatch = text.match(/coralite\.state\.route\s*=\s*(\{[\s\S]*?\});/)
+                if (routeMatch && routeMatch[1]) {
+                  try {
+                    newRoute = JSON.parse(routeMatch[1])
+                  } catch {
+                    // ignore malformed route JSON
+                  }
+                }
+                if (newData) {
+                  break
+                }
               }
             }
           }
-          if (newData && runtime.hydrationStore && typeof runtime.hydrationStore.replace === 'function') {
-            runtime.hydrationStore.replace(newData)
+          if (newData && runtime.state && typeof runtime.state.replaceHydration === 'function') {
+            runtime.state.replaceHydration(newData)
+          }
+          if (newRoute && runtime.state) {
+            runtime.state.route = newRoute
           }
 
           const outlet = document.querySelector(outletSelector)
@@ -445,8 +459,11 @@ export const routerPlugin = definePlugin({
           }
 
           let didSwap = false
-          // @ts-ignore
-          const activeVT = window.__coralite_hydration__?.viewTransitions ?? window.__coralite_router__?.viewTransitions ?? false
+          /** @type {import('../types/globals.js').CoraliteGlobalThis} */
+          const win = window
+          const coralite = win.__coralite__
+          const routerPluginApi = coralite?.plugins?.router
+          const activeVT = coralite?.config?.viewTransitions ?? routerPluginApi?.viewTransitions ?? false
           const shouldAnimate =
             activeVT === true &&
             typeof document.startViewTransition === 'function' &&
@@ -480,8 +497,8 @@ export const routerPlugin = definePlugin({
             didSwap = await performSwap(outlet, newOutlet, doc, signal)
           }
 
-          if (typeof runtime.upgrade === 'function') {
-            await runtime.upgrade(outlet)
+          if (runtime.dom && typeof runtime.dom.upgrade === 'function') {
+            await runtime.dom.upgrade(outlet)
           }
           signal.throwIfAborted()
 
@@ -509,14 +526,24 @@ export const routerPlugin = definePlugin({
         }
       }
 
-      //@ts-ignore
-      window.__coralite_router__ = {
+      /** @type {import('../types/globals.js').CoraliteGlobalThis} */
+      const win = window
+      if (!win.__coralite__) {
+        Object.defineProperty(win, '__coralite__', {
+          value: {},
+          writable: true,
+          configurable: true,
+          enumerable: false
+        })
+      }
+      win.__coralite__.plugins = win.__coralite__.plugins || {}
+      win.__coralite__.plugins.router = {
         navigate,
         current: () => ({ path: window.location ? window.location.pathname : '/' }),
         beforeEach,
         get viewTransitions () {
-          //@ts-ignore
-          return window.__coralite_hydration__?.viewTransitions ?? false
+          const cfg = win.__coralite__?.config
+          return cfg?.viewTransitions ?? false
         }
       }
 
@@ -581,20 +608,27 @@ export const routerPlugin = definePlugin({
 
     context: (_pluginContext) => (_instanceContext) => ({
       navigate: (path, options) => {
-        // @ts-ignore
-        const router = window.__coralite_router__
+        /** @type {import('../types/globals.js').CoraliteGlobalThis | null} */
+        const win = typeof window !== 'undefined' ? window : null
+        const plugins = win?.__coralite__?.plugins
+        const router = plugins?.router
         if (router && typeof router.navigate === 'function') {
           return router.navigate(path, options)
         }
+        return Promise.resolve()
       },
       current: () => {
-        // @ts-ignore
-        const router = window.__coralite_router__
+        /** @type {import('../types/globals.js').CoraliteGlobalThis | null} */
+        const win = typeof window !== 'undefined' ? window : null
+        const plugins = win?.__coralite__?.plugins
+        const router = plugins?.router
         return router ? router.current() : { path: typeof window !== 'undefined' && window.location ? window.location.pathname : '/' }
       },
       beforeEach: (guard) => {
-        // @ts-ignore
-        const router = window.__coralite_router__
+        /** @type {import('../types/globals.js').CoraliteGlobalThis | null} */
+        const win = typeof window !== 'undefined' ? window : null
+        const plugins = win?.__coralite__?.plugins
+        const router = plugins?.router
         if (router && typeof router.beforeEach === 'function') {
           return router.beforeEach(guard)
         }

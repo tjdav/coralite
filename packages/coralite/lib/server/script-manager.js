@@ -796,42 +796,34 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
 
   // Global context initialization
   entryCodeParts.push(`if (typeof window !== 'undefined') {
-  window.__coralite__ = window.__coralite__ || {};
-  window.__coralite_hydration__ = window.__coralite_hydration__ || {};
-  if (store !== undefined) {
-    window.__coralite__.store = store;
+  if (!window.__coralite__) {
+    Object.defineProperty(window, '__coralite__', {
+      value: {},
+      writable: true,
+      configurable: true,
+      enumerable: false
+    });
   }
-  if (!window.__coralite__.hydrationStore) {
-    window.__coralite__.hydrationStore = {
-      get() {
-        return window.__coralite_hydration__;
-      },
-      merge(next) {
-        if (next && typeof next === 'object') {
-          Object.assign(window.__coralite_hydration__, next);
-        }
-      },
-      replace(next) {
-        window.__coralite_hydration__ = next && typeof next === 'object' ? next : {};
-      }
-    };
+  window.__coralite__.config = window.__coralite__.config || {};
+  window.__coralite__.state = window.__coralite__.state || {};
+  window.__coralite__.dom = window.__coralite__.dom || {};
+  window.__coralite__.plugins = window.__coralite__.plugins || {};
+  window.__coralite__.state.hydration = window.__coralite__.state.hydration || {};
+  if (store !== undefined) {
+    window.__coralite__.state.store = store;
   }
 }\n`)
   entryCodeParts.push('const globalContext = typeof window !== "undefined" && window.__coralite__ ? { ...window.__coralite__, store } : { store };\n')
 
   entryCodeParts.push(`if (typeof window !== 'undefined') {
-  window.__coralite__.isomorphicPlugins = {};
+  window.__coralite__.plugins.isomorphic = {};
   for (const [key, initFn] of Object.entries(coraliteIsomorphicContextProps)) {
     try {
       if (typeof initFn === 'function') {
-        window.__coralite__.isomorphicPlugins[key] = initFn(globalContext);
+        window.__coralite__.plugins.isomorphic[key] = initFn(globalContext);
       }
     } catch (e) {
-      if (window.__coralite__?.onError) {
-        window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize isomorphic context for plugin "' + key + '": ' + e?.message, error: e });
-      } else {
-        console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin "' + key + '":', e);
-      }
+      console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin "' + key + '":', e);
     }
   }
 }\n`)
@@ -843,11 +835,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
       try {
         factories[key] = await coraliteComponentClientContextProps[key](globalContext);
       } catch (e) {
-        if (typeof window !== 'undefined' && window.__coralite__?.onError) {
-          window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize client context for plugin "' + key + '": ' + e?.message, error: e });
-        } else {
-          console.error('Coralite Plugin Error: Failed to initialize client context for plugin "' + key + '":', e);
-        }
+        console.error('Coralite Plugin Error: Failed to initialize client context for plugin "' + key + '":', e);
         throw e;
       }
     }
@@ -868,7 +856,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
     const factories = await resolvedContextFactoriesPromise;
     const cache = new Map();
     const clientMocks = ${clientMocksStr};
-    const getIsoPlugins = () => (typeof window !== 'undefined' && window.__coralite__?.isomorphicPlugins) || null;
+    const getIsoPlugins = () => (typeof window !== 'undefined' && window.__coralite__?.plugins?.isomorphic) || null;
     const isIsoKey = (prop) => {
       const isoPlugins = getIsoPlugins();
       return Boolean(isoPlugins && prop in isoPlugins);
@@ -938,6 +926,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
   const coraliteElementPath = fileURLToPath(import.meta.resolve('../client/element.js'))
   const devToolsPath = fileURLToPath(import.meta.resolve('../client/utils/devtools.js'))
   const stylesheetsPath = fileURLToPath(import.meta.resolve('../client/utils/stylesheets.js'))
+  const injectUtilsPath = fileURLToPath(import.meta.resolve('../client/utils/inject.js'))
 
   entryCodeParts.push(`const globalClientHooks = {
     onBeforeComponentRender: [${this.scriptModules.map((_, i) => `onBeforeComponentRender_${i}`).join(', ')}].filter(Boolean),
@@ -960,8 +949,8 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
       if (typeof p.init === 'function') {
         try {
           const runtime = (typeof window !== 'undefined' && window.__coralite__) || {};
-          const app = (typeof window !== 'undefined' && (window.__coralite__?.app || window.__coralite__)) || {};
-          const route = typeof window !== 'undefined' && window.__coralite_hydration__ ? window.__coralite_hydration__.__route__ : undefined;
+          const app = runtime;
+          const route = typeof window !== 'undefined' ? window.__coralite__?.state?.route : undefined;
           await p.init({
             config: p.config || {},
             runtime,
@@ -1001,8 +990,13 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
 
   entryCodeParts.push(`import { createCoraliteClass, setupPageRuntime } from ${JSON.stringify(coraliteElementPath)};\n`)
   entryCodeParts.push(`import { createImportCSS } from ${JSON.stringify(stylesheetsPath)};\n`)
-  entryCodeParts.push(`import { setupDevTools, registerDevToolsComponent } from ${JSON.stringify(devToolsPath)};\n`)
-  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, setupPageRuntime, globalClientHooks, setupDevTools, registerDevToolsComponent, clientPluginConfigs, initPlugins, createImportCSS };\n')
+  entryCodeParts.push(`import { formatCoraliteHTML } from ${JSON.stringify(injectUtilsPath)};\n`)
+  if (mode !== 'production') {
+    entryCodeParts.push(`import { setupDevTools, registerDevToolsComponent } from ${JSON.stringify(devToolsPath)};\n`)
+    entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, setupPageRuntime, globalClientHooks, setupDevTools, registerDevToolsComponent, clientPluginConfigs, initPlugins, createImportCSS, formatCoraliteHTML };\n')
+  } else {
+    entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, setupPageRuntime, globalClientHooks, clientPluginConfigs, initPlugins, createImportCSS, formatCoraliteHTML };\n')
+  }
 
   this.virtualModules.clear()
   this.virtualModules.set('coralite-runtime', entryCodeParts.join('').trimEnd())
@@ -1284,7 +1278,7 @@ export default {
           }, (args) => {
             const handleJson = JSON.stringify(args.path)
             return {
-              contents: `const result = await window.__coralite__.importCSS(${handleJson});\nexport const link = result.link;\nexport default result.default;\n`,
+              contents: `const result = await window.__coralite__.dom.importCSS(${handleJson});\nexport const link = result.link;\nexport default result.default;\n`,
               loader: 'js'
             }
           })
@@ -1520,7 +1514,7 @@ export default {
                 contents += `    const pluginContext = new Proxy(globalContext, {
                             get (target, prop) {
                               if (prop === 'config') return pluginConfig;
-                              if (prop === 'route') return typeof window !== 'undefined' && window.__coralite_hydration__ ? window.__coralite_hydration__.__route__ : undefined;
+                              if (prop === 'route') return typeof window !== 'undefined' ? window.__coralite__?.state?.route : undefined;
                               if (prop in target) return target[prop];
                               return undefined;
                             },
@@ -1532,11 +1526,7 @@ export default {
                           try {
                              phase2 = fn(pluginContext);
                           } catch (e) {
-                             if (typeof window !== 'undefined' && window.__coralite__?.onError) {
-                               window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize isomorphic context for plugin ' + ${safeIsoName} + ' phase 1: ' + e?.message, error: e });
-                             } else {
-                               console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin ' + ${safeIsoName} + ' phase 1:', e);
-                             }
+                             console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin ' + ${safeIsoName} + ' phase 1:', e);
                              throw e;
                           }
 
@@ -1563,7 +1553,7 @@ export default {
                 contents += `    const pluginContext = new Proxy(globalContext, {
                             get (target, prop) {
                               if (prop === 'config') return pluginConfig;
-                              if (prop === 'route') return typeof window !== 'undefined' && window.__coralite_hydration__ ? window.__coralite_hydration__.__route__ : undefined;
+                              if (prop === 'route') return typeof window !== 'undefined' ? window.__coralite__?.state?.route : undefined;
                               if (prop in target) return target[prop];
                               return undefined;
                             },
@@ -1575,11 +1565,7 @@ export default {
                           try {
                              phase2 = await fn(pluginContext);
                           } catch (e) {
-                             if (typeof window !== 'undefined' && window.__coralite__?.onError) {
-                               window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1: ' + e?.message, error: e });
-                             } else {
-                               console.error('Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1:', e);
-                             }
+                             console.error('Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1:', e);
                              throw e;
                           }
 
@@ -1654,7 +1640,7 @@ export default {
                 contents += `    const pluginContext = new Proxy(globalContext, {
                             get (target, prop) {
                               if (prop === 'config') return pluginConfig;
-                              if (prop === 'route') return typeof window !== 'undefined' && window.__coralite_hydration__ ? window.__coralite_hydration__.__route__ : undefined;
+                              if (prop === 'route') return typeof window !== 'undefined' ? window.__coralite__?.state?.route : undefined;
                               if (prop in target) return target[prop];
                               return undefined;
                             },
@@ -1666,11 +1652,7 @@ export default {
                           try {
                              phase2 = fn(pluginContext);
                           } catch (e) {
-                             if (typeof window !== 'undefined' && window.__coralite__?.onError) {
-                               window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize isomorphic context for plugin ' + ${safeIsoName} + ' phase 1: ' + e?.message, error: e });
-                             } else {
-                               console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin ' + ${safeIsoName} + ' phase 1:', e);
-                             }
+                             console.error('Coralite Plugin Error: Failed to initialize isomorphic context for plugin ' + ${safeIsoName} + ' phase 1:', e);
                              throw e;
                           }
 
@@ -1697,7 +1679,7 @@ export default {
                 contents += `    const pluginContext = new Proxy(globalContext, {
                             get (target, prop) {
                               if (prop === 'config') return pluginConfig;
-                              if (prop === 'route') return typeof window !== 'undefined' && window.__coralite_hydration__ ? window.__coralite_hydration__.__route__ : undefined;
+                              if (prop === 'route') return typeof window !== 'undefined' ? window.__coralite__?.state?.route : undefined;
                               if (prop in target) return target[prop];
                               return undefined;
                             },
@@ -1709,11 +1691,7 @@ export default {
                           try {
                              phase2 = await fn(pluginContext);
                           } catch (e) {
-                             if (typeof window !== 'undefined' && window.__coralite__?.onError) {
-                               window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1: ' + e?.message, error: e });
-                             } else {
-                               console.error('Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1:', e);
-                             }
+                             console.error('Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1:', e);
                              throw e;
                           }
 

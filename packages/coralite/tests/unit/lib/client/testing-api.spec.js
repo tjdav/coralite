@@ -4,15 +4,12 @@ import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
 import { setupDevTools } from '../../../../lib/client/utils/devtools.js'
 
-describe('window.__coralite_test__ API surface', () => {
+describe('window.__coralite__.test API surface', () => {
   let origWindowCoralite
-  let origWindowCoraliteTest
 
   beforeEach(() => {
     origWindowCoralite = globalThis.window.__coralite__
-    origWindowCoraliteTest = globalThis.window.__coralite_test__
     delete globalThis.window.__coralite__
-    delete globalThis.window.__coralite_test__
   })
 
   afterEach(() => {
@@ -22,40 +19,34 @@ describe('window.__coralite_test__ API surface', () => {
       delete globalThis.window.__coralite__
     }
 
-    if (origWindowCoraliteTest) {
-      globalThis.window.__coralite_test__ = origWindowCoraliteTest
-    } else {
-      delete globalThis.window.__coralite_test__
-    }
-
     if (document.documentElement.hasAttribute('data-coralite-ready')) {
       document.documentElement.removeAttribute('data-coralite-ready')
     }
   })
 
-  it('should create window.__coralite_test__ when mode is "testing"', () => {
+  it('should create window.__coralite__.test when mode is "testing"', () => {
     globalThis.window.__coralite__ = { mode: 'testing' }
     setupDevTools()
 
-    assert.notStrictEqual(globalThis.window.__coralite_test__, undefined)
-    assert.strictEqual(typeof globalThis.window.__coralite_test__.ready, 'object')
-    assert.strictEqual(typeof globalThis.window.__coralite_test__.reset, 'function')
-    assert.strictEqual(typeof globalThis.window.__coralite_test__.flush, 'function')
-    assert.strictEqual(typeof globalThis.window.__coralite_test__.getComponent, 'function')
-    assert.strictEqual(typeof globalThis.window.__coralite_test__.getHydratedCount, 'function')
-    assert.strictEqual(typeof globalThis.window.__coralite_test__.getEvents, 'function')
-    assert.strictEqual(typeof globalThis.window.__coralite_test__.getInstances, 'function')
+    assert.notStrictEqual(globalThis.window.__coralite__.test, undefined)
+    assert.strictEqual(typeof globalThis.window.__coralite__.test.ready, 'object')
+    assert.strictEqual(typeof globalThis.window.__coralite__.test.reset, 'function')
+    assert.strictEqual(typeof globalThis.window.__coralite__.test.flush, 'function')
+    assert.strictEqual(typeof globalThis.window.__coralite__.test.getComponent, 'function')
+    assert.strictEqual(typeof globalThis.window.__coralite__.test.getHydratedCount, 'function')
+    assert.strictEqual(typeof globalThis.window.__coralite__.test.getEvents, 'function')
+    assert.strictEqual(typeof globalThis.window.__coralite__.test.getInstances, 'function')
   })
 
-  it('should not create window.__coralite_test__ when mode is "development" or "production"', () => {
+  it('should not create window.__coralite__.test when mode is "development" or "production"', () => {
     globalThis.window.__coralite__ = { mode: 'development' }
     setupDevTools()
-    assert.strictEqual(globalThis.window.__coralite_test__, undefined)
+    assert.strictEqual(globalThis.window.__coralite__.test, undefined)
 
     delete globalThis.window.__coralite__
     globalThis.window.__coralite__ = { mode: 'production' }
     setupDevTools()
-    assert.strictEqual(globalThis.window.__coralite_test__, undefined)
+    assert.strictEqual(globalThis.window.__coralite__.test, undefined)
   })
 
   it('should resolve ready promise when document is ready and lifecycle is hydrated', async () => {
@@ -73,7 +64,7 @@ describe('window.__coralite_test__ API surface', () => {
     }
 
     setupDevTools()
-    const testAPI = globalThis.window.__coralite_test__
+    const testAPI = globalThis.window.__coralite__.test
 
     let resolved = false
     const readyP = testAPI.ready.then(() => {
@@ -99,7 +90,7 @@ describe('window.__coralite_test__ API surface', () => {
   it('should execute reset() clearing localStorage, sessionStorage, IndexedDB, and serviceWorkers without reloading page', async () => {
     globalThis.window.__coralite__ = { mode: 'testing' }
     setupDevTools()
-    const testAPI = globalThis.window.__coralite_test__
+    const testAPI = globalThis.window.__coralite__.test
 
     let localStorageCleared = false
     let sessionStorageCleared = false
@@ -175,10 +166,10 @@ describe('window.__coralite_test__ API surface', () => {
 
     globalThis.window.__coralite__ = { mode: 'testing' }
     setupDevTools()
-    const testAPI = globalThis.window.__coralite_test__
+    const testAPI = globalThis.window.__coralite__.test
 
     // Override getInstances on DevTools API for testing
-    globalThis.window.__coralite__.getInstances = () => [mockElement]
+    globalThis.window.__coralite__.devtools.getInstances = () => [mockElement]
 
     await testAPI.flush()
     assert.strictEqual(updateCompleted, true)
@@ -194,13 +185,13 @@ describe('window.__coralite_test__ API surface', () => {
     }
     setupDevTools()
 
-    const testAPI = globalThis.window.__coralite_test__
+    const testAPI = globalThis.window.__coralite__.test
 
-    // Inject mock implementations onto window.__coralite__
-    globalThis.window.__coralite__.getComponent = (el) => (el === 'mockEl' ? mockComponentContext : null)
-    globalThis.window.__coralite__.getHydratedCount = () => 5
-    globalThis.window.__coralite__.getEvents = () => mockEvents
-    globalThis.window.__coralite__.getInstances = (tag) => (tag === 'x-btn' ? ['btn1'] : ['btn1', 'card1'])
+    // Inject mock implementations onto window.__coralite__.devtools
+    globalThis.window.__coralite__.devtools.getComponent = (el) => (el === 'mockEl' ? mockComponentContext : null)
+    globalThis.window.__coralite__.devtools.getHydratedCount = () => 5
+    globalThis.window.__coralite__.devtools.getEvents = () => mockEvents
+    globalThis.window.__coralite__.devtools.getInstances = (tag) => (tag === 'x-btn' ? ['btn1'] : ['btn1', 'card1'])
 
     assert.strictEqual(testAPI.getComponent('mockEl'), mockComponentContext)
     assert.strictEqual(testAPI.getComponent('other'), null)
@@ -210,16 +201,16 @@ describe('window.__coralite_test__ API surface', () => {
     assert.deepStrictEqual(testAPI.getInstances(), ['btn1', 'card1'])
   })
 
-  it('should preserve existing properties on window.__coralite__ such as isomorphicPlugins', () => {
+  it('should preserve existing properties on window.__coralite__ such as plugins', () => {
     const mockPlugins = { $t: () => 'translated' }
     globalThis.window.__coralite__ = {
       mode: 'testing',
-      isomorphicPlugins: mockPlugins,
+      plugins: { isomorphic: mockPlugins },
       customRuntimeProp: 42
     }
     setupDevTools()
 
-    assert.strictEqual(globalThis.window.__coralite__.isomorphicPlugins, mockPlugins)
+    assert.strictEqual(globalThis.window.__coralite__.plugins.isomorphic, mockPlugins)
     assert.strictEqual(globalThis.window.__coralite__.customRuntimeProp, 42)
     assert.strictEqual(globalThis.window.__coralite__.version, '1.0.0')
 

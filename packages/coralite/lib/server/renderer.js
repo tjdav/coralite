@@ -2452,10 +2452,7 @@ export function createRenderer ({
         scriptHashes.push(calculateHash(mapContent, hashAlgo))
       }
 
-      const hydrationData = {
-        __route__: routeObj,
-        viewTransitions: normalizedOptions.viewTransitions
-      }
+      const hydrationData = {}
 
       for (const [id, instance] of Object.entries(instances)) {
         if (instance.state && Object.keys(instance.state).length > 0) {
@@ -2518,6 +2515,8 @@ export function createRenderer ({
         sharedChunkPath: scriptResult.manifest['coralite-runtime'],
         declarativeTags: Array.from(declarativeTags),
         hydrationData: serialize(hydrationData),
+        routeData: routeObj ? serialize(routeObj) : 'undefined',
+        viewTransitions: Boolean(normalizedOptions.viewTransitions),
         pageConfig: pageConfigObj ? serialize(pageConfigObj) : 'null',
         mode: normalizedOptions.mode,
         reconcile: normalizedOptions.reconcile,

@@ -74,21 +74,24 @@ describe('Route Hydration Payload Serialization', () => {
     assert.equal(results.length, 1)
 
     const html = results[0].content
-    assert.ok(html.includes('window.__coralite_hydration__ = Object.assign('))
+    assert.ok(html.includes('coralite.state.hydration = Object.assign('))
 
-    // Extract serialized hydration payload from generated HTML
-    const match = html.match(/window\.__coralite_hydration__\s*=\s*Object\.assign\(\s*\{\},\s*window\.__coralite_hydration__\s*\|\|\s*\{\},\s*(\{[\s\S]*?\})\s*\);/)
-    assert.ok(match, 'Hydration payload script should be found')
+    // Extract serialized hydration payload and route from generated HTML
+    const hydrationMatch = html.match(/coralite\.state\.hydration\s*=\s*Object\.assign\(\s*\{\},\s*coralite\.state\.hydration\s*\|\|\s*\{\},\s*(\{[\s\S]*?\})\s*\);/)
+    assert.ok(hydrationMatch, 'Hydration payload script should be found')
+    const routeMatch = html.match(/coralite\.state\.route\s*=\s*(\{[\s\S]*?\});/)
+    assert.ok(routeMatch, 'Route payload script should be found')
 
-    const payload = Function(`return ${match[1]}`)()
-    assert.ok(payload.__route__, 'Payload must contain __route__ key')
-    assert.equal(payload.__route__.dynamic, false)
-    assert.deepEqual(payload.__route__.params, {})
-    assert.equal(payload.__route__.path, payload.__route__.pattern)
+    const payload = Function(`return ${hydrationMatch[1]}`)()
+    const route = Function(`return ${routeMatch[1]}`)()
+    assert.ok(route, 'Route payload must exist')
+    assert.equal(route.dynamic, false)
+    assert.deepEqual(route.params, {})
+    assert.equal(route.path, route.pattern)
 
     // Check component instance state is preserved and key does not collide
     assert.ok(payload['card-comp-0'], 'Component instance key should exist in payload')
-    assert.notEqual(payload.__route__, payload['card-comp-0'])
+    assert.notEqual(route, payload['card-comp-0'])
   })
 
   it('serializes __route__ into hydration payload for dynamic pages', async () => {
@@ -140,19 +143,22 @@ describe('Route Hydration Payload Serialization', () => {
     assert.equal(results.length, 1)
 
     const html = results[0].content
-    const match = html.match(/window\.__coralite_hydration__\s*=\s*Object\.assign\(\s*\{\},\s*window\.__coralite_hydration__\s*\|\|\s*\{\},\s*(\{[\s\S]*?\})\s*\);/)
-    assert.ok(match, 'Hydration payload script should be found')
+    const hydrationMatch = html.match(/coralite\.state\.hydration\s*=\s*Object\.assign\(\s*\{\},\s*coralite\.state\.hydration\s*\|\|\s*\{\},\s*(\{[\s\S]*?\})\s*\);/)
+    assert.ok(hydrationMatch, 'Hydration payload script should be found')
+    const routeMatch = html.match(/coralite\.state\.route\s*=\s*(\{[\s\S]*?\});/)
+    assert.ok(routeMatch, 'Route payload script should be found')
 
-    const payload = Function(`return ${match[1]}`)()
-    assert.ok(payload.__route__, 'Payload must contain __route__ key')
+    const payload = Function(`return ${hydrationMatch[1]}`)()
+    const route = Function(`return ${routeMatch[1]}`)()
+    assert.ok(route, 'Route payload must exist')
 
-    assert.equal(payload.__route__.path, '/posts/intro')
-    assert.equal(payload.__route__.pattern, '/posts/[id]')
-    assert.equal(payload.__route__.params.id, 'intro')
-    assert.equal(payload.__route__.dynamic, true)
+    assert.equal(route.path, '/posts/intro')
+    assert.equal(route.pattern, '/posts/[id]')
+    assert.equal(route.params.id, 'intro')
+    assert.equal(route.dynamic, true)
 
     // Key non-collision check
     assert.ok(payload['card-comp-0'])
-    assert.notEqual(payload.__route__, payload['card-comp-0'])
+    assert.notEqual(route, payload['card-comp-0'])
   })
 })

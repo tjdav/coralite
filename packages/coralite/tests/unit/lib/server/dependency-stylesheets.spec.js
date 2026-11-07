@@ -96,7 +96,7 @@ describe('lazy dependency stylesheets via dynamic import()', () => {
       .filter(([key]) => key.endsWith('.js') && key !== 'manifest.js')
       .map(([, file]) => file.text)
       .join('\n')
-    assert.ok(componentBundles.includes('importCSS'), 'compiled client bundle should rewrite CSS import() to window.__coralite__.importCSS')
+    assert.ok(componentBundles.includes('importCSS'), 'compiled client bundle should rewrite CSS import() to window.__coralite__.dom.importCSS')
   })
 
   it('writes emitted binary URL assets without corrupting them', async () => {
@@ -157,7 +157,7 @@ describe('lazy dependency stylesheets via dynamic import()', () => {
     const html = results[0].content
 
     assert.ok(!html.includes('assets/css/print-'), 'page dependency CSS must not be linked during SSR')
-    assert.ok(html.includes('window.__coralite__.importCSS('), 'page client() should rewrite CSS import to importCSS')
+    assert.ok(html.includes('window.__coralite__.dom.importCSS('), 'page client() should rewrite CSS import to importCSS')
 
     const manifest = app.outputFiles['manifest.js'].text
     assert.ok(manifest.includes('"media":"print"'))
@@ -192,7 +192,7 @@ describe('lazy dependency stylesheets via dynamic import()', () => {
     const html = results[0].content
 
     assert.ok(!html.includes('assets/css/print-'), 'flat page dependency CSS must not be linked during SSR')
-    assert.ok(html.includes('window.__coralite__.importCSS('), 'flat page client() should rewrite CSS import to importCSS')
+    assert.ok(html.includes('window.__coralite__.dom.importCSS('), 'flat page client() should rewrite CSS import to importCSS')
 
     const manifest = app.outputFiles['manifest.js'].text
     assert.ok(manifest.includes('"media":"print"'))

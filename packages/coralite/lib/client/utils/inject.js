@@ -3,17 +3,20 @@ import { definePlugin } from '../../shared/define-plugin.js'
 
 /**
  * Creates a Coralite element or a standard HTML element.
- * Proxy to window.createCoraliteElement or document.createElement.
+ * Delegates to `window.__coralite__.dom.createElement` or `document.createElement`.
  *
  * @param {string} tag - The tag name.
  * @param {Object} [options] - Optional element options.
  * @returns {HTMLElement} The created element.
  */
 export function createCoraliteElement (tag, options) {
-  // @ts-ignore
-  if (typeof window !== 'undefined' && window.createCoraliteElement) {
-    // @ts-ignore
-    return window.createCoraliteElement(tag, options)
+  if (typeof window !== 'undefined') {
+    /** @type {import('../../../types/globals.js').CoraliteGlobalThis} */
+    const win = window
+    const dom = win.__coralite__?.dom
+    if (dom && typeof dom.createElement === 'function') {
+      return dom.createElement(tag, options)
+    }
   }
   return document.createElement(tag, options)
 }
@@ -29,7 +32,7 @@ export function createCoraliteElement (tag, options) {
  * @param {string} html - Raw HTML string.
  * @returns {string} Sanitized HTML string.
  */
-function sanitizeTokenAttributes (html) {
+export function sanitizeTokenAttributes (html) {
   if (!html || !html.includes('{{')) {
     return html
   }
@@ -44,8 +47,6 @@ function sanitizeTokenAttributes (html) {
    */
   const placeholders = []
 
-  // Protect inner content of raw-text elements.
-  // Captures: opening tag (kept), inner content (replaced), closing tag (kept).
   const rawInnerRegex =
     /(<(?:script|style|textarea|title)\b[^>]*>)([\s\S]*?)(<\/(?:script|style|textarea|title)>)/gi
   let protectedHtml = html.replace(rawInnerRegex, (_, open, inner, close) => {
@@ -54,14 +55,12 @@ function sanitizeTokenAttributes (html) {
     return open + id + close
   })
 
-  // Protect HTML comments.
   protectedHtml = protectedHtml.replace(/<!--[\s\S]*?-->/g, (match) => {
     const id = `\x00CORALITE_RAW_${placeholders.length}\x00`
     placeholders.push(match)
     return id
   })
 
-  // Sanitize attribute values inside each opening tag
   const TAG_RE =
     /<([a-zA-Z][\w:-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?)*)\s*(\/?)>/gs
 
@@ -83,12 +82,10 @@ function sanitizeTokenAttributes (html) {
 
         const stripped = attrValue.replace(TOKEN_GLOBAL, '').trim()
 
-        // Pure-token → remove the attribute entirely
         if (stripped === '') {
           return ''
         }
 
-        // Mixed → keep static content, re-quoting if needed
         if (quote) {
           return `${nameWithWhitespace}=${quote}${stripped}${quote}`
         }
@@ -102,36 +99,36 @@ function sanitizeTokenAttributes (html) {
     return `<${tagName}${sanitizedAttrs}${trailingSlash}>`
   })
 
-  // Restore protected content
   return protectedHtml.replace(/\x00CORALITE_RAW_(\d+)\x00/g, (_, i) => placeholders[i])
 }
 
 /**
- * Processes an HTML string for custom elements.
- * Fallback implementation mirroring runtime.js:processHTML when window.processHTML is unavailable (e.g. unit test runner).
- * Note: Tag matching uses /<([a-zA-Z0-9-]+)([^>]*)>/g assuming well-formed attributes without raw '>' in attribute values.
+ * Sanitizes template tokens, strips deprecated/production test attributes,
+ * and prefixes `ref` attributes with `data-coralite-owner` for a component instance.
  *
- * @param {string} html - The HTML string.
- * @param {string} [instanceId] - The component instance ID.
- * @returns {string} The HTML string.
+ * @param {string} html - Raw HTML string.
+ * @param {string} [instanceId] - Component instance ID for scoping refs.
+ * @param {boolean} [shouldStripTestId=false] - Whether to strip `data-testid` attributes.
+ * @returns {string} Processed HTML string.
  */
-export function processHTML (html, instanceId) {
-  // @ts-ignore
-  if (typeof window !== 'undefined' && window.processHTML) {
-    // @ts-ignore
-    return window.processHTML(html, instanceId)
-  }
-
+export function formatCoraliteHTML (html, instanceId, shouldStripTestId = false) {
   if (typeof html !== 'string') {
     return html
   }
 
   const sanitizedHtml = sanitizeTokenAttributes(html)
 
-  if (instanceId) {
-    const prefix = instanceId + '__'
-    return sanitizedHtml.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
-      let newAttrs = attrs
+  return sanitizedHtml.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
+    let newAttrs = attrs
+
+    newAttrs = newAttrs.replace(/\s+test\s*=\s*(['"]).*?\1/g, '')
+
+    if (shouldStripTestId) {
+      newAttrs = newAttrs.replace(/\s+data-testid\s*=\s*(['"]).*?\1/g, '')
+    }
+
+    if (instanceId) {
+      const prefix = instanceId + '__'
       const refRegex = /\s+ref\s*=\s*(['"])(.*?)\1/g
       newAttrs = newAttrs.replace(refRegex, (attrMatch, quote, refValue) => {
         const prefixedRef = refValue.startsWith(prefix) ? refValue : prefix + refValue
@@ -141,11 +138,31 @@ export function processHTML (html, instanceId) {
         }
         return ' ref="' + prefixedRef + '"' + ownerAttr
       })
-      return '<' + tagName + newAttrs + '>'
-    })
+    }
+
+    return '<' + tagName + newAttrs + '>'
+  })
+}
+
+/**
+ * Processes an HTML string for custom elements.
+ * Delegates to `window.__coralite__.dom.processHTML` when available, falling back to `formatCoraliteHTML`.
+ *
+ * @param {string} html - The HTML string.
+ * @param {string} [instanceId] - The component instance ID.
+ * @returns {string} The processed HTML string.
+ */
+export function processHTML (html, instanceId) {
+  if (typeof window !== 'undefined') {
+    /** @type {import('../../../types/globals.js').CoraliteGlobalThis} */
+    const win = window
+    const dom = win.__coralite__?.dom
+    if (dom && typeof dom.processHTML === 'function') {
+      return dom.processHTML(html, instanceId)
+    }
   }
 
-  return sanitizedHtml
+  return formatCoraliteHTML(html, instanceId, false)
 }
 
 export { defineComponent, definePlugin, createContext, ContextRequestEvent }

@@ -161,7 +161,7 @@ router({
 
     <section id="programmatic">
       <coralite-heading level="2" text="Programmatic Navigation"></coralite-heading>
-      <p>The router API is injected into component and page <code>client()</code> blocks under the <code>router</code> key (the same object is also on <code>window.__coralite_router__</code>):</p>
+      <p>The router API is injected into component and page <code>client()</code> blocks under the <code>router</code> key (the same object is also on <code>window.__coralite__.plugins.router</code>):</p>
       <ul>
         <li><strong><code>router.navigate(path, { replace = false })</code></strong> — client-side navigation through the full pipeline: guards, the <code>coralite:navigating</code> event, history update, fetch, head reconcile, outlet swap, re-hydration, scroll, and the <code>coralite:navigated</code> event. With <code>replace: true</code> the current history entry is replaced instead of pushed.</li>
         <li><strong><code>router.current()</code></strong> — returns <code>{ path }</code>, the current browser pathname.</li>

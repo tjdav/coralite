@@ -205,7 +205,7 @@ describe('Page Blocks - Build-Time Execution (getters, style, provide, client)',
     assert.ok(content.includes('dark'), 'Descendant component consumed page-provided theme context')
   })
 
-  test('Page with client block serializes and injects window.__coralite_page_config__ into rendered output', async () => {
+  test('Page with client block serializes and injects coralite.config.page into rendered output', async () => {
     const clientPagePath = join(projectDir, 'pages/with-client.html')
     await writeFile(clientPagePath, `
       <script type="module">
@@ -224,7 +224,7 @@ describe('Page Blocks - Build-Time Execution (getters, style, provide, client)',
     const results = await app.build(clientPagePath)
     assert.equal(results.length, 1)
     const content = results[0].content
-    assert.ok(content.includes('window.__coralite_page_config__'), 'Page config is injected into client runtime')
+    assert.ok(content.includes('coralite.config.page'), 'Page config is injected into client runtime')
     assert.ok(content.includes('initialCount'), 'Page state is included in injected page config')
   })
 })

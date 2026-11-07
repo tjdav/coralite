@@ -1125,21 +1125,23 @@ describe('CoraliteElement', () => {
     })
   })
 
-  it('should auto-seed dynamic instance counter from precalculated window.__coralite_instanceCounters', () => {
+  it('should auto-seed dynamic instance counter from precalculated window.__coralite__.state.counters', () => {
     const seedTagName = 'seed-comp-' + Math.random().toString(36).substring(2, 9)
     const SeedElement = createCoraliteClass({
       componentId: 'seed-comp'
     })
     customElements.define(seedTagName, SeedElement)
 
-    window.__coralite_instanceCounters = window.__coralite_instanceCounters || {}
-    window.__coralite_instanceCounters['seed-comp'] = 5
+    window.__coralite__ = window.__coralite__ || {}
+    window.__coralite__.state = window.__coralite__.state || {}
+    window.__coralite__.state.counters = window.__coralite__.state.counters || {}
+    window.__coralite__.state.counters['seed-comp'] = 5
 
     const el = document.createElement(seedTagName)
     document.body.appendChild(el)
 
     assert.strictEqual(el._instanceId, 'seed-comp-5')
-    assert.strictEqual(window.__coralite_instanceCounters['seed-comp'], 6)
+    assert.strictEqual(window.__coralite__.state.counters['seed-comp'], 6)
 
     document.body.removeChild(el)
   })

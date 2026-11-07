@@ -106,8 +106,10 @@ describe('top-level plugin context', () => {
     /** @type {any} */
     const win = window
     win.__coralite__ = {
-      isomorphicPlugins: {
-        $t: (_instanceCtx) => (key) => `translated:${key}`
+      plugins: {
+        isomorphic: {
+          $t: (_instanceCtx) => (key) => `translated:${key}`
+        }
       }
     }
 
@@ -139,8 +141,10 @@ describe('top-level plugin context', () => {
     /** @type {any} */
     const win = window
     win.__coralite__ = {
-      isomorphicPlugins: {
-        $t: () => (key) => `localized:${key}`
+      plugins: {
+        isomorphic: {
+          $t: () => (key) => `localized:${key}`
+        }
       }
     }
 
@@ -172,8 +176,10 @@ describe('top-level plugin context', () => {
     /** @type {any} */
     const win = window
     win.__coralite__ = {
-      isomorphicPlugins: {
-        $t: () => (key) => `translated:${key}`
+      plugins: {
+        isomorphic: {
+          $t: () => (key) => `translated:${key}`
+        }
       }
     }
 
@@ -202,8 +208,10 @@ describe('top-level plugin context', () => {
     /** @type {any} */
     const win = window
     win.__coralite__ = {
-      isomorphicPlugins: {
-        $t: () => (key) => `localized:${key}`
+      plugins: {
+        isomorphic: {
+          $t: () => (key) => `localized:${key}`
+        }
       }
     }
 

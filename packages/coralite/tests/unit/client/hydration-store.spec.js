@@ -3,10 +3,9 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import { createCoraliteClass } from '../../../lib/client/element.js'
 import { generateClientRuntime } from '../../../lib/client/utils/runtime.js'
-import { ScriptManager } from '../../../lib/server/script-manager.js'
 
 describe('Live hydration store', () => {
-  it('populates window.__coralite_hydration__ at boot in client runtime', () => {
+  it('populates coralite.state.hydration at boot in client runtime', () => {
     const runtimeCode = generateClientRuntime({
       base: '/',
       sharedChunkPath: 'shared.js',
@@ -15,16 +14,20 @@ describe('Live hydration store', () => {
       mode: 'development'
     })
 
-    assert.ok(runtimeCode.includes('window.__coralite_hydration__ = Object.assign('))
+    assert.ok(runtimeCode.includes('coralite.state.hydration = Object.assign('))
     assert.ok(runtimeCode.includes('{"comp-1":{"count":10}}'))
   })
 
-  it('_setupState reads from window.__coralite_hydration__ at component init time', () => {
-    const origWindowStore = globalThis.window.__coralite_hydration__
-    globalThis.window.__coralite_hydration__ = {
-      'test-instance-1': {
-        title: 'Live Title',
-        items: [1, 2, 3]
+  it('_setupState reads from window.__coralite__.state.hydration at component init time', () => {
+    const origCoralite = globalThis.window.__coralite__
+    globalThis.window.__coralite__ = {
+      state: {
+        hydration: {
+          'test-instance-1': {
+            title: 'Live Title',
+            items: [1, 2, 3]
+          }
+        }
       }
     }
 
@@ -49,65 +52,62 @@ describe('Live hydration store', () => {
     assert.deepStrictEqual(el._state.items, [1, 2, 3])
 
     document.body.removeChild(el)
-    if (origWindowStore) {
-      globalThis.window.__coralite_hydration__ = origWindowStore
+    if (origCoralite) {
+      globalThis.window.__coralite__ = origCoralite
     } else {
-      delete globalThis.window.__coralite_hydration__
+      delete globalThis.window.__coralite__
     }
   })
 
-  it('hydrationStore primitives get, merge, replace work as expected', () => {
+  it('state hydration primitives getHydration, mergeHydration, replaceHydration work as expected', () => {
     const origCoralite = globalThis.window.__coralite__
-    const origHydration = globalThis.window.__coralite_hydration__
 
-    globalThis.window.__coralite_hydration__ = { 'comp-1': { a: 1 } }
-    globalThis.window.__coralite__ = globalThis.window.__coralite__ || {}
-    globalThis.window.__coralite__.hydrationStore = {
-      get () {
-        return globalThis.window.__coralite_hydration__
-      },
-      merge (next) {
-        if (next && typeof next === 'object') {
-          Object.assign(globalThis.window.__coralite_hydration__, next)
-        }
-      },
-      replace (next) {
-        globalThis.window.__coralite_hydration__ = next && typeof next === 'object' ? next : {}
+    globalThis.window.__coralite__ = {
+      state: {
+        hydration: { 'comp-1': { a: 1 } }
       }
     }
+    const state = globalThis.window.__coralite__.state
+    state.getHydration = () => state.hydration
+    state.mergeHydration = (next) => {
+      if (next && typeof next === 'object') {
+        Object.assign(state.hydration, next)
+      }
+    }
+    state.replaceHydration = (next) => {
+      state.hydration = next && typeof next === 'object' ? next : {}
+    }
 
-    const store = globalThis.window.__coralite__.hydrationStore
-    assert.ok(store, 'hydrationStore should be exposed on window.__coralite__')
+    assert.strictEqual(typeof state.getHydration, 'function')
 
-    const storeObj = globalThis.window.__coralite_hydration__
-    assert.strictEqual(store.get(), storeObj)
+    const storeObj = state.hydration
+    assert.strictEqual(state.getHydration(), storeObj)
 
-    store.merge({ 'comp-2': { b: 2 } })
-    assert.deepStrictEqual(store.get(), {
+    state.mergeHydration({ 'comp-2': { b: 2 } })
+    assert.deepStrictEqual(state.getHydration(), {
       'comp-1': { a: 1 },
       'comp-2': { b: 2 }
     })
 
     const newStore = { 'comp-3': { c: 3 } }
-    store.replace(newStore)
-    assert.strictEqual(store.get(), newStore)
+    state.replaceHydration(newStore)
+    assert.strictEqual(state.getHydration(), newStore)
 
     if (origCoralite) {
       globalThis.window.__coralite__ = origCoralite
     } else {
       delete globalThis.window.__coralite__
     }
-    if (origHydration) {
-      globalThis.window.__coralite_hydration__ = origHydration
-    } else {
-      delete globalThis.window.__coralite_hydration__
-    }
   })
 
-  it('a component created after replace() reads from the new store while prior component is unaffected', () => {
-    const origWindowStore = globalThis.window.__coralite_hydration__
-    globalThis.window.__coralite_hydration__ = {
-      'comp-old': { status: 'initial' }
+  it('a component created after replaceHydration() reads from the new store while prior component is unaffected', () => {
+    const origCoralite = globalThis.window.__coralite__
+    globalThis.window.__coralite__ = {
+      state: {
+        hydration: {
+          'comp-old': { status: 'initial' }
+        }
+      }
     }
 
     const CompClass = createCoraliteClass({
@@ -127,7 +127,7 @@ describe('Live hydration store', () => {
     assert.strictEqual(elOld._state.status, 'initial')
 
     // Replace the store object
-    globalThis.window.__coralite_hydration__ = {
+    globalThis.window.__coralite__.state.hydration = {
       'comp-new': { status: 'swapped' }
     }
 
@@ -142,27 +142,23 @@ describe('Live hydration store', () => {
     document.body.removeChild(elOld)
     document.body.removeChild(elNew)
 
-    if (origWindowStore) {
-      globalThis.window.__coralite_hydration__ = origWindowStore
+    if (origCoralite) {
+      globalThis.window.__coralite__ = origCoralite
     } else {
-      delete globalThis.window.__coralite_hydration__
+      delete globalThis.window.__coralite__
     }
   })
 
-  it('ScriptManager bundles hydrationStore initialization code', async () => {
-    const sm = new ScriptManager()
-    await sm.use({
-      name: 'test-hydration-plugin',
-      client: {
-        init () {
-        }
-      }
+  it('generateClientRuntime emits hydration state helpers', () => {
+    const runtimeCode = generateClientRuntime({
+      base: '/',
+      sharedChunkPath: 'shared.js',
+      declarativeTags: [],
+      hydrationData: '{}',
+      mode: 'development'
     })
-
-    const compiled = await sm.compileComponents('development')
-    const runtimeFile = compiled.outputFiles['coralite-runtime.js'] || Object.values(compiled.outputFiles).find(f => f.path.includes('coralite-runtime'))
-    assert.ok(runtimeFile)
-    assert.ok(runtimeFile.text.includes('hydrationStore'))
-    await sm.disposeContext()
+    assert.ok(runtimeCode.includes('coralite.state.getHydration'))
+    assert.ok(runtimeCode.includes('coralite.state.mergeHydration'))
+    assert.ok(runtimeCode.includes('coralite.state.replaceHydration'))
   })
 })

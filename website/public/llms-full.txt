@@ -1087,9 +1087,9 @@ Invalid config types throw at plugin instantiation (e.g. `Invalid config value f
 
 #### Client Router API
 
-Available as `router` in component and page `client()` blocks — `client({ router })` — and as `window.__coralite_router__`:
+Available as `router` in component and page `client()` blocks — `client({ router })` — and as `window.__coralite__.plugins.router`:
 
-- `router.navigate(path, { replace = false })`: Performs client-side navigation. Runs guards and the `coralite:navigating` event, then `history.pushState({ coralite: true }, '', path)` (or `replaceState` when `replace: true`), fetches `path` as an HTML document with header `X-Coralite-Router: true`, swaps outlet content, reconciles head tags, replaces the hydration store (parsed from the fetched `<script data-coralite-hydration>`) via `runtime.hydrationStore.replace()`, and re-hydrates the new outlet content via `runtime.upgrade()`. Scrolls the window to top unless the path contains a `#` hash.
+- `router.navigate(path, { replace = false })`: Performs client-side navigation. Runs guards and the `coralite:navigating` event, then `history.pushState({ coralite: true }, '', path)` (or `replaceState` when `replace: true`), fetches `path` as an HTML document with header `X-Coralite-Router: true`, swaps outlet content, reconciles head tags, replaces the hydration store (parsed from the fetched `<script data-coralite-hydration>`) via `runtime.state.replaceHydration()`, and re-hydrates the new outlet content via `runtime.dom.upgrade()`. Scrolls the window to top unless the path contains a `#` hash.
 - `router.current()`: Returns `{ path }` — the current browser pathname.
 - `router.beforeEach(guard)`: Registers a navigation guard; returns an unregister function to remove it. Guard signature: `({ to: { path }, from: { path }, signal }) => boolean | string | void` (async allowed). Return semantics:
   - `return false` — cancel the navigation.
@@ -1097,7 +1097,7 @@ Available as `router` in component and page `client()` blocks — `client({ rout
   - `return 'http://…'` / `return 'https://…'` — hard redirect via `window.location.replace()`.
   - `return true` or `undefined` — allow the navigation.
 
-- `router.viewTransitions`: read-only getter. Mirrors the project's `viewTransitions` flag from the hydration payload; when true (and the browser supports `document.startViewTransition`, without `prefers-reduced-motion: reduce`), the outlet swap runs inside a native View Transition. Also available on `window.__coralite_router__`.
+- `router.viewTransitions`: read-only getter. Mirrors the project's `viewTransitions` flag from the hydration payload; when true (and the browser supports `document.startViewTransition`, without `prefers-reduced-motion: reduce`), the outlet swap runs inside a native View Transition. Also available on `window.__coralite__.plugins.router`.
 
 #### Guard placement
 

@@ -361,6 +361,10 @@ export function injectReadinessScript (root, head, hasScripts, mode = 'productio
       const devtoolsAPI = {
         version: '1.0.0',
         mode: ${JSON.stringify(mode)},
+        config: {},
+        state: {},
+        dom: {},
+        plugins: {},
         lifecycle: lifecycle
       };
 

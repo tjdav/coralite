@@ -226,7 +226,7 @@ describe('Page onError block execution', () => {
     const results = await app.build(pagePath, { continueOnError: true })
     const res = results[0]
     assert.ok(res.content)
-    assert.strictEqual(res.content.includes('window.__coralite_page_config__'), true)
+    assert.strictEqual(res.content.includes('coralite.config.page'), true)
     assert.strictEqual(res.content.includes('"client": null') || res.content.includes('"client":null'), true)
   })
 

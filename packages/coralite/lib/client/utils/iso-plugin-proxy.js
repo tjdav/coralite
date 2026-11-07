@@ -4,7 +4,11 @@
  * @returns {Object|null} Map of isomorphic plugin name to plugin initializer
  */
 function getIsoPlugins () {
-  return (typeof window !== 'undefined' && window['__coralite__']?.isomorphicPlugins) || null
+  if (typeof window === 'undefined') {
+    return null
+  }
+  const plugins = window['__coralite__']?.plugins
+  return plugins?.isomorphic || null
 }
 
 /**

@@ -60,7 +60,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       const utils = source.utils
       let utilsExports = ''
 
-      utilsExports = 'const utils = globalThis.__coralite_utils__; export default utils;'
+      utilsExports = 'const utils = globalThis.__coralite__.utils; export default utils;'
 
       for (const key in utils) {
         if (Object.prototype.hasOwnProperty.call(utils, key) && isValidIdentifier(key)) {
@@ -77,7 +77,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
         ...serverUtilsBase,
         ...(source?.utils || {})
       }
-      let serverExports = 'const serverUtils = globalThis.__coralite_server_utils__; export default serverUtils;\n'
+      let serverExports = 'const serverUtils = globalThis.__coralite__.serverUtils; export default serverUtils;\n'
 
       for (const key in serverUtils) {
         if (Object.prototype.hasOwnProperty.call(serverUtils, key) && isValidIdentifier(key)) {
@@ -90,7 +90,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
         importModuleDynamically
       })
     } else if (specifier === 'coralite') {
-      let coraliteExports = 'const context = globalThis.__coralite_context__; export default context;'
+      let coraliteExports = 'const context = globalThis.__coralite__.context; export default context;'
 
       for (const key in context) {
         if (Object.prototype.hasOwnProperty.call(context, key) && isValidIdentifier(key)) {
@@ -98,12 +98,12 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
         }
       }
 
-      coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
-      coraliteExports += 'export const definePage = globalThis.__coralite_define_page__;\n'
-      coraliteExports += 'export const createCoraliteElement = globalThis.__coralite_create_coralite_element__;\n'
-      coraliteExports += 'export const processHTML = globalThis.__coralite_process_html__;\n'
-      coraliteExports += 'export const createContext = globalThis.__coralite_create_context__;\n'
-      coraliteExports += 'export const ContextRequestEvent = globalThis.__coralite_context_request_event__;\n'
+      coraliteExports += 'export const defineComponent = globalThis.__coralite__.defineComponent;\n'
+      coraliteExports += 'export const definePage = globalThis.__coralite__.definePage;\n'
+      coraliteExports += 'export const createCoraliteElement = globalThis.__coralite__.createElement;\n'
+      coraliteExports += 'export const processHTML = globalThis.__coralite__.processHTML;\n'
+      coraliteExports += 'export const createContext = globalThis.__coralite__.createContext;\n'
+      coraliteExports += 'export const ContextRequestEvent = globalThis.__coralite__.ContextRequestEvent;\n'
 
       return new SourceTextModule(coraliteExports, {
         context: referencingModule.context,
@@ -263,25 +263,26 @@ export async function evaluateDevelopment ({
   }
 
   const contextGlobals = {
-    __coralite_context__: symmetricalContext,
-    __coralite_plugins__: cachedBoundPlugins,
-    __coralite_utils__: source.utils,
-    __coralite_server_utils__: serverUtils,
-    __coralite_define_component__: boundDefineComponent,
-    __coralite_define_page__: definePage,
-    __coralite_create_context__: createContextUtil,
-    __coralite_context_request_event__: ContextRequestEvent,
-    __coralite_create_coralite_element__: (tag, options) => {
-      if (typeof globalThis.createCoraliteElement === 'function') {
-        return globalThis.createCoraliteElement(tag, options)
+    __coralite__: {
+      context: symmetricalContext,
+      utils: source.utils,
+      serverUtils,
+      defineComponent: boundDefineComponent,
+      definePage,
+      createContext: createContextUtil,
+      ContextRequestEvent,
+      createElement: (tag, options) => {
+        if (typeof globalThis.createCoraliteElement === 'function') {
+          return globalThis.createCoraliteElement(tag, options)
+        }
+        return virtualWindow.document.createElement(tag, options)
+      },
+      processHTML: (html) => {
+        if (typeof globalThis.processHTML === 'function') {
+          return globalThis.processHTML(html)
+        }
+        return html
       }
-      return virtualWindow.document.createElement(tag, options)
-    },
-    __coralite_process_html__: (html) => {
-      if (typeof globalThis.processHTML === 'function') {
-        return globalThis.processHTML(html)
-      }
-      return html
     }
   }
 

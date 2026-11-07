@@ -20,22 +20,22 @@ test.describe('Testing Mode Features', () => {
     await expect(btn).toHaveText('Click Me')
   })
 
-  test('should expose window.__coralite_test__ API in testing mode', async ({ page }) => {
+  test('should expose window.__coralite__.test API in testing mode', async ({ page }) => {
     await page.goto('/')
-    await page.waitForFunction(() => window.__coralite_test__?.ready !== undefined)
-    await page.evaluate(() => window.__coralite_test__.ready)
+    await page.waitForFunction(() => window.__coralite__?.test?.ready !== undefined)
+    await page.evaluate(() => window.__coralite__.test.ready)
 
-    const isTestApiDefined = await page.evaluate(() => typeof window.__coralite_test__ === 'object')
+    const isTestApiDefined = await page.evaluate(() => typeof window.__coralite__.test === 'object')
     expect(isTestApiDefined).toBe(true)
 
-    const hydratedCount = await page.evaluate(() => window.__coralite_test__.getHydratedCount())
+    const hydratedCount = await page.evaluate(() => window.__coralite__.test.getHydratedCount())
     expect(typeof hydratedCount).toBe('number')
     expect(hydratedCount).toBeGreaterThan(0)
 
-    const instances = await page.evaluate(() => window.__coralite_test__.getInstances().length)
+    const instances = await page.evaluate(() => window.__coralite__.test.getInstances().length)
     expect(instances).toBeGreaterThan(0)
 
-    await page.evaluate(() => window.__coralite_test__.flush())
+    await page.evaluate(() => window.__coralite__.test.flush())
   })
 
   test('should disable animations (Velocity Engine)', async ({ page }) => {

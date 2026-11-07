@@ -2,7 +2,6 @@ import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, Con
 export { setupPageRuntime } from './page-runtime.js'
 import { processHTML } from './utils/inject.js'
 import { createIsoPluginProxy } from './utils/iso-plugin-proxy.js'
-import { recordDevToolsEvent } from './utils/devtools.js'
 import { isDevRuntime } from '../utils/dev-mode.js'
 import { ObserverRecord, detectListPattern, applyListPattern } from '../utils/observer-record.js'
 import { createSignal, createComputed } from '../utils/signals.js'
@@ -183,13 +182,32 @@ function isNodeConnected (node) {
 }
 
 function _getClientRoute () {
-  const hStore = typeof window !== 'undefined' ? window['__coralite_hydration__'] : null
-  return (hStore && hStore.__route__) || {
+  const state = typeof window !== 'undefined' ? window['__coralite__']?.state : null
+  return (state && state.route) || {
     path: (typeof window !== 'undefined' && window.location ? window.location.pathname : '/'),
     pattern: (typeof window !== 'undefined' && window.location ? window.location.pathname : '/'),
     params: {},
     dynamic: false
   }
+}
+
+function _allocateInstanceId (prefix) {
+  /** @type {import('../../types/globals.js').CoraliteGlobalThis} */
+  const win = window
+  if (!win.__coralite__) {
+    Object.defineProperty(win, '__coralite__', {
+      value: {},
+      writable: true,
+      configurable: true,
+      enumerable: false
+    })
+  }
+  win.__coralite__.state = win.__coralite__.state || {}
+  win.__coralite__.state.counters = win.__coralite__.state.counters || {}
+  if (win.__coralite__.state.counters[prefix] === undefined) {
+    win.__coralite__.state.counters[prefix] = 0
+  }
+  return `${prefix}-${win.__coralite__.state.counters[prefix]++}`
 }
 
 /** @type {typeof HTMLElement} */
@@ -1098,16 +1116,7 @@ export class CoraliteElement extends BaseElement {
       this._instanceId = this.getAttribute('data-cid')
     } else {
       // Fallback counter for imperatively created components
-      // @ts-ignore
-      window.__coralite_instanceCounters = window.__coralite_instanceCounters || {}
-      const prefix = this.componentOptions.componentId
-      // @ts-ignore
-      if (window.__coralite_instanceCounters[prefix] === undefined) {
-        // @ts-ignore
-        window.__coralite_instanceCounters[prefix] = 0
-      }
-      // @ts-ignore
-      this._instanceId = `${prefix}-${window.__coralite_instanceCounters[prefix]++}`
+      this._instanceId = _allocateInstanceId(this.componentOptions.componentId)
     }
 
     // Manually stamp the template and project the Light DOM.
@@ -1467,16 +1476,7 @@ export class CoraliteElement extends BaseElement {
       if (this.hasAttribute('data-cid')) {
         this._instanceId = this.getAttribute('data-cid')
       } else if (this.componentOptions?.componentId) {
-        // @ts-ignore
-        window.__coralite_instanceCounters = window.__coralite_instanceCounters || {}
-        const prefix = this.componentOptions.componentId
-        // @ts-ignore
-        if (window.__coralite_instanceCounters[prefix] === undefined) {
-          // @ts-ignore
-          window.__coralite_instanceCounters[prefix] = 0
-        }
-        // @ts-ignore
-        this._instanceId = `${prefix}-${window.__coralite_instanceCounters[prefix]++}`
+        this._instanceId = _allocateInstanceId(this.componentOptions.componentId)
       }
     }
 
@@ -1630,8 +1630,8 @@ export class CoraliteElement extends BaseElement {
     }
 
     // Hydrate data() block results from the SSR payload
-    // @ts-ignore
-    const store = typeof window !== 'undefined' ? window.__coralite_hydration__ : null
+    const runtimeState = typeof window !== 'undefined' ? window['__coralite__']?.state : null
+    const store = runtimeState?.hydration || null
     if (store && store[this._instanceId]) {
       Object.assign(target, store[this._instanceId])
     } else if (this._hydrationData && this._hydrationData[this._instanceId]) {
@@ -1749,8 +1749,7 @@ export class CoraliteElement extends BaseElement {
                 slots: this._getSlotsHelper(),
                 isServer: false,
                 signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal,
-                // @ts-ignore
-                store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
+                store: (typeof window !== 'undefined' && window['__coralite__']?.state?.store) || undefined
               })
               this._getterContexts.set(key, context)
             }
@@ -1875,8 +1874,7 @@ export class CoraliteElement extends BaseElement {
               slots: this._getSlotsHelper(),
               isServer: false,
               signal: this._getterAbortControllers[key]?.signal || this._abortController?.signal,
-              // @ts-ignore
-              store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined
+              store: (typeof window !== 'undefined' && window['__coralite__']?.state?.store) || undefined
             })
             this._getterContexts.set(key, context)
           }
@@ -4132,8 +4130,9 @@ export class CoraliteElement extends BaseElement {
         const proc = typeof process !== 'undefined' ? process : null
         /** @type {any} */
         const compOpts = this?.componentOptions
+        const config = win?.__coralite__?.config
         const rawStrategy = compOpts?.listStrategy || compOpts?.reconcile ||
-          win?.__coralite__?.listStrategy || win?.__coralite__?.reconcile ||
+          config?.listStrategy ||
           proc?.env?.CORALITE_LIST_STRATEGY || proc?.env?.CORALITE_RECONCILE ||
           'full'
         const reconcileMode = typeof rawStrategy === 'string' ? rawStrategy : (rawStrategy?.mode || 'full')
@@ -5056,8 +5055,7 @@ export class CoraliteElement extends BaseElement {
       root: this,
       slots: this._getSlotsHelper(),
       signal: this._abortController.signal,
-      // @ts-ignore
-      store: (typeof window !== 'undefined' && window.__coralite__?.store) || undefined,
+      store: (typeof window !== 'undefined' && window['__coralite__']?.state?.store) || undefined,
       refs (id) {
         const refId = self._state[`ref_${id}`]
         if (!refId && typeof refId !== 'string') {
@@ -5278,39 +5276,9 @@ export class CoraliteElement extends BaseElement {
             const fatalError = new Error(`Coralite Component Error: Component "${this.componentOptions.componentId}" (${this._instanceId}) client() block failed: ${error.message}`)
             fatalError.stack = error.stack
 
-            if (typeof window['showCoraliteError'] === 'function') {
-              window['showCoraliteError'](fatalError)
-            } else {
-              const overlay = document.createElement('div')
-              overlay.style.position = 'fixed'
-              overlay.style.top = '0'
-              overlay.style.left = '0'
-              overlay.style.width = '100%'
-              overlay.style.height = '100%'
-              overlay.style.backgroundColor = 'rgba(127, 29, 29, 0.98)'
-              overlay.style.color = '#ffffff'
-              overlay.style.padding = '20px'
-              overlay.style.zIndex = '10000'
-              overlay.style.fontFamily = 'monospace'
-              overlay.style.whiteSpace = 'pre-wrap'
-              overlay.style.overflow = 'auto'
-
-              const heading = document.createElement('h1')
-              heading.textContent = 'Coralite Component Error'
-              const desc = document.createElement('p')
-              desc.textContent = fatalError.message
-
-              overlay.appendChild(heading)
-              overlay.appendChild(desc)
-
-              if (fatalError.stack) {
-                const stackTrace = document.createElement('pre')
-
-                stackTrace.textContent = fatalError.stack
-                overlay.appendChild(stackTrace)
-              }
-
-              document.body.appendChild(overlay)
+            const devtools = typeof window !== 'undefined' ? window['__coralite__']?.devtools : null
+            if (devtools && typeof devtools.showError === 'function') {
+              devtools.showError(fatalError, 'Coralite Component Error')
             }
             throw fatalError
           }
@@ -5365,15 +5333,17 @@ export function createCoraliteClass (options, contextGetter = null, hooks = {}, 
       // Override dispatchEvent to intercept all CustomEvents
       const originalDispatchEvent = this.dispatchEvent
       this.dispatchEvent = function (event) {
-        // @ts-ignore
         if (isDevRuntime() && event instanceof CustomEvent) {
-          recordDevToolsEvent({
-            name: event.type,
-            detail: event.detail,
-            sourceComponentId: self._instanceId,
-            sourceTagName: self.tagName.toLowerCase(),
-            timestamp: Date.now()
-          })
+          const devtools = typeof window !== 'undefined' ? window['__coralite__']?.devtools : null
+          if (devtools && typeof devtools.recordEvent === 'function') {
+            devtools.recordEvent({
+              name: event.type,
+              detail: event.detail,
+              sourceComponentId: self._instanceId,
+              sourceTagName: self.tagName.toLowerCase(),
+              timestamp: Date.now()
+            })
+          }
         }
         return originalDispatchEvent.call(this, event)
       }

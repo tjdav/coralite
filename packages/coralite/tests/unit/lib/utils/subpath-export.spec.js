@@ -92,7 +92,9 @@ describe('Subpath Exports & DOM Prototype Hardening', () => {
 
     const mockReferencingModule = {
       context: createContext({
-        __coralite_server_utils__: mergedServerUtils
+        __coralite__: {
+          serverUtils: mergedServerUtils
+        }
       })
     }
 

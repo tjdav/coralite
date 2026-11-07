@@ -9,7 +9,7 @@ describe('setupPageRuntime plugin contexts', () => {
     document.body.innerHTML = ''
     /** @type {any} */
     const win = window
-    delete win.__coralite_router__
+    delete win.__coralite__
   })
 
   it('page client receives router context when active', async () => {
@@ -23,7 +23,11 @@ describe('setupPageRuntime plugin contexts', () => {
 
     /** @type {any} */
     const win = window
-    win.__coralite_router__ = mockRouter
+    win.__coralite__ = {
+      plugins: {
+        router: mockRouter
+      }
+    }
 
     let receivedCtx = null
 
@@ -43,7 +47,7 @@ describe('setupPageRuntime plugin contexts', () => {
   it('page client does not throw when router context absent', async () => {
     /** @type {any} */
     const win = window
-    delete win.__coralite_router__
+    delete win.__coralite__
 
     let receivedRouter = 'NOT_CALLED'
 
