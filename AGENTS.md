@@ -146,12 +146,13 @@ Top-level imports are reserved for page configuration modules / `definePlugin` a
 
 - **Lazy dependency stylesheets (`await import('*.css')`)**: Third-party or local dependency CSS files are loaded lazily inside component and page `client()` blocks (or transitive client `.js` helper modules) using native dynamic `await import('pkg/styles.css', options)`. Coralite bundles local and bare-package CSS files at build time via esbuild + PostCSS into hashed `assets/css/` assets, injects `<link rel="stylesheet">` into `<head>` in deterministic manifest order at runtime, deduplicates concurrent callers, and resolves to `{ default: link.sheet ?? null, link }`. Both flat options (`{ media, nonce, crossorigin, referrerPolicy, signal, force }`) and standard Import Attributes (`{ with: { type: 'css', media, nonce, crossorigin, referrerPolicy }, signal, force }`) are supported. Static top-level `.css` imports or dynamic `.css` imports outside `client()` throw `CORALITE-E109`; missing or unresolvable local/package `.css` specifiers throw `CORALITE-E403`.
 
-## 4. Serialization boundary
+## 4. Serialization boundary & runtime globals
 
 - `server` runs at build time, stripped from the browser bundle.
 - `client` runs in the browser, cannot reference module scope.
 - Module-scope imports in `client` require `await import()`.
 - Enforced by `no-restricted-imports` in `eslint.config.js` — see `**/lib/client/**` block.
+- **Single global namespace (`__coralite__`)**: Never attach ad-hoc properties directly to `window` or `globalThis` (e.g. `window.__coralite_*` or bare helpers). All browser runtime globals must live under the non-enumerable `window.__coralite__` namespace organized by domain (`config`, `state`, `dom`, `plugins`, `lifecycle`, `devtools`, `test`), and all Node VM sandbox globals must live under `globalThis.__coralite__`.
 
 ## 5. No defensive guards in deterministic blocks
 

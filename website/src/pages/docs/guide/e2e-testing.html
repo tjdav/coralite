@@ -77,11 +77,13 @@
 
     <coralite-heading level="2" text="Glass Box Assertions &amp; Telemetry"></coralite-heading>
 
-    <p>Standard DOM assertions can sometimes be unreliable. Coralite's testing mode exposes the internal framework state directly to the global window for glass box assertions:</p>
+    <p>Standard DOM assertions can sometimes be unreliable. Coralite's testing mode exposes component inspection and event telemetry methods under <code>window.__coralite__.test</code> (and <code>window.__coralite__.devtools</code> in development and testing builds) for glass box assertions:</p>
 
     <ul>
-      <li><code>window.__coralite__.components['instance-id'].state</code>: Access the reactive proxy of any hydrated component.</li>
-      <li><code>window.__coralite__.events</code>: A telemetry log of every <code>CustomEvent</code> dispatched by components (Event Telemetry).</li>
+      <li><code>window.__coralite__.test.getComponent(element)</code>: Returns the testing harness (reactive <code>state</code>, <code>refs</code>, <code>emit</code>, and metadata) for a hydrated custom element instance.</li>
+      <li><code>window.__coralite__.test.getInstances(tagName?)</code>: Returns all hydrated custom element instances in the document (or filtered by <code>tagName</code>).</li>
+      <li><code>window.__coralite__.test.getEvents()</code>: Returns the telemetry log of every <code>CustomEvent</code> dispatched by components.</li>
+      <li><code>window.__coralite__.test.getHydratedCount()</code>: Returns the total count of hydrated component instances on the page.</li>
     </ul>
 
     <coralite-heading level="2" text="Component & Plugin Mocking"></coralite-heading>

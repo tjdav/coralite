@@ -22,6 +22,7 @@ Directory boundary responsibilities under `lib/`:
 - Static components serialize zero client lifecycle code (`client: null`, `getters: {}`). A component exporting only `attributes` or `style` is Zero-JS; native attributes and flat tokens interpolate directly at SSR time.
 - Passthrough getters (`({ state }) => state.foo`) are forbidden dead code; use raw template tokens `{{ foo }}` directly.
 - Suppress unused element ref warnings (`CORALITE-W402`) during phased evolution using `<!-- coralite-ignore <refName> -->` following `<template>` rather than deleting refs or authoring dummy `client()` blocks.
+- All browser runtime globals must be attached under the non-enumerable `window.__coralite__` namespace (`config`, `state`, `dom`, `plugins`, `lifecycle`, `devtools`, `test`) and typed in `types/globals.js`. All Node VM execution globals in `compiler.js` must be scoped under `globalThis.__coralite__`. Never introduce top-level `window.*` or `window.__coralite_*` globals.
 
 ## 4. Package-scoped commands
 

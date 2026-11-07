@@ -59,6 +59,14 @@
         <li><a href="#coralitemodulescript">CoraliteModuleScript</a></li>
         <li><a href="#clientplugin">ClientPlugin</a></li>
         <li><a href="#instancecontext">InstanceContext</a></li>
+        <li><a href="#coraliteruntime">CoraliteRuntime</a></li>
+        <li><a href="#coraliteconfigruntime">CoraliteConfigRuntime</a></li>
+        <li><a href="#coralitestateruntime">CoraliteStateRuntime</a></li>
+        <li><a href="#coralitedomruntime">CoraliteDomRuntime</a></li>
+        <li><a href="#coralitepluginsruntime">CoralitePluginsRuntime</a></li>
+        <li><a href="#coralitedevtoolsapi">CoraliteDevToolsAPI</a></li>
+        <li><a href="#coralitetestapi">CoraliteTestAPI</a></li>
+        <li><a href="#coraliterouter">CoraliteRouter</a></li>
       </ul>
       <p><a href="#content-nodes">Content Nodes</a></p>
       <ul>
@@ -1265,6 +1273,364 @@
             <td><code>page</code></td>
             <td><code>Object</code></td>
             <td>Page metadata.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteRuntime" id="coraliteruntime"></coralite-heading>
+    <p>Single global browser runtime namespace attached to <code>window.__coralite__</code>.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>version</code></td>
+            <td><code>string</code> (optional)</td>
+            <td>Coralite runtime version identifier.</td>
+          </tr>
+          <tr>
+            <td><code>mode</code></td>
+            <td><code>string</code> (optional)</td>
+            <td>Build/runtime mode (<code>'development'</code>, <code>'production'</code>, or <code>'testing'</code>).</td>
+          </tr>
+          <tr>
+            <td><code>config</code></td>
+            <td><a href="#coraliteconfigruntime"><code>CoraliteConfigRuntime</code></a> (optional)</td>
+            <td>Immutable build and page configuration sub-namespace.</td>
+          </tr>
+          <tr>
+            <td><code>state</code></td>
+            <td><a href="#coralitestateruntime"><code>CoraliteStateRuntime</code></a> (optional)</td>
+            <td>Mutable runtime state, hydration payloads, route, store, and loaded stylesheet registry.</td>
+          </tr>
+          <tr>
+            <td><code>dom</code></td>
+            <td><a href="#coralitedomruntime"><code>CoraliteDomRuntime</code></a> (optional)</td>
+            <td>DOM and asset management helpers for custom element loading, upgrading, and CSS injection.</td>
+          </tr>
+          <tr>
+            <td><code>plugins</code></td>
+            <td><a href="#coralitepluginsruntime"><code>CoralitePluginsRuntime</code></a> (optional)</td>
+            <td>Registered isomorphic/client plugin resolvers and the active SPA router instance.</td>
+          </tr>
+          <tr>
+            <td><code>lifecycle</code></td>
+            <td><code>CoraliteLifecycleManager</code> (optional)</td>
+            <td>Hydration readiness and lifecycle manager (includes <code>lifecycle.hydrated</code>, <code>lifecycle.waitFor(el)</code>, and dev/test abort controllers).</td>
+          </tr>
+          <tr>
+            <td><code>devtools</code></td>
+            <td><a href="#coralitedevtoolsapi"><code>CoraliteDevToolsAPI</code></a> (optional)</td>
+            <td>DevTools introspection and diagnostics API (present in <code>development</code> and <code>testing</code> modes).</td>
+          </tr>
+          <tr>
+            <td><code>test</code></td>
+            <td><a href="#coralitetestapi"><code>CoraliteTestAPI</code></a> (optional)</td>
+            <td>E2E testing harness API (present only in <code>testing</code> mode).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteConfigRuntime" id="coraliteconfigruntime"></coralite-heading>
+    <p>Configuration sub-namespace attached to <code>window.__coralite__.config</code>.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>listStrategy</code></td>
+            <td><code>any</code> (optional)</td>
+            <td>Default list rendering reconciliation strategy.</td>
+          </tr>
+          <tr>
+            <td><code>viewTransitions</code></td>
+            <td><code>boolean</code> (optional)</td>
+            <td>Whether native View Transitions are enabled for SPA route navigation.</td>
+          </tr>
+          <tr>
+            <td><code>page</code></td>
+            <td><code>Record&lt;string, any&gt; | null</code> (optional)</td>
+            <td>Active page runtime definition and hydrated page configuration.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteStateRuntime" id="coralitestateruntime"></coralite-heading>
+    <p>Mutable state sub-namespace attached to <code>window.__coralite__.state</code>.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>store</code></td>
+            <td><code>any</code> (optional)</td>
+            <td>Global reactive application store shared across components and pages.</td>
+          </tr>
+          <tr>
+            <td><code>hydration</code></td>
+            <td><code>Record&lt;string, Record&lt;string, any&gt;&gt;</code> (optional)</td>
+            <td>Serialized SSR hydration state indexed by component instance ID.</td>
+          </tr>
+          <tr>
+            <td><code>route</code></td>
+            <td><code>CoraliteRoute</code> (optional)</td>
+            <td>Active route descriptor (<code>path</code>, <code>pattern</code>, <code>params</code>, <code>dynamic</code>).</td>
+          </tr>
+          <tr>
+            <td><code>counters</code></td>
+            <td><code>Record&lt;string, number&gt;</code> (optional)</td>
+            <td>Per-tag instance counter map used to allocate deterministic client instance IDs.</td>
+          </tr>
+          <tr>
+            <td><code>stylesLoaded</code></td>
+            <td><code>Set&lt;string&gt;</code> (optional)</td>
+            <td>Set of component tag names whose stylesheets have been injected into the document.</td>
+          </tr>
+          <tr>
+            <td><code>getHydration</code></td>
+            <td><code>() =&gt; CoraliteHydration</code> (optional)</td>
+            <td>Returns the current hydration map.</td>
+          </tr>
+          <tr>
+            <td><code>mergeHydration</code></td>
+            <td><code>(next: Record&lt;string, any&gt;) =&gt; void</code> (optional)</td>
+            <td>Merges additional SSR hydration entries into the live hydration store.</td>
+          </tr>
+          <tr>
+            <td><code>replaceHydration</code></td>
+            <td><code>(next: Record&lt;string, any&gt;) =&gt; void</code> (optional)</td>
+            <td>Replaces the hydration map during SPA route swaps.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteDomRuntime" id="coralitedomruntime"></coralite-heading>
+    <p>DOM and asset management sub-namespace attached to <code>window.__coralite__.dom</code>.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>loadComponent</code></td>
+            <td><code>(tag: string) =&gt; Promise&lt;any&gt;</code> (optional)</td>
+            <td>Dynamically imports and defines a custom element bundle by tag name.</td>
+          </tr>
+          <tr>
+            <td><code>upgrade</code></td>
+            <td><code>(el: Element) =&gt; Promise&lt;void&gt;</code> (optional)</td>
+            <td>Upgrades and hydrates a custom element subtree.</td>
+          </tr>
+          <tr>
+            <td><code>importCSS</code></td>
+            <td><code>CoraliteImportCSS</code> (optional)</td>
+            <td>Loads a lazy dependency stylesheet into <code>&lt;head&gt;</code> and resolves to <code>{ default: sheet, link }</code>.</td>
+          </tr>
+          <tr>
+            <td><code>createElement</code></td>
+            <td><code>(tag: string, options?: Object) =&gt; HTMLElement</code> (optional)</td>
+            <td>Compiler helper that creates a DOM element and triggers on-demand custom element bundle loading.</td>
+          </tr>
+          <tr>
+            <td><code>processHTML</code></td>
+            <td><code>(html: string, instanceId?: string) =&gt; string</code> (optional)</td>
+            <td>Compiler helper that scopes and processes dynamically assigned HTML strings.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoralitePluginsRuntime" id="coralitepluginsruntime"></coralite-heading>
+    <p>Plugins sub-namespace attached to <code>window.__coralite__.plugins</code>.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>isomorphic</code></td>
+            <td><code>Record&lt;string, Function&gt;</code> (optional)</td>
+            <td>Registered top-level isomorphic plugin context factories.</td>
+          </tr>
+          <tr>
+            <td><code>getClientContext</code></td>
+            <td><code>(instanceContext: any) =&gt; Promise&lt;any&gt;</code> (optional)</td>
+            <td>Resolves Phase 2 client plugin context for a given component or page instance.</td>
+          </tr>
+          <tr>
+            <td><code>router</code></td>
+            <td><a href="#coraliterouter"><code>CoraliteRouter</code></a> (optional)</td>
+            <td>Active SPA router API when the router plugin is enabled.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteDevToolsAPI" id="coralitedevtoolsapi"></coralite-heading>
+    <p>DevTools introspection and diagnostics API attached to <code>window.__coralite__.devtools</code> (present in <code>development</code> and <code>testing</code> modes).</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>getComponent</code></td>
+            <td><code>(element: Element) =&gt; any</code></td>
+            <td>Returns the internal testing/inspection harness for a hydrated custom element.</td>
+          </tr>
+          <tr>
+            <td><code>getRegisteredComponents</code></td>
+            <td><code>() =&gt; string[]</code></td>
+            <td>Returns an array of registered Coralite custom element tag names.</td>
+          </tr>
+          <tr>
+            <td><code>getHydratedCount</code></td>
+            <td><code>() =&gt; number</code></td>
+            <td>Returns the total number of hydrated component instances.</td>
+          </tr>
+          <tr>
+            <td><code>getInstances</code></td>
+            <td><code>(tagName?: string) =&gt; Element[]</code></td>
+            <td>Returns all hydrated custom element instances in the document (or filtered by <code>tagName</code>).</td>
+          </tr>
+          <tr>
+            <td><code>getEvents</code></td>
+            <td><code>() =&gt; any[]</code></td>
+            <td>Returns the bounded ring buffer of dispatched component <code>CustomEvent</code> records.</td>
+          </tr>
+          <tr>
+            <td><code>stylesLoaded</code></td>
+            <td><code>string[]</code></td>
+            <td>Array of component tag names with loaded stylesheets.</td>
+          </tr>
+          <tr>
+            <td><code>showError</code></td>
+            <td><code>(error: Error, title?: string) =&gt; void</code> (optional)</td>
+            <td>Displays the full-screen diagnostic error overlay.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteTestAPI" id="coralitetestapi"></coralite-heading>
+    <p>Testing-mode API attached to <code>window.__coralite__.test</code> (present only when <code>mode: 'testing'</code>).</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>ready</code></td>
+            <td><code>Promise&lt;void&gt;</code></td>
+            <td>Resolves when both <code>data-coralite-ready</code> on <code>&lt;html&gt;</code> and <code>window.__coralite__.lifecycle.hydrated</code> settle.</td>
+          </tr>
+          <tr>
+            <td><code>reset</code></td>
+            <td><code>() =&gt; Promise&lt;void&gt;</code></td>
+            <td>Clears <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB databases, and service worker registrations.</td>
+          </tr>
+          <tr>
+            <td><code>flush</code></td>
+            <td><code>() =&gt; Promise&lt;void&gt;</code></td>
+            <td>Awaits all active microtask DOM batch updates (<code>updateComplete</code>) across hydrated custom element instances.</td>
+          </tr>
+          <tr>
+            <td><code>getComponent</code></td>
+            <td><code>(element: Element) =&gt; any</code> (optional)</td>
+            <td>Delegates to <code>devtools.getComponent(element)</code>.</td>
+          </tr>
+          <tr>
+            <td><code>getHydratedCount</code></td>
+            <td><code>() =&gt; number</code> (optional)</td>
+            <td>Delegates to <code>devtools.getHydratedCount()</code>.</td>
+          </tr>
+          <tr>
+            <td><code>getEvents</code></td>
+            <td><code>() =&gt; any[]</code> (optional)</td>
+            <td>Delegates to <code>devtools.getEvents()</code>.</td>
+          </tr>
+          <tr>
+            <td><code>getInstances</code></td>
+            <td><code>(tagName?: string) =&gt; Element[]</code> (optional)</td>
+            <td>Delegates to <code>devtools.getInstances(tagName)</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteRouter" id="coraliterouter"></coralite-heading>
+    <p>SPA Router API injected into <code>client({ router })</code> and attached to <code>window.__coralite__.plugins.router</code>.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>navigate</code></td>
+            <td><code>(path: string, options?: { replace?: boolean, force?: boolean, depth?: number }) =&gt; Promise&lt;void&gt;</code></td>
+            <td>Performs client-side SPA navigation to the target path.</td>
+          </tr>
+          <tr>
+            <td><code>current</code></td>
+            <td><code>() =&gt; ({ path: string } &amp; Partial&lt;CoraliteRoute&gt;)</code></td>
+            <td>Returns the current route object.</td>
+          </tr>
+          <tr>
+            <td><code>beforeEach</code></td>
+            <td><code>(guard: Function) =&gt; () =&gt; void</code></td>
+            <td>Registers a navigation guard and returns an unregister function.</td>
+          </tr>
+          <tr>
+            <td><code>viewTransitions</code></td>
+            <td><code>boolean</code> (optional)</td>
+            <td>Read-only flag indicating whether native View Transitions are enabled.</td>
           </tr>
         </tbody>
       </table>
