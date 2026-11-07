@@ -1011,12 +1011,19 @@ async function main () {
 
 5. **Component & Page Structure**:
    - Coralite components live in \`src/components/*.html\` containing \`<template>\`, \`<style>\`, and \`<script type="module">\` using top-level named exports (\`export function\` for \`server\`, \`client\`, \`onError\`; \`export const\` for \`attributes\`, \`getters\`, \`style\`, \`slots\`, \`provide\`, \`consume\`, \`formControl\`, \`listStrategy\`). Legacy \`defineComponent\` is retained strictly for backwards compatibility.
-   - Pages live in \`src/pages/*.html\` and use \`export default definePage({ ... })\` (never bare named exports).
+   - Pages live in \`src/pages/*.html\` and use top-level named exports (\`export function\` for \`paths\`, \`server\`, \`client\`, \`onError\`; \`export const\` for \`meta\`, \`getters\`, \`style\`, \`provide\`). Legacy \`definePage\` is retained strictly for backwards compatibility.
 
 6. **No Defensive Guards & Encapsulation**:
    - Every destructured context key (\`state\`, \`refs\`, \`signal\`, \`emit\`, etc.) is guaranteed by the framework. Never guard context keys or check \`typeof window\` in \`client()\` or \`server()\`.
    - Target elements locally using \`refs('name')\` inside \`client()\` and pass \`{ signal }\` to all \`addEventListener\` calls.
    - Pages are strictly consumers of custom element components and must not manipulate component internals directly.
+
+## Page Composition & Component Reuse
+- **Standard HTML is First-Class**: Standard semantic HTML elements (\`<header>\`, \`<main>\`, \`<article>\`, \`<section>\`, \`<h1>\`–\`<h6>\`, \`<p>\`, \`<a>\`, etc.) are natural and encouraged for document structure, typography, and static content.
+- **Reuse Existing Components**: Before introducing new interactive controls, widgets, or complex UI blocks into a page, check \`src/components/\` to see if the project has already defined a component for that purpose.
+- **Avoid Markup Duplication**: When the project provides a custom element for a pattern (such as a navigation bar, card, dialog, or theme toggle), compose using that custom element rather than copy-pasting duplicate markup across pages.
+- **When to Create Components**: Author a new custom element in \`src/components/\` when creating an interactive or reusable UI widget/pattern that will be used across multiple pages. For page-specific static structure and text content, use standard semantic HTML.
+- **Respect Slots**: When using custom elements that accept nested content, project child content into their declared \`<slot>\`s.
 `
 
       try {

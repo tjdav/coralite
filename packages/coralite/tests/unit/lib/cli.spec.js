@@ -85,6 +85,12 @@ describe('CLI Integration Tests (coralite.js)', () => {
       assert.match(content, /Serialization Boundary/)
       assert.match(content, /Attribute Primitives/)
       assert.match(content, /Two-Phase Plugin Context/)
+      assert.match(content, /`export function` for `paths`, `server`/)
+      assert.match(content, /Page Composition & Component Reuse/)
+      assert.match(content, /Standard HTML is First-Class/)
+      assert.match(content, /Reuse Existing Components/)
+      assert.match(content, /When to Create Components/)
+      assert.match(content, /Respect Slots/)
     })
 
     test('supports --cursor and --claude flags', () => {
@@ -93,6 +99,11 @@ describe('CLI Integration Tests (coralite.js)', () => {
       assert.strictEqual(existsSync(join(tmpDir, '.cursorrules')), true)
       assert.strictEqual(existsSync(join(tmpDir, '.cursor/rules/coralite.mdc')), true)
       assert.strictEqual(existsSync(join(tmpDir, 'CLAUDE.md')), true)
+
+      const cursorContent = readFileSync(join(tmpDir, '.cursorrules'), 'utf8')
+      assert.match(cursorContent, /Page Composition & Component Reuse/)
+      const claudeContent = readFileSync(join(tmpDir, 'CLAUDE.md'), 'utf8')
+      assert.match(claudeContent, /Page Composition & Component Reuse/)
     })
   })
 
