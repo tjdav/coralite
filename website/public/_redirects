@@ -1,7 +1,7 @@
 /docs/create-coralite.html /docs/guide/quick-start.html 301
 /docs/guide/installation.html /docs/guide/quick-start.html 301
 /docs/reference/coralite-types.html /docs/reference/types.html 301
-/docs/guide/advanced-client-javascript.html /docs/guide/advanced-javascript.html 301
+/docs/guide/advanced-client-javascript.html /docs/guide/javascript.html 301
 /docs/guide/advanced-javascript.html /docs/guide/javascript.html 301
 /docs/guide/advanced-styles.html /docs/guide/styling.html 301
 /docs/guide/authoring-plugins.html /docs/guide/plugins.html 301
@@ -12,3 +12,20 @@
 /docs/reference/plugins/refs-plugin.html /docs/reference/plugins/refs.html 301
 /docs/reference/create-plugin.html /docs/reference/define-plugin.html 301
 /docs/reference/plugins/define-plugin.html /docs/reference/define-plugin.html 301
+
+# Directory and legacy index redirects under cleanUrls: false
+/docs/reference /docs/reference.html 301
+/docs/reference/ /docs/reference.html 301
+/docs/reference/index.html /docs/reference.html 301
+/docs/guide /docs/guide.html 301
+/docs/guide/ /docs/guide.html 301
+/docs/guide/index.html /docs/guide.html 301
+/docs/reference/plugins /docs/reference/plugins.html 301
+/docs/reference/plugins/ /docs/reference/plugins.html 301
+/docs/reference/plugins/index.html /docs/reference/plugins.html 301
+/blog /blog.html 301
+/blog/ /blog.html 301
+/docs/concepts/styling /docs/concepts/styling.html 301
+/docs/concepts/styling/ /docs/concepts/styling.html 301
+/docs/concepts/reactivity /docs/concepts/reactivity.html 301
+/docs/concepts/reactivity/ /docs/concepts/reactivity.html 301
