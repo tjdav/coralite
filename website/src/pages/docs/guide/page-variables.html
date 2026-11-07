@@ -63,7 +63,7 @@
       &lt;/script&gt;
     </coralite-code-highlight>
 
-    <p>For static values that don't require reactivity on the client, mapping them in <code>data</code> is the preferred approach:</p>
+    <p>For values rendered during SSR, mapping them in <code>server</code> is the preferred approach:</p>
 
     <coralite-code-highlight language="html">
       <!-- src/components/page-info.html -->
@@ -76,17 +76,13 @@
       </template>
 
       &lt;script type="module"&gt;
-        import { defineComponent } from 'coralite'
-
-        export default defineComponent({
-          data ({ page }) {
-            return {
-              currentUrl: page.url.pathname,
-              fileName: page.file.filename,
-              language: page.meta.lang
-            }
+        export async function server ({ page }) {
+          return {
+            currentUrl: page.url.pathname,
+            fileName: page.file.filename,
+            language: page.meta.lang
           }
-        })
+        }
       &lt;/script&gt;
     </coralite-code-highlight>
 

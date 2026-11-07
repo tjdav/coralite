@@ -182,7 +182,6 @@
 </template>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
   import { parseHTML } from 'coralite/utils/server'
   import code from 'highlight.js'
   import { dedent } from '../utils/format.js'
@@ -204,24 +203,23 @@
     return nodes
   }
 
-  export default defineComponent({
-    server: async () => {
-      return {
-        tab1_file1: highlight(`
-          import { defineConfig } from 'coralite';
+  export async function server () {
+    return {
+      tab1_file1: highlight(`
+        import { defineConfig } from 'coralite';
 
-          /**
-           * Project configuration.
-           * Defines where your pages and components are located,
-           * and where the final build should be placed.
-           */
-          export default defineConfig({
-            output: 'dist',
-            components: 'src/components',
-            pages: 'src/pages'
-          });
-        `, 'javascript'),
-        tab1_file2: highlight(`
+        /**
+         * Project configuration.
+         * Defines where your pages and components are located,
+         * and where the final build should be placed.
+         */
+        export default defineConfig({
+          output: 'dist',
+          components: 'src/components',
+          pages: 'src/pages'
+        });
+      `, 'javascript'),
+      tab1_file2: highlight(`
           <!DOCTYPE html>
           <html>
           <head>
@@ -236,7 +234,7 @@
           </body>
           </html>
         `, 'html'),
-        tab1_file3: highlight(`
+      tab1_file3: highlight(`
           <template id="checkout-card">
             <div class="checkout-card" data-theme="{{ theme }}">
               <header>
@@ -261,87 +259,79 @@
           </template>
 
           <script type="module">
-            import { defineComponent } from 'coralite';
-
-            export default defineComponent({
-              // ATTRIBUTES: Public API
-              attributes: {
-                productId: {
-                  type: String,
-                  default: ''
-                },
-                theme: {
-                  type: String,
-                  default: 'light'
-                }
+            // ATTRIBUTES: Public API coerced from HTML attributes
+            export const attributes = {
+              productId: {
+                type: String,
+                default: ''
               },
-              
-              // SERVER: Initial State (SSR Ready)
-              server: () => {
-                return {
-                  basePrice: 99.00,
-                  promoCode: '',
-                  discountAmount: 0,
-                  isApplyingDiscount: false
-                };
-              },
-              
-              // GETTERS: Pure Derived UI Data (Handling ALL logic and negation)
-              getters: {
-                // Math logic
-                finalPrice: ({ state }) => {
-                  return Math.max(0, state.basePrice - state.discountAmount).toFixed(2);
-                },
-                // Negation logic for the native 'hidden' attribute
-                hideValidationMessage: ({ state }) => {
-                  return state.isApplyingDiscount === false;
-                },
-                // Negation logic for the native 'hidden' attribute
-                hideDiscountRow: ({ state }) => {
-                  return state.promoCode === '';
-                }
-              },
-              
-              // CLIENT: Browser Interactivity
-              client: ({ state, refs, observe }) => {
-                
-                observe('productId', async (newId) => {
-                  if (!newId) {
-                    return;
-                  }
-                  
-                  const data = await fetch(\`/api/products/\${newId}/price\`).then(r => r.json());
-
-                  state.basePrice = data.price;
-                  state.promoCode = ''; 
-                  state.discountAmount = 0;
-                });
-
-                refs('apply-btn').addEventListener('click', async () => {
-                  const code = refs('promo-input').value.trim();
-                  
-                  if (!code) {
-                    return;
-                  }
-
-                  state.isApplyingDiscount = true;
-                  
-                  try {
-                    const data = await fetch(\`/api/promo/validate?code=\${code}\`).then(r => r.json());
-                    state.promoCode = code;
-                    state.discountAmount = data.discount;
-                  } catch (err) {
-                    alert('Invalid promo code');
-                  } finally {
-                    state.isApplyingDiscount = false;
-                  }
-                });
-
-                refs('checkout-btn').addEventListener('click', () => {
-                  alert(\`Charging \$\${state.finalPrice} to your card!\`);
-                });
+              theme: {
+                type: String,
+                default: 'light'
               }
-            });
+            };
+
+            // GETTERS: Pure Derived UI Data (Handling derived calculations and states)
+            export const getters = {
+              finalPrice: ({ state }) => {
+                return Math.max(0, state.basePrice - state.discountAmount).toFixed(2);
+              },
+              hideValidationMessage: ({ state }) => {
+                return state.isApplyingDiscount === false;
+              },
+              hideDiscountRow: ({ state }) => {
+                return state.promoCode === '';
+              }
+            };
+
+            // SERVER: Initial State (SSR Ready)
+            export async function server () {
+              return {
+                basePrice: 99.00,
+                promoCode: '',
+                discountAmount: 0,
+                isApplyingDiscount: false
+              };
+            }
+
+            // CLIENT: Browser Interactivity with signal-based listener cleanup
+            export function client ({ state, refs, observe, signal }) {
+              observe('productId', async (newId) => {
+                if (!newId) {
+                  return;
+                }
+
+                const data = await fetch(\`/api/products/\${newId}/price\`, { signal }).then(r => r.json());
+
+                state.basePrice = data.price;
+                state.promoCode = '';
+                state.discountAmount = 0;
+              });
+
+              refs('apply-btn').addEventListener('click', async () => {
+                const code = refs('promo-input').value.trim();
+
+                if (!code) {
+                  return;
+                }
+
+                state.isApplyingDiscount = true;
+
+                try {
+                  const data = await fetch(\`/api/promo/validate?code=\${code}\`, { signal }).then(r => r.json());
+                  state.promoCode = code;
+                  state.discountAmount = data.discount;
+                } catch (err) {
+                  alert('Invalid promo code');
+                } finally {
+                  state.isApplyingDiscount = false;
+                }
+              }, { signal });
+
+              refs('checkout-btn').addEventListener('click', () => {
+                alert(\`Charging \$\${state.finalPrice} to your card!\`);
+              }, { signal });
+            }
           <\/script>
 
           <style>
@@ -353,7 +343,7 @@
           </style>
         `, 'html'),
 
-        tab2_file1: highlight(`
+      tab2_file1: highlight(`
           import { defineConfig } from 'coralite';
 
           /**
@@ -366,7 +356,7 @@
             pages: 'src/pages'
           });
         `, 'javascript'),
-        tab2_file2: highlight(`
+      tab2_file2: highlight(`
           <main>
             <!-- Page content rendered on the server -->
             <h1>Server-Side Rendering</h1>
@@ -380,7 +370,7 @@
             <data-fetcher></data-fetcher>
           </main>
         `, 'html'),
-        tab2_file3: highlight(`
+      tab2_file3: highlight(`
           <template id="user-profile">
             <article>
               <h2>{{ username }}</h2>
@@ -389,30 +379,27 @@
           </template>
 
           <script type="module">
-            import { defineComponent } from 'coralite';
+            export const attributes = {
+              userId: { type: Number }
+            };
 
             /**
-             * The 'server' block runs during the build or request.
-             * It's perfect for fetching data from a database or local file.
-             * The returned object is merged into the component state.
+             * The 'server' function runs during the build or request.
+             * It is ideal for fetching data from a database or remote API.
+             * The returned object initializes the component's state.
              */
-            export default defineComponent({
-              attributes: {
-                userId: { type: Number }
-              },
-              server: async ({ state }) => {
-                // In a real app, fetch from a DB using the userId
-                const data = { name: 'Jane Doe', bio: 'Software Engineer' };
-                
-                return {
-                  username: data.name,
-                  bio: data.bio
-                };
-              }
-            });
+            export async function server ({ state }) {
+              // In a real app, fetch from a DB using the userId
+              const data = { name: 'Jane Doe', bio: 'Software Engineer' };
+
+              return {
+                username: data.name,
+                bio: data.bio
+              };
+            }
           <\/script>
         `, 'html'),
-        tab2_file4: highlight(`
+      tab2_file4: highlight(`
           <template id="data-fetcher">
             <section>
               <h3>Remote Content</h3>
@@ -422,24 +409,21 @@
           </template>
 
           <script type="module">
-            import { defineComponent } from 'coralite';
             // Top-level imports in the script block are server-side ONLY.
             // They are automatically stripped from the client bundle.
             import { readFileSync } from 'node:fs';
 
-            export default defineComponent({
-              server: async () => {
-                // Example of server-only capability: reading from filesystem
-                // or performing heavy computations away from the client.
-                return {
-                  message: 'This data was loaded from the server environment.',
-                  timestamp: new Date().toLocaleTimeString()
-                };
-              }
-            });
+            export async function server () {
+              // Example of server-only capability: reading from filesystem
+              // or performing heavy computations away from the client.
+              return {
+                message: 'This data was loaded from the server environment.',
+                timestamp: new Date().toLocaleTimeString()
+              };
+            }
           <\/script>
         `, 'html'),
-        tab2_file5: highlight(`
+      tab2_file5: highlight(`
           <main>
             <h1>Dashboard</h1>
             <p>Welcome to the server-rendered dashboard.</p>
@@ -452,7 +436,7 @@
           </main>
         `, 'html'),
 
-        tab3_file1: highlight(`
+      tab3_file1: highlight(`
           import { defineConfig } from 'coralite';
 
           /**
@@ -464,7 +448,7 @@
             pages: 'src/pages'
           });
         `, 'javascript'),
-        tab3_file2: highlight(`
+      tab3_file2: highlight(`
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -479,7 +463,7 @@
           </body>
           </html>
         `, 'html'),
-        tab3_file3: highlight(`
+      tab3_file3: highlight(`
           <template id="meta-info">
             <div>
               <h1>{{ title }}</h1>
@@ -489,25 +473,21 @@
           </template>
 
           <script type="module">
-            import { defineComponent } from 'coralite';
-
             /**
-             * The 'data' function provides access to the 'page' object,
-             * which contains metadata, URL information, and more.
+             * The 'server' function receives the 'page' object,
+             * which contains metadata, URL information, and file details.
              */
-            export default defineComponent({
-              data: ({ page }) => {
-                return {
-                  title: page.meta.title,
-                  author: page.meta.author,
-                  path: page.url.pathname
-                };
-              }
-            });
+            export async function server ({ page }) {
+              return {
+                title: page.meta.title,
+                author: page.meta.author,
+                path: page.url.pathname
+              };
+            }
           <\/script>
         `, 'html'),
 
-        tab4_file1: highlight(`
+      tab4_file1: highlight(`
           import { defineConfig } from 'coralite';
           import store from './src/plugins/store.js';
 
@@ -522,21 +502,20 @@
             plugins: [store]
           });
         `, 'javascript'),
-        tab4_file2: highlight(`
+      tab4_file2: highlight(`
           import { definePlugin } from 'coralite';
 
           /**
-           * Plugins follow a two-phase initialization.
-           * They can provide a 'context' that is injected into
-           * both 'server' and 'client' blocks of components.
+           * Plugins follow a two-phase curried context initialization:
+           * (pluginContext) => (instanceContext) => ({ ... })
            */
           export default definePlugin({
             name: 'store',
             client: {
-              context: () => {
+              context: (pluginContext) => {
                 let cart = [];
-                // Phase 2 factory returns the actual API
-                return () => ({
+                // Phase 2 factory returns the actual instance API
+                return (instanceContext) => ({
                   getCart: () => cart,
                   addToCart: (item) => {
                     cart.push(item);
@@ -548,7 +527,7 @@
             }
           });
         `, 'javascript'),
-        tab4_file3: highlight(`
+      tab4_file3: highlight(`
           <main>
             <h1>Coral Shop</h1>
             <!-- Shared state consumer -->
@@ -567,32 +546,29 @@
             </section>
           </main>
         `, 'html'),
-        tab4_file4: highlight(`
+      tab4_file4: highlight(`
           <template id="cart-button">
             <button ref="btn">Buy {{ itemName }}</button>
           </template>
 
           <script type="module">
-            import { defineComponent } from 'coralite';
+            export const attributes = {
+              itemName: { type: String }
+            };
 
             /**
              * This component interacts with the 'store' plugin.
              * The plugin's API is available on the context object.
              */
-            export default defineComponent({
-              attributes: {
-                itemName: { type: String }
-              },
-              client: ({ store, state, refs }) => {
-                refs('btn').addEventListener('click', () => {
-                  // Call the plugin's method
-                  store.addToCart(state.itemName);
-                });
-              }
-            });
+            export function client ({ store, state, refs, signal }) {
+              refs('btn').addEventListener('click', () => {
+                // Call the plugin's method
+                store.addToCart(state.itemName);
+              }, { signal });
+            }
           <\/script>
         `, 'html'),
-        tab4_file5: highlight(`
+      tab4_file5: highlight(`
           <template id="cart-total">
             <div class="cart-total">
               Items in cart: {{ count }}
@@ -600,25 +576,20 @@
           </template>
 
           <script type="module">
-            import { defineComponent } from 'coralite';
-
             /**
              * Listens for changes in the shared store.
              */
-            export default defineComponent({
-              client: ({ store, state, signal }) => {
-                const update = () => {
-                  state.count = store.getCart().length;
-                };
+            export function client ({ store, state, signal }) {
+              const update = () => {
+                state.count = store.getCart().length;
+              };
 
-                update();
-                // Standard browser events can be used for communication
-                window.addEventListener('cart-updated', update, { signal });
-              }
-            });
+              update();
+              // Standard browser events can be used for communication
+              window.addEventListener('cart-updated', update, { signal });
+            }
           <\/script>
         `, 'html')
-      }
     }
-  })
+  }
 </script>
