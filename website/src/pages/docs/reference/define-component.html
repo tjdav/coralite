@@ -290,7 +290,7 @@ attributes: {
       <p>
 To prevent complex JSON-in-HTML parsing errors and ensure performance, attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code>. Use the <code>server</code> block or <code>slots</code> for complex data structures.      </p>
       <p>
-        <strong>Note:</strong> If you use the <code>no-hydration</code> attribute, the host tag is completely removed (spliced) and replaced by its contents. Learn more in the <a href="../guide/ssr.html#ast-splicing--no-hydration">SSR Guide</a>.
+        <strong>Note:</strong> If you use the <code>no-hydration</code> attribute, the host tag is completely removed (spliced) and replaced by its contents. Learn more in the <a href="/docs/guide/ssr.html#ast-splicing--no-hydration">SSR Guide</a>.
       </p>
     </coralite-alert>
  
@@ -304,7 +304,7 @@ async server(context) {
 }
     </coralite-code-highlight>
 
-    <p><strong>Note:</strong> In <a href="./config.html#mode">testing mode</a>, you can override this block for specific components to provide deterministic mock data.</p>
+    <p><strong>Note:</strong> In <a href="/docs/reference/config.html#mode">testing mode</a>, you can override this block for specific components to provide deterministic mock data.</p>
 
     <coralite-heading level="2" text="3. getters (Derived State)"></coralite-heading>
     <p>Getters are functions used to calculate derived data. They are reactive; if an attribute or a data value changes, the getter automatically re-calculates. Getters support both synchronous pure functions and asynchronous functions returning Promises.</p>

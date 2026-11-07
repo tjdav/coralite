@@ -40,7 +40,7 @@
 
     <p>To use the component in your pages (or inside other components), the custom element tag name must exactly match the component's <code>id</code>.</p>
 
-    <p>Coralite components are server-side rendered (SSR). By default, Coralite preserves your custom host tag in the final HTML and injects the template content inside it. Learn more about how this works in the <a href="./ssr.html">SSR Guide</a>.</p>
+    <p>Coralite components are server-side rendered (SSR). By default, Coralite preserves your custom host tag in the final HTML and injects the template content inside it. Learn more about how this works in the <a href="/docs/guide/ssr.html">SSR Guide</a>.</p>
 
     <coralite-code-html>
       <!-- src/pages/index.html -->
@@ -162,7 +162,7 @@
         By default, Coralite preserves the host tag of dynamic components in the final HTML but applies <code>display: contents</code> via an internal stylesheet. This ensures the tag doesn't affect your layout while remaining available for hydration.
       </p>
       <p>
-        <strong>Note:</strong> If you use the <code>no-hydration</code> attribute, the host tag is completely removed (spliced) and replaced by its contents. Learn more in the <a href="./ssr.html#ast-splicing--no-hydration">SSR Guide</a>.
+        <strong>Note:</strong> If you use the <code>no-hydration</code> attribute, the host tag is completely removed (spliced) and replaced by its contents. Learn more in the <a href="/docs/guide/ssr.html#ast-splicing--no-hydration">SSR Guide</a>.
       </p>
     </coralite-alert>
 
@@ -209,7 +209,7 @@
 
     <coralite-heading level="4" text="1. Attributes (Inputs)"></coralite-heading>
     <p>Attributes are the "props" of your component. Coralite supports type coercion, enum validation (<code>values</code> / array shorthand), mandatory requirements (<code>required: true</code>), synchronous transformations (<code>transform</code>), and custom validation predicates (<code>validate</code>).</p>
-    <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data. For full details on the 6-step attribute execution pipeline, see the <a href="../reference/define-component.html#1-attributes">Component API Reference</a>.</p>
+    <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data. For full details on the 6-step attribute execution pipeline, see the <a href="/docs/reference/define-component.html#1-attributes">Component API Reference</a>.</p>
     <coralite-code-highlight language="javascript">
 export const attributes = {
   // Type shorthand & array shorthand (allowed enum values)
@@ -240,7 +240,7 @@ export function onError ({ error, state }) {
     </coralite-code-highlight>
 
     <coralite-heading level="4" text="2. Server (Server-Side Logic)"></coralite-heading>
-    <p>The <code>server</code> function runs strictly on the server during build-time. It's the place for database queries or API calls. External dependencies should be loaded via dynamic <code>await import()</code>. See the <a href="./ssr.html#the-server-block">SSR Guide</a> for more details.</p>
+    <p>The <code>server</code> function runs strictly on the server during build-time. It's the place for database queries or API calls. External dependencies should be loaded via dynamic <code>await import()</code>. See the <a href="/docs/guide/ssr.html#the-server-block">SSR Guide</a> for more details.</p>
     <coralite-code-highlight language="javascript">
 export async function server ({ myPlugin }) {
   const posts = await db.getPosts();
@@ -367,7 +367,7 @@ export async function client ({ state, signal, refs, observe, emit, updateComple
       <li><strong>Fieldset Cascading:</strong> Ancestor <code>&lt;fieldset disabled&gt;</code> state automatically cascades into <code>state.disabled</code> and triggers <code>onFormDisabled</code>.</li>
     </ul>
 
-    <p>For complete details on host element properties (such as <code>el.name</code>, <code>el.form</code>, <code>el.validity</code>, and <code>el.checkValidity()</code>), see the <a href="../reference/define-component.html#7-formassociated-form-associated-custom-elements">defineComponent API Reference</a>.</p>
+    <p>For complete details on host element properties (such as <code>el.name</code>, <code>el.form</code>, <code>el.validity</code>, and <code>el.checkValidity()</code>), see the <a href="/docs/reference/define-component.html#7-formassociated-form-associated-custom-elements">defineComponent API Reference</a>.</p>
 
     <coralite-heading level="3" text="The Flow of State"></coralite-heading>
 
@@ -389,7 +389,7 @@ export async function client ({ state, signal, refs, observe, emit, updateComple
 
     <ul>
       <li><strong>Keep Templates Simple:</strong> Templates should only contain HTML and <code>{{ token }}</code> placeholders. Avoid complex logic in HTML.</li>
-      <li><strong>Boolean & ARIA Attribute Toggling:</strong> Native HTML boolean attributes (43 standard attributes) and <code>aria-*</code> attributes are automatically added or removed when bound to single state tokens. Learn more in the <a href="../reference/define-component.html#native-html-boolean-attributes--wai-aria-auto-removal">Component API Reference</a>.</li>
+      <li><strong>Boolean & ARIA Attribute Toggling:</strong> Native HTML boolean attributes (43 standard attributes) and <code>aria-*</code> attributes are automatically added or removed when bound to single state tokens. Learn more in the <a href="/docs/reference/define-component.html#native-html-boolean-attributes--wai-aria-auto-removal">Component API Reference</a>.</li>
       <li><strong>Prefer Primitives for Attributes:</strong> Only pass Strings, Numbers, and Booleans via attributes. Use <code>server</code> for complex objects.</li>
       <li><strong>Clean Up with AbortSignal:</strong> Always pass the <code>signal</code> to <code>addEventListener</code> or <code>fetch</code> inside your <code>client</code> to prevent memory leaks.</li>
     </ul>
