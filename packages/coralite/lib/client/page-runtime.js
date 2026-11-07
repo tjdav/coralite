@@ -18,6 +18,15 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
   if (!pageConfig || typeof window === 'undefined' || typeof document === 'undefined') {
     return
   }
+  const hasReactivity = Boolean(
+    pageConfig.client
+    || (pageConfig.tokens && Object.keys(pageConfig.tokens).length > 0)
+    || (pageConfig.style && Object.keys(pageConfig.style).length > 0)
+    || (pageConfig.getters && Object.keys(pageConfig.getters).length > 0)
+  )
+  if (!hasReactivity) {
+    return
+  }
 
   const parseFn = (fnOrStr) => {
     if (typeof fnOrStr === 'function') {
@@ -103,7 +112,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
     return val !== undefined && val !== null ? String(val) : ''
   })
 
-  const updatePageTokens = () => {
+  const updatePageTokens = (isInitialSetup = false) => {
     if (Object.keys(pageTokens).length > 0) {
       const marked = document.querySelectorAll('[data-coralite-page-token]')
       for (const element of marked) {
@@ -129,21 +138,34 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
 
         if (entry.texts && entry.texts.length > 0) {
           /** @type {any[]} */
-          const textNodes = []
-          for (const child of Array.from(element.childNodes)) {
-            if (child.nodeType === 3) {
-              textNodes.push(child)
-            }
-          }
-          for (const { textIndex, raw } of entry.texts) {
-            /** @type {any} */
-            const textNode = textNodes[textIndex]
-            if (!textNode) {
-              continue
-            }
+          let textNodes = null
+          for (const { textIndex, raw, type } of entry.texts) {
             const next = renderTokenTemplate(raw)
-            if (textNode.nodeValue !== next) {
-              textNode.nodeValue = next
+            if (type === 'html') {
+              if (isInitialSetup) {
+                if (element.textContent?.trim() === raw.trim()) {
+                  element.innerHTML = next
+                }
+              } else if (element.innerHTML !== next) {
+                element.innerHTML = next
+              }
+            } else {
+              if (!textNodes) {
+                textNodes = []
+                for (const child of Array.from(element.childNodes)) {
+                  if (child.nodeType === 3) {
+                    textNodes.push(child)
+                  }
+                }
+              }
+              /** @type {any} */
+              const textNode = textNodes[textIndex]
+              if (!textNode) {
+                continue
+              }
+              if (textNode.nodeValue !== next) {
+                textNode.nodeValue = next
+              }
             }
           }
         }
@@ -169,7 +191,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
     queueMicrotask(() => {
       isUpdatePending = false
       applyPageStyles()
-      updatePageTokens()
+      updatePageTokens(false)
     })
   }
 
@@ -321,7 +343,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
   })
 
   applyPageStyles()
-  updatePageTokens()
+  updatePageTokens(true)
 
   const clientFn = parseFn(pageConfig.client)
   if (typeof clientFn === 'function') {

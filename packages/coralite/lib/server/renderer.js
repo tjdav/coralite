@@ -28,7 +28,7 @@ import {
 } from './utils/server.js'
 import { getHtmlFile } from './utils/html.js'
 import { extractScriptStylesheets } from './utils/dependency-stylesheets.js'
-import { parseHTML } from './utils/parse.js'
+import { parseHTML, getTokensFromString } from './utils/parse.js'
 import {
   findHeadAndBody,
   injectExternalStyles,
@@ -58,6 +58,7 @@ import { resolvePageMetaDefaults } from '../shared/page-meta.js'
 import { checkFileChange, hash } from './utils/manifest.js'
 import {
   isCoraliteElement,
+  isCoraliteNode,
   isCoraliteCollectionItem
 } from '../shared/types.js'
 import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './utils/dom.js'
@@ -899,7 +900,11 @@ export function createRenderer ({
             type: 'textNode',
             node: item.textNode,
             content: token.content,
-            value
+            value,
+            customElements: module.customElements,
+            ignoreByAttribute: normalizedOptions.ignoreByAttribute,
+            skipRenderByAttribute: normalizedOptions.skipRenderByAttribute,
+            onError: handleError
           })
         }
       }
@@ -1503,6 +1508,14 @@ export function createRenderer ({
     let isFallbackRender = false
     let pageContextFrames = []
 
+    const hasPageClientReactivity = Boolean(
+      pageExports && (
+        pageExports.client ||
+        (pageExports.getters && Object.keys(pageExports.getters).length > 0) ||
+        (pageExports.style && Object.keys(pageExports.style).length > 0)
+      )
+    )
+
     const pageTokenTemplates = {}
     let nextPageTokenId = 0
     const pageTokenScope = hash(`${buildId}:${routeObj?.path || pageItem?.path?.pathname || pageContext?.file?.pathname || 'page'}`).slice(0, 8)
@@ -1550,7 +1563,7 @@ export function createRenderer ({
       }
 
       const isComponentTag = node.type === 'tag' && (node.name.includes('-') || app?.components?.getItem(node.name))
-      const canMark = node.type === 'tag' && node.name !== 'script' && node.name !== 'style'
+      const canMark = hasPageClientReactivity && node.type === 'tag' && node.name !== 'script' && node.name !== 'style'
       let markerId = null
       const tokenEntry = {
         attrs: {},
@@ -1571,8 +1584,10 @@ export function createRenderer ({
             continue
           }
           if (typeof attrVal === 'string' && attrVal.includes('{{')) {
-            tokenEntry.attrs[attrName] = attrVal
-            ensureMarker()
+            if (hasPageClientReactivity) {
+              tokenEntry.attrs[attrName] = attrVal
+              ensureMarker()
+            }
             const singleMatch = attrVal.match(/^\s*\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}\s*$/)
             if (singleMatch) {
               const rawVal = resolvePageTokenKey(singleMatch[1], stateObj, routeObjParam)
@@ -1616,63 +1631,234 @@ export function createRenderer ({
         }
       }
 
-      if (node.children) {
-        if (!isComponentTag) {
-          let textIndex = 0
-          for (const child of node.children) {
-            if (child.type === 'text') {
-              if (child.data && child.data.includes('{{')) {
-                tokenEntry.texts.push({
-                  textIndex,
-                  raw: child.data
-                })
-                ensureMarker()
-              }
-              textIndex++
+      const rawTextElements = new Set(['title', 'textarea', 'script', 'style', 'option'])
+      const canHaveHtmlChild = node.type === 'root' || (node.type === 'tag' && !rawTextElements.has(node.name))
+
+      const collectAstCustomElements = (nodes) => {
+        for (const n of nodes) {
+          if (n.type === 'tag') {
+            if (n.slots && mappedComponent.customElements && !mappedComponent.customElements.includes(n)) {
+              mappedComponent.customElements.push(n)
             }
-            replaceTokensInAST(child, stateObj, routeObjParam)
+            if (n.children && n.children.length > 0) {
+              collectAstCustomElements(n.children)
+            }
           }
-        } else {
-          for (let cIdx = 0; cIdx < node.children.length; cIdx++) {
-            const child = node.children[cIdx]
-            if (child.type === 'text') {
-              if (child.data && child.data.includes('{{')) {
-                const cTokenMarkerId = `${pageTokenScope}-${nextPageTokenId++}`
-                pageTokenTemplates[cTokenMarkerId] = {
-                  attrs: {},
-                  texts: [{
-                    textIndex: 0,
-                    raw: child.data
-                  }]
+        }
+      }
+
+      const resolveTokenAstChildren = (tokenVal) => {
+        if (!canHaveHtmlChild) {
+          return null
+        }
+        if (isCoraliteNode(tokenVal)) {
+          const children = [tokenVal]
+          collectAstCustomElements(children)
+          return children
+        }
+        if (Array.isArray(tokenVal) && tokenVal.length > 0 && isCoraliteNode(tokenVal[0])) {
+          collectAstCustomElements(tokenVal)
+          return tokenVal
+        }
+        if (typeof tokenVal === 'string' && tokenVal.includes('<')) {
+          const parsed = parseHTML(
+            tokenVal,
+            normalizedOptions.ignoreByAttribute,
+            normalizedOptions.skipRenderByAttribute,
+            handleError
+          )
+          if (parsed.root.children.some(c => c.type !== 'text')) {
+            if (mappedComponent.customElements) {
+              for (const ce of parsed.customElements) {
+                if (!mappedComponent.customElements.includes(ce)) {
+                  mappedComponent.customElements.push(ce)
                 }
-                child.data = replaceTokenString(child.data, stateObj, routeObjParam)
-                const cToken = createCoraliteElement({
-                  type: 'tag',
-                  name: 'c-token',
-                  parent: node,
-                  attribs: {
-                    'data-coralite-page-token': cTokenMarkerId
-                  },
-                  children: [child]
-                })
-                child.parent = cToken
-                node.children[cIdx] = cToken
-                if (Array.isArray(node.slots)) {
-                  const slotEntry = node.slots.find(s => s.node === child)
-                  if (slotEntry) {
-                    slotEntry.node = cToken
+              }
+            }
+            if (mappedComponent.tempElements) {
+              mappedComponent.tempElements.push(...parsed.tempElements)
+            }
+            if (mappedComponent.skipRenderElements) {
+              mappedComponent.skipRenderElements.push(...parsed.skipRenderElements)
+            }
+            return parsed.root.children
+          }
+        }
+        return null
+      }
+
+      const createCTokenElement = (rawTokenContent, tokenType, childNodes) => {
+        const cTokenMarkerId = `${pageTokenScope}-${nextPageTokenId++}`
+        pageTokenTemplates[cTokenMarkerId] = {
+          attrs: {},
+          texts: [{
+            textIndex: 0,
+            type: tokenType,
+            raw: rawTokenContent
+          }]
+        }
+        const cToken = createCoraliteElement({
+          type: 'tag',
+          name: 'c-token',
+          parent: node,
+          attribs: {
+            'data-coralite-page-token': cTokenMarkerId
+          },
+          children: []
+        })
+        for (const astChild of childNodes) {
+          astChild.parent = cToken
+          cToken.children.push(astChild)
+        }
+        relinkChildren(cToken)
+        return cToken
+      }
+
+      if (node.children) {
+        let textIndex = 0
+        for (let cIdx = 0; cIdx < node.children.length; cIdx++) {
+          const child = node.children[cIdx]
+          if (child.type === 'text') {
+            if (child.data && child.data.includes('{{')) {
+              const textTokens = getTokensFromString(child.data, true)
+              const evaluatedTokens = textTokens.map(token => {
+                const tokenVal = resolvePageTokenKey(token.name, stateObj, routeObjParam)
+                const astChildren = resolveTokenAstChildren(tokenVal)
+                return {
+                  token,
+                  tokenVal,
+                  astChildren
+                }
+              })
+              const hasHtmlToken = evaluatedTokens.some(t => t.astChildren !== null)
+
+              if (hasHtmlToken) {
+                let lastHtmlBoundary = 0
+                let searchIndex = 0
+                const replacementNodes = []
+
+                const emitPlainTextSegment = (rawSegment) => {
+                  const hasTokens = rawSegment.includes('{{')
+                  const resolvedSegment = hasTokens
+                    ? replaceTokenString(rawSegment, stateObj, routeObjParam)
+                    : rawSegment
+                  const textNode = createCoraliteTextNode({
+                    type: 'text',
+                    data: resolvedSegment,
+                    parent: node
+                  })
+                  if (isComponentTag) {
+                    if (hasPageClientReactivity && hasTokens) {
+                      replacementNodes.push(createCTokenElement(rawSegment, 'text', [textNode]))
+                    } else {
+                      replacementNodes.push(textNode)
+                    }
+                  } else {
+                    if (hasPageClientReactivity && hasTokens) {
+                      tokenEntry.texts.push({
+                        textIndex,
+                        type: 'text',
+                        raw: rawSegment
+                      })
+                      ensureMarker()
+                    }
+                    replacementNodes.push(textNode)
+                    textIndex++
                   }
                 }
+
+                for (const { token, astChildren } of evaluatedTokens) {
+                  const tokenIdx = child.data.indexOf(token.content, searchIndex)
+                  searchIndex = tokenIdx + token.content.length
+
+                  if (astChildren === null) {
+                    continue
+                  }
+
+                  if (tokenIdx > lastHtmlBoundary) {
+                    emitPlainTextSegment(child.data.substring(lastHtmlBoundary, tokenIdx))
+                  }
+
+                  if (hasPageClientReactivity) {
+                    replacementNodes.push(createCTokenElement(token.content, 'html', astChildren))
+                  } else {
+                    for (const astChild of astChildren) {
+                      astChild.parent = node
+                      replacementNodes.push(astChild)
+                      if (!isComponentTag && astChild.type === 'text') {
+                        textIndex++
+                      }
+                    }
+                  }
+
+                  lastHtmlBoundary = searchIndex
+                }
+
+                if (lastHtmlBoundary < child.data.length) {
+                  emitPlainTextSegment(child.data.substring(lastHtmlBoundary))
+                }
+
+                if (isComponentTag && Array.isArray(node.slots)) {
+                  const slotIdx = node.slots.findIndex(s => s.node === child)
+                  if (slotIdx !== -1) {
+                    const defaultSlotName = node.slots[slotIdx].name || 'default'
+                    const newSlotEntries = replacementNodes.map(repNode => {
+                      let slotName = defaultSlotName
+                      if (repNode.type === 'tag' && repNode.attribs && repNode.attribs.slot) {
+                        slotName = repNode.attribs.slot
+                        delete repNode.attribs.slot
+                      }
+                      return {
+                        name: slotName,
+                        node: repNode
+                      }
+                    })
+                    node.slots.splice(slotIdx, 1, ...newSlotEntries)
+                  }
+                }
+
+                node.children.splice(cIdx, 1, ...replacementNodes)
+                relinkChildren(node)
+                cIdx += replacementNodes.length - 1
+                continue
+              } else if (isComponentTag) {
+                const rawText = child.data
+                child.data = replaceTokenString(rawText, stateObj, routeObjParam)
+                if (hasPageClientReactivity) {
+                  const cToken = createCTokenElement(rawText, 'text', [child])
+                  node.children[cIdx] = cToken
+                  if (Array.isArray(node.slots)) {
+                    const slotEntry = node.slots.find(s => s.node === child)
+                    if (slotEntry) {
+                      slotEntry.node = cToken
+                    }
+                  }
+                }
+              } else {
+                if (hasPageClientReactivity) {
+                  tokenEntry.texts.push({
+                    textIndex,
+                    type: 'text',
+                    raw: child.data
+                  })
+                  ensureMarker()
+                }
+                child.data = replaceTokenString(child.data, stateObj, routeObjParam)
+                textIndex++
               }
-            } else {
-              replaceTokensInAST(child, stateObj, routeObjParam)
+            } else if (!isComponentTag) {
+              textIndex++
             }
+          } else {
+            replaceTokensInAST(child, stateObj, routeObjParam)
           }
+        }
+        if (isComponentTag) {
           relinkChildren(node)
         }
       }
 
-      if (markerId !== null) {
+      if (hasPageClientReactivity && markerId !== null) {
         pageTokenTemplates[markerId] = tokenEntry
       }
     }
@@ -2466,9 +2652,9 @@ export function createRenderer ({
         : []
 
       let pageConfigObj = null
-      if (pageExports) {
+      if (hasPageClientReactivity || isFallbackRender) {
         const gettersSource = {}
-        if (pageExports.getters && typeof pageExports.getters === 'object') {
+        if (pageExports && pageExports.getters && typeof pageExports.getters === 'object') {
           for (const [k, v] of Object.entries(pageExports.getters)) {
             if (typeof v === 'function') {
               gettersSource[k] = v.toString()
@@ -2476,7 +2662,7 @@ export function createRenderer ({
           }
         }
         const styleSource = {}
-        if (pageExports.style && typeof pageExports.style === 'object') {
+        if (pageExports && pageExports.style && typeof pageExports.style === 'object') {
           for (const [k, v] of Object.entries(pageExports.style)) {
             styleSource[k] = typeof v === 'function' ? v.toString() : v
           }
@@ -2494,14 +2680,14 @@ export function createRenderer ({
           }
         }
         let serializedPageClient = null
-        if (!isFallbackRender && pageExports.client) {
+        if (!isFallbackRender && pageExports && pageExports.client) {
           serializedPageClient = extractScriptStylesheets(pageExports.client.toString(), {
             filePath: pageItem.path?.pathname,
             allowAllFunctions: true
           }).code
         }
         pageConfigObj = {
-          state: stateData,
+          state: normalizeObjectFunctions(stateData, astTransformer),
           route: routeObj,
           getters: gettersSource,
           style: styleSource,

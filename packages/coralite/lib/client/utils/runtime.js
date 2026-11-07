@@ -59,11 +59,11 @@ export function generateClientRuntime ({
   if (coralite.config.viewTransitions === undefined) {
     coralite.config.viewTransitions = ${Boolean(viewTransitions)};
   }
-  coralite.config.page = Object.assign(
+  ${pageConfig !== 'null' ? `coralite.config.page = Object.assign(
     {},
     coralite.config.page || {},
     ${pageConfig}
-  );
+  );` : `coralite.config.page = coralite.config.page || null;`}
 
   coralite.state.counters = Object.assign(
     {},
@@ -417,7 +417,16 @@ ${!isProd ? `
   if (typeof initPlugins === 'function') {
     await initPlugins();
   }
-  if (typeof setupPageRuntime === 'function' && coralite.config.page) {
+  if (
+    typeof setupPageRuntime === 'function'
+    && coralite.config.page
+    && (
+      coralite.config.page.client
+      || (coralite.config.page.tokens && Object.keys(coralite.config.page.tokens).length > 0)
+      || (coralite.config.page.style && Object.keys(coralite.config.page.style).length > 0)
+      || (coralite.config.page.getters && Object.keys(coralite.config.page.getters).length > 0)
+    )
+  ) {
     await setupPageRuntime(coralite.config.page, getClientContext);
   }
 

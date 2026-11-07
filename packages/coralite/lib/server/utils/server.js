@@ -1,7 +1,6 @@
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
 import render from 'dom-serializer'
-import { sanitize } from 'isomorphic-dompurify'
 import { parseHTML } from './parse.js'
 import { isCoraliteNode } from '../../shared/types.js'
 import { createCoraliteTextNode, relinkChildren } from './dom.js'
@@ -811,13 +810,21 @@ export function astTransformer (target) {
  * @param {string} [token.attribute] - The attribute name to replace within the node.
  * @param {string} token.content - The content of the token.
  * @param {CoraliteModuleDefinition} token.value - The definition associated with the token.
+ * @param {CoraliteElement[]} [token.customElements] - Custom elements collection
+ * @param {Array<string | import('../../../types/index.js').Attribute>} [token.ignoreByAttribute] - Ignore element attributes
+ * @param {Array<string | import('../../../types/index.js').Attribute>} [token.skipRenderByAttribute] - Skip render attributes
+ * @param {import('../../../types/index.js').CoraliteOnError} [token.onError] - Error handler
  */
 export function replaceToken ({
   type,
   node,
   attribute,
   content,
-  value
+  value,
+  customElements,
+  ignoreByAttribute,
+  skipRenderByAttribute,
+  onError
 }) {
   if (
     type === 'attribute'
@@ -867,6 +874,25 @@ export function replaceToken ({
       if (Array.isArray(value) || value.type) {
         const nodesArray = Array.isArray(value) ? value : [value]
 
+        if (customElements && Array.isArray(customElements)) {
+          const collectCustomElements = (targetNode) => {
+            if (!targetNode) {
+              return
+            }
+            if (targetNode.slots && !customElements.includes(targetNode)) {
+              customElements.push(targetNode)
+            }
+            if (targetNode.children && Array.isArray(targetNode.children)) {
+              for (const c of targetNode.children) {
+                collectCustomElements(c)
+              }
+            }
+          }
+          for (const item of nodesArray) {
+            collectCustomElements(item)
+          }
+        }
+
         // inject nodes
         const textSplit = node.data.split(content)
         const childIndex = node.parent.children.indexOf(node)
@@ -914,22 +940,29 @@ export function replaceToken ({
         node.parent
         && node.parent.type === 'tag'
         && node.parent.name === 'c-token'
+        && typeof newVal === 'string'
         && newVal.includes('<')
-        && /<[a-z][\s\S]*>/i.test(newVal)
       ) {
-        const sanitized = sanitize(newVal)
-        const parsed = parseHTML(sanitized)
-        const children = parsed.root.children
+        const parsed = parseHTML(newVal, ignoreByAttribute, skipRenderByAttribute, onError)
+        const hasHtmlNodes = parsed.root.children.some(child => child.type !== 'text')
 
-        // Use the existing object-handling logic by recursing with the children array
-        replaceToken({
-          type,
-          node,
-          attribute,
-          content,
-          value: children
-        })
-        return
+        if (hasHtmlNodes) {
+          const children = parsed.root.children
+
+          // Use the existing object-handling logic by recursing with the children array
+          replaceToken({
+            type,
+            node,
+            attribute,
+            content,
+            value: children,
+            customElements,
+            ignoreByAttribute,
+            skipRenderByAttribute,
+            onError
+          })
+          return
+        }
       }
       node.data = newVal
     }
