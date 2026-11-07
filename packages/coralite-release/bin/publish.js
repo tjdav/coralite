@@ -288,7 +288,7 @@ async function main () {
     let npmToken = process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN
     const codebergToken = process.env.CODEBERG_TOKEN
 
-    if (!npmToken) {
+    if (!npmToken && process.env.NPM_TOKEN === undefined && process.env.NODE_AUTH_TOKEN === undefined) {
       const { homedir } = await import('node:os')
       const homeNpmrc = resolve(homedir(), '.npmrc')
       if (existsSync(homeNpmrc)) {
