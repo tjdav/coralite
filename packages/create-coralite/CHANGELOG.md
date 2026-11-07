@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.2.0
+
+> Comparing `create-coralite-v1.1.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### ♻️ Code Refactoring
+
+- consolidate window and VM globals under __coralite__ namespace (hydration) ([976a9c6](https://github.com/tjdav/coralite/commit/976a9c60da1628e0e4b43a4c6e8c8805458aaeb4))
+
+### 🔨 Other Changes
+
+- release(coralite): version 1.2.0 ([078b44b](https://github.com/tjdav/coralite/commit/078b44b9ef55323d4d8dcb41e46a0281172813ae))
+- release(coralite): version 1.1.1 ([572c096](https://github.com/tjdav/coralite/commit/572c096314a0abbac30096ae606bbb8dd6461d33))
+
+
 ## v1.1.0
 
 > Comparing `create-coralite-v1.0.0` to `HEAD`
