@@ -21,8 +21,13 @@ program
   .option('--no-git', 'Skip git commit and push')
   .action(async (options) => {
     const REPO = 'https://github.com/tjdav/coralite'
-    const packageName = options.package
-    const pkgPath = options.path
+    let packageName = options.package
+    let pkgPath = options.path
+
+    if (!packageName && !pkgPath && existsSync(path.join(process.cwd(), 'packages/coralite'))) {
+      packageName = 'coralite'
+      pkgPath = 'packages/coralite'
+    }
 
     prompts.intro('📝 Generating Changelog')
 

@@ -6,6 +6,7 @@ import { readFileSync, existsSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { simpleGit } from 'simple-git'
+import semver from 'semver'
 import { updateChangelogData } from '../lib/changelog-entry-generator.js'
 import { extractChangelogSection, matchesReleaseVersion, stripLeadingHeading } from '../lib/github.js'
 import { parseTagRef, getPackagePath } from './publish.js'
@@ -18,7 +19,7 @@ program
   .option('--notes <file>', 'Custom release notes file to parse')
   .option('-d, --dry-run', 'Show entry without updating changelog.json', false)
   .option('-y, --yes', 'Skip confirmation prompts', false)
-  .option('--backfill', 'Backfill all modern 1.0.0-rc release candidates into the changelog timeline', false)
+  .option('--backfill', 'Backfill all releases into the changelog timeline', false)
   .action(async (options) => {
     prompts.intro('📰 Coralite Website Changelog Generator')
 
@@ -28,14 +29,28 @@ program
 
     try {
       if (options.backfill) {
-        prompts.log.step('Scanning repository for modern era tags (1.0.0-rc.*)...')
+        prompts.log.step('Scanning repository for release tags...')
         const allTags = (await git.tags()).all
         const targetTags = allTags
-          .filter(t => t.includes('1.0.0-rc') && (t.startsWith('coralite-v') || t.startsWith('create-coralite-v')))
-          .sort((a, b) => a.localeCompare(b))
+          .filter(t => {
+            if (options.package) {
+              return t.startsWith(`${options.package}-v`)
+            }
+            return t.startsWith('coralite-v') || t.startsWith('create-coralite-v')
+          })
+          .sort((a, b) => {
+            const verA = a.replace(/^(coralite|create-coralite)-v/, '')
+            const verB = b.replace(/^(coralite|create-coralite)-v/, '')
+            const cleanA = semver.clean(verA) || verA
+            const cleanB = semver.clean(verB) || verB
+            if (semver.valid(cleanA) && semver.valid(cleanB)) {
+              return semver.compare(cleanA, cleanB)
+            }
+            return a.localeCompare(b)
+          })
 
         if (targetTags.length === 0) {
-          prompts.log.warn('No 1.0.0-rc tags found.')
+          prompts.log.warn('No release tags found.')
           process.exit(0)
         }
 
@@ -174,7 +189,7 @@ async function processTagEntry ({ tag, options, rootDir, changelogJsonPath, git 
         const changelogContent = readFileSync(targetChangelog, 'utf8')
         const section = extractChangelogSection(changelogContent, version)
         if (section) {
-          markdownNotes = `## Release Overview\nRelease ${version} for ${packageName}.\n\n${section}`
+          markdownNotes = `## Release Overview\nRelease ${version} for ${packageName}.\n\n---\n\n${section}`
         }
       }
     }

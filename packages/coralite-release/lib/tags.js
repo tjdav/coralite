@@ -11,7 +11,7 @@ export function getCleanVersion (tagOrVer, packageName) {
     return null
   }
 
-  const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
+  const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^(?:[a-zA-Z0-9_-]+-)?v/
   const cleaned = tagOrVer.replace(prefixRegex, '')
   return semver.clean(cleaned) || cleaned
 }
@@ -23,7 +23,7 @@ export function getCleanVersion (tagOrVer, packageName) {
  * @returns {string[]} The sorted list of valid tags
  */
 export function sortTags (tags, packageName) {
-  const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
+  const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^(?:[a-zA-Z0-9_-]+-)?v/
   return tags
     .filter(tag => {
       if (packageName && !tag.startsWith(`${packageName}-v`)) {
