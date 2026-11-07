@@ -856,7 +856,7 @@ export function getIgnoreAttributeMap (ignoreByAttribute) {
  * - Empty tokens: {{}} (returns empty name)
  * - Malformed tokens: {{unclosed, {{extra}} braces}}
  */
-function getTokensFromString (string, topLevelOnly = false) {
+export function getTokensFromString (string, topLevelOnly = false) {
   const result = []
   let i = 0
 
