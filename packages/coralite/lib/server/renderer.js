@@ -53,6 +53,7 @@ import { formatComponentCss, buildComponentStylesheet } from './utils/style.js'
 import { transformNode } from './parser/html.js'
 import { CoraliteError, CoraliteBuildError } from '../shared/errors.js'
 import { RESERVED_DOM_ATTRIBUTES } from '../shared/attributes.js'
+import { applyAstBoundAttribute } from '../shared/tags.js'
 import { resolvePageMetaDefaults } from '../shared/page-meta.js'
 import { checkFileChange, hash } from './utils/manifest.js'
 import {
@@ -1572,7 +1573,45 @@ export function createRenderer ({
           if (typeof attrVal === 'string' && attrVal.includes('{{')) {
             tokenEntry.attrs[attrName] = attrVal
             ensureMarker()
-            node.attribs[attrName] = replaceTokenString(attrVal, stateObj, routeObjParam)
+            const singleMatch = attrVal.match(/^\s*\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}\s*$/)
+            if (singleMatch) {
+              const rawVal = resolvePageTokenKey(singleMatch[1], stateObj, routeObjParam)
+              let isBooleanCustom = false
+              if (isComponentTag) {
+                /** @type {any} */
+                const compItem = app && app.components ? app.components.getItem(node.name) : null
+                const compResult = compItem ? compItem.result : null
+                let attrs = null
+                if (compResult) {
+                  const compScript = compResult.script
+                  attrs = (compScript && typeof compScript === 'object' && compScript.attributes) || compResult.attributes || compItem.attributes
+                  if (!attrs && compScript && typeof compScript === 'string') {
+                    if (!compResult._extractedAttributes) {
+                      const extracted = extractComponentProperty(compScript, 'attributes')
+                      if (extracted && extracted.content && extracted.content.trim().startsWith('{')) {
+                        try {
+                          compResult._extractedAttributes = new Function(`return ${extracted.content}`)()
+                        } catch {
+                          /* ignore */
+                        }
+                      }
+                    }
+                    attrs = compResult._extractedAttributes
+                  }
+                }
+                if (attrs) {
+                  const lower = attrName.toLowerCase()
+                  const camel = kebabToCamel(lower)
+                  const schema = attrs[camel] ?? attrs[attrName] ?? attrs[lower]
+                  if (schema === Boolean || schema?.type === Boolean || schema?.type === 'Boolean') {
+                    isBooleanCustom = true
+                  }
+                }
+              }
+              applyAstBoundAttribute(node.attribs, attrName, rawVal, () => replaceTokenString(attrVal, stateObj, routeObjParam), isBooleanCustom)
+            } else {
+              node.attribs[attrName] = replaceTokenString(attrVal, stateObj, routeObjParam)
+            }
           }
         }
       }

@@ -100,7 +100,7 @@ describe('Client-side Route Context in Page Blocks', () => {
   })
 
   it('page getters on client receives route read from window.__coralite_hydration__.__route__', async () => {
-    document.documentElement.innerHTML = '<head></head><body><h1 id="title">{{ greeting }}</h1></body>'
+    document.documentElement.innerHTML = '<head></head><body><h1 id="title" data-coralite-page-token="token-0">{{ greeting }}</h1></body>'
 
     window.__coralite_hydration__ = {
       __route__: {
@@ -119,6 +119,15 @@ describe('Client-side Route Context in Page Blocks', () => {
         greeting: ({ state, route }) => {
           getterRoute = route
           return `Hello ${state.name} at ${route.path}`
+        }
+      },
+      tokens: {
+        'token-0': {
+          attrs: {},
+          texts: [{
+            textIndex: 0,
+            raw: '{{ greeting }}'
+          }]
         }
       }
     }

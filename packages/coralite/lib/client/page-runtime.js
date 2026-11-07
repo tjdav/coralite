@@ -2,6 +2,8 @@ import { createReadOnlyProxy, normalizeStyleKey, isAsyncFunction, createCombined
 import { isDevRuntime } from '../utils/dev-mode.js'
 import { CoraliteError } from '../shared/errors.js'
 import { createIsoPluginProxy } from './utils/iso-plugin-proxy.js'
+import { applyDomBoundAttribute } from '../shared/tags.js'
+import { isBooleanCustomAttribute } from '../shared/attributes.js'
 
 
 /**
@@ -99,42 +101,6 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
     return val !== undefined && val !== null ? String(val) : ''
   })
 
-  const updateLegacyPageTokens = (node = rootEl) => {
-    if (!node) {
-      return
-    }
-    /** @type {any} */
-    const n = node
-    if (n.nodeType === 3) {
-      if (n._rawTemplate === undefined) {
-        if (n.data && n.data.includes('{{')) {
-          n._rawTemplate = n.data
-        }
-      }
-      if (n._rawTemplate) {
-        n.data = renderTokenTemplate(n._rawTemplate)
-      }
-    } else if (n.nodeType === 1) {
-      if (n.attributes) {
-        for (const attr of Array.from(n.attributes)) {
-          /** @type {any} */
-          const a = attr
-          if (a._rawTemplate === undefined) {
-            if (a.value && a.value.includes('{{')) {
-              a._rawTemplate = a.value
-            }
-          }
-          if (a._rawTemplate) {
-            a.value = renderTokenTemplate(a._rawTemplate)
-          }
-        }
-      }
-      for (const child of Array.from(n.childNodes)) {
-        updateLegacyPageTokens(child)
-      }
-    }
-  }
-
   const updatePageTokens = () => {
     if (Object.keys(pageTokens).length > 0) {
       const marked = document.querySelectorAll('[data-coralite-page-token]')
@@ -146,9 +112,16 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
         }
 
         for (const [name, raw] of Object.entries(entry.attrs || {})) {
-          const next = renderTokenTemplate(raw)
-          if (element.getAttribute(name) !== next) {
-            element.setAttribute(name, next)
+          const singleMatch = typeof raw === 'string' ? raw.match(/^\s*\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}\s*$/) : null
+          if (singleMatch) {
+            const rawVal = resolveTokenVal(singleMatch[1])
+            const isBooleanCustom = typeof isBooleanCustomAttribute === 'function' && isBooleanCustomAttribute(element, name)
+            applyDomBoundAttribute(element, name, rawVal, () => renderTokenTemplate(raw), isBooleanCustom)
+          } else {
+            const next = renderTokenTemplate(raw)
+            if (element.getAttribute(name) !== next) {
+              element.setAttribute(name, next)
+            }
           }
         }
 
@@ -174,8 +147,6 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
         }
       }
     }
-
-    updateLegacyPageTokens(rootEl)
   }
 
   const schedulePageFlush = (changedProp, oldVal, newVal) => {
