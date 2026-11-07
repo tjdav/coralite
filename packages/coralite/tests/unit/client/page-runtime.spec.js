@@ -32,7 +32,7 @@ describe('Page Client Runtime Execution', () => {
   })
 
   it('setupPageRuntime executes client block, binds getters, styles, and reactive state on document.documentElement', async () => {
-    document.documentElement.innerHTML = '<head></head><body><h1 id="title">{{ greeting }}</h1><p id="count-display">{{ count }}</p></body>'
+    document.documentElement.innerHTML = '<head></head><body><h1 id="title" data-coralite-page-token="token-0">{{ greeting }}</h1><p id="count-display" data-coralite-page-token="token-1">{{ count }}</p></body>'
     document.documentElement.removeAttribute('style')
     document.documentElement.removeAttribute('data-client-ran')
 
@@ -51,6 +51,22 @@ describe('Page Client Runtime Execution', () => {
       },
       style: {
         '--page-count': ({ state }) => state.count
+      },
+      tokens: {
+        'token-0': {
+          attrs: {},
+          texts: [{
+            textIndex: 0,
+            raw: '{{ greeting }}'
+          }]
+        },
+        'token-1': {
+          attrs: {},
+          texts: [{
+            textIndex: 0,
+            raw: '{{ count }}'
+          }]
+        }
       },
       client: async ({ state, observe, route }) => {
         clientExecuted = true

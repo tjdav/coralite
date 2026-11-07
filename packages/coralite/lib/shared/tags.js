@@ -95,6 +95,92 @@ export function resolveAriaBooleanState (value) {
 }
 
 /**
+ * Resolves representation for boolean and ARIA attributes across SSR and client runtimes.
+ *
+ * @param {string} attrName - Name of the attribute.
+ * @param {any} rawVal - The raw evaluated value of the single token.
+ * @param {boolean} [isBooleanCustom=false] - Whether the attribute is a custom element boolean attribute.
+ * @returns {{ isHandled: true, shouldRemove: boolean, value: string } | { isHandled: false }}
+ */
+export function resolveBooleanOrAriaAttribute (attrName, rawVal, isBooleanCustom = false) {
+  const lower = attrName.toLowerCase()
+  if (BOOLEAN_ATTRIBUTES.has(lower) || isBooleanCustom) {
+    const isFalsy = rawVal === 'false' || rawVal === 'null' || rawVal === 'undefined' || rawVal === '0' || rawVal === 0 || rawVal === '' || rawVal === false || rawVal === null || rawVal === undefined
+    return {
+      isHandled: true,
+      shouldRemove: isFalsy,
+      value: ''
+    }
+  }
+  if (isAriaBooleanState(lower)) {
+    const targetVal = resolveAriaBooleanState(rawVal)
+    return {
+      isHandled: true,
+      shouldRemove: targetVal === null,
+      value: targetVal ?? ''
+    }
+  }
+  if (isAriaAttribute(lower)) {
+    const isFalsy = rawVal === 'false' || rawVal === 'null' || rawVal === 'undefined' || rawVal === '' || rawVal === false || rawVal === null || rawVal === undefined
+    return {
+      isHandled: true,
+      shouldRemove: isFalsy,
+      value: isFalsy ? '' : String(rawVal)
+    }
+  }
+  return { isHandled: false }
+}
+
+/**
+ * Applies a bound attribute value to an SSR AST attribs dictionary.
+ *
+ * @param {Record<string, string>} attribs - The AST element attributes object.
+ * @param {string} attrName - The attribute name.
+ * @param {any} rawVal - The raw token value.
+ * @param {Function} [fallbackRender] - Lazy fallback string interpolation.
+ * @param {boolean} [isBooleanCustom=false] - Whether the attribute is a custom element boolean.
+ */
+export function applyAstBoundAttribute (attribs, attrName, rawVal, fallbackRender, isBooleanCustom = false) {
+  const resolved = resolveBooleanOrAriaAttribute(attrName, rawVal, isBooleanCustom)
+  if (resolved.isHandled) {
+    if (resolved.shouldRemove) {
+      delete attribs[attrName]
+    } else {
+      attribs[attrName] = resolved.value
+    }
+  } else {
+    attribs[attrName] = typeof fallbackRender === 'function' ? fallbackRender() : String(rawVal ?? '')
+  }
+}
+
+/**
+ * Applies a bound attribute value to a live browser DOM element.
+ *
+ * @param {Element} element - The live DOM element.
+ * @param {string} attrName - The attribute name.
+ * @param {any} rawVal - The raw token value.
+ * @param {Function} [fallbackRender] - Lazy fallback string interpolation.
+ * @param {boolean} [isBooleanCustom=false] - Whether the attribute is a custom element boolean.
+ */
+export function applyDomBoundAttribute (element, attrName, rawVal, fallbackRender, isBooleanCustom = false) {
+  const resolved = resolveBooleanOrAriaAttribute(attrName, rawVal, isBooleanCustom)
+  if (resolved.isHandled) {
+    if (resolved.shouldRemove) {
+      if (element.hasAttribute(attrName)) {
+        element.removeAttribute(attrName)
+      }
+    } else if (!element.hasAttribute(attrName) || element.getAttribute(attrName) !== resolved.value) {
+      element.setAttribute(attrName, resolved.value)
+    }
+  } else {
+    const next = typeof fallbackRender === 'function' ? fallbackRender() : String(rawVal ?? '')
+    if (element.getAttribute(attrName) !== next) {
+      element.setAttribute(attrName, next)
+    }
+  }
+}
+
+/**
  * Classifies an attribute name into an integer kind:
  * 0 = standard
  * 1 = boolean
