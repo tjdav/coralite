@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.2.0
+
+> Comparing `coralite-v1.1.0` to `HEAD`
+
+**Summary:** 6 commits
+
+### ✨ Features
+
+- unify boolean and ARIA attribute reflection for pages ([af14067](https://github.com/tjdav/coralite/commit/af14067b769a35f61416bb17147d00d2c3934f66))
+- add page composition and component reuse rules to init-agent (cli) ([65d761e](https://github.com/tjdav/coralite/commit/65d761eb18029dd45b0577713cf4106c2ed3b0e7))
+
+### 📚 Documentation
+
+- document window.__coralite__ runtime namespace and agent invariants (docs) ([2b63203](https://github.com/tjdav/coralite/commit/2b63203d076da6615ea6f55ac3cf1ab6371d9648))
+
+### ♻️ Code Refactoring
+
+- consolidate window and VM globals under __coralite__ namespace (hydration) ([976a9c6](https://github.com/tjdav/coralite/commit/976a9c60da1628e0e4b43a4c6e8c8805458aaeb4))
+
+### 🧹 Chores
+
+- reset 1.1.0 baseline for coordinated 1.2.0 release (release) ([3d33eb2](https://github.com/tjdav/coralite/commit/3d33eb2ce4f238a29dc0e9becbf3105acce429dc))
+
+### 🔨 Other Changes
+
+- release(coralite): version 1.1.1 ([572c096](https://github.com/tjdav/coralite/commit/572c096314a0abbac30096ae606bbb8dd6461d33))
+
+
 ## v1.1.0
 
 > Comparing `coralite-v1.0.0` to `HEAD`
