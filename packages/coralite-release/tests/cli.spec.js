@@ -134,6 +134,7 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.match(output, /--allow-any-branch/)
       assert.match(output, /-p, --package <packages...>/)
       assert.match(output, /-a, --all/)
+      assert.match(output, /--agy/)
     })
 
     it('executes non-interactive --dry-run with rc type and --allow-any-branch', () => {

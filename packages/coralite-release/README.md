@@ -46,6 +46,7 @@ This command creates new releases by bumping versions and tagging commits.
 - `--publish`: Automatically publish released package(s) to npm after git push
 - `--github-release`: Automatically create GitHub release(s) with release notes
 - `--website-changelog`: Automatically add release entry to website changelog timeline
+- `--agy`: Automatically generate an AI-powered release post using agy, publish to GitHub Releases, and update website changelog timeline
 - `--no-publish`: Skip publishing package(s) to npm
 - `--no-github-release`: Skip creating GitHub release(s)
 - `--no-website-changelog`: Skip updating website changelog timeline
