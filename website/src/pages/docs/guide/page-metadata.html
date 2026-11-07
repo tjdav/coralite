@@ -50,7 +50,7 @@
       </html>
     </coralite-code-html>
 
-    <p>Now, any component used on that page can access the metadata by mapping it in their <code>data</code> or <code>getters</code>.</p>
+    <p>Now, any component used on that page can access the metadata by mapping it in their <code>server</code> block or <code>getters</code>.</p>
 
     <p><em>Note: Templates do not support dot notation for tokens, so you must map <code>page.meta</code> properties to flat state variables.</em></p>
 
@@ -72,19 +72,15 @@
       </template>
 
       <script type="module">
-        import { defineComponent } from 'coralite'
-
-        export default defineComponent({
-          data ({ page }) {
-            return {
-              title: page.meta.title,
-              author: page.meta.author,
-              publishDate: page.meta.publishDate,
-              category: page.meta.category,
-              language: page.meta.lang
-            }
+        export async function server ({ page }) {
+          return {
+            title: page.meta.title,
+            author: page.meta.author,
+            publishDate: page.meta.publishDate,
+            category: page.meta.category,
+            language: page.meta.lang
           }
-        })
+        }
       </script>
     </coralite-code-html>
 
