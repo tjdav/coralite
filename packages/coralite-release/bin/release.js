@@ -704,6 +704,8 @@ program
         useAgy = Boolean(confirmAgy && !prompts.isCancel(confirmAgy))
       }
 
+      let updatedWebsite = false
+
       if (useAgy && succeededPackages.length > 0) {
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
         const releasePostScript = path.join(__dirname, 'release-post.js')
@@ -713,6 +715,7 @@ program
             execSync(`node "${releasePostScript}" --package "${rel.name}" --to "${rel.tagName}" --agy --github-release --website-changelog -y`, {
               stdio: 'inherit'
             })
+            updatedWebsite = true
           } catch (agyErr) {
             prompts.log.error(`Release post generation failed for ${rel.tagName}: ${agyErr.message}`)
           }
@@ -745,7 +748,6 @@ program
         if (shouldUpdateWebsite) {
           const __dirname = path.dirname(fileURLToPath(import.meta.url))
           const changelogPostScript = path.join(__dirname, 'changelog-post.js')
-          let updatedWebsite = false
           for (const rel of succeededPackages) {
             try {
               prompts.log.step(`Updating website changelog for ${rel.tagName}...`)
@@ -757,28 +759,33 @@ program
               prompts.log.error(`Website changelog update failed for ${rel.tagName}: ${clErr.message}`)
             }
           }
+        }
+      }
 
-          if (updatedWebsite && options.gitCommit) {
-            try {
-              const rootDir = path.resolve(__dirname, '../../..')
-              const changelogJsonPath = path.resolve(rootDir, 'website/src/data/changelog.json')
-              if (existsSync(changelogJsonPath)) {
-                prompts.log.step('Committing website changelog timeline...')
-                await git.add(changelogJsonPath)
-                const commitRes = await git.commit('docs(website): update release changelog timeline [skip ci]', { '--no-verify': null })
-                if (commitRes.commit) {
-                  prompts.log.success(`✅ Committed website changelog update (${commitRes.commit})`)
-                  if (shouldPush) {
-                    prompts.log.step('Pushing website changelog update to remote...')
-                    await git.push('origin', currentBranch)
-                    prompts.log.success('✅ Pushed website changelog to remote')
-                  }
+      if (updatedWebsite && options.gitCommit) {
+        try {
+          const __dirname = path.dirname(fileURLToPath(import.meta.url))
+          const rootDir = path.resolve(__dirname, '../../..')
+          const changelogJsonPath = path.resolve(rootDir, 'website/src/data/changelog.json')
+          if (existsSync(changelogJsonPath)) {
+            const currentGitStatus = await git.status()
+            const isChangelogModified = currentGitStatus.files.some(f => f.path.includes('changelog.json'))
+            if (isChangelogModified) {
+              prompts.log.step('Committing website changelog timeline...')
+              await git.add(changelogJsonPath)
+              const commitRes = await git.commit('docs(website): update release changelog timeline [skip ci]', { '--no-verify': null })
+              if (commitRes.commit) {
+                prompts.log.success(`✅ Committed website changelog update (${commitRes.commit})`)
+                if (shouldPush) {
+                  prompts.log.step('Pushing website changelog update to remote...')
+                  await git.push('origin', currentBranch)
+                  prompts.log.success('✅ Pushed website changelog to remote')
                 }
               }
-            } catch (gitErr) {
-              prompts.log.warn(`Failed to commit/push website changelog: ${gitErr.message}`)
             }
           }
+        } catch (gitErr) {
+          prompts.log.warn(`Failed to commit/push website changelog: ${gitErr.message}`)
         }
       }
 
