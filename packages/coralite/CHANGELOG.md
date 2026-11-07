@@ -1,17 +1,5 @@
 # Changelog
 
-## v1.1.1
-
-> Comparing `coralite-v1.1.0` to `HEAD`
-
-**Summary:** 2 commits
-
-### ✨ Features
-
-- unify boolean and ARIA attribute reflection for pages ([af14067](https://github.com/tjdav/coralite/commit/af14067b769a35f61416bb17147d00d2c3934f66))
-- add page composition and component reuse rules to init-agent (cli) ([65d761e](https://github.com/tjdav/coralite/commit/65d761eb18029dd45b0577713cf4106c2ed3b0e7))
-
-
 ## v1.1.0
 
 > Comparing `coralite-v1.0.0` to `HEAD`

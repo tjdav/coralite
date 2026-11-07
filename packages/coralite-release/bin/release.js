@@ -643,7 +643,10 @@ program
       console.log('')
 
       let shouldPublish = Boolean(options.publish)
-      if (!options.publish && !options.noPublish && !options.yes && succeededPackages.length > 0) {
+      if (!options.publish && !options.noPublish && options.agy) {
+        shouldPublish = true
+      }
+      if (!options.publish && !options.noPublish && !options.agy && !options.yes && succeededPackages.length > 0) {
         const confirmPublish = await prompts.confirm({
           message: 'Publish released package(s) to npm and create GitHub Releases now?',
           initialValue: true
@@ -670,7 +673,7 @@ program
 
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
         const publishScript = path.join(__dirname, 'publish.js')
-        const noGhFlag = options.githubRelease === false ? '--no-github-release' : '--github-release'
+        const noGhFlag = (options.githubRelease === false || options.agy) ? '--no-github-release' : '--github-release'
 
         for (const rel of succeededPackages) {
           prompts.log.step(`\n🚀 Publishing ${rel.name} (${rel.newVersion}) to npm & GitHub...`)

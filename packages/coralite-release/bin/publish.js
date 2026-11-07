@@ -285,8 +285,24 @@ async function main () {
     console.log(`🔍 Verifying package contents for ${packageName}...`)
     verifyPackageFiles(pkgDir, pkgJson.files)
 
-    const npmToken = process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN
+    let npmToken = process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN
     const codebergToken = process.env.CODEBERG_TOKEN
+
+    if (!npmToken) {
+      const { homedir } = await import('node:os')
+      const homeNpmrc = resolve(homedir(), '.npmrc')
+      if (existsSync(homeNpmrc)) {
+        try {
+          const homeContent = readFileSync(homeNpmrc, 'utf8')
+          const npmMatch = homeContent.match(/\/\/registry\.npmjs\.org\/:_authToken=(.+)/)
+          if (npmMatch) {
+            npmToken = npmMatch[1].trim()
+          }
+        } catch {
+          // Ignore
+        }
+      }
+    }
 
     if (registry === 'npmjs') {
       if (!isDryRun) {
