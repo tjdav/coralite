@@ -4,15 +4,15 @@ import assert from 'node:assert/strict'
 import { generateClientRuntime } from '../../../../lib/client/utils/runtime.js'
 
 describe('runtime.loadComponent & runtime.upgrade', () => {
-  it('should expose loadComponent and upgrade on window.__coralite__', () => {
+  it('should expose loadComponent and upgrade on window.__coralite__.dom', () => {
     const fnCode = generateClientRuntime({
       base: '/',
       sharedChunkPath: 'chunk.js',
       declarativeTags: []
     })
 
-    assert.ok(fnCode.includes('window.__coralite__.loadComponent = loadComponent;'), 'loadComponent should be attached to window.__coralite__')
-    assert.ok(fnCode.includes('window.__coralite__.upgrade = upgrade;'), 'upgrade should be attached to window.__coralite__')
+    assert.ok(fnCode.includes('coralite.dom.loadComponent = loadComponent;'), 'loadComponent should be attached to coralite.dom')
+    assert.ok(fnCode.includes('coralite.dom.upgrade = upgrade;'), 'upgrade should be attached to coralite.dom')
   })
 
   it('runtime.loadComponent should resolve immediately for unknown tags and already defined tags', async () => {
@@ -88,7 +88,7 @@ describe('runtime.loadComponent & runtime.upgrade', () => {
         return `Promise.resolve({ default: ${JSON.stringify(componentManifestMock)} })`
       }
       if (path.includes('shared.js')) {
-        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, formatCoraliteHTML: (h) => h, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
       }
       return 'Promise.resolve({ default: { componentId: "known-tag" } })'
     })
@@ -99,7 +99,7 @@ describe('runtime.loadComponent & runtime.upgrade', () => {
 
       await new Promise(r => setTimeout(r, 50))
 
-      const loadComponent = windowMock.__coralite__.loadComponent
+      const loadComponent = windowMock.__coralite__.dom.loadComponent
 
       // 1. Unknown tag resolves without error
       await loadComponent('unknown-tag')
@@ -133,8 +133,11 @@ describe('runtime.loadComponent & runtime.upgrade', () => {
 
     const windowMock = {
       location: { pathname: '/' },
-      __coralite__: {},
-      __coralite_styles_loaded__: new Set()
+      __coralite__: {
+        state: {
+          stylesLoaded: new Set()
+        }
+      }
     }
 
     const customElementsMock = {
@@ -211,7 +214,7 @@ describe('runtime.loadComponent & runtime.upgrade', () => {
         return `Promise.resolve({ default: ${JSON.stringify(componentManifestMock)} })`
       }
       if (path.includes('shared.js')) {
-        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, formatCoraliteHTML: (h) => h, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
       }
       return 'Promise.resolve({ default: { componentId: "card-comp" } })'
     })
@@ -222,7 +225,7 @@ describe('runtime.loadComponent & runtime.upgrade', () => {
 
       await new Promise(r => setTimeout(r, 50))
 
-      const upgrade = windowMock.__coralite__.upgrade
+      const upgrade = windowMock.__coralite__.dom.upgrade
 
       const cardEl = {
         nodeType: 1,
@@ -339,7 +342,7 @@ describe('runtime.loadComponent & runtime.upgrade', () => {
         return `Promise.resolve({ default: ${JSON.stringify(componentManifestMock)} })`
       }
       if (path.includes('shared.js')) {
-        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, formatCoraliteHTML: (h) => h, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
       }
       return `window.__mockImport(${path})`
     })
@@ -350,7 +353,7 @@ describe('runtime.loadComponent & runtime.upgrade', () => {
 
       await new Promise(r => setTimeout(r, 50))
 
-      const upgrade = windowMock.__coralite__.upgrade
+      const upgrade = windowMock.__coralite__.dom.upgrade
 
       const rootEl = {
         nodeType: 1,

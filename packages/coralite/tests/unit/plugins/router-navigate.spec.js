@@ -45,15 +45,17 @@ describe('Router Plugin Navigate Unit Tests', () => {
     }
 
     mockRuntime = {
-      hydrationStore: {
+      state: {
         replaced: null,
-        replace (data) {
+        replaceHydration (data) {
           this.replaced = data
         }
       },
-      upgraded: [],
-      async upgrade (el) {
-        this.upgraded.push(el)
+      dom: {
+        upgraded: [],
+        async upgrade (el) {
+          this.upgraded.push(el)
+        }
       }
     }
 
@@ -142,7 +144,7 @@ describe('Router Plugin Navigate Unit Tests', () => {
 
     assert.ok(mockOutlet.listeners.click, 'Click listener attached to outlet')
     assert.ok(mockWindow.listeners.popstate, 'Popstate listener attached to window')
-    assert.ok(mockWindow.__coralite_router__, '__coralite_router__ exposed on window')
+    assert.ok(mockWindow.__coralite__?.plugins?.router, 'router exposed on window.__coralite__.plugins.router')
 
     const phase1 = pluginInstance.client.context
     const phase2 = phase1({})
@@ -384,7 +386,7 @@ describe('Router Plugin Navigate Unit Tests', () => {
       }
     }
 
-    await mockWindow.__coralite_router__.navigate('/about')
+    await mockWindow.__coralite__.plugins.router.navigate('/about')
 
     assert.strictEqual(fetchCalls.length, 1)
     assert.strictEqual(fetchCalls[0].url, '/about')
@@ -393,14 +395,14 @@ describe('Router Plugin Navigate Unit Tests', () => {
     assert.strictEqual(mockHistory.pushed.length, 1)
     assert.strictEqual(mockHistory.pushed[0].url, '/about')
 
-    assert.deepStrictEqual(mockRuntime.hydrationStore.replaced, {
+    assert.deepStrictEqual(mockRuntime.state.replaced, {
       'comp-1': {
         count: 10
       }
     })
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-child-1'])
-    assert.strictEqual(mockRuntime.upgraded.length, 1)
-    assert.strictEqual(mockRuntime.upgraded[0], mockOutlet)
+    assert.strictEqual(mockRuntime.dom.upgraded.length, 1)
+    assert.strictEqual(mockRuntime.dom.upgraded[0], mockOutlet)
     assert.strictEqual(mockDom.title, 'New About Title')
   })
 
@@ -446,8 +448,8 @@ describe('Router Plugin Navigate Unit Tests', () => {
       }
     }
 
-    const p1 = mockWindow.__coralite_router__.navigate('/slow')
-    const p2 = mockWindow.__coralite_router__.navigate('/fast')
+    const p1 = mockWindow.__coralite__.plugins.router.navigate('/slow')
+    const p2 = mockWindow.__coralite__.plugins.router.navigate('/fast')
 
     await Promise.all([p1, p2])
 
@@ -482,7 +484,7 @@ describe('Router Plugin Navigate Unit Tests', () => {
     })
 
     await assert.rejects(
-      () => mockWindow.__coralite_router__.navigate('/invalid'),
+      () => mockWindow.__coralite__.plugins.router.navigate('/invalid'),
       /Navigation to \/invalid failed: 404/
     )
 

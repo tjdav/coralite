@@ -31,17 +31,19 @@ describe('Client-side Route Context in Page Blocks', () => {
     delete global.customElements
   })
 
-  it('page client receives route read from window.__coralite_hydration__.__route__ for a static page', async () => {
+  it('page client receives route read from window.__coralite__.state.route for a static page', async () => {
     document.documentElement.innerHTML = '<head></head><body><h1>Client Test</h1></body>'
     document.documentElement.removeAttribute('data-route-path')
     document.documentElement.removeAttribute('data-route-dynamic')
 
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/about.html',
-        pattern: '/about.html',
-        params: {},
-        dynamic: false
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/about.html',
+          pattern: '/about.html',
+          params: {},
+          dynamic: false
+        }
       }
     }
 
@@ -66,15 +68,17 @@ describe('Client-side Route Context in Page Blocks', () => {
     assert.equal(document.documentElement.dataset.routeDynamic, 'false')
   })
 
-  it('page client receives route read from window.__coralite_hydration__.__route__ for a dynamic page', async () => {
+  it('page client receives route read from window.__coralite__.state.route for a dynamic page', async () => {
     document.documentElement.innerHTML = '<head></head><body><h1>Post Test</h1></body>'
 
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/posts/42.html',
-        pattern: '/posts/[id].html',
-        params: { id: '42' },
-        dynamic: true
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/posts/42.html',
+          pattern: '/posts/[id].html',
+          params: { id: '42' },
+          dynamic: true
+        }
       }
     }
 
@@ -99,15 +103,17 @@ describe('Client-side Route Context in Page Blocks', () => {
     assert.equal(document.documentElement.dataset.postId, '42')
   })
 
-  it('page getters on client receives route read from window.__coralite_hydration__.__route__', async () => {
+  it('page getters on client receives route read from window.__coralite__.state.route', async () => {
     document.documentElement.innerHTML = '<head></head><body><h1 id="title" data-coralite-page-token="token-0">{{ greeting }}</h1></body>'
 
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/dashboard.html',
-        pattern: '/dashboard.html',
-        params: {},
-        dynamic: false
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/dashboard.html',
+          pattern: '/dashboard.html',
+          params: {},
+          dynamic: false
+        }
       }
     }
 

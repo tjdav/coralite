@@ -24,7 +24,6 @@ async function importCompiledRuntime (scriptManager) {
 describe('Plugin Route Context (client.init and client.context Phase 1)', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    delete window.__coralite_hydration__
     delete window.__coralite__
     delete window.__route_aware_plugin_init_route
     delete window.__p1_init_route
@@ -36,13 +35,16 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
   })
 
   it('client.init receives route with correct shape for a static page', async () => {
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/about.html',
-        pattern: '/about.html',
-        params: {},
-        dynamic: false
-      }
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/about.html',
+          pattern: '/about.html',
+          params: {},
+          dynamic: false
+        }
+      },
+      plugins: {}
     }
 
     const scriptManager = new ScriptManager()
@@ -53,7 +55,7 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
       await mod.initPlugins()
 
       const initRoute = window.__route_aware_plugin_init_route
-      assert.ok(initRoute, 'client.init should receive route from window.__coralite_hydration__.__route__')
+      assert.ok(initRoute, 'client.init should receive route from window.__coralite__.state.route')
       assert.equal(initRoute.path, '/about.html')
       assert.equal(initRoute.pattern, '/about.html')
       assert.deepEqual(initRoute.params, {})
@@ -64,13 +66,16 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
   })
 
   it('client.init receives route with correct shape for a dynamic page', async () => {
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/users/99.html',
-        pattern: '/users/[id].html',
-        params: { id: '99' },
-        dynamic: true
-      }
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/users/99.html',
+          pattern: '/users/[id].html',
+          params: { id: '99' },
+          dynamic: true
+        }
+      },
+      plugins: {}
     }
 
     const scriptManager = new ScriptManager()
@@ -92,13 +97,16 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
   })
 
   it('client.context Phase 1 receives route matching the page route', async () => {
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/dashboard.html',
-        pattern: '/dashboard.html',
-        params: {},
-        dynamic: false
-      }
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/dashboard.html',
+          pattern: '/dashboard.html',
+          params: {},
+          dynamic: false
+        }
+      },
+      plugins: {}
     }
 
     const scriptManager = new ScriptManager()
@@ -109,7 +117,7 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
 
       const instanceContext = {
         id: 'comp-1',
-        route: window.__coralite_hydration__.__route__
+        route: window.__coralite__.state.route
       }
 
       const resolvedContext = await mod.getClientContext(instanceContext)
@@ -126,13 +134,16 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
   })
 
   it('client.context Phase 2 can read route from instanceContext (regression check)', async () => {
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/items/42.html',
-        pattern: '/items/[id].html',
-        params: { id: '42' },
-        dynamic: true
-      }
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/items/42.html',
+          pattern: '/items/[id].html',
+          params: { id: '42' },
+          dynamic: true
+        }
+      },
+      plugins: {}
     }
 
     const scriptManager = new ScriptManager()
@@ -143,7 +154,7 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
 
       const instanceContext = {
         id: 'comp-2',
-        route: window.__coralite_hydration__.__route__
+        route: window.__coralite__.state.route
       }
 
       const resolvedContext = await mod.getClientContext(instanceContext)
@@ -157,8 +168,11 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
     }
   })
 
-  it('when window.__coralite_hydration__.__route__ is absent, route is undefined in both plugin contexts', async () => {
-    window.__coralite_hydration__ = {}
+  it('when window.__coralite__.state.route is absent, route is undefined in both plugin contexts', async () => {
+    window.__coralite__ = {
+      state: {},
+      plugins: {}
+    }
 
     const scriptManager = new ScriptManager()
     await scriptManager.use(routeAwarePlugin())
@@ -187,7 +201,10 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
       params: {},
       dynamic: false
     }
-    window.__coralite_hydration__ = { __route__: pageRoute }
+    window.__coralite__ = {
+      state: { route: pageRoute },
+      plugins: {}
+    }
 
     const plugin1 = definePlugin({
       name: 'p1',
@@ -240,7 +257,10 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
       params: { id: '123' },
       dynamic: true
     }
-    window.__coralite_hydration__ = { __route__: pageRoute }
+    window.__coralite__ = {
+      state: { route: pageRoute },
+      plugins: {}
+    }
 
     let componentClientRoute = null
 
@@ -327,7 +347,6 @@ describe('getClientContext isomorphic plugins (page client context)', () => {
 
   beforeEach(() => {
     document.body.innerHTML = ''
-    delete win.__coralite_hydration__
     delete win.__coralite__
   })
 
@@ -336,7 +355,7 @@ describe('getClientContext isomorphic plugins (page client context)', () => {
 
     try {
       const mod = await importCompiledRuntime(scriptManager)
-      win.__coralite__.isomorphicPlugins = {
+      win.__coralite__.plugins.isomorphic = {
         $t: () => (key) => `translated:${key}`
       }
 
@@ -357,7 +376,7 @@ describe('getClientContext isomorphic plugins (page client context)', () => {
 
     try {
       const mod = await importCompiledRuntime(scriptManager)
-      win.__coralite__.isomorphicPlugins = {
+      win.__coralite__.plugins.isomorphic = {
         $t: () => (key) => `translated:${key}`
       }
 
@@ -387,7 +406,7 @@ describe('getClientContext isomorphic plugins (page client context)', () => {
 
     try {
       const mod = await importCompiledRuntime(scriptManager)
-      assert.ok(win.__coralite__.isomorphicPlugins.$t, 'compiled runtime must register $t')
+      assert.ok(win.__coralite__.plugins.isomorphic.$t, 'compiled runtime must register $t')
 
       let clientCtx = null
       await mod.setupPageRuntime({

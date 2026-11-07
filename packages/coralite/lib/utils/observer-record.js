@@ -353,8 +353,9 @@ export class ObserverRecord {
       /** @type {any} */
       const proc = typeof process !== 'undefined' ? process : null
 
+      const config = win?.__coralite__?.config
       const rawStrategy = el?.componentOptions?.listStrategy || el?.componentOptions?.reconcile ||
-        win?.__coralite__?.listStrategy || win?.__coralite__?.reconcile ||
+        config?.listStrategy ||
         proc?.env?.CORALITE_LIST_STRATEGY || proc?.env?.CORALITE_RECONCILE ||
         'full'
       const reconcileMode = typeof rawStrategy === 'string' ? rawStrategy : (rawStrategy?.mode || 'full')

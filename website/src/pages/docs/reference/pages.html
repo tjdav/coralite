@@ -316,7 +316,7 @@ export default defineConfig({
 
     <coralite-heading level="3" text="Client Router API"></coralite-heading>
 
-    <p>The router API is injected into component and page <code>client()</code> blocks under the <code>router</code> key, and is also available at <code>window.__coralite_router__</code>:</p>
+    <p>The router API is injected into component and page <code>client()</code> blocks under the <code>router</code> key, and is also available at <code>window.__coralite__.plugins.router</code>:</p>
 
     <ul>
       <li><code>router.navigate(path, { replace = false })</code> — performs a client-side navigation: runs guards and the <code>coralite:navigating</code> event, updates the history entry (<code>pushState</code>, or <code>replaceState</code> with <code>replace: true</code>), fetches the target page, swaps the outlet and head content, then re-hydrates the new outlet. Returns once the swap has settled.</li>

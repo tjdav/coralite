@@ -29,8 +29,8 @@
         </ul>
       </li>
       <li><strong>Velocity Engine:</strong> Animations, transitions, and smooth scrolling are globally disabled in <code>testing</code> mode to eliminate race conditions and speed up tests.</li>
-      <li><strong>State Exposure:</strong> Populates <code>window.__coralite__.components</code> with instance state mappings for glass-box assertions.</li>
-      <li><strong>Event Spying:</strong> Logs all <code>CustomEvent</code> dispatches to <code>window.__coralite__.events</code>.</li>
+      <li><strong>State Exposure:</strong> Exposes component inspection methods under <code>window.__coralite__.devtools</code> and <code>window.__coralite__.test</code> (<code>getComponent</code>, <code>getInstances</code>, <code>getRegisteredComponents</code>, <code>getHydratedCount</code>) for glass-box assertions.</li>
+      <li><strong>Event Spying:</strong> Logs all <code>CustomEvent</code> dispatches to <code>window.__coralite__.devtools.getEvents()</code> (also available via <code>window.__coralite__.test.getEvents()</code>).</li>
       <li><strong>Fail-Fast Hydration:</strong> Any hydration mismatch or client-side error triggers a fatal red overlay, ensuring test runners catch failures immediately.</li>
     </ul>
 

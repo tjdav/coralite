@@ -164,7 +164,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
     let guardCalled = false
 
     const dispose = router.beforeEach(() => {
@@ -190,7 +190,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
     let guard1Called = false
     let guard2Called = false
 
@@ -226,7 +226,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
 
     router.beforeEach(({ to }) => {
       if (to.path === '/admin') {
@@ -249,7 +249,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
 
     router.beforeEach(({ to }) => {
       if (to.path === '/admin') {
@@ -274,7 +274,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
     })
 
     mockWindow.location.pathname = '/admin/dashboard'
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
 
     router.beforeEach(({ to }) => {
       if (to.path === '/admin/settings') {
@@ -297,7 +297,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
 
     router.beforeEach(({ to }) => {
       if (to.path === '/external') {
@@ -320,7 +320,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
 
     router.beforeEach(() => {
       throw new Error('Guard failure')
@@ -342,7 +342,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
     const executionOrder = []
 
     router.beforeEach(async () => {
@@ -367,7 +367,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
 
     router.beforeEach(async ({ signal }) => {
       await new Promise(resolve => setTimeout(resolve, 50))
@@ -392,7 +392,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
 
     router.beforeEach(({ to }) => {
       if (to.path.startsWith('/loop')) {
@@ -414,7 +414,7 @@ describe('Router Plugin Navigation Guards Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    const router = mockWindow.__coralite_router__
+    const router = mockWindow.__coralite__.plugins.router
     let urlDuringGuard = null
 
     router.beforeEach(() => {

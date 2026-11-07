@@ -12,10 +12,12 @@ describe('createIsoPluginProxy', () => {
   beforeEach(() => {
     resolveCount = 0
     win.__coralite__ = {
-      isomorphicPlugins: {
-        $t: () => {
-          resolveCount++
-          return (key) => `translated:${key}`
+      plugins: {
+        isomorphic: {
+          $t: () => {
+            resolveCount++
+            return (key) => `translated:${key}`
+          }
         }
       }
     }

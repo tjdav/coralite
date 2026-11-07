@@ -420,7 +420,7 @@ function findEnclosingBlockName (ancestors) {
 
 /**
  * Extracts and validates CSS `import()` declarations from a script or `client()` snippet,
- * and rewrites them into `window.__coralite__.importCSS(...)` calls.
+ * and rewrites them into `window.__coralite__.dom.importCSS(...)` calls.
  *
  * @param {string} code - Script or function source code.
  * @param {Object} [options={}] - Extraction options.
@@ -528,14 +528,14 @@ export function extractAndTransformCssImports (code, options = {}) {
         replacements.push({
           start: node.start - offset,
           end: node.end - offset,
-          replacement: `window.__coralite__.importCSS(${JSON.stringify(handle)}${optionsText})`
+          replacement: `window.__coralite__.dom.importCSS(${JSON.stringify(handle)}${optionsText})`
         })
       } else {
         const sourceText = code.slice(node.source.start - offset, node.source.end - offset)
         replacements.push({
           start: node.start - offset,
           end: node.end - offset,
-          replacement: `window.__coralite__.importCSS(${sourceText}${optionsText})`
+          replacement: `window.__coralite__.dom.importCSS(${sourceText}${optionsText})`
         })
       }
     }

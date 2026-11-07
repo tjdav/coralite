@@ -47,15 +47,17 @@ describe('Router Plugin Events Unit Tests', () => {
     }
 
     mockRuntime = {
-      hydrationStore: {
+      state: {
         replaced: null,
-        replace (data) {
+        replaceHydration (data) {
           this.replaced = data
         }
       },
-      upgraded: [],
-      async upgrade (el) {
-        this.upgraded.push(el)
+      dom: {
+        upgraded: [],
+        async upgrade (el) {
+          this.upgraded.push(el)
+        }
       }
     }
 
@@ -184,7 +186,7 @@ describe('Router Plugin Events Unit Tests', () => {
       })
     })
 
-    await mockWindow.__coralite_router__.navigate('/admin/users')
+    await mockWindow.__coralite__.plugins.router.navigate('/admin/users')
 
     assert.ok(navigatingFired, 'coralite:navigating was fired')
     assert.strictEqual(pushStateCountAtNavigating, 0, 'pushState had not been called yet when navigating fired')
@@ -202,7 +204,7 @@ describe('Router Plugin Events Unit Tests', () => {
       event.preventDefault()
     })
 
-    await mockWindow.__coralite_router__.navigate('/admin/users')
+    await mockWindow.__coralite__.plugins.router.navigate('/admin/users')
 
     assert.strictEqual(mockHistory.pushed.length, 0, 'No URL update')
     assert.strictEqual(fetchCalls.length, 0, 'No fetch')
@@ -223,7 +225,7 @@ describe('Router Plugin Events Unit Tests', () => {
 
     mockWindow.addEventListener('coralite:navigated', (event) => {
       navigatedFired = true
-      upgradedAtNavigated = mockRuntime.upgraded.length === 1
+      upgradedAtNavigated = mockRuntime.dom.upgraded.length === 1
       assert.strictEqual(event.type, 'coralite:navigated')
       assert.strictEqual(event.bubbles, true)
       assert.strictEqual(event.composed, true)
@@ -234,7 +236,7 @@ describe('Router Plugin Events Unit Tests', () => {
       })
     })
 
-    await mockWindow.__coralite_router__.navigate('/admin/users')
+    await mockWindow.__coralite__.plugins.router.navigate('/admin/users')
 
     assert.ok(navigatedFired, 'coralite:navigated was fired')
     assert.ok(upgradedAtNavigated, 'upgrade was complete when navigated fired')
@@ -247,9 +249,9 @@ describe('Router Plugin Events Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    mockWindow.__coralite_router__.beforeEach(() => false)
+    mockWindow.__coralite__.plugins.router.beforeEach(() => false)
 
-    await mockWindow.__coralite_router__.navigate('/admin/users')
+    await mockWindow.__coralite__.plugins.router.navigate('/admin/users')
 
     assert.strictEqual(dispatchedEvents.length, 0, 'No router events fired')
   })
@@ -267,7 +269,7 @@ describe('Router Plugin Events Unit Tests', () => {
     })
 
     await assert.rejects(
-      () => mockWindow.__coralite_router__.navigate('/failing'),
+      () => mockWindow.__coralite__.plugins.router.navigate('/failing'),
       /Navigation to \/failing failed: 500/
     )
 
@@ -300,8 +302,8 @@ describe('Router Plugin Events Unit Tests', () => {
       }
     }
 
-    const p1 = mockWindow.__coralite_router__.navigate('/slow')
-    const p2 = mockWindow.__coralite_router__.navigate('/fast')
+    const p1 = mockWindow.__coralite__.plugins.router.navigate('/slow')
+    const p2 = mockWindow.__coralite__.plugins.router.navigate('/fast')
 
     await Promise.all([p1, p2])
 
@@ -345,7 +347,7 @@ describe('Router Plugin Events Unit Tests', () => {
 
   it('falls back to sync swap when startViewTransition throws non-AbortError', async () => {
     const pluginInstance = routerPlugin()
-    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+    mockWindow.__coralite__ = { config: { viewTransitions: true } }
     globalThis.document.startViewTransition = () => {
       throw new Error('startViewTransition failed')
     }
@@ -355,7 +357,7 @@ describe('Router Plugin Events Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    await mockWindow.__coralite_router__.navigate('/admin/users')
+    await mockWindow.__coralite__.plugins.router.navigate('/admin/users')
 
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-node'], 'Swap fell back to sync swap')
     const navigatedEvents = dispatchedEvents.filter(e => e.type === 'coralite:navigated')
@@ -364,7 +366,7 @@ describe('Router Plugin Events Unit Tests', () => {
 
   it('does not double-swap if view transition callback already ran before transition rejection', async () => {
     const pluginInstance = routerPlugin()
-    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+    mockWindow.__coralite__ = { config: { viewTransitions: true } }
 
     let swapCallCount = 0
     const originalReplaceChildren = mockOutlet.replaceChildren
@@ -389,7 +391,7 @@ describe('Router Plugin Events Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    await mockWindow.__coralite_router__.navigate('/admin/users')
+    await mockWindow.__coralite__.plugins.router.navigate('/admin/users')
 
     assert.strictEqual(swapCallCount, 1, 'replaceChildren called exactly once')
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-node'])
@@ -397,7 +399,7 @@ describe('Router Plugin Events Unit Tests', () => {
 
   it('skips DOM swap if navigation signal is aborted before VT callback runs', async () => {
     const pluginInstance = routerPlugin()
-    mockWindow.__coralite_hydration__ = { viewTransitions: true }
+    mockWindow.__coralite__ = { config: { viewTransitions: true } }
 
     let callbackRan = false
     let isFirst = true
@@ -406,7 +408,7 @@ describe('Router Plugin Events Unit Tests', () => {
         if (isFirst) {
           isFirst = false
           // Simulate second navigation aborting the first one before cb runs
-          mockWindow.__coralite_router__.navigate('/fast')
+          mockWindow.__coralite__.plugins.router.navigate('/fast')
         }
         await cb()
         callbackRan = true
@@ -422,7 +424,7 @@ describe('Router Plugin Events Unit Tests', () => {
       runtime: mockRuntime
     })
 
-    await mockWindow.__coralite_router__.navigate('/slow')
+    await mockWindow.__coralite__.plugins.router.navigate('/slow')
 
     assert.ok(callbackRan, 'Callback was called by browser')
     assert.deepStrictEqual(mockOutlet.childNodes, ['new-node'])

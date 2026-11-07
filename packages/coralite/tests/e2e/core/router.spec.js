@@ -13,8 +13,8 @@ test.describe('SPA Router', () => {
         delete document.startViewTransition
       }
       // Reset viewTransitions flag
-      if (window.__coralite_hydration__) {
-        delete window.__coralite_hydration__.viewTransitions
+      if (window.__coralite__?.config) {
+        delete window.__coralite__.config.viewTransitions
       }
     })
   })
@@ -64,8 +64,9 @@ test.describe('SPA Router', () => {
 
   test('router navigation triggers startViewTransition when enabled', async ({ page }) => {
     await page.evaluate(() => {
-      window.__coralite_hydration__ = window.__coralite_hydration__ || {}
-      window.__coralite_hydration__.viewTransitions = true
+      window.__coralite__ = window.__coralite__ || {}
+      window.__coralite__.config = window.__coralite__.config || {}
+      window.__coralite__.config.viewTransitions = true
       window.__vtCallCount = 0
       document.startViewTransition = (cb) => {
         window.__vtCallCount++
@@ -88,8 +89,9 @@ test.describe('SPA Router', () => {
 
   test('navigation succeeds when startViewTransition unavailable', async ({ page }) => {
     await page.evaluate(() => {
-      window.__coralite_hydration__ = window.__coralite_hydration__ || {}
-      window.__coralite_hydration__.viewTransitions = true
+      window.__coralite__ = window.__coralite__ || {}
+      window.__coralite__.config = window.__coralite__.config || {}
+      window.__coralite__.config.viewTransitions = true
       Object.defineProperty(document, 'startViewTransition', {
         configurable: true,
         value: undefined
@@ -117,8 +119,9 @@ test.describe('SPA Router', () => {
     })
 
     await page.evaluate(() => {
-      window.__coralite_hydration__ = window.__coralite_hydration__ || {}
-      window.__coralite_hydration__.viewTransitions = true
+      window.__coralite__ = window.__coralite__ || {}
+      window.__coralite__.config = window.__coralite__.config || {}
+      window.__coralite__.config.viewTransitions = true
       document.startViewTransition = () => {
         throw new Error('mock failure')
       }

@@ -84,7 +84,7 @@ describe('slotted page tokens during SSR', () => {
     assert.ok(!markupOnly.includes('{{ directionsLinkText }}'), 'no raw directionsLinkText token in SSR markup')
     assert.ok(!markupOnly.includes('{{ tabsAriaLabel }}'), 'no raw tabsAriaLabel token in SSR markup')
 
-    const pageConfigMatch = html.match(/window\.__coralite_page_config__ = Object\.assign\(\s*\{\},\s*window\.__coralite_page_config__ \|\| \{\},\s*(\{[\s\S]*?\})\s*\);/)
+    const pageConfigMatch = html.match(/coralite\.config\.page = Object\.assign\(\s*\{\},\s*coralite\.config\.page \|\| \{\},\s*(\{[\s\S]*?\})\s*\);/)
     assert.ok(pageConfigMatch, 'page config should be present')
     const pageConfig = JSON.parse(pageConfigMatch[1])
     const tokenValues = Object.values(pageConfig.tokens || {})
@@ -125,7 +125,7 @@ describe('slotted page tokens during SSR', () => {
     assert.ok(!markupOnly.includes('{{ greeting }}'), 'no raw greeting token in SSR markup')
     assert.ok(markupOnly.includes('<c-token data-coralite-page-token='), 'bare text should be wrapped in c-token with page token marker')
 
-    const pageConfigMatch = html.match(/window\.__coralite_page_config__ = Object\.assign\(\s*\{\},\s*window\.__coralite_page_config__ \|\| \{\},\s*(\{[\s\S]*?\})\s*\);/)
+    const pageConfigMatch = html.match(/coralite\.config\.page = Object\.assign\(\s*\{\},\s*coralite\.config\.page \|\| \{\},\s*(\{[\s\S]*?\})\s*\);/)
     const pageConfig = JSON.parse(pageConfigMatch[1])
     const tokenValues = Object.values(pageConfig.tokens || {})
     assert.ok(tokenValues.some(entry => entry.texts && entry.texts.some(t => t.raw.includes('greeting'))), 'greeting should be registered in pageConfig.tokens')

@@ -83,7 +83,11 @@ describe('createImportCSS', () => {
     documentMock = createDocumentMock()
     globalThis.document = documentMock
     globalThis.window = {
-      __coralite_styles_loaded__: new Set()
+      __coralite__: {
+        state: {
+          stylesLoaded: new Set()
+        }
+      }
     }
   })
 
@@ -126,7 +130,7 @@ describe('createImportCSS', () => {
 
     assert.equal(result.link, link)
     assert.equal(result.default, link.sheet)
-    assert.ok(window.__coralite_styles_loaded__.has('/app/assets/css/acme-abc123.css'))
+    assert.ok(window.__coralite__.state.stylesLoaded.has('/app/assets/css/acme-abc123.css'))
   })
 
   it('supports both flat options and standard Import Attributes { with: { ... } }', async () => {
@@ -216,7 +220,7 @@ describe('createImportCSS', () => {
     link.dispatchLoad()
     const resolved = await importCSS('acme')
     assert.equal(resolved.link, link)
-    assert.ok(window.__coralite_styles_loaded__.has('/app/assets/css/acme.css'))
+    assert.ok(window.__coralite__.state.stylesLoaded.has('/app/assets/css/acme.css'))
   })
 
   it('deduplicates concurrent callers onto one link and one load', async () => {

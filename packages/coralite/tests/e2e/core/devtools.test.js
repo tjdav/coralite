@@ -24,11 +24,11 @@ test.describe('DevTools & Testing API (Development / Testing Modes)', () => {
         version: api.version,
         mode: api.mode,
         hasLifecycle: api.lifecycle !== null,
-        hasGetComponent: typeof api.getComponent === 'function',
-        hasGetRegisteredComponents: typeof api.getRegisteredComponents === 'function',
-        hasGetHydratedCount: typeof api.getHydratedCount === 'function',
-        hasGetInstances: typeof api.getInstances === 'function',
-        hasGetEvents: typeof api.getEvents === 'function'
+        hasGetComponent: typeof api.devtools?.getComponent === 'function',
+        hasGetRegisteredComponents: typeof api.devtools?.getRegisteredComponents === 'function',
+        hasGetHydratedCount: typeof api.devtools?.getHydratedCount === 'function',
+        hasGetInstances: typeof api.devtools?.getInstances === 'function',
+        hasGetEvents: typeof api.devtools?.getEvents === 'function'
       }
     })
 
@@ -44,14 +44,14 @@ test.describe('DevTools & Testing API (Development / Testing Modes)', () => {
 
   test('should return correct registered components', async ({ page }) => {
     const registered = await page.evaluate(() => {
-      return window.__coralite__.getRegisteredComponents()
+      return window.__coralite__.devtools.getRegisteredComponents()
     })
     expect(registered).toContain('client-script-component')
   })
 
   test('should return correct instances currently attached to the DOM tree', async ({ page }) => {
     const count = await page.evaluate(() => {
-      const instances = window.__coralite__.getInstances('client-script-component')
+      const instances = window.__coralite__.devtools.getInstances('client-script-component')
       return instances.length
     })
     expect(count).toBeGreaterThan(0)
@@ -83,7 +83,7 @@ test.describe('DevTools & Testing API (Development / Testing Modes)', () => {
   test('should allow getComponent lookup bridge', async ({ page }) => {
     const componentState = await page.evaluate(() => {
       const el = document.querySelector('client-script-component')
-      const context = window.__coralite__.getComponent(el)
+      const context = window.__coralite__.devtools.getComponent(el)
       return {
         instanceId: context?.instanceId,
         componentId: context?.componentId,
@@ -97,7 +97,7 @@ test.describe('DevTools & Testing API (Development / Testing Modes)', () => {
 
   test('should log custom events in a bounded ring-buffer via getEvents()', async ({ page }) => {
     const _beforeEventsCount = await page.evaluate(() => {
-      return window.__coralite__.getEvents().length
+      return window.__coralite__.devtools.getEvents().length
     })
 
     // Click button to dispatch/trigger potential reactive/event cycles
@@ -109,7 +109,7 @@ test.describe('DevTools & Testing API (Development / Testing Modes)', () => {
     await page.waitForTimeout(100)
 
     const events = await page.evaluate(() => {
-      return window.__coralite__.getEvents()
+      return window.__coralite__.devtools.getEvents()
     })
 
     // Assert custom event logging is supported (if any events are captured)
@@ -136,13 +136,13 @@ test.describe('DevTools & Testing API (Production Mode)', () => {
         hasVersion: api.version !== undefined,
         hasMode: api.mode !== undefined,
         hasLifecycle: api.lifecycle !== undefined,
-        hasComponents: api.components !== undefined
+        hasDevtools: api.devtools !== undefined
       }
     })
     expect(devtoolsState.hasVersion).toBe(false)
     expect(devtoolsState.hasMode).toBe(false)
     expect(devtoolsState.hasLifecycle).toBe(false)
-    expect(devtoolsState.hasComponents).toBe(false)
+    expect(devtoolsState.hasDevtools).toBe(false)
   })
 
   test('should completely strip component-level testing symbols in production', async ({ page }) => {

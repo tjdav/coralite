@@ -7,16 +7,18 @@ import { createCoraliteClass } from '#lib/client/element.js'
 describe('Client-side Route Context in Component Blocks (lib/client)', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
-    delete window.__coralite_hydration__
+    delete window.__coralite__
   })
 
-  it('component client receives route read from window.__coralite_hydration__.__route__', async () => {
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/posts/42.html',
-        pattern: '/posts/[id].html',
-        params: { id: '42' },
-        dynamic: true
+  it('component client receives route read from window.__coralite__.state.route', async () => {
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/posts/42.html',
+          pattern: '/posts/[id].html',
+          params: { id: '42' },
+          dynamic: true
+        }
       }
     }
 
@@ -47,13 +49,15 @@ describe('Client-side Route Context in Component Blocks (lib/client)', () => {
     assert.equal(el.dataset.postId, '42')
   })
 
-  it('component getters on client receives route read from window.__coralite_hydration__.__route__', async () => {
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/dashboard.html',
-        pattern: '/dashboard.html',
-        params: {},
-        dynamic: false
+  it('component getters on client receives route read from window.__coralite__.state.route', async () => {
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/dashboard.html',
+          pattern: '/dashboard.html',
+          params: {},
+          dynamic: false
+        }
       }
     }
 
@@ -80,12 +84,14 @@ describe('Client-side Route Context in Component Blocks (lib/client)', () => {
   })
 
   it('component slots on client receives route', async () => {
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/slot-test.html',
-        pattern: '/slot-test.html',
-        params: {},
-        dynamic: false
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/slot-test.html',
+          pattern: '/slot-test.html',
+          params: {},
+          dynamic: false
+        }
       }
     }
 
@@ -115,12 +121,14 @@ describe('Client-side Route Context in Component Blocks (lib/client)', () => {
   })
 
   it('component provide on client receives route and passes it to context subscribers', async () => {
-    window.__coralite_hydration__ = {
-      __route__: {
-        path: '/provide-client.html',
-        pattern: '/provide-client.html',
-        params: {},
-        dynamic: false
+    window.__coralite__ = {
+      state: {
+        route: {
+          path: '/provide-client.html',
+          pattern: '/provide-client.html',
+          params: {},
+          dynamic: false
+        }
       }
     }
 

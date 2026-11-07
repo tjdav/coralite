@@ -1,19 +1,17 @@
 /**
- * @import { InstanceContext, CoraliteConfig } from '../../../types/index.js'
- */
-
-/**
  * Generates the client-side runtime script for Coralite pages.
  *
  * @param {Object} options - The options used to configure the client-side runtime.
  * @param {string} options.base - The base URL for assets.
  * @param {string} options.sharedChunkPath - The filename of the shared chunk.
  * @param {string[]} [options.declarativeTags=[]] - The declarative tags used.
- * @param {string} [options.hydrationData='{}'] - Serialized hydration data.
+ * @param {string} [options.hydrationData='{}'] - Serialized component instance hydration data.
+ * @param {string} [options.routeData='undefined'] - Serialized active route object.
+ * @param {boolean} [options.viewTransitions=false] - Whether View Transitions are enabled for SPA navigation.
  * @param {string} [options.pageConfig='null'] - Serialized page configuration object.
  * @param {string} [options.mode='production'] - Build mode.
- * @param {'full' | 'minimal'} [options.reconcile='full'] - Reconcile mode.
- * @param {'full' | 'minimal'} [options.listStrategy='full'] - List strategy.
+ * @param {'full' | 'minimal'} [options.reconcile='full'] - Legacy reconcile mode fallback.
+ * @param {'full' | 'minimal'} [options.listStrategy='full'] - List reconciliation strategy.
  * @param {string} [options.instanceCounters='{}'] - Serialized instance counters map.
  * @param {string} [options.inlinedStyles='[]'] - Serialized inlined styles array.
  * @param {boolean} [options.preserveTestId=false] - Whether to preserve data-testid in production.
@@ -24,6 +22,8 @@ export function generateClientRuntime ({
   sharedChunkPath,
   declarativeTags = [],
   hydrationData = '{}',
+  routeData = 'undefined',
+  viewTransitions = false,
   pageConfig = 'null',
   mode = 'production',
   reconcile = 'full',
@@ -34,56 +34,73 @@ export function generateClientRuntime ({
 }) {
   const effectiveStrategy = listStrategy || reconcile || 'full'
   const shouldStripTestId = mode === 'production' && !preserveTestId && process.env.CORALITE_PRESERVE_TESTID !== 'true'
+  const isProd = mode === 'production'
+  const sharedImports = isProd
+    ? 'getClientContext, createCoraliteClass, globalClientHooks, initPlugins, setupPageRuntime, createImportCSS, formatCoraliteHTML'
+    : 'getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, initPlugins, setupPageRuntime, createImportCSS, formatCoraliteHTML'
 
   return `
 (async () => {
-  window.__coralite_instanceCounters = Object.assign(
+  if (!window.__coralite__) {
+    Object.defineProperty(window, '__coralite__', {
+      value: {},
+      writable: true,
+      configurable: true,
+      enumerable: false
+    });
+  }
+  const coralite = window.__coralite__;
+  coralite.config = coralite.config || {};
+  coralite.state = coralite.state || {};
+  coralite.dom = coralite.dom || {};
+  coralite.plugins = coralite.plugins || {};
+
+  coralite.config.listStrategy = coralite.config.listStrategy || ${JSON.stringify(effectiveStrategy)};
+  if (coralite.config.viewTransitions === undefined) {
+    coralite.config.viewTransitions = ${Boolean(viewTransitions)};
+  }
+  coralite.config.page = Object.assign(
     {},
-    window.__coralite_instanceCounters || {},
-    ${instanceCounters}
-  );
-  window.__coralite_hydration__ = Object.assign(
-    {},
-    window.__coralite_hydration__ || {},
-    ${hydrationData}
-  );
-  window.__coralite_page_config__ = Object.assign(
-    {},
-    window.__coralite_page_config__ || {},
+    coralite.config.page || {},
     ${pageConfig}
   );
 
+  coralite.state.counters = Object.assign(
+    {},
+    coralite.state.counters || {},
+    ${instanceCounters}
+  );
+  coralite.state.hydration = Object.assign(
+    {},
+    coralite.state.hydration || {},
+    ${hydrationData}
+  );
+  ${routeData !== 'undefined' ? `coralite.state.route = ${routeData};` : ''}
+  coralite.state.stylesLoaded = coralite.state.stylesLoaded || new Set(${inlinedStyles});
+
+  if (typeof coralite.state.getHydration !== 'function') {
+    coralite.state.getHydration = () => coralite.state.hydration;
+    coralite.state.mergeHydration = (next) => {
+      if (next && typeof next === 'object') {
+        Object.assign(coralite.state.hydration, next);
+      }
+    };
+    coralite.state.replaceHydration = (next) => {
+      coralite.state.hydration = next && typeof next === 'object' ? next : {};
+    };
+  }
+
   const [
-    { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, initPlugins, setupPageRuntime, createImportCSS },
+    { ${sharedImports} },
     { default: componentManifest }
   ] = await Promise.all([
     import('${base}assets/js/${sharedChunkPath}'),
     import('${base}assets/js/manifest.js')
   ]);
 
-  window.__coralite__ = window.__coralite__ || {};
-  window.__coralite__.reconcile = window.__coralite__.reconcile || ${JSON.stringify(effectiveStrategy)};
-  window.__coralite__.listStrategy = window.__coralite__.listStrategy || ${JSON.stringify(effectiveStrategy)};
-  if (!window.__coralite__.hydrationStore) {
-    window.__coralite__.hydrationStore = {
-      get() {
-        return window.__coralite_hydration__;
-      },
-      merge(next) {
-        if (next && typeof next === 'object') {
-          Object.assign(window.__coralite_hydration__, next);
-        }
-      },
-      replace(next) {
-        window.__coralite_hydration__ = next && typeof next === 'object' ? next : {};
-      }
-    };
-  }
-
   const declarativeTags = ${JSON.stringify(declarativeTags)};
-  window.__coralite_styles_loaded__ = window.__coralite_styles_loaded__ || new Set(${inlinedStyles});
   if (typeof createImportCSS === 'function') {
-    window.__coralite__.importCSS = createImportCSS({
+    coralite.dom.importCSS = createImportCSS({
       base: ${JSON.stringify(base)},
       manifest: componentManifest
     });
@@ -100,20 +117,19 @@ export function generateClientRuntime ({
     if (loadCache[componentId]) return loadCache[componentId];
 
     loadCache[componentId] = (async () => {
-      const isDev = typeof entry === 'string' && entry.includes('-runtime');
       const jsPath = typeof entry === 'string' ? entry : entry.js;
       const cssPath = typeof entry === 'object' ? entry.css : null;
 
       if (cssPath) {
         const fullCssPath = '${base}assets/css/' + cssPath;
-        const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(componentId);
+        const isLoaded = coralite.state.stylesLoaded && coralite.state.stylesLoaded.has(componentId);
 
         if (!document.querySelector('link[href="' + fullCssPath + '"]') && !isLoaded) {
           const link = document.createElement('link');
           link.rel = 'stylesheet';
           link.href = fullCssPath;
           if (document.head) document.head.appendChild(link);
-          if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(componentId);
+          if (coralite.state.stylesLoaded) coralite.state.stylesLoaded.add(componentId);
         }
       }
 
@@ -123,7 +139,7 @@ export function generateClientRuntime ({
         if (!customElements.get(id)) {
           if (module.default.styles && !cssPath) {
             const styleId = 'coralite-style-' + id;
-            const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(id);
+            const isLoaded = coralite.state.stylesLoaded && coralite.state.stylesLoaded.has(id);
 
             if (!document.getElementById(styleId) && !isLoaded) {
               const style = document.createElement('style');
@@ -132,14 +148,12 @@ export function generateClientRuntime ({
               const isAtRule = /^\\s*@(scope|layer|media|supports|keyframes|font-face|container)\\b/i.test(cssContent);
               style.textContent = isAtRule ? cssContent : id + ' {\\n' + cssContent + '\\n}';
               if (document.head) document.head.appendChild(style);
-              if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(id);
+              if (coralite.state.stylesLoaded) coralite.state.stylesLoaded.add(id);
             }
           }
           customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks));
-          if (typeof registerDevToolsComponent === 'function') {
-            registerDevToolsComponent(id);
-          }
-          if (window.__coralite__ && window.__coralite__.lifecycle) window.__coralite__.lifecycle._markDefined(id);
+          ${!isProd ? 'if (typeof registerDevToolsComponent === \'function\') { registerDevToolsComponent(id); }' : ''}
+          if (coralite.lifecycle) coralite.lifecycle._markDefined(id);
         }
       }
     })();
@@ -227,19 +241,35 @@ export function generateClientRuntime ({
     }
   };
 
-  window.__coralite__.loadComponent = loadComponent;
-  window.__coralite__.upgrade = upgrade;
+  coralite.dom.loadComponent = loadComponent;
+  coralite.dom.upgrade = upgrade;
+  coralite.dom.createElement = (tag, options) => {
+    const el = document.createElement(tag, options);
+    if (componentManifest[tag]) {
+      upgrade(el);
+    }
+    return el;
+  };
+  coralite.dom.processHTML = (html, instanceId) => {
+    if (typeof html !== 'string') return html;
+    const processed = typeof formatCoraliteHTML === 'function'
+      ? formatCoraliteHTML(html, instanceId, ${shouldStripTestId})
+      : html;
+    const matches = processed.matchAll(/<([a-zA-Z0-9-]+)/g);
+    for (const match of matches) {
+      const tag = match[1].toLowerCase();
+      if (componentManifest[tag]) {
+        loadComponent(tag);
+      }
+    }
+    return processed;
+  };
+
   if (typeof getClientContext === 'function') {
-    window.__coralite__.getClientContext = getClientContext;
+    coralite.plugins.getClientContext = getClientContext;
   }
 
-  if (typeof initPlugins === 'function') {
-    await initPlugins();
-  }
-  if (typeof setupPageRuntime === 'function' && window.__coralite_page_config__) {
-    await setupPageRuntime(window.__coralite_page_config__, getClientContext);
-  }
-
+${!isProd ? `
   if (typeof setupDevTools === 'function') {
     setupDevTools();
   }
@@ -247,74 +277,6 @@ export function generateClientRuntime ({
     declarativeTags.forEach(tag => registerDevToolsComponent(tag));
   }
 
-  const initialElements = Array.from(document.querySelectorAll('[data-cid]'))
-    .filter(el => {
-      const tagName = el.tagName.toLowerCase();
-      const isDeclarative = declarativeTags.includes(tagName);
-      const isInitial = el.hasAttribute('data-coralite-initial');
-
-      if ('${mode}' === 'testing' && isDeclarative && isInitial) {
-        const cid = el.getAttribute('data-cid');
-        const store = window.__coralite_hydration__ || {};
-        if (cid && !store[cid]) {
-          const error = new Error('Coralite Hydration Mismatch: Component with data-cid "' + cid + '" (' + tagName + ') has no matching server hydration data.');
-          if (typeof window['showCoraliteError'] === 'function') {
-            window['showCoraliteError'](error);
-          } else {
-            console.error(error);
-            const overlay = document.createElement('div');
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100%';
-            overlay.style.height = '100%';
-            overlay.style.backgroundColor = 'rgba(127, 29, 29, 0.98)';
-            overlay.style.color = '#ffffff';
-            overlay.style.padding = '20px';
-            overlay.style.zIndex = '10000';
-            overlay.style.fontFamily = 'monospace';
-            overlay.style.whiteSpace = 'pre-wrap';
-            overlay.style.overflow = 'auto';
-
-            const heading = document.createElement('h1');
-            heading.textContent = 'Coralite Hydration Mismatch';
-            const desc = document.createElement('p');
-            desc.textContent = error.message;
-
-            overlay.appendChild(heading);
-            overlay.appendChild(desc);
-            if (error.stack) {
-              const stackTrace = document.createElement('pre');
-              stackTrace.textContent = error.stack;
-              overlay.appendChild(stackTrace);
-            }
-            document.body.appendChild(overlay);
-          }
-          throw error;
-        }
-      }
-
-      return isDeclarative && isInitial;
-    });
-  if (window.__coralite__ && window.__coralite__.lifecycle) {
-    window.__coralite__.lifecycle._start(initialElements.length, declarativeTags.length);
-  }
-  globalThis.executableScripts = [];
-  globalThis.globalAbortController = new AbortController();
-
-  const loadPromises = declarativeTags.map(tagName => loadComponent(tagName));
-  await Promise.all(loadPromises);
-  document.documentElement.setAttribute('data-coralite-ready', 'true');
-
-  window.createCoraliteElement = (tag, options) => {
-    const el = document.createElement(tag, options);
-    if (componentManifest[tag]) {
-      upgrade(el);
-    }
-    return el;
-  };
-
-${mode !== 'production' ? `
   const resolveInstanceId = (node) => {
     if (!node) return undefined;
     if (node._instanceId !== undefined) return node._instanceId;
@@ -381,7 +343,7 @@ ${mode !== 'production' ? `
           return nativeInnerHTMLDesc.set.call(this, html);
         }
         const instanceId = resolveInstanceId(this);
-        const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
+        const processedHtml = coralite.dom.processHTML ? coralite.dom.processHTML(html, instanceId) : html;
         nativeInnerHTMLDesc.set.call(this, processedHtml);
         const tags = getCustomElementTags(html);
         upgradeMatchingElements(this, tags);
@@ -401,7 +363,7 @@ ${mode !== 'production' ? `
           return shadowRootInnerHTMLDesc.set.call(this, html);
         }
         const instanceId = resolveInstanceId(this);
-        const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
+        const processedHtml = coralite.dom.processHTML ? coralite.dom.processHTML(html, instanceId) : html;
         shadowRootInnerHTMLDesc.set.call(this, processedHtml);
         const tags = getCustomElementTags(html);
         upgradeMatchingElements(this, tags);
@@ -422,7 +384,7 @@ ${mode !== 'production' ? `
         }
         const parent = this.parentElement || this.parentNode || (typeof this.getRootNode === 'function' ? this.getRootNode() : null);
         const instanceId = resolveInstanceId(this);
-        const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
+        const processedHtml = coralite.dom.processHTML ? coralite.dom.processHTML(html, instanceId) : html;
         nativeOuterHTMLDesc.set.call(this, processedHtml);
         const tags = getCustomElementTags(html);
         if (parent) {
@@ -439,7 +401,7 @@ ${mode !== 'production' ? `
       }
       const pos = (typeof position === 'string') ? position.toLowerCase() : position;
       const instanceId = resolveInstanceId(this);
-      const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
+      const processedHtml = coralite.dom.processHTML ? coralite.dom.processHTML(html, instanceId) : html;
       nativeInsertAdjacentHTML.call(this, position, processedHtml);
       const tags = getCustomElementTags(html);
       const container = (pos === 'afterbegin' || pos === 'beforeend')
@@ -452,87 +414,41 @@ ${mode !== 'production' ? `
   }
 ` : ''}
 
-  // Rewrites HTML strings for imperative custom element insertion and template stamping.
-  // Mirrored by fallback in inject.js:processHTML when window.processHTML is unavailable.
-  // Note: Tag matching uses /<([a-zA-Z0-9-]+)([^>]*)>/g assuming well-formed attributes without raw '>' in attribute values.
-  window.processHTML = (html, instanceId) => {
-    if (typeof html !== 'string') return html;
+  if (typeof initPlugins === 'function') {
+    await initPlugins();
+  }
+  if (typeof setupPageRuntime === 'function' && coralite.config.page) {
+    await setupPageRuntime(coralite.config.page, getClientContext);
+  }
 
-    // Sanitize unresolved {{ token }} syntax from attribute values.
-    // Strict template grammar: {{ opens, first }} closes.
-    const _sanitize = (h) => {
-      if (!h || !h.includes('{{')) return h;
-      const TT = /\\{\\{[\\s\\S]*?\\}\\}/;
-      const TG = /\\{\\{[\\s\\S]*?\\}\\}/g;
-      const ph = [];
-      const rawInnerRe = /(<(?:script|style|textarea|title)\\b[^>]*>)([\\s\\S]*?)(<\\/(?:script|style|textarea|title)>)/gi;
-      let out = h.replace(rawInnerRe, (_, open, inner, close) => {
-        const id = '\\x00CR' + ph.length + '\\x00';
-        ph.push(inner);
-        return open + id + close;
-      });
-      out = out.replace(/<!--[\\s\\S]*?-->/g, (m) => {
-        const id = '\\x00CR' + ph.length + '\\x00';
-        ph.push(m);
-        return id;
-      });
-      const tagRe = /<([a-zA-Z][\\w:-]*)((?:\\s+[^\\s"'>/=]+(?:\\s*=\\s*(?:"[^"]*"|'[^']*'|[^\\s"'>]+))?)*)\\s*(\\/?)>/gs;
-      const attrRe = /(\\s+[^\\s"'>/=]+)\\s*=\\s*(?:(['"])([\\s\\S]*?)\\2|([^\\s"'>]+))/g;
-      out = out.replace(tagRe, (ft, tn, attrs, sl) => {
-        if (!TT.test(attrs)) return ft;
-        const sa = attrs.replace(attrRe, (am, nw, q, qv, uv) => {
-          const v = q ? qv : uv;
-          if (!TT.test(v)) return am;
-          const s = v.replace(TG, '').trim();
-          if (s === '') return '';
-          if (q) return nw + '=' + q + s + q;
-          return /\\s/.test(s) ? nw + '="' + s + '"' : nw + '=' + s;
-        });
-        return '<' + tn + sa + (sl ? ' /' : '') + '>';
-      });
-      return out.replace(/\\x00CR(\\d+)\\x00/g, (_, i) => ph[i]);
-    };
-    html = _sanitize(html);
-
-    const shouldStripTestId = ${shouldStripTestId};
-
-    html = html.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
-      let newAttrs = attrs;
-
-      // Strip deprecated 'test' attribute
-      newAttrs = newAttrs.replace(/\\s+test\\s*=\\s*(['"]).*?\\1/g, '');
-
-      // Handle data-testid
-      if (shouldStripTestId) {
-        newAttrs = newAttrs.replace(/\\s+data-testid\\s*=\\s*(['"]).*?\\1/g, '');
-      }
-
-      // Handle ref & data-coralite-owner
-      if (instanceId) {
-        const prefix = instanceId + '__';
-        const refRegex = /\\s+ref\\s*=\\s*(['"])(.*?)\\1/g;
-        newAttrs = newAttrs.replace(refRegex, (attrMatch, quote, refValue) => {
-          const prefixedRef = refValue.startsWith(prefix) ? refValue : prefix + refValue;
-          let ownerAttr = '';
-          if (!newAttrs.includes('data-coralite-owner=')) {
-            ownerAttr = ' data-coralite-owner="' + instanceId + '"';
+  const initialElements = Array.from(document.querySelectorAll('[data-cid]'))
+    .filter(el => {
+      const tagName = el.tagName.toLowerCase();
+      const isDeclarative = declarativeTags.includes(tagName);
+      const isInitial = el.hasAttribute('data-coralite-initial');
+      ${mode === 'testing' ? `
+      if (isDeclarative && isInitial) {
+        const cid = el.getAttribute('data-cid');
+        const store = coralite.state.hydration || {};
+        if (cid && !store[cid]) {
+          const error = new Error('Coralite Hydration Mismatch: Component with data-cid "' + cid + '" (' + tagName + ') has no matching server hydration data.');
+          console.error(error);
+          if (coralite.devtools && typeof coralite.devtools.showError === 'function') {
+            coralite.devtools.showError(error, 'Coralite Hydration Mismatch');
           }
-          return ' ref="' + prefixedRef + '"' + ownerAttr;
-        });
+          throw error;
+        }
       }
-
-      return '<' + tagName + newAttrs + '>';
+      ` : ''}
+      return isDeclarative && isInitial;
     });
+  if (coralite.lifecycle) {
+    coralite.lifecycle._start(initialElements.length, declarativeTags.length);
+  }
 
-    const matches = html.matchAll(/<([a-zA-Z0-9-]+)/g);
-    for (const match of matches) {
-      const tag = match[1].toLowerCase();
-      if (componentManifest[tag]) {
-        loadComponent(tag);
-      }
-    }
-    return html;
-  };
+  const loadPromises = declarativeTags.map(tagName => loadComponent(tagName));
+  await Promise.all(loadPromises);
+  document.documentElement.setAttribute('data-coralite-ready', 'true');
 })();
 `.trim()
 }

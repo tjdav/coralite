@@ -51,8 +51,8 @@ test.describe('Granular Lifecycle', () => {
 
       await window.__coralite__.lifecycle.waitFor(child)
 
-      const isLoadedInSet = window.__coralite_styles_loaded__ ? window.__coralite_styles_loaded__.has('style-imperative-only') : false
-      const isLoadedInDevTools = window.__coralite__ && window.__coralite__.stylesLoaded ? window.__coralite__.stylesLoaded.includes('style-imperative-only') : false
+      const isLoadedInSet = window.__coralite__?.state?.stylesLoaded ? window.__coralite__.state.stylesLoaded.has('style-imperative-only') : false
+      const isLoadedInDevTools = window.__coralite__?.devtools?.stylesLoaded ? window.__coralite__.devtools.stylesLoaded.includes('style-imperative-only') : false
 
       return {
         ready: true,

@@ -154,7 +154,8 @@ export function createImportCSS ({ base, manifest }) {
   }
 
   const inject = (href, attributes, order) => {
-    const loadedStyles = typeof window !== 'undefined' ? window['__coralite_styles_loaded__'] : null
+    const state = typeof window !== 'undefined' ? window['__coralite__']?.state : null
+    const loadedStyles = state?.stylesLoaded || null
     const existingLink = findExistingLink(href)
 
     if (loadedStyles && loadedStyles.has(href) && existingLink) {
