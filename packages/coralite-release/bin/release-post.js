@@ -16,6 +16,7 @@ Your task is to generate a structured GitHub Release Post based on provided git 
 
 ### Architecture & Positioning:
 - **Static-First Framing**: Always lead with compile-time static HTML output and zero runtime JavaScript by default. Treat client-side hydration, SPA navigation, and reactivity as progressive enhancements when dynamic behavior is needed.
+- **Page vs Component Architecture**: Pages in Coralite (\`src/pages/*.html\`) are direct semantic HTML documents (e.g. \`<header>\`, \`<main>\`, \`<article>\`, \`<script type="module">\`). Pages NEVER contain \`<template>\` elements. \`<template id="tag-name">\` is strictly and exclusively used in Web Component single-file definitions (\`src/components/<tag-name>.html\`). Never wrap page content in \`<template>\`.
 - **Perspective**: Use a **Product-Centric** perspective (third-person/objective). Focus on what the release or the package does (e.g., "This release introduces...", "Coralite now supports..."). Avoid "I" or "we".
 - **Tone**: Concise, direct, professional, understated, and factual.
 - **Language**: Be ruthless with brevity. Write punchy, economical sentences. Strictly avoid passive voice, filler words ("specifically," "concurrently," "furthermore"), and marketing fluff or exaggerated claims ("actively fixing the most frustrating pain points", "O(1) precision", "revolutionary", "thrilled").
