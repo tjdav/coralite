@@ -140,6 +140,10 @@ const app = await createCoralite({
       <li><code>window.__coralite__.test.ready</code>: A Promise resolving when <code>data-coralite-ready</code> is set on <code>&lt;html&gt;</code> and all initial component <code>client()</code> controllers finish execution.</li>
       <li><code>window.__coralite__.test.reset()</code>: Clears <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB databases, and service worker registrations without triggering a hard page reload.</li>
       <li><code>window.__coralite__.test.flush()</code>: Awaits active microtask DOM batch updates across all custom element instances.</li>
+      <li><code>window.__coralite__.test.getComponent(element)</code>: Returns the testing harness for a hydrated custom element instance.</li>
+      <li><code>window.__coralite__.test.getInstances(tagName?)</code>: Returns all hydrated custom element instances in the document (or filtered by <code>tagName</code>).</li>
+      <li><code>window.__coralite__.test.getEvents()</code>: Returns the telemetry log of dispatched component <code>CustomEvent</code> instances.</li>
+      <li><code>window.__coralite__.test.getHydratedCount()</code>: Returns the total count of hydrated component instances on the page.</li>
     </ul>
 
     <coralite-heading level="3" text="Playwright Test Example"></coralite-heading>

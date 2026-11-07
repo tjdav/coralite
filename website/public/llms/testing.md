@@ -33,6 +33,15 @@ await element.updateComplete
 
 `updateComplete` resolves when the microtask update cycle finishes flushing reactive DOM changes.
 
+In `mode: 'testing'`, Coralite also exposes `window.__coralite__.test` and `window.__coralite__.lifecycle`:
+- `await window.__coralite__.test.ready` (or `await window.__coralite__.lifecycle.hydrated`): Awaits full initial hydration readiness.
+- `await window.__coralite__.test.flush()`: Awaits pending `updateComplete` cycles across all hydrated component instances.
+- `await window.__coralite__.test.reset()`: Clears `localStorage`, `sessionStorage`, IndexedDB, and service workers.
+- `window.__coralite__.test.getComponent(element)`: Inspects a component's testing harness (`{ instanceId, componentId, state, getters, refs }`).
+- `window.__coralite__.test.getInstances(tagName?)`: Lists hydrated custom element instances.
+- `window.__coralite__.test.getEvents()`: Returns dispatched component `CustomEvent` telemetry records.
+- `window.__coralite__.test.getHydratedCount()`: Returns the count of hydrated component instances.
+
 ## 3. Test IDs Policy
 
 1. **Static Test IDs**: Write static plain-text test IDs (e.g. `<button data-testid="submit-btn">`). Never attempt dynamic bindings (`data-testid="{{ dynamicId }}"`).

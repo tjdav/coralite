@@ -1156,12 +1156,18 @@ SPA navigation fetches carry the header `X-Coralite-Router: true`, so static ser
 - **Production Retention (`CORALITE_PRESERVE_TESTID=true`)**: `testingPlugin` preserves `data-testid` in production builds when `CORALITE_PRESERVE_TESTID=true` or `preserveTestId: true` is configured. In public customer builds (without `CORALITE_PRESERVE_TESTID`), `data-testid` attributes are stripped for zero HTML overhead.
 - **Forbidden**: Never write dynamic expression test IDs (`data-testid="{{ ref_id }}"`), brittle chained CSS tag names, or regex prefix matchers (`/comp-\d+__btn/`).
 
-### DevTools Introspection
-```javascript
-// Access component test context in E2E tests
-const testContext = element[Symbol.for('coralite.testing')]
-// { instanceId, componentId, state, getters, refs }
-```
+### Browser Runtime Namespace (`window.__coralite__`) & DevTools Introspection
+All browser runtime state and utilities live under `window.__coralite__`:
+- `window.__coralite__.lifecycle.hydrated`: Promise resolving when all custom elements are defined and initial hydration settles.
+- `window.__coralite__.test` (`mode: 'testing'` only):
+  - `ready`: Promise resolving when `data-coralite-ready` on `<html>` and `lifecycle.hydrated` settle.
+  - `flush()`: Awaits all active microtask `updateComplete` batch updates across hydrated instances.
+  - `reset()`: Clears `localStorage`, `sessionStorage`, IndexedDB, and service worker registrations.
+  - `getComponent(element)`: Returns the testing harness (`{ instanceId, componentId, state, getters, refs }`, also stored on `element[Symbol.for('coralite.testing')]`).
+  - `getInstances(tagName?)`: Returns all hydrated custom element instances (optionally filtered by tag name).
+  - `getEvents()`: Returns the bounded telemetry array of dispatched component `CustomEvent` records.
+  - `getHydratedCount()`: Returns the total count of hydrated component instances.
+- `window.__coralite__.devtools` (`development` and `testing` modes): Exposes `getComponent(element)`, `getRegisteredComponents()`, `getHydratedCount()`, `getInstances(tagName?)`, `getEvents()`, `stylesLoaded`, and `showError(error, title)`.
 
 ---
 
