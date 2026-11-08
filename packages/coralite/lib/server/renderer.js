@@ -16,6 +16,7 @@ import {
   createReadOnlyProxy,
   isContextMap,
   kebabToCamel,
+  camelToKebab,
   resolveComponentSlots,
   NOOP_SIGNAL,
   isAsyncFunction
@@ -139,6 +140,7 @@ export function computeRouteAndOutputPath (patternPath, cleanUrls, pagesRoot, is
  *  CoraliteBuildCallback,
  *  CoraliteBuildOptions,
  *  CoraliteOnError,
+ *  CoraliteElement,
  *  CoraliteAnyNode,
  *  CoraliteCollectionItem,
  *  ComponentElementOptions,
@@ -286,6 +288,125 @@ export function createRenderer ({
     return sessionObj
   }
 
+  /**
+   * Checks whether a tag name corresponds to a registered Coralite component.
+   *
+   * @param {string} tagName - Custom element tag name to check
+   * @returns {boolean} True if tagName is a registered Coralite component
+   */
+  const _isRegisteredComponentTag = (tagName) => {
+    if (!tagName || typeof tagName !== 'string') {
+      return false
+    }
+    const item = app.components.getItem(tagName)
+    return Boolean(item && item.result)
+  }
+
+  /**
+   * Checks whether a node or any of its ancestors carries the `no-hydration` attribute.
+   *
+   * @param {CoraliteElement | CoraliteAnyNode} node - Target node to check
+   * @param {CoraliteElement | CoraliteAnyNode | null} [stopNode=null] - Optional boundary node to stop traversal
+   * @returns {boolean} True if the node or an ancestor has no-hydration
+   */
+  const _hasAncestorNoHydration = (node, stopNode = null) => {
+    /** @type {any} */
+    let curr = node
+    while (curr && curr !== stopNode) {
+      if (curr.attribs && 'no-hydration' in curr.attribs) {
+        return true
+      }
+      curr = curr.parent
+    }
+    return false
+  }
+
+  /**
+   * Populates an element's slots array from its children if not already populated.
+   *
+   * @param {CoraliteElement} node - Target custom element node
+   */
+  const _ensureElementSlotsPopulated = (node) => {
+    if (!node.slots) {
+      node.slots = []
+    }
+    if (node.children && node.children.length > 0 && node.slots.length === 0) {
+      for (let k = 0; k < node.children.length; k++) {
+        const childNode = node.children[k]
+        let slotName = 'default'
+        if (childNode.type === 'tag' && childNode.attribs && childNode.attribs.slot) {
+          slotName = childNode.attribs.slot
+          delete childNode.attribs.slot
+        }
+        node.slots.push({
+          name: slotName,
+          node: childNode
+        })
+      }
+    }
+  }
+
+  /**
+   * Resolves the declared attributes schema for a component item.
+   *
+   * @param {Object} componentItem - Component collection item
+   * @returns {Object} Declared attributes dictionary
+   */
+  const _getDeclaredAttributes = (componentItem) => {
+    if (!componentItem || !componentItem.result) {
+      return {}
+    }
+    const res = componentItem.result
+    if (res._extractedAttributes) {
+      return res._extractedAttributes
+    }
+    if (res.attributes && typeof res.attributes === 'object') {
+      return res.attributes
+    }
+    if (res.script && typeof res.script === 'object' && res.script.attributes) {
+      return res.script.attributes
+    }
+    if (typeof res.script === 'string') {
+      const extracted = extractComponentProperty(res.script, 'attributes')
+      if (extracted && extracted.content && extracted.content.trim().startsWith('{')) {
+        try {
+          res._extractedAttributes = new Function(`return ${extracted.content}`)()
+          return res._extractedAttributes
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    return {}
+  }
+
+  /**
+   * Builds an isolated base state for a slotted child element, stripping host refs
+   * and avoiding collisions with the child component's declared attribute schema.
+   *
+   * @param {Object} inheritedState - Parent/host component state
+   * @param {Object} declaredAttrs - Child component's declared attributes schema
+   * @returns {Object} Sanitized base state for the slotted child
+   */
+  const _buildSlottedChildBaseState = (inheritedState, declaredAttrs) => {
+    const baseState = { ...inheritedState }
+    for (const key of Object.keys(baseState)) {
+      if (key.startsWith('ref_')) {
+        delete baseState[key]
+      }
+    }
+    if (declaredAttrs && typeof declaredAttrs === 'object') {
+      for (const attrKey of Object.keys(declaredAttrs)) {
+        const camel = kebabToCamel(attrKey)
+        const kebab = camelToKebab(attrKey)
+        delete baseState[attrKey]
+        delete baseState[camel]
+        delete baseState[kebab]
+      }
+    }
+    return baseState
+  }
+
   const _replaceSlots = async ({ id, instanceId, element, module, state, page, root, index, session, noHydration, contextFrames = [] }) => {
     const slots = module.slotElements ? module.slotElements[id] : null
     if (!slots) {
@@ -351,81 +472,114 @@ export function createRenderer ({
           slot.element.attribs = {}
         }
         slot.element.attribs['data-coralite-fallback'] = ''
-        slot.element.children = slotNodes
-        relinkChildren(slot.element)
-      } else {
-        const componentTasks = []
-        for (let j = slotNodes.length - 1; j > -1; j--) {
-          const node = slotNodes[j]
-          if (node.name) {
-            const slotComponentItem = app.components.getItem(node.name)
+      }
 
-            if (slotComponentItem) {
-              const slotContextId = session.generateId(node.name)
-              const currentProperties = session.state[slotContextId] || {}
-              const declaredAttrs = slotComponentItem.result?.script?.attributes || slotComponentItem.result?.attributes || {}
-              const attribValues = filterReservedAttributes(cleanKeys(node.attribs), declaredAttrs)
-              session.state[slotContextId] = typeof node.attribs === 'object'
-                ? {
-                  ...currentProperties,
-                  ...state,
-                  ...attribValues
-                }
-                : Object.assign(currentProperties, state)
+      slot.element.children = slotNodes
+      relinkChildren(slot.element)
 
-              const childNoHydration = noHydration || (node.attribs && 'no-hydration' in node.attribs)
-              componentTasks.push(createComponentElement({
-                id: node.name,
-                state: session.state[slotContextId],
-                element: node,
-                page,
-                root,
-                contextId: slotContextId,
-                index,
-                session,
-                noHydration: childNoHydration,
-                head: false,
-                contextFrames
-              }).then(componentElement => ({
-                componentElement,
-                node,
-                slotContextId,
-                childNoHydration
-              })))
-            }
+      const discoveredComponents = []
+
+      const collectSlotCustomElements = (nodes, currentNoHydration) => {
+        if (!Array.isArray(nodes)) {
+          return
+        }
+        for (let j = 0; j < nodes.length; j++) {
+          const node = nodes[j]
+          if (!node || node.type !== 'tag' || !node.name) {
+            continue
           }
+
+          if (node.name === 'slot') {
+            continue
+          }
+
+          const nodeNoHydration = currentNoHydration || Boolean(node.attribs && 'no-hydration' in node.attribs)
+
+          if (_isRegisteredComponentTag(node.name)) {
+            const isAlreadyRendered = Boolean(
+              node.attribs && ('data-cid' in node.attribs || 'data-coralite-initial' in node.attribs)
+            )
+            if (!isAlreadyRendered) {
+              _ensureElementSlotsPopulated(node)
+              discoveredComponents.push({
+                node,
+                inheritedNoHydration: nodeNoHydration
+              })
+            }
+            continue
+          }
+
+          if (node.children && node.children.length > 0) {
+            collectSlotCustomElements(node.children, nodeNoHydration)
+          }
+        }
+      }
+
+      const initialSlotNoHydration = Boolean(noHydration) || _hasAncestorNoHydration(slot.element, element)
+      collectSlotCustomElements(slotNodes, initialSlotNoHydration)
+
+      if (discoveredComponents.length > 0) {
+        const componentTasks = []
+        for (let j = discoveredComponents.length - 1; j > -1; j--) {
+          const { node, inheritedNoHydration } = discoveredComponents[j]
+          const slotComponentItem = app.components.getItem(node.name)
+          const slotContextId = session.generateId(node.name)
+          const currentProperties = session.state[slotContextId] || {}
+          const declaredAttrs = _getDeclaredAttributes(slotComponentItem)
+          const attribValues = filterReservedAttributes(cleanKeys(node.attribs), declaredAttrs)
+          const baseState = _buildSlottedChildBaseState(state, declaredAttrs)
+          session.state[slotContextId] = typeof node.attribs === 'object'
+            ? {
+              ...currentProperties,
+              ...baseState,
+              ...attribValues
+            }
+            : Object.assign(currentProperties, baseState)
+
+          componentTasks.push(createComponentElement({
+            id: node.name,
+            state: session.state[slotContextId],
+            element: node,
+            page,
+            root,
+            contextId: slotContextId,
+            index,
+            session,
+            noHydration: inheritedNoHydration,
+            head: false,
+            contextFrames
+          }).then(componentElement => ({
+            componentElement,
+            node,
+            slotContextId,
+            childNoHydration: inheritedNoHydration
+          })))
         }
 
         slotTasks.push(Promise.all(componentTasks).then(results => {
-          for (const { componentElement, node, slotContextId, childNoHydration } of results) {
+          for (const item of results) {
+            const { componentElement, node, slotContextId, childNoHydration } = item
             if (componentElement) {
-              if (childNoHydration) {
+              const isChildNoHydration = childNoHydration || Boolean(node.attribs && 'no-hydration' in node.attribs)
+              let children = []
+
+              if (Array.isArray(componentElement)) {
+                children = componentElement
+              } else if ('children' in componentElement && Array.isArray(componentElement.children)) {
+                children = componentElement.children
+              }
+
+              if (isChildNoHydration) {
                 const parent = node.parent
 
                 if (parent && Array.isArray(parent.children)) {
                   const idx = parent.children.indexOf(node)
                   if (idx !== -1) {
-                    let children = []
-
-                    if (Array.isArray(componentElement)) {
-                      children = componentElement
-                    } else if ('children' in componentElement && Array.isArray(componentElement.children)) {
-                      children = componentElement.children
-                    }
-
                     parent.children.splice(idx, 1, ...children)
                     relinkChildren(parent)
                   }
                 }
               } else {
-                let children = []
-
-                if (Array.isArray(componentElement)) {
-                  children = componentElement
-                } else if ('children' in componentElement && Array.isArray(componentElement.children)) {
-                  children = componentElement.children
-                }
-
                 node.children = children
                 relinkChildren(node)
 
@@ -439,7 +593,6 @@ export function createRenderer ({
               }
             }
           }
-          slot.element.children = slotNodes
           relinkChildren(slot.element)
         }))
       }
@@ -794,7 +947,7 @@ export function createRenderer ({
           if (!scriptResult.__script__.state) {
             scriptResult.__script__.state = {}
           }
-          if (!noHydration) {
+          if (!noHydration && page?.file?.pathname) {
             currentSession.scripts.add(page.file.pathname, {
               id: currentContextId,
               componentId: module.id,
@@ -934,10 +1087,15 @@ export function createRenderer ({
       for (let i = 0; i < customElements.length; i++) {
         const customElement = customElements[i]
 
+        /** @type {any} */
         let parent = customElement.parent
         let shouldSkip = false
         while (parent) {
-          if ('slots' in parent && Array.isArray(parent.slots)) {
+          if (parent.name === 'slot') {
+            shouldSkip = true
+            break
+          }
+          if ('slots' in parent && Array.isArray(parent.slots) && _isRegisteredComponentTag(parent.name)) {
             shouldSkip = true
             break
           }
@@ -954,10 +1112,7 @@ export function createRenderer ({
         let childState = { ...state }
         if (typeof customElement.attribs === 'object') {
           const childModuleComponent = app.components.getItem(customElement.name)
-          let declaredAttrs = {}
-          if (childModuleComponent && childModuleComponent.result) {
-            declaredAttrs = childModuleComponent.result.script?.attributes || childModuleComponent.result.attributes || {}
-          }
+          const declaredAttrs = _getDeclaredAttributes(childModuleComponent)
           const attribValues = filterReservedAttributes(cleanKeys(customElement.attribs), declaredAttrs)
           childState = {
             ...childState,
@@ -972,7 +1127,7 @@ export function createRenderer ({
         }
 
         currentSession.state[childContextId] = childState
-        const childNoHydration = noHydration || (customElement.attribs && 'no-hydration' in customElement.attribs)
+        const childNoHydration = Boolean(noHydration) || _hasAncestorNoHydration(customElement, result)
 
         createComponentTasks.push(createComponentElement({
           id: customElement.name,
@@ -1220,7 +1375,7 @@ export function createRenderer ({
       let parent = customElement.parent
       let shouldSkip = false
       while (parent) {
-        if ('slots' in parent && Array.isArray(parent.slots)) {
+        if ('slots' in parent && Array.isArray(parent.slots) && _isRegisteredComponentTag(parent.name)) {
           shouldSkip = true
           break
         }
@@ -1234,10 +1389,7 @@ export function createRenderer ({
       const contextId = mappedSessionObject.generateId(customElement.name)
       const currentProperties = mappedSessionObject.state[contextId] || {}
       const childModuleComponent = app.components.getItem(customElement.name)
-      let declaredAttrs = {}
-      if (childModuleComponent && childModuleComponent.result) {
-        declaredAttrs = childModuleComponent.result.script?.attributes || childModuleComponent.result.attributes || {}
-      }
+      const declaredAttrs = _getDeclaredAttributes(childModuleComponent)
       const attribValues = typeof customElement.attribs === 'object' ? filterReservedAttributes(customElement.attribs, declaredAttrs) : {}
       mappedSessionObject.state[contextId] = typeof customElement.attribs === 'object'
         ? {
@@ -1252,7 +1404,7 @@ export function createRenderer ({
           ...mappedComponent.state
         }
 
-      const noHydration = customElement.attribs && 'no-hydration' in customElement.attribs
+      const noHydration = _hasAncestorNoHydration(customElement, mappedComponent.root)
 
       tasks.push(createComponentElement({
         id: customElement.name,

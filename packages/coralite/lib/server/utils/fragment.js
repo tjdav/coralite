@@ -580,7 +580,7 @@ export async function emitFragment ({
       const extractedComponents = module._extractedScript?.components || []
       const mergedComponents = Array.from(new Set([...declarativeComponents, ...extractedComponents]))
 
-      if (!noHydration) {
+      if (!noHydration && page?.file?.pathname) {
         session.scripts.add(page.file.pathname, {
           id: contextId,
           componentId: module.id,
