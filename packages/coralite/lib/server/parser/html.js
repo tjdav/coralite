@@ -46,10 +46,11 @@ export function replaceCustomElementWithTemplate (coraliteElement, element) {
  * @param {Function} [context.createComponentElement] - The createComponentElement function
  * @param {CoraliteSession} [context.session] - The current build session
  * @param {boolean} [context.noHydration] - No hydration flag
+ * @param {any} [context.page] - Page context object
  * @returns {Promise<any>} - Processed value
  */
 export async function processTokenValue (value, context) {
-  const { excludeByAttribute, state, module, createComponentElement, session, noHydration } = context
+  const { excludeByAttribute, state, module, createComponentElement, session, noHydration, page } = context
   // If not a string, return as-is
   if (typeof value !== 'string') {
     return value
@@ -63,11 +64,56 @@ export async function processTokenValue (value, context) {
     return undefined
   }
 
+  // Populate slots on custom elements if needed
+  for (let i = 0; i < result.customElements.length; i++) {
+    const customElement = result.customElements[i]
+    if (customElement.children && customElement.children.length && (!customElement.slots || !customElement.slots.length)) {
+      customElement.slots = []
+      for (let k = 0; k < customElement.children.length; k++) {
+        const childNode = customElement.children[k]
+        let slotName = 'default'
+        if (childNode.type === 'tag' && childNode.attribs && childNode.attribs.slot) {
+          slotName = childNode.attribs.slot
+          delete childNode.attribs.slot
+        }
+        customElement.slots.push({
+          name: slotName,
+          node: childNode
+        })
+      }
+    }
+  }
+
   // Process custom elements
   for (let i = 0; i < result.customElements.length; i++) {
     const customElement = result.customElements[i]
+
+    /** @type {any} */
+    let ancestor = customElement.parent
+    let shouldSkip = false
+    while (ancestor) {
+      if (result.customElements.includes(ancestor)) {
+        shouldSkip = true
+        break
+      }
+      ancestor = ancestor.parent
+    }
+    if (shouldSkip) {
+      continue
+    }
+
+    let ancestorNoHydration = noHydration
+    /** @type {any} */
+    let checkParent = customElement.parent
+    while (checkParent) {
+      if (checkParent.attribs && 'no-hydration' in checkParent.attribs) {
+        ancestorNoHydration = true
+        break
+      }
+      checkParent = checkParent.parent
+    }
     const cid = `${module.path.pathname}${customElement.name}-${i}`
-    const childNoHydration = noHydration || (customElement.attribs && 'no-hydration' in customElement.attribs)
+    const childNoHydration = ancestorNoHydration || Boolean(customElement.attribs && 'no-hydration' in customElement.attribs)
 
     const componentElement = await createComponentElement({
       contextId: cid,
@@ -75,6 +121,7 @@ export async function processTokenValue (value, context) {
       state,
       element: customElement,
       module,
+      page,
       index: i,
       session,
       noHydration: childNoHydration,
@@ -99,6 +146,7 @@ export async function processTokenValue (value, context) {
           customElement.attribs = {}
         }
         customElement.attribs['data-cid'] = cid
+        customElement.attribs['data-coralite-initial'] = ''
 
         session.componentTags.add(customElement.name)
       }
