@@ -108,9 +108,9 @@
       </template>
     </coralite-code-html>
 
-    <coralite-heading level="3" text="Zero-JS Static Components with Attributes"></coralite-heading>
+    <coralite-heading level="3" text="Zero-JS Static Components"></coralite-heading>
 
-    <p>A component is <strong>Zero-JS static</strong> when it serializes zero client lifecycle code: <code>client: null</code> and <code>getters: {}</code>. You can include a <code>&lt;script type="module"&gt;</code> that exports <code>attributes</code> (for type coercion and default values) or <code>style</code> and still maintain a 100% Zero-JS footprint in the browser runtime.</p>
+    <p>A component is <strong>Zero-JS static</strong> when its definition serializes zero client lifecycle code: <code>client: null</code> and <code>getters: {}</code>. If a component only defines markup and styles, the <code>&lt;script&gt;</code> tag can be omitted entirely. When attributes (for type coercion and default values) or <code>style</code> are declared, you can include a <code>&lt;script type="module"&gt;</code> while still maintaining a 100% Zero-JS footprint in the browser runtime. Furthermore, empty or export-free script blocks natively evaluate to Zero-JS components without requiring placeholder exports like <code>export const attributes = {}</code>.</p>
 
     <coralite-code-html>
       <!-- src/components/ui-button.html -->

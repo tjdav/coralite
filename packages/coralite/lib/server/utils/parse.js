@@ -473,15 +473,7 @@ export function parseModule (string, options = {}) {
           })
         }
         const scriptString = node.children[0]
-
-        if (!scriptString || scriptString.type !== 'text') {
-          throw new CoraliteError('Script tag must contain text', {
-            componentId: templateId,
-            filePath
-          })
-        }
-
-        siblingScript = scriptString.data
+        siblingScript = (scriptString && scriptString.type === 'text') ? scriptString.data : ''
       } else if (node.name === 'style') {
         const styleContent = node.children[0]
 

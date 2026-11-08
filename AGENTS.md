@@ -25,7 +25,21 @@ All source is `.js` (ESM). No `.ts`, `.tsx`, `.jsx`, or `.mjs` in the source tre
 
 A component is **static** when its definition serializes zero client lifecycle code: `client: null`, `getters: {}`, no `server`, no reactive `state` mutations. This is the correct meaning of "zero-JS" in Coralite — the component module is still bundled into `dist/assets/js/` for imperative hydration, but no `client()` handler runs in the browser.
 
-A `<script type="module">` that exports only `attributes` (or `style`) emits 0 bytes of browser runtime lifecycle code.
+Purely static components do not require a `<script>` tag at all when they only define markup and styles:
+
+```html
+<template id="ui-card">
+  <div class="card">
+    <slot></slot>
+  </div>
+</template>
+
+<style>
+  :host { display: block }
+</style>
+```
+
+When attributes or types are needed, author a `<script type="module">` exporting `attributes` (or `style`). Both emit 0 bytes of browser runtime lifecycle code. If a `<script type="module">` is included (e.g., for authoring uniformity, comments, or module helpers), no dummy placeholder exports like `export const attributes = {}` are needed — export-free scripts natively evaluate to Zero-JS static components.
 
 ```html
 <template id="ui-button">
