@@ -270,4 +270,78 @@ describe('Component Named Exports', () => {
     const htmlOutput = results[0]?.content || ''
     assert.ok(htmlOutput.includes('list-comp'), 'renders list-comp')
   })
+
+  it('renders zero-JS static components with empty or export-free script blocks in dev and prod', async () => {
+    // 1. Completely empty script tag
+    await writeFile(
+      join(COMPONENTS_DIR, 'empty-script-comp.html'),
+      `<template id="empty-script-comp">
+        <div class="empty">Empty Script Content</div>
+      </template>
+      <script type="module"></script>`
+    )
+
+    // 2. Script tag with comments only
+    await writeFile(
+      join(COMPONENTS_DIR, 'comment-script-comp.html'),
+      `<template id="comment-script-comp">
+        <div class="comment">Comment Script Content</div>
+      </template>
+      <script type="module">
+        // Purely static component with no exports
+      </script>`
+    )
+
+    // 3. Script tag with helper export only (no recognized component exports)
+    await writeFile(
+      join(COMPONENTS_DIR, 'helper-script-comp.html'),
+      `<template id="helper-script-comp">
+        <div class="helper">Helper Script Content</div>
+      </template>
+      <script type="module">
+        export const HELPER_CONST = 42
+        const localHelper = 'static'
+      </script>`
+    )
+
+    await writeFile(
+      join(PAGES_DIR, 'zero-js.html'),
+      `<!DOCTYPE html>
+      <html><body>
+        <empty-script-comp></empty-script-comp>
+        <comment-script-comp></comment-script-comp>
+        <helper-script-comp></helper-script-comp>
+      </body></html>`
+    )
+
+    // Test in production mode
+    const prodApp = await createCoralite({
+      components: COMPONENTS_DIR,
+      pages: PAGES_DIR,
+      output: OUTPUT_DIR,
+      mode: 'production',
+      incremental: false
+    })
+
+    const prodResults = await prodApp.build()
+    const prodHtml = prodResults[0]?.content || ''
+    assert.ok(prodHtml.includes('Empty Script Content'), 'renders empty-script-comp in prod')
+    assert.ok(prodHtml.includes('Comment Script Content'), 'renders comment-script-comp in prod')
+    assert.ok(prodHtml.includes('Helper Script Content'), 'renders helper-script-comp in prod')
+
+    // Test in development mode
+    const devApp = await createCoralite({
+      components: COMPONENTS_DIR,
+      pages: PAGES_DIR,
+      output: OUTPUT_DIR,
+      mode: 'development',
+      incremental: false
+    })
+
+    const devResults = await devApp.build()
+    const devHtml = devResults[0]?.content || ''
+    assert.ok(devHtml.includes('Empty Script Content'), 'renders empty-script-comp in dev')
+    assert.ok(devHtml.includes('Comment Script Content'), 'renders comment-script-comp in dev')
+    assert.ok(devHtml.includes('Helper Script Content'), 'renders helper-script-comp in dev')
+  })
 })

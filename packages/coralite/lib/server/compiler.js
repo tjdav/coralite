@@ -371,6 +371,7 @@ export async function evaluateDevelopment ({
     if (hasRecognizedExport) {
       return boundDefineComponent(namedExports)
     }
+    return boundDefineComponent({})
   }
 
   throw new CoraliteError(`Module "${module.id}" has no default export`, {
@@ -594,6 +595,7 @@ export async function evaluateProduction ({
     if (hasRecognizedExport) {
       return defineComponent(namedExports, symmetricalContext)
     }
+    return defineComponent({}, symmetricalContext)
   }
 
   throw new CoraliteError(`Module "${module.id}" has no default export`, {
