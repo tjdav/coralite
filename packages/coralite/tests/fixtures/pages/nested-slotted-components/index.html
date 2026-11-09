@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Nested Slotted Components E2E Test</title>
+</head>
+<body>
+  <!-- 1. Primary Reproduction: Custom element nested inside standard <div> inside slot -->
+  <div id="primary-test-container">
+    <nested-slotted-card id="primary-card">
+      <div slot="header" class="custom-header">
+        <nested-slotted-badge id="primary-badge" label="Primary Badge"></nested-slotted-badge>
+      </div>
+      <p>Card body content</p>
+    </nested-slotted-card>
+  </div>
+
+  <!-- 2. Multi-Level Standard HTML Nesting inside slot -->
+  <div id="deep-test-container">
+    <nested-slotted-card id="deep-card">
+      <div slot="header" class="level-1">
+        <header class="level-2">
+          <section class="level-3">
+            <nested-slotted-badge id="deep-badge" label="Deep Badge" count="10"></nested-slotted-badge>
+          </section>
+        </header>
+      </div>
+    </nested-slotted-card>
+  </div>
+
+  <!-- 3. Sibling Custom Elements inside slotted HTML wrapper -->
+  <div id="siblings-test-container">
+    <nested-slotted-card id="siblings-card">
+      <div slot="header" class="toolbar">
+        <nested-slotted-badge id="sibling-badge-1" label="Badge A" count="1"></nested-slotted-badge>
+        <nested-slotted-badge id="sibling-badge-2" label="Badge B" count="2"></nested-slotted-badge>
+      </div>
+    </nested-slotted-card>
+  </div>
+
+  <!-- 4. Component with its own slots nested inside slotted HTML wrapper -->
+  <div id="panel-test-container">
+    <nested-slotted-card id="panel-card">
+      <div slot="header" class="panel-wrapper">
+        <nested-slotted-panel id="inner-panel" title="Inner Controls">
+          <span slot="panel-body" class="panel-slotted-text">Inner Slotted Text</span>
+        </nested-slotted-panel>
+      </div>
+    </nested-slotted-card>
+  </div>
+
+  <!-- 5. Intermediate HTML wrapper carrying no-hydration -->
+  <div id="inert-test-container">
+    <nested-slotted-card id="inert-card">
+      <div slot="header" class="static-wrapper" no-hydration>
+        <nested-slotted-badge id="inert-badge" label="Inert Static Badge" count="50"></nested-slotted-badge>
+      </div>
+    </nested-slotted-card>
+  </div>
+</body>
+</html>
