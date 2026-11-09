@@ -175,6 +175,8 @@ export const slots = {
 }
     </coralite-code-highlight>
 
+    <p><strong>Literal projection:</strong> add <code>coralite-ignore</code> to a <code>&lt;slot&gt;</code> (for example <code>&lt;slot coralite-ignore&gt;&lt;/slot&gt;</code>) to keep projected content literal: no token interpolation, custom-element compilation, hydration, or validation. Slot fallback content is still processed normally. See the <a href="/docs/reference/coralite-ignore.html"><code>coralite-ignore</code> Reference</a>.</p>
+
     <coralite-heading level="2" text="7. provide / consume"></coralite-heading>
 
     <p>Coralite implements the W3C Context Protocol via <code>provide</code> and <code>consume</code> declarations, allowing ancestor components to broadcast context values down the DOM tree to descendant components without prop drilling.</p>

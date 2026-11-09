@@ -113,6 +113,8 @@ export default defineComponent({
 
     <p>To ensure layout consistency across parent containers, Coralite injects <code>display: contents;</code> onto slot containers at the root stylesheet level. This makes slot wrapper elements layout-transparent, allowing projected consumer children to participate directly in parent CSS Grid or Flexbox layouts.</p>
 
+    <p>Projected content is token-interpolated and custom elements are compiled by default. Add <code>coralite-ignore</code> to a slot to keep projected content literal; fallback content remains normal component content. See the <a href="/docs/reference/coralite-ignore.html"><code>coralite-ignore</code> Reference</a>.</p>
+
     <coralite-code-highlight language="html">
 &lt;!-- Component Definition (dialog-box.html) --&gt;
 &lt;template id="dialog-box"&gt;

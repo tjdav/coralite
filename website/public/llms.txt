@@ -16,6 +16,7 @@ Key words per RFC 2119:
 8. **MUST pass `{ signal }` to event listeners**: Always bind DOM events inside `client()` using `el.addEventListener('click', fn, { signal })` for automatic cleanup.
 9. **MUST NEVER mutate state inside `observe()`**: `observe(key, cb)` is exclusively for syncing external DOM/side-effects. Mutating state inside an observer triggers `CORALITE-E302`.
 10. **MUST NEVER use defensive guards in deterministic blocks**: Context keys (`state`, `refs`, `signal`, `emit`, `lists`, etc.) are guaranteed by the framework. Never write `if (!refs) return` or check `typeof window` in `client()` or `server()`.
+11. **MUST use `coralite-ignore` for literal markup**: Everything is processed by default (tokens, custom-element compilation, hydration, validation, and page-controller extraction). Use the `coralite-ignore` attribute on an element/subtree, or `<slot coralite-ignore>` for projected content, to keep markup literal. Do not use `data-coralite-ignore` or `coralite-interpolate`. Pages accept exactly one Coralite controller `<script>` (`CORALITE-E107` on duplicates); normal scripts are allowed and are never evaluated as page modules. `<script>`/`<style>` text is never token-interpolated.
 
 ## Core Documentation
 
@@ -27,6 +28,7 @@ Key words per RFC 2119:
 - [Diagnostics & Validation](/llms/diagnostics.md): Compiler diagnostics (`CORALITE-E1xx` to `E4xx`), root causes, and automated AST fixer (`coralite fix`).
 - [Configuration](/llms/config.md): `coralite.config.js`, `defineConfig` options, CSP policies, and build options.
 - [Automated Testing & E2E](/llms/testing.md): Playwright locator chaining, `updateComplete` settlement, and static `data-testid` conventions.
+- [coralite-ignore Reference](https://coralite.dev/docs/reference/coralite-ignore.html): Literal page regions, literal slots, script/style text, component templates, page controller scripts, and validator pragma distinctions.
 
 ## Full Reference
 

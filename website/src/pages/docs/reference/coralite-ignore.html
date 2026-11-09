@@ -1,0 +1,194 @@
+<!-- coralite-ignore E108 -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="coralite-ignore Reference — Coralite"
+    description="Reference for the coralite-ignore attribute: literal page regions, literal slots, script/style text, component templates, page controller scripts, and the distinction from validator pragma comments."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content">
+    <h1 class="display"><code>coralite-ignore</code> Reference</h1>
+
+    <p>Coralite processes page and component HTML by default. Template tokens, custom-element compilation, hydration, validator checks, and page-controller script extraction all run unless a subtree carries the <code>coralite-ignore</code> attribute.</p>
+
+    <coralite-heading level="2" text="1. Default Behaviour"></coralite-heading>
+
+    <p><code>coralite-ignore</code> is the single opt-out directive. There is no opt-in directive: removing the attribute restores normal processing.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Context</th>
+            <th>Default</th>
+            <th>With <code>coralite-ignore</code></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Page token interpolation</td>
+            <td>Processed</td>
+            <td>Literal</td>
+          </tr>
+          <tr>
+            <td>Custom-element compilation</td>
+            <td>Processed</td>
+            <td>Not compiled</td>
+          </tr>
+          <tr>
+            <td>Hydration</td>
+            <td>Processed</td>
+            <td>Not hydrated</td>
+          </tr>
+          <tr>
+            <td>Validator diagnostics</td>
+            <td>Processed</td>
+            <td>Skipped</td>
+          </tr>
+          <tr>
+            <td>Page-controller script extraction</td>
+            <td>Processed</td>
+            <td>Ignored</td>
+          </tr>
+          <tr>
+            <td><code>&lt;script&gt;</code> / <code>&lt;style&gt;</code> text</td>
+            <td>Never interpolated</td>
+            <td>Never interpolated</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="2" text="2. Page Elements"></coralite-heading>
+
+    <p>Add the attribute to any page element to emit the element and its entire subtree as authored. The attribute remains in the rendered DOM.</p>
+
+    <coralite-code-html>
+      <div class="mustache-guide" coralite-ignore>
+        <p>Use <code>{{ token }}</code> in templates.</p>
+        <unknown-demo></unknown-demo>
+      </div>
+    </coralite-code-html>
+
+    <p>In this example <code>{{ token }}</code> stays literal, <code>unknown-demo</code> is not compiled or hydrated, and the page validator does not report the unknown tag.</p>
+
+    <coralite-heading level="2" text="3. Custom Elements"></coralite-heading>
+
+    <p>When <code>coralite-ignore</code> is placed on a custom element, the element itself is left untouched: its template is not expanded, its attributes are not token-interpolated, and nothing inside it is compiled or hydrated.</p>
+
+    <coralite-code-html>
+      <ui-card coralite-ignore>
+        <span>{{ literal }}</span>
+        <inner-demo></inner-demo>
+      </ui-card>
+    </coralite-code-html>
+
+    <p>Use this for third-party widgets or authored markup that must be preserved exactly. If only the projected content should be literal while the component still renders, mark the component's <code>&lt;slot&gt;</code> instead.</p>
+
+    <coralite-heading level="2" text="4. Component Templates"></coralite-heading>
+
+    <p>Inside a component <code>&lt;template&gt;</code>, the attribute suppresses component token extraction and replacement, nested custom-element compilation, and validator diagnostics for that subtree.</p>
+
+    <coralite-code-html>
+      <template id="docs-snippet">
+        <pre coralite-ignore>{{ raw }}</pre>
+        <p>{{ rendered }}</p>
+      </template>
+    </coralite-code-html>
+
+    <p><code>{{ raw }}</code> remains literal; <code>{{ rendered }}</code> follows normal component processing.</p>
+
+    <coralite-heading level="2" text="5. Slots"></coralite-heading>
+
+    <p>Marking a <code>&lt;slot&gt;</code> keeps the content projected into that slot literal. The slot still projects content, but Coralite does not interpolate tokens, compile custom elements, hydrate, or validate inside the projected nodes. Slot fallback content is authored component content and is processed normally.</p>
+
+    <coralite-code-html>
+      <template id="code-block">
+        <pre><code><slot coralite-ignore></slot></code></pre>
+      </template>
+    </coralite-code-html>
+
+    <p>Usage:</p>
+
+    <coralite-code-html>
+      <code-block>
+        <template id="counter-card">
+          <span>{{ count }}</span>
+        </template>
+
+        <script type="module">
+          export function server () {
+            return { count: 0 }
+          }
+        </script>
+      </code-block>
+    </coralite-code-html>
+
+    <p>The projected <code>&lt;template&gt;</code>, <code>{{ count }}</code>, and <code>&lt;script&gt;</code> are emitted as authored. The <code>code-block</code> component itself still renders, and the directive is stripped from the rendered <code>&lt;slot&gt;</code>.</p>
+
+    <p><strong>Fallback content:</strong> when no slotted nodes are supplied, the slot's own children are normal component content.</p>
+
+    <coralite-code-html>
+      <template id="code-panel">
+        <slot coralite-ignore>
+          <span>Fallback uses {{ componentToken }}</span>
+        </slot>
+      </template>
+    </coralite-code-html>
+
+    <p>If a component previously relied on <code>&lt;pre&gt;&lt;code&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/code&gt;&lt;/pre&gt;</code> being implicitly literal, add <code>coralite-ignore</code> to the slot.</p>
+
+    <coralite-heading level="2" text="6. Scripts, Styles, and Page Controllers"></coralite-heading>
+
+    <p><code>&lt;script&gt;</code> and <code>&lt;style&gt;</code> text is never token-interpolated, with or without the attribute. Their text is raw text by HTML semantics.</p>
+
+    <p>A page may declare exactly one Coralite page controller <code>&lt;script&gt;</code> — one that exports page blocks or uses <code>definePage</code>. The controller is removed from rendered output. Normal inline and external scripts are allowed alongside it and are never evaluated as page modules.</p>
+
+    <coralite-code-highlight language="html" title="One Page Controller Plus Normal Scripts">
+&lt;script src="/assets/analytics.js"&gt;&lt;/script&gt;
+
+&lt;script type="module"&gt;
+  export function server () {
+    return { title: 'Documentation' }
+  }
+&lt;/script&gt;
+    </coralite-code-highlight>
+
+    <p>More than one Coralite controller fails the page with <code>CORALITE-E107</code>. A normal script that exports no Coralite page blocks is not a controller.</p>
+
+    <coralite-heading level="2" text="7. Validator Pragmas"></coralite-heading>
+
+    <p><code>coralite-ignore</code> is also the prefix for validator suppression comments. The attribute and the comment pragma are separate mechanisms:</p>
+
+    <coralite-code-highlight language="html" title="Comment Pragmas">
+&lt;!-- Suppress a specific diagnostic code --&gt;
+&lt;!-- coralite-ignore E107 --&gt;
+
+&lt;!-- Suppress an unused ref warning --&gt;
+&lt;!-- coralite-ignore button --&gt;
+    </coralite-code-highlight>
+
+    <p>The attribute applies to markup subtrees at render time. The comment pragma applies to validator diagnostics for the surrounding source.</p>
+
+    <coralite-heading level="2" text="8. Relationship to ignoreByAttribute"></coralite-heading>
+
+    <p><code>coralite-ignore</code> is not the same as the configuration options <code>ignoreByAttribute</code> or <code>skipRenderByAttribute</code>:</p>
+
+    <ul>
+      <li><code>coralite-ignore</code> keeps the element and subtree in the rendered DOM, but skips processing inside it.</li>
+      <li><code>ignoreByAttribute</code> removes matching elements from the rendered tree.</li>
+      <li><code>skipRenderByAttribute</code> parses matching elements but removes them before final serialization.</li>
+    </ul>
+
+    <p>Use <code>coralite-ignore</code> when authored markup, code samples, or third-party widgets must be emitted exactly as written.</p>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

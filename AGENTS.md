@@ -112,6 +112,29 @@ Do NOT delete the `ref` attribute, and do NOT add an empty `client({ refs }) { r
 </template>
 ```
 
+### Opting out with `coralite-ignore`
+
+Coralite processes page and component HTML by default: template tokens, custom-element compilation, hydration, validator checks, and page-controller script extraction all run. The only opt-out is the `coralite-ignore` attribute.
+
+- On a page element (`<div coralite-ignore>...</div>`), Coralite emits the element and subtree as authored: no token interpolation, no custom-element compilation, no hydration, no validator diagnostics, and no page-controller extraction inside it. The attribute remains in the output.
+- On a custom element, the element itself is also not compiled.
+- On a component template element, component token extraction/replacement, nested custom-element compilation, and validator diagnostics are suppressed for that subtree.
+- On `<slot coralite-ignore>`, projected content stays literal (no tokens, compilation, hydration, or validation). Slot fallback content is authored component content and is processed normally. The directive is stripped from the rendered slot.
+- `<script>` and `<style>` text is never token-interpolated.
+- Do not use `data-coralite-ignore` or a `coralite-interpolate` directive.
+
+`coralite-ignore` is also the prefix for validator pragma comments (`<!-- coralite-ignore E107 -->`, `<!-- coralite-ignore button -->`). The attribute and the comment pragma are separate mechanisms.
+
+Code-example components must mark their projection slot:
+
+```html
+<template id="code-block">
+  <pre><code><slot coralite-ignore></slot></code></pre>
+</template>
+```
+
+Pages may declare exactly one Coralite page controller `<script>` (one exporting page blocks or `definePage`). It is removed from rendered output. Normal inline/external scripts are allowed alongside it and are never evaluated as page modules. More than one controller fails the page with `CORALITE-E107`.
+
 ### Style and script placement
 
 `<style>` and `<script type="module">` are canonically siblings of `<template>`:

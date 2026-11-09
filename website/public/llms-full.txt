@@ -11,6 +11,7 @@
 - [§3. File Structure: Pages vs. Components](#3-file-structure-pages-vs-components)
 - [§4. System Architecture, Fault Isolation & Asset Integrity](#4-system-architecture-fault-isolation-asset-integrity)
 - [§5. Static Components (Declarative SSR-Only)](#5-static-components-declarative-ssr-only)
+  - [§5.3 Opting Out with `coralite-ignore`](#53-opting-out-with-coralite-ignore)
 - [§6. Dynamic Components (Named Exports Reference)](#6-dynamic-components-named-exports-reference)
   - [§6.1 Complete Schema & Export Signatures](#61-complete-schema-export-signatures)
   - [§6.2 `attributes` (Coercion Pipeline, Validation & ARIA Rules)](#62-attributes-coercion-pipeline-validation-aria-rules)
@@ -67,6 +68,7 @@ When generating code or providing instructions for Coralite applications, you MU
 14. **MUST handle accessible names without empty labels**: Never render empty `<label for="...">`. Use dynamic templates or accessible name fallback chains (`computedAriaLabel`). Elements with `role="button"` or `role="tab"` must never contain nested interactive elements (`<button>`, `<a>`, `<input>`).
 15. **SHOULD use Two-Phase resolvers for instance-dependent plugin context**: Use `(pluginContext) => (instanceContext) => ({ ... })` when plugin context depends on component instance state.
 16. **SHOULD configure explicit `rootDir` and `filePath` in plugins**: Providing `rootDir` and `filePath: fileURLToPath(import.meta.url)` in `definePlugin({ ... })` guarantees esbuild maps compiler diagnostics directly to physical source files on disk.
+17. **MUST use `coralite-ignore` for literal markup**: Everything is processed by default (page tokens, custom-element compilation, hydration, validation, and page-controller extraction). Use the `coralite-ignore` attribute on an element/subtree, or `<slot coralite-ignore>` for projected content, to keep markup literal. Do not use `data-coralite-ignore` or `coralite-interpolate`. `<script>`/`<style>` text is never token-interpolated. Pages accept exactly one Coralite controller `<script>`; duplicates fail with `CORALITE-E107`, and normal scripts are never evaluated as page modules.
 
 ---
 
@@ -414,6 +416,7 @@ Coralite components operate across a strict boundary between Node.js server eval
 ## 3. File Structure: Pages vs. Components
 
 * **Pages (`src/pages/*.html`)**: Pages are standard `.html` files that represent route entry points. Pages contain HTML document structure (`<!DOCTYPE html>`, `<html>`, `<head>`, `<body>`) and declare custom element component tags as consumers (e.g. `<counter-card></counter-card>`). Pages must never contain component internal logic or manipulate custom element internals.
+* **Page controller scripts**: A page may contain exactly one Coralite page controller `<script>` — one that exports page blocks or uses `definePage`. The controller is removed from rendered output. Normal inline and external scripts are allowed and are never evaluated as page modules. More than one controller fails the page with `CORALITE-E107`.
 * **Page information and default state (`export const meta`)**: Pages declare page metadata and arbitrary key/value default state with `export const meta`, the page analog to component `attributes`. Meta schemas use `{ type, default, values, validate }`; resolved defaults seed page state, and missing keys fall back into `page.meta` while literal `<title>`/`<meta>` tags remain authoritative. `required` is rejected on pages, and invalid defaults fail the build.
   * Keys are used verbatim in `state` and `page.meta`; only identifier-safe keys are directly addressable as template tokens. Use a getter for keys such as `og:title`, hyphenated names, or dotted keys.
   * A `page` default is available at `page.meta.page` but cannot seed `state.page` (the page object wins). A `route` default is available at `page.meta.route`, but `{{ route }}` always resolves the active route object. A schema entry without a default creates no state or `page.meta` value.
@@ -501,6 +504,84 @@ Do NOT delete the `ref` attribute, and do NOT add a dummy `client({ refs }) { re
   </button>
 </template>
 ```
+
+### 5.3 Opting Out with `coralite-ignore`
+
+Coralite processes page and component HTML by default. The only opt-out is the `coralite-ignore` attribute. There is no opt-in directive: remove the attribute to restore processing.
+
+| Context | Default | With `coralite-ignore` |
+|---|---|---|
+| Page token interpolation | Processed | Literal |
+| Custom-element compilation | Processed | Not compiled |
+| Hydration | Processed | Not hydrated |
+| Validator diagnostics | Processed | Skipped |
+| Page-controller extraction | Processed | Ignored |
+| `<script>` / `<style>` text | Never interpolated | Never interpolated |
+
+#### Page elements
+
+```html
+<div class="mustache-guide" coralite-ignore>
+  <p>Use <code>{{ token }}</code> in templates.</p>
+  <unknown-demo></unknown-demo>
+</div>
+```
+
+The subtree is emitted as authored: `{{ token }}` stays literal, `unknown-demo` is not compiled or hydrated, validators skip it, and the attribute remains in the output.
+
+#### Custom elements and component templates
+
+Putting `coralite-ignore` on a custom element leaves the element itself untouched: its template is not expanded and its subtree is not compiled or hydrated. Inside a component `<template>`, the attribute suppresses component token extraction/replacement, nested custom-element compilation, and validator diagnostics for that subtree.
+
+```html
+<template id="docs-snippet">
+  <pre coralite-ignore>{{ raw }}</pre>
+  <p>{{ rendered }}</p>
+</template>
+```
+
+#### Slots
+
+`<slot coralite-ignore>` keeps projected content literal: no token interpolation, custom-element compilation, hydration, or validation. The slot still projects content. Fallback content is authored component content and is processed normally. The directive is stripped from the rendered `<slot>`.
+
+```html
+<template id="code-block">
+  <pre><code><slot coralite-ignore></slot></code></pre>
+</template>
+```
+
+```html
+<code-block>
+  <template id="counter-card">
+    <span>{{ count }}</span>
+  </template>
+
+  <script type="module">
+    export function server () {
+      return { count: 0 }
+    }
+  </script>
+</code-block>
+```
+
+The projected template, token, and script are emitted literally; the `code-block` component itself still renders. Unknown page tokens inside non-ignored custom-element slots are preserved rather than wiped.
+
+#### Scripts, styles, and page controllers
+
+`<script>` and `<style>` text is never token-interpolated, with or without the attribute. A page may declare exactly one Coralite page controller `<script>` (one exporting page blocks or `definePage`). The controller is removed from rendered output. Normal inline/external scripts are allowed and are never evaluated as page modules. More than one controller fails the page with `CORALITE-E107`.
+
+#### Validator pragmas
+
+`coralite-ignore` is also the prefix for validator suppression comments. The attribute and the comment pragma are separate mechanisms:
+
+```html
+<!-- coralite-ignore E107 -->
+<!-- coralite-ignore button -->
+```
+
+#### Relationship to `ignoreByAttribute`
+
+`coralite-ignore` keeps the element and subtree in the rendered DOM while skipping processing. `ignoreByAttribute` removes matching elements from the rendered tree. `skipRenderByAttribute` parses matching elements but removes them before final serialization.
 
 ---
 
@@ -727,6 +808,8 @@ type CoraliteClientContext<TState = Record<string, any>> = {
 ### 6.7 `slots` (Reactive Element Builders)
 
 Slot builders intercept and transform Light DOM content projected into component `<slot>` elements.
+
+Projected content is token-interpolated and custom elements are compiled by default. Add `coralite-ignore` to a slot to keep projected content literal: no tokens, compilation, hydration, or validation. Fallback content remains normal component content. See §5.3.
 
 #### Verbatim TypeScript Type Signature (`CoraliteSlotBuilderContext`)
 ```typescript
@@ -1264,6 +1347,7 @@ Diagnostics emitted by the AST validator follow a three-level severity model:
 - **Ignore Pragmas**:
   - `<!-- coralite-ignore symbol1, symbol2 -->` / `/* coralite-ignore symbol1 */`: Ignores unused warnings for specific symbols, including unused element ref declarations (e.g. `<!-- coralite-ignore button -->` to suppress `CORALITE-W402` during phased development).
   - `coralite-ignore-unused` / `@coralite-ignore-unused`: Suppresses all unused symbol warnings for the entire component.
+  - These comment pragmas are separate from the `coralite-ignore` HTML attribute, which keeps a rendered subtree literal (§5.3).
 
 ---
 

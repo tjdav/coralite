@@ -95,6 +95,17 @@ export const slots = {
 }
 ```
 
+### Literal projection (`coralite-ignore`)
+Everything is processed by default. Add `coralite-ignore` to a `<slot>` to keep projected content literal: no page-token interpolation, custom-element compilation, hydration, or validation. The slot still projects content; fallback content is processed normally. The directive is stripped from the rendered slot.
+
+```html
+<template id="code-block">
+  <pre><code><slot coralite-ignore></slot></code></pre>
+</template>
+```
+
+Use the same attribute on page elements or component-template elements to keep an entire subtree literal. Do not use `data-coralite-ignore` or `coralite-interpolate`. `<script>`/`<style>` text is never interpolated. Pages accept exactly one Coralite controller `<script>`; normal scripts are allowed and are never evaluated as page modules.
+
 ## 4. Lifecycle Handlers
 
 ### `server({ state, root, session, page, signal, slots, refs })`

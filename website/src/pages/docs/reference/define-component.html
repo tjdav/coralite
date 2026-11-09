@@ -484,6 +484,8 @@ client: ({ state, signal, refs, observe, emit }) => {
     <coralite-heading level="2" text="6. slots"></coralite-heading>
     <p>Allows you to intercept and transform content passed into your component's slots.</p>
 
+    <p>Add <code>coralite-ignore</code> to a <code>&lt;slot&gt;</code> in the component template to keep projected content literal: no token interpolation, custom-element compilation, hydration, or validation. Slot fallback content is processed normally. See the <a href="/docs/reference/coralite-ignore.html"><code>coralite-ignore</code> Reference</a>.</p>
+
     <coralite-code-highlight language="typescript">
 type CoraliteSlotContext<State = any> = {
   state: State;                                  // reactive proxy (client) / plain merged state (SSR)

@@ -96,6 +96,8 @@
 
     <p><strong>Note:</strong> In Coralite, <code>&lt;slot&gt;</code> elements are styled with <code>display: contents;</code> out of the box at the stylesheet root. This makes slot containers layout-transparent, allowing slotted children to participate directly in parent Flexbox and Grid layouts without disrupting layout flow or requiring extra CSS wrapper hacks.</p>
 
+    <p><strong>Literal slots:</strong> projected content is processed by default, including page-token interpolation and custom-element compilation. Add <code>coralite-ignore</code> to a slot to keep projected content literal, which is required for code-sample components. Fallback content remains normal component content. See the <a href="/docs/reference/coralite-ignore.html"><code>coralite-ignore</code> Reference</a>.</p>
+
     <coralite-code-html>
       <!-- src/components/alert-box.html -->
       <template id="alert-box">
