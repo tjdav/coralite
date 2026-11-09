@@ -42,6 +42,8 @@
 
     <p><strong>Static Page Exemption:</strong> Pages that require no dynamic data fetching or path enumeration can be authored as pure HTML documents with no <code>&lt;script type="module"&gt;</code> block. Coralite processes static HTML pages directly during build time.</p>
 
+    <p><strong>One page controller:</strong> a page may contain exactly one Coralite page controller <code>&lt;script&gt;</code> — a script that exports page blocks or uses <code>definePage</code>. It is removed from rendered output. Normal inline and external scripts are allowed alongside it and are never evaluated as page modules. More than one controller fails the page with <code>CORALITE-E107</code>. See the <a href="/docs/reference/coralite-ignore.html"><code>coralite-ignore</code> Reference</a> for literal script and markup regions.</p>
+
     <coralite-heading level="2" text="2. File-Based Routing"></coralite-heading>
 
     <p>Coralite maps HTML file paths inside your pages directory directly to URL route targets:</p>
