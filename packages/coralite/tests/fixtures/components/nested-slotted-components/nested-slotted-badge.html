@@ -1,0 +1,36 @@
+<template id="nested-slotted-badge">
+  <div class="badge-wrapper">
+    <span class="badge-label">{{ label }}</span>
+    <button ref="btnIncrement" class="badge-btn">Count: {{ count }}</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      label: { type: String, default: 'Badge' },
+      count: { type: Number, default: 0 }
+    },
+    client ({ state, refs, signal }) {
+      const btn = refs('btnIncrement')
+      btn.addEventListener('click', () => {
+        state.count = Number(state.count) + 1
+      }, { signal })
+    }
+  })
+</script>
+
+<style>
+  :host {
+    display: inline-block;
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  .badge-btn {
+    margin-left: 8px;
+    cursor: pointer;
+  }
+</style>

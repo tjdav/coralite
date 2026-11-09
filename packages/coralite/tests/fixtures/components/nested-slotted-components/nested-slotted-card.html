@@ -1,0 +1,25 @@
+<template id="nested-slotted-card">
+  <div class="nested-slotted-card">
+    <div class="card-header">
+      <slot name="header"></slot>
+    </div>
+    <div class="card-body">
+      <slot></slot>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client () {}
+  })
+</script>
+
+<style>
+  :host {
+    display: block;
+    margin: 10px 0;
+  }
+</style>

@@ -1,0 +1,25 @@
+<template id="nested-slotted-panel">
+  <div class="inner-panel">
+    <header class="panel-header">Panel: {{ title }}</header>
+    <section class="panel-content">
+      <slot name="panel-body"></slot>
+    </section>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      title: { type: String, default: 'Nested Panel' }
+    },
+    client () {}
+  })
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+</style>
