@@ -29,7 +29,8 @@ import {
 } from './utils/server.js'
 import { getHtmlFile } from './utils/html.js'
 import { extractScriptStylesheets } from './utils/dependency-stylesheets.js'
-import { parseHTML, getTokensFromString } from './utils/parse.js'
+import { parseHTML, getTokensFromString, hasIgnoreAttribute } from './utils/parse.js'
+import { extractPageScript, createIgnoredSlotsResolver } from './parser/html.js'
 import {
   findHeadAndBody,
   injectExternalStyles,
@@ -466,7 +467,8 @@ export function createRenderer ({
         continue
       }
       const emptySlot = slotNodes.filter(node => node.type !== 'text' || (node.data && node.data.trim().length > 0))
-      if (!emptySlot.length) {
+      const usingFallback = !emptySlot.length
+      if (usingFallback) {
         slotNodes = slot.element.children || []
         if (!slot.element.attribs) {
           slot.element.attribs = {}
@@ -516,7 +518,9 @@ export function createRenderer ({
       }
 
       const initialSlotNoHydration = Boolean(noHydration) || _hasAncestorNoHydration(slot.element, element)
-      collectSlotCustomElements(slotNodes, initialSlotNoHydration)
+      if (!slot.isIgnoredSlot || usingFallback) {
+        collectSlotCustomElements(slotNodes, initialSlotNoHydration)
+      }
 
       if (discoveredComponents.length > 0) {
         const componentTasks = []
@@ -1517,6 +1521,12 @@ export function createRenderer ({
 
       const elements = parseHTML(content, normalizedOptions.ignoreByAttribute, normalizedOptions.skipRenderByAttribute, handleError)
 
+      extractPageScript(elements, {
+        filePath: pageItem.path.pathname,
+        rawContent: content,
+        getIgnoredSlots: createIgnoredSlotsResolver(app.components)
+      })
+
       pageContext = {
         ...originalDocument.page,
         meta: { ...(originalDocument.page?.meta || {}) }
@@ -1535,6 +1545,14 @@ export function createRenderer ({
         data: pageItem,
         app
       })
+
+      if (mappedContext.elements !== elements && elements.skipRenderElements?.length && mappedContext.elements) {
+        const current = mappedContext.elements.skipRenderElements || []
+        mappedContext.elements.skipRenderElements = [
+          ...current,
+          ...elements.skipRenderElements.filter(element => !current.includes(element))
+        ]
+      }
 
       const fullPath = Object.assign({}, mappedContext.data.path, {
         pages: normalizedOptions.path.pages,
@@ -1695,18 +1713,83 @@ export function createRenderer ({
       return stateObj ? stateObj[key] : undefined
     }
 
-    const replaceTokenString = (value, stateObj, routeObjParam) => value.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
+    const replaceTokenString = (value, stateObj, routeObjParam, preserveUnknown = false) => value.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (match, key) => {
+      const found = hasPageTokenKey(key, stateObj, routeObjParam)
+      if (!found && preserveUnknown) {
+        return match
+      }
       const val = resolvePageTokenKey(key, stateObj, routeObjParam)
       return val !== undefined && val !== null ? String(val) : ''
     })
 
-    const replaceTokensInAST = (node, stateObj, routeObjParam) => {
+    const getComputedSlots = (componentItem, tagName) => {
+      const componentSource = componentItem?.result || componentItem
+      const rawSlots = resolveComponentSlots(componentSource)
+      if (rawSlots && Object.keys(rawSlots).length > 0) {
+        return rawSlots
+      }
+      const sharedFunctions = scriptManager?.sharedFunctions
+      if (!sharedFunctions) {
+        return {}
+      }
+      const componentId = componentSource?.id
+      if (componentId && sharedFunctions[componentId]?.slots) {
+        return sharedFunctions[componentId].slots
+      }
+      if (sharedFunctions[tagName]?.slots) {
+        return sharedFunctions[tagName].slots
+      }
+      return {}
+    }
+
+    const hasPageTokenKey = (key, stateObj, routeObjParam) => {
+      if (key.startsWith('route.')) {
+        const prop = key.slice(6)
+        return Boolean(routeObjParam && typeof routeObjParam === 'object' && prop in routeObjParam)
+      }
+      if (key.includes('.')) {
+        const parts = key.split('.')
+        let curr = stateObj
+        for (const p of parts) {
+          if (curr === null || curr === undefined || (typeof curr !== 'object' && typeof curr !== 'function')) {
+            return false
+          }
+          if (!(p in curr)) {
+            return false
+          }
+          curr = curr[p]
+        }
+        return true
+      }
+      return Boolean(stateObj && typeof stateObj === 'object' && key in stateObj)
+    }
+
+    const hasAllPageTokenKeys = (value, stateObj, routeObjParam) => {
+      const tokenRegex = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g
+      let match
+      while ((match = tokenRegex.exec(value)) !== null) {
+        if (!hasPageTokenKey(match[1], stateObj, routeObjParam)) {
+          return false
+        }
+      }
+      return true
+    }
+
+    const replaceTokensInAST = (node, stateObj, routeObjParam, slotContext = null) => {
       if (!node) {
         return
       }
+      if (slotContext?.skip) {
+        return
+      }
+      if (node.type === 'tag' && hasIgnoreAttribute(node.attribs)) {
+        return
+      }
+      const isRawTextElement = node.type === 'tag' && (node.name === 'script' || node.name === 'style')
+      const preserveUnknown = Boolean(slotContext?.preserveUnknown)
       if (node.type === 'text') {
-        if (node.data && node.data.includes('{{')) {
-          node.data = replaceTokenString(node.data, stateObj, routeObjParam)
+        if (node.data && node.data.includes('{{') && !isRawTextElement) {
+          node.data = replaceTokenString(node.data, stateObj, routeObjParam, preserveUnknown)
         }
         return
       }
@@ -1715,6 +1798,10 @@ export function createRenderer ({
       }
 
       const isComponentTag = node.type === 'tag' && (node.name.includes('-') || app?.components?.getItem(node.name))
+      const componentItem = isComponentTag && app?.components?.getItem ? app.components.getItem(node.name) : null
+      const componentResult = componentItem?.result
+      const componentSlotMap = componentResult?.slotElements?.[componentResult?.id] || null
+      const componentComputedSlots = isComponentTag ? getComputedSlots(componentItem, node.name) : null
       const canMark = hasPageClientReactivity && node.type === 'tag' && node.name !== 'script' && node.name !== 'style'
       let markerId = null
       const tokenEntry = {
@@ -1736,12 +1823,13 @@ export function createRenderer ({
             continue
           }
           if (typeof attrVal === 'string' && attrVal.includes('{{')) {
-            if (hasPageClientReactivity) {
+            const allKnown = !preserveUnknown || hasAllPageTokenKeys(attrVal, stateObj, routeObjParam)
+            if (hasPageClientReactivity && allKnown) {
               tokenEntry.attrs[attrName] = attrVal
               ensureMarker()
             }
             const singleMatch = attrVal.match(/^\s*\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}\s*$/)
-            if (singleMatch) {
+            if (singleMatch && allKnown) {
               const rawVal = resolvePageTokenKey(singleMatch[1], stateObj, routeObjParam)
               let isBooleanCustom = false
               if (isComponentTag) {
@@ -1775,9 +1863,9 @@ export function createRenderer ({
                   }
                 }
               }
-              applyAstBoundAttribute(node.attribs, attrName, rawVal, () => replaceTokenString(attrVal, stateObj, routeObjParam), isBooleanCustom)
+              applyAstBoundAttribute(node.attribs, attrName, rawVal, () => replaceTokenString(attrVal, stateObj, routeObjParam, preserveUnknown), isBooleanCustom)
             } else {
-              node.attribs[attrName] = replaceTokenString(attrVal, stateObj, routeObjParam)
+              node.attribs[attrName] = replaceTokenString(attrVal, stateObj, routeObjParam, preserveUnknown)
             }
           }
         }
@@ -1866,12 +1954,35 @@ export function createRenderer ({
         return cToken
       }
 
+      const resolveChildSlotContext = (child) => {
+        if (!isComponentTag) {
+          return slotContext
+        }
+        const slotEntry = Array.isArray(node.slots) ? node.slots.find(entry => entry.node === child) : null
+        if (!slotEntry) {
+          return slotContext
+        }
+        const slotName = slotEntry.name || 'default'
+        const slotDescriptor = componentSlotMap?.[slotName]
+        const skip = Boolean(slotDescriptor?.isIgnoredSlot || (componentComputedSlots && typeof componentComputedSlots[slotName] === 'function'))
+        return {
+          inSlot: true,
+          preserveUnknown: true,
+          skip
+        }
+      }
+
       if (node.children) {
         let textIndex = 0
         for (let cIdx = 0; cIdx < node.children.length; cIdx++) {
           const child = node.children[cIdx]
+          const childContext = resolveChildSlotContext(child)
+          if (childContext?.skip) {
+            continue
+          }
           if (child.type === 'text') {
-            if (child.data && child.data.includes('{{')) {
+            const childPreserveUnknown = Boolean(childContext?.preserveUnknown)
+            if (child.data && child.data.includes('{{') && !isRawTextElement) {
               const textTokens = getTokensFromString(child.data, true)
               const evaluatedTokens = textTokens.map(token => {
                 const tokenVal = resolvePageTokenKey(token.name, stateObj, routeObjParam)
@@ -1892,21 +2003,22 @@ export function createRenderer ({
                 const emitPlainTextSegment = (rawSegment) => {
                   const hasTokens = rawSegment.includes('{{')
                   const resolvedSegment = hasTokens
-                    ? replaceTokenString(rawSegment, stateObj, routeObjParam)
+                    ? replaceTokenString(rawSegment, stateObj, routeObjParam, childPreserveUnknown)
                     : rawSegment
                   const textNode = createCoraliteTextNode({
                     type: 'text',
                     data: resolvedSegment,
                     parent: node
                   })
+                  const canRegisterClientToken = !childPreserveUnknown || !hasTokens || hasAllPageTokenKeys(rawSegment, stateObj, routeObjParam)
                   if (isComponentTag) {
-                    if (hasPageClientReactivity && hasTokens) {
+                    if (hasPageClientReactivity && hasTokens && canRegisterClientToken) {
                       replacementNodes.push(createCTokenElement(rawSegment, 'text', [textNode]))
                     } else {
                       replacementNodes.push(textNode)
                     }
                   } else {
-                    if (hasPageClientReactivity && hasTokens) {
+                    if (hasPageClientReactivity && hasTokens && canRegisterClientToken) {
                       tokenEntry.texts.push({
                         textIndex,
                         type: 'text',
@@ -1975,8 +2087,9 @@ export function createRenderer ({
                 continue
               } else if (isComponentTag) {
                 const rawText = child.data
-                child.data = replaceTokenString(rawText, stateObj, routeObjParam)
-                if (hasPageClientReactivity) {
+                child.data = replaceTokenString(rawText, stateObj, routeObjParam, childPreserveUnknown)
+                const canRegisterClientToken = !childPreserveUnknown || hasAllPageTokenKeys(rawText, stateObj, routeObjParam)
+                if (hasPageClientReactivity && canRegisterClientToken) {
                   const cToken = createCTokenElement(rawText, 'text', [child])
                   node.children[cIdx] = cToken
                   if (Array.isArray(node.slots)) {
@@ -1987,7 +2100,8 @@ export function createRenderer ({
                   }
                 }
               } else {
-                if (hasPageClientReactivity) {
+                const canRegisterClientToken = !childPreserveUnknown || hasAllPageTokenKeys(child.data, stateObj, routeObjParam)
+                if (hasPageClientReactivity && canRegisterClientToken) {
                   tokenEntry.texts.push({
                     textIndex,
                     type: 'text',
@@ -1995,14 +2109,14 @@ export function createRenderer ({
                   })
                   ensureMarker()
                 }
-                child.data = replaceTokenString(child.data, stateObj, routeObjParam)
+                child.data = replaceTokenString(child.data, stateObj, routeObjParam, childPreserveUnknown)
                 textIndex++
               }
             } else if (!isComponentTag) {
               textIndex++
             }
           } else {
-            replaceTokensInAST(child, stateObj, routeObjParam)
+            replaceTokensInAST(child, stateObj, routeObjParam, childContext)
           }
         }
         if (isComponentTag) {
@@ -2831,6 +2945,18 @@ export function createRenderer ({
             }
           }
         }
+
+        let serializedState = stateData
+        if (stateData.page && typeof stateData.page === 'object') {
+          const serializedPage = { ...stateData.page }
+          delete serializedPage.script
+          delete serializedPage.blocks
+          serializedState = {
+            ...stateData,
+            page: serializedPage
+          }
+        }
+
         let serializedPageClient = null
         if (!isFallbackRender && pageExports && pageExports.client) {
           serializedPageClient = extractScriptStylesheets(pageExports.client.toString(), {
@@ -2839,7 +2965,7 @@ export function createRenderer ({
           }).code
         }
         pageConfigObj = {
-          state: normalizeObjectFunctions(stateData, astTransformer),
+          state: normalizeObjectFunctions(serializedState, astTransformer),
           route: routeObj,
           getters: gettersSource,
           style: styleSource,

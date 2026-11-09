@@ -10,6 +10,7 @@ import {
   createDiagnostic
 } from '../helpers.js'
 import { isDiagnosticIgnored } from './ignore-directives.js'
+import { hasIgnoreAttribute } from '../../utils/parse.js'
 import {
   GLOBAL_ARIA_ATTRIBUTES,
   ROLE_SUPPORTED_ARIA,
@@ -63,7 +64,8 @@ export function validateTemplate (context) {
     diagnostics,
     definedGetters,
     definedAttributes,
-    definedServerProps
+    definedServerProps,
+    templateSlots
   } = context
 
   if (sourceCode.includes('<template') || sourceCode.includes('<script') || sourceCode.includes('<style')) {
@@ -187,6 +189,8 @@ export function validateTemplate (context) {
 
     // Stack tracking elements in template for A102 (<a> content) and A105 (nested interactive)
     const elementStack = []
+    const ignoreFrames = []
+    let ignoreDepth = 0
 
     const parser = new Parser(
       {
@@ -268,14 +272,33 @@ export function validateTemplate (context) {
 
               checkAttribs(attribs, templateSearchOffset)
             } else if (lowerName === 'script') {
-              currentSection = 'script'
+              currentSection = hasIgnoreAttribute(attribs) ? 'script-ignored' : 'script'
             } else if (lowerName === 'style') {
-              currentSection = 'style'
+              currentSection = hasIgnoreAttribute(attribs) ? 'style-ignored' : 'style'
             }
           } else if (currentSection === 'template') {
+            const hasIgnore = hasIgnoreAttribute(attribs)
+            const ancestorIgnored = ignoreDepth > 0
+            const ignored = ancestorIgnored || hasIgnore
+            ignoreFrames.push({
+              hasIgnore,
+              ignored
+            })
+
+            if (hasIgnore) {
+              ignoreDepth++
+            }
+
+            if (lowerName === 'slot' && !ancestorIgnored) {
+              templateSlots.push({
+                name: attribs?.name ? String(attribs.name) : 'default',
+                isIgnoredSlot: hasIgnore
+              })
+            }
+
             if (lowerName === 'template') {
               templateDepth++
-            } else {
+            } else if (!ignored) {
               const tagLoc = getLocFromIndex(sourceCode, parser.startIndex)
 
               templateElements.push({
@@ -361,12 +384,17 @@ export function validateTemplate (context) {
                 interactive,
                 hasAccessibleContent: false
               })
+
+              checkAttribs(attribs, parser.startIndex)
             }
-            checkAttribs(attribs, parser.startIndex)
           }
         },
         ontext (text) {
           if (currentSection === 'template') {
+            if (ignoreDepth > 0) {
+              return
+            }
+
             extractMustacheFromText(text, parser.startIndex)
 
             // For A102: check if text contains non-whitespace or mustache tokens
@@ -384,12 +412,17 @@ export function validateTemplate (context) {
         onclosetag (name) {
           const lowerName = name.toLowerCase()
           if (currentSection === 'template') {
+            const ignoreFrame = ignoreFrames.pop()
+            if (ignoreFrame?.hasIgnore) {
+              ignoreDepth--
+            }
+
             if (lowerName === 'template') {
               templateDepth--
               if (templateDepth === 0) {
                 currentSection = null
               }
-            } else {
+            } else if (ignoreFrame && !ignoreFrame.ignored) {
               const closedEl = elementStack.pop()
               if (closedEl) {
                 // If closed element had accessible content, mark parent as having accessible content
@@ -435,7 +468,11 @@ export function validateTemplate (context) {
             }
           } else if (currentSection === 'script' && lowerName === 'script') {
             currentSection = null
+          } else if (currentSection === 'script-ignored' && lowerName === 'script') {
+            currentSection = null
           } else if (currentSection === 'style' && lowerName === 'style') {
+            currentSection = null
+          } else if (currentSection === 'style-ignored' && lowerName === 'style') {
             currentSection = null
           }
         }

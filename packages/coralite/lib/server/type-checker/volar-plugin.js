@@ -1,25 +1,28 @@
 /**
  * @import { LanguagePlugin, VirtualCode } from '@volar/language-core'
  */
+import { extractScriptTagsFromHTML } from '../utils/parse.js'
 
 /**
- * Extracts the first <script type="module"> (or any <script>) block from .html source code.
+ * Extracts the Coralite module script block from `.html` source code.
  *
  * @param {string} source - HTML file content
  * @returns {{ content: string, offset: number } | null} Script content and 0-based offset in HTML source
  */
 export function extractScriptBlock (source) {
-  const match = /<script\b[^>]*>([\s\S]*?)<\/script>/i.exec(source)
-  if (!match) {
+  const scripts = extractScriptTagsFromHTML(source)
+  const script = scripts.find(candidate => {
+    const type = candidate.attribs?.type ? String(candidate.attribs.type).trim().toLowerCase() : ''
+    return type === 'module'
+  }) || scripts.find(candidate => !candidate.attribs?.type) || scripts[0]
+
+  if (!script) {
     return null
   }
 
-  const scriptContent = match[1]
-  const scriptOffset = match.index + match[0].indexOf(match[1])
-
   return {
-    content: scriptContent,
-    offset: scriptOffset
+    content: script.content,
+    offset: script.contentStart
   }
 }
 

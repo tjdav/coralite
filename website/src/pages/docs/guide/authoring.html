@@ -200,7 +200,7 @@ export default definePlugin({ /* plugin blocks */ })
 
     <coralite-heading level="2" text="4. Template Rules"></coralite-heading>
 
-    <p>Coralite templates use flat <code>{{ token }}</code> interpolations exclusively. To keep templates fast, deterministic, and statically indexable, templates forbid expressions, function calls, inline event handlers (such as <code>onclick="..."</code>), conditionals, and loops. All derivation logic must live inside <code>getters</code>.</p>
+    <p>Coralite templates use flat <code coralite-ignore>{{ token }}</code> interpolations exclusively. To keep templates fast, deterministic, and statically indexable, templates forbid expressions, function calls, inline event handlers (such as <code>onclick="..."</code>), conditionals, and loops. All derivation logic must live inside <code>getters</code>.</p>
 
     <coralite-code-highlight language="javascript" title="Correct (Flat Tokens & Getters)">
 <!-- Good: Flat token resolved via getter -->

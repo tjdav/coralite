@@ -50,7 +50,7 @@
 
     <p>Getters compute derived state synchronously from reactive state values. A getter function receives a context parameter (which can be destructured as <code>({ state }) =&gt; ...</code> or accessed as a whole object <code>(context) =&gt; context.state...</code>) and must be pure and synchronous, returning a calculated value without causing side effects or mutating state.</p>
 
-    <p>In component templates, getters are referenced using standard flat template tokens (e.g. <code>{{ getterName }}</code>).</p>
+    <p>In component templates, getters are referenced using standard flat template tokens (e.g. <code coralite-ignore>{{ getterName }}</code>).</p>
 
     <coralite-code-highlight language="javascript">
 import { defineComponent } from 'coralite'

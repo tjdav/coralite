@@ -49,7 +49,10 @@ const EXPECTED_BUILD_FAILURES = new Set([
   'server-with-headers',
 
   // Page meta validation: invalid defaults fail the build
-  'page-meta-invalid'
+  'page-meta-invalid',
+
+  // Page configuration rejection: fixture intentionally uses a rejected definePage block
+  'rejected-block'
 ])
 
 /**

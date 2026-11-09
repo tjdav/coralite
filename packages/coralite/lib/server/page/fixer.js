@@ -1,6 +1,8 @@
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
 import { generateColorizedDiff } from '../component/fixer.js'
+import { extractScriptTagsFromHTML } from '../utils/parse.js'
+import { extractPageScript } from '../parser/html.js'
 import {
   PAGE_EXPORTS,
   PAGE_HANDLER_EXPORTS,
@@ -385,10 +387,22 @@ export function applyPageFixes (sourceCode, _diagnostics = null, options = {}) {
     }
   }
 
-  const moduleScriptRegex = /<script\b(?=[^>]*\btype=["']?module["']?)(?:[^>]*>)([\s\S]*?)<\/script>/gi
-  const scriptMatch = moduleScriptRegex.exec(sourceCode)
+  let scriptTag = null
+  try {
+    scriptTag = extractPageScript(sourceCode, { filePath }).tag
+  } catch {
+    scriptTag = null
+  }
 
-  if (!scriptMatch) {
+  if (!scriptTag) {
+    const scripts = extractScriptTagsFromHTML(sourceCode)
+    scriptTag = scripts.find(script => {
+      const type = script.attribs?.type ? String(script.attribs.type).trim().toLowerCase() : ''
+      return type === 'module'
+    }) || scripts.find(script => !script.attribs?.type)
+  }
+
+  if (!scriptTag) {
     return {
       outputCode: sourceCode,
       modified: false,
@@ -398,9 +412,9 @@ export function applyPageFixes (sourceCode, _diagnostics = null, options = {}) {
     }
   }
 
-  const scriptContent = scriptMatch[1]
-  const scriptStart = scriptMatch.index + scriptMatch[0].indexOf(scriptContent)
-  const scriptEnd = scriptStart + scriptContent.length
+  const scriptContent = scriptTag.content
+  const scriptStart = scriptTag.contentStart
+  const scriptEnd = scriptTag.contentEnd
 
   const { code: newScriptContent, modified, skipped } = transformScriptToFlat(scriptContent)
 

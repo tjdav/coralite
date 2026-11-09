@@ -1,4 +1,4 @@
-import { getLocForSubstring } from '../../shared/diagnostics.js'
+import { extractScriptTagsFromHTML } from '../utils/parse.js'
 /**
  * Creates and initializes a shared ValidationContext object for component validation passes.
  *
@@ -10,18 +10,26 @@ import { getLocForSubstring } from '../../shared/diagnostics.js'
  */
 export function createValidationContext (sourceCode, filePath = '', options = {}) {
   let scriptContent = ''
+  let scriptStartLine = 0
+
   if (sourceCode.includes('<script')) {
-    const scriptMatch = sourceCode.match(/<script[\s\S]*?>([\s\S]*?)<\/script>/i)
-    if (scriptMatch) {
-      scriptContent = scriptMatch[1]
+    const scripts = extractScriptTagsFromHTML(sourceCode)
+    const candidate = scripts.find(script => {
+      const type = script.attribs?.type ? String(script.attribs.type).trim().toLowerCase() : ''
+      return !type || type === 'module'
+    }) || scripts[0]
+
+    if (candidate) {
+      scriptContent = candidate.content
+      scriptStartLine = candidate.lineOffset
     }
   } else if (!sourceCode.includes('<template')) {
     scriptContent = sourceCode
   }
 
-  const scriptStartLine = scriptContent && sourceCode.includes('<script')
-    ? getLocForSubstring(sourceCode, scriptContent).line - 1
-    : 0
+  if (!scriptContent && sourceCode.includes('<script')) {
+    scriptStartLine = 0
+  }
 
   const kind = options.kind || (sourceCode.includes('<template') ? 'component' : 'page')
 
@@ -35,6 +43,7 @@ export function createValidationContext (sourceCode, filePath = '', options = {}
     templateId: null,
     scriptStringPool: [],
     templateTokens: new Set(),
+    templateSlots: [],
     templateRefs: new Map(),
     templateElements: [],
     diagnostics: [],

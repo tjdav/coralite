@@ -113,7 +113,7 @@ export const meta = {
     </coralite-code-highlight>
 
     <ul>
-      <li><strong>State defaults:</strong> every resolved <code>meta</code> value seeds page state. Templates, getters, and client code read it as <code>{{ title }}</code>, <code>state.count</code>, and so on.</li>
+      <li><strong>State defaults:</strong> every resolved <code>meta</code> value seeds page state. Templates, getters, and client code read it as <code coralite-ignore>{{ title }}</code>, <code>state.count</code>, and so on.</li>
       <li><strong>State precedence:</strong> <code>meta</code> defaults are the base; existing render state and <code>onPageSet</code>/<code>onBeforePageRender</code> hooks override them; the <code>server()</code> return value overrides last.</li>
       <li><strong>page.meta precedence:</strong> literal <code>&lt;title&gt;</code>/<code>&lt;meta&gt;</code> tags remain authoritative. <code>meta</code> defaults fill in missing keys only. No <code>&lt;title&gt;</code> or <code>&lt;meta&gt;</code> tags are rendered automatically.</li>
       <li><strong>Validation:</strong> <code>required</code> is rejected on pages because there is no external input. Invalid defaults (failing type coercion, <code>values</code>, or <code>validate</code>) fail the build.</li>
@@ -124,7 +124,7 @@ export const meta = {
 
     <ul>
       <li><strong>Verbatim keys:</strong> keys are used exactly as written in both state and <code>page.meta</code>. Only identifier-safe keys are directly addressable as template tokens; use a getter for keys such as <code>og:title</code>, <code>campaign-name</code>, or dotted keys.</li>
-      <li><strong>Reserved collisions:</strong> a <code>page</code> default is available at <code>page.meta.page</code> but cannot seed <code>state.page</code> because the page object wins. A <code>route</code> default is available at <code>page.meta.route</code>, but <code>{{ route }}</code> always resolves the active route object. A <code>state</code> default creates <code>state.state</code>.</li>
+      <li><strong>Reserved collisions:</strong> a <code>page</code> default is available at <code>page.meta.page</code> but cannot seed <code>state.page</code> because the page object wins. A <code>route</code> default is available at <code>page.meta.route</code>, but <code coralite-ignore>{{ route }}</code> always resolves the active route object. A <code>state</code> default creates <code>state.state</code>.</li>
       <li><strong>No default, no value:</strong> a schema entry without a default creates no state key and no <code>page.meta</code> entry.</li>
       <li><strong>server() return values:</strong> returned keys update state only. To change page metadata, mutate <code>page.meta</code> directly inside <code>server()</code> or a hook.</li>
       <li><strong>Render-scoped metadata:</strong> when defaults are declared, the effective <code>page.meta</code> is assembled per render. The page's literal metadata remains the source of truth, so removing a default does not leave a stale <code>page.meta</code> value.</li>

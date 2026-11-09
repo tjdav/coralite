@@ -1,7 +1,7 @@
 import render from 'dom-serializer'
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
-import { parseHTML } from '../utils/parse.js'
+import { parseHTML, hasIgnoreAttribute, extractScriptTagsFromHTML } from '../utils/parse.js'
 import { relinkChildren } from '../utils/dom.js'
 import { CoraliteError } from '../../shared/errors.js'
 import { PAGE_EXPORTS, REJECTED_PAGE_EXPORTS } from '../../shared/page.js'
@@ -164,48 +164,79 @@ export async function processTokenValue (value, context) {
 const ALLOWED_PAGE_BLOCKS = new Set(PAGE_EXPORTS)
 
 /**
- * Parses and extracts definePage configuration from page HTML scripts.
+ * Creates a resolver for ignored slot names on a component collection.
  *
- * @param {string} content - Raw page HTML content
- * @param {Object} [options={}] - Options containing filePath
- * @returns {{ hasDefinePage: boolean, hasPageExports: boolean, blocks: Record<string, any> | null, script: string | null }}
+ * @param {{ getItem?: (id: string) => any }} components - Component collection or compatible lookup.
+ * @returns {(tagName: string) => Set<string> | null} Resolver for ignored slot names.
  */
-export function extractPageScript (content, options = {}) {
-  const filePath = options.filePath || ''
-  if (!content || typeof content !== 'string') {
-    return {
-      hasDefinePage: false,
-      hasPageExports: false,
-      blocks: null,
-      script: null
+export function createIgnoredSlotsResolver (components) {
+  return function getIgnoredSlots (tagName) {
+    const component = components && typeof components.getItem === 'function'
+      ? components.getItem(tagName)
+      : null
+    const result = component?.result
+    const slotMap = result?.slotElements?.[result?.id]
+
+    if (!slotMap) {
+      return null
     }
+
+    let ignored = null
+    for (const name in slotMap) {
+      if (Object.prototype.hasOwnProperty.call(slotMap, name) && slotMap[name]?.isIgnoredSlot) {
+        if (!ignored) {
+          ignored = new Set()
+        }
+        ignored.add(name)
+      }
+    }
+
+    return ignored
+  }
+}
+
+/**
+ * Checks whether a script element is projected into an ignored component slot.
+ *
+ * @param {import('../../../types/index.js').CoraliteScriptTag} script - Script metadata
+ * @param {(tagName: string) => Set<string> | null} [getIgnoredSlots] - Ignored slot resolver
+ * @returns {boolean}
+ */
+export function isScriptInsideIgnoredSlot (script, getIgnoredSlots) {
+  if (!getIgnoredSlots || !script.element) {
+    return false
   }
 
-  // Strip templates and code-blocks so code examples in docs/pages are not mistaken for page scripts
-  const sanitizedContent = content
-    .replace(/<template\b[^>]*>[\s\S]*?<\/template>/gi, '')
-    .replace(/<code-block\b[^>]*>[\s\S]*?<\/code-block>/gi, '')
+  /** @type {any} */
+  let child = script.element
+  while (child && child.parent) {
+    const parent = child.parent
 
-  const scriptRegex = /<script[\s\S]*?>([\s\S]*?)<\/script>/gi
-  let match
-  let scriptContent = null
-
-  while ((match = scriptRegex.exec(sanitizedContent)) !== null) {
-    if (match[1] !== undefined) {
-      scriptContent = match[1]
-      break
+    if (parent.type === 'tag' && Array.isArray(parent.slots)) {
+      const slotEntry = parent.slots.find(entry => entry.node === child)
+      if (slotEntry) {
+        const ignored = getIgnoredSlots(parent.name)
+        if (ignored && ignored.has(slotEntry.name || 'default')) {
+          return true
+        }
+      }
     }
+
+    child = parent
   }
 
-  if (!scriptContent || !scriptContent.trim()) {
-    return {
-      hasDefinePage: false,
-      hasPageExports: false,
-      blocks: null,
-      script: null
-    }
-  }
+  return false
+}
 
+/**
+ * Analyzes a single inline script for Coralite page blocks.
+ *
+ * @param {string} scriptContent - Raw script content
+ * @param {string} rawContent - Full page source used for pragma checks
+ * @param {string} filePath - Page file path
+ * @returns {{ hasDefinePage: boolean, hasPageExports: boolean, blocks: Record<string, any> | null } | null} Analysis, or null for non-page scripts.
+ */
+function analyzePageScript (scriptContent, rawContent, filePath) {
   let ast
   try {
     ast = parseJS(scriptContent, {
@@ -214,12 +245,7 @@ export function extractPageScript (content, options = {}) {
       locations: true
     })
   } catch {
-    return {
-      hasDefinePage: false,
-      hasPageExports: false,
-      blocks: null,
-      script: scriptContent
-    }
+    return null
   }
 
   let definePageCall = null
@@ -293,8 +319,7 @@ export function extractPageScript (content, options = {}) {
     return {
       hasDefinePage: false,
       hasPageExports,
-      blocks: null,
-      script: scriptContent
+      blocks: null
     }
   }
 
@@ -316,14 +341,14 @@ export function extractPageScript (content, options = {}) {
       continue
     }
 
-    if (REJECTED_PAGE_EXPORTS[keyName] && !content.includes('coralite-ignore E107')) {
+    if (REJECTED_PAGE_EXPORTS[keyName] && !rawContent.includes('coralite-ignore E107')) {
       throw new CoraliteError(REJECTED_PAGE_EXPORTS[keyName], {
         code: 'CORALITE-E107',
         filePath
       })
     }
 
-    if (!ALLOWED_PAGE_BLOCKS.has(keyName) && !content.includes('coralite-ignore E107')) {
+    if (!ALLOWED_PAGE_BLOCKS.has(keyName) && !rawContent.includes('coralite-ignore E107')) {
       throw new CoraliteError(`Unknown block "${keyName}" in definePage. Valid blocks are: paths, server, meta, getters, style, provide, client, onError.`, {
         code: 'CORALITE-E107',
         filePath
@@ -336,7 +361,119 @@ export function extractPageScript (content, options = {}) {
   return {
     hasDefinePage: true,
     hasPageExports,
-    blocks,
-    script: scriptContent
+    blocks
+  }
+}
+
+/**
+ * Parses and extracts the single Coralite page controller script from page HTML.
+ *
+ * When a `ParseHTMLResult` is supplied, the controller script node is marked
+ * `skipRender` and pushed to `skipRenderElements`. When raw HTML is supplied,
+ * only extraction occurs.
+ *
+ * @param {string | import('../../../types/index.js').ParseHTMLResult} input - Parsed elements or raw page HTML
+ * @param {Object} [options={}] - Extraction options
+ * @param {string} [options.filePath=''] - Page file path
+ * @param {string} [options.rawContent] - Raw page source when `input` is parsed elements
+ * @param {(tagName: string) => Set<string> | null} [options.getIgnoredSlots] - Ignored slot resolver
+ * @returns {{ hasDefinePage: boolean, hasPageExports: boolean, blocks: Record<string, any> | null, script: string | null, lineOffset: number, tag: import('../../../types/index.js').CoraliteScriptTag | null }}
+ */
+export function extractPageScript (input, options = {}) {
+  const filePath = options.filePath || ''
+  const isElements = Boolean(input && typeof input === 'object' && Array.isArray(input.scripts))
+  /** @type {import('../../../types/index.js').ParseHTMLResult | null} */
+  let elements = null
+  let rawContent = ''
+  if (isElements) {
+    // @ts-ignore -- narrowed by isElements
+    elements = input
+    rawContent = options.rawContent || ''
+  } else if (typeof input === 'string') {
+    rawContent = input
+  }
+  const scripts = elements ? elements.scripts : extractScriptTagsFromHTML(rawContent)
+  const getIgnoredSlots = options.getIgnoredSlots
+
+  const emptyResult = {
+    hasDefinePage: false,
+    hasPageExports: false,
+    blocks: null,
+    script: null,
+    lineOffset: 0,
+    tag: null
+  }
+
+  if (!scripts || scripts.length === 0) {
+    return emptyResult
+  }
+
+  let controller = null
+  let controllerCount = 0
+
+  for (const script of scripts) {
+    const attribs = script.attribs || {}
+
+    if (attribs.src) {
+      continue
+    }
+
+    const scriptType = attribs.type ? String(attribs.type).trim().toLowerCase() : ''
+    if (scriptType && scriptType !== 'module') {
+      continue
+    }
+
+    if (hasIgnoreAttribute(attribs)) {
+      continue
+    }
+
+    if (isScriptInsideIgnoredSlot(script, getIgnoredSlots)) {
+      continue
+    }
+
+    if (!script.content || !script.content.trim()) {
+      continue
+    }
+
+    const analysis = analyzePageScript(script.content, rawContent, filePath)
+    if (!analysis || (!analysis.hasDefinePage && !analysis.hasPageExports)) {
+      continue
+    }
+
+    controllerCount++
+    if (controllerCount > 1) {
+      throw new CoraliteError('Multiple page controller <script> blocks are not allowed. Each page accepts exactly one Coralite page script.', {
+        code: 'CORALITE-E107',
+        filePath
+      })
+    }
+
+    controller = {
+      ...script,
+      ...analysis
+    }
+  }
+
+  if (!controller) {
+    return emptyResult
+  }
+
+  if (elements && controller.element) {
+    controller.element.skipRender = true
+    if (!elements.skipRenderElements) {
+      elements.skipRenderElements = []
+    }
+    if (!elements.skipRenderElements.includes(controller.element)) {
+      elements.skipRenderElements.push(controller.element)
+    }
+  }
+
+  return {
+    hasDefinePage: controller.hasDefinePage,
+    hasPageExports: controller.hasPageExports,
+    blocks: controller.blocks,
+    script: controller.content,
+    lineOffset: controller.lineOffset || 0,
+    tag: controller
   }
 }

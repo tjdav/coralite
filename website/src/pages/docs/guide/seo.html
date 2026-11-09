@@ -175,7 +175,7 @@ Sitemap: https://example.com/sitemap.xml
 
     <coralite-alert type="warning">
       <strong>Planned Feature</strong>
-      <p>Raw unescaped template interpolations (such as <code>{{{ raw }}}</code>) are planned for a future release. Raw JSON-LD script block interpolation should not be attempted with standard double-brace <code>{{ token }}</code> tags.</p>
+      <p>Raw unescaped template interpolations (such as <code coralite-ignore>{{{ raw }}}</code>) are planned for a future release. Raw JSON-LD script block interpolation should not be attempted with standard double-brace <code coralite-ignore>{{ token }}</code> tags.</p>
     </coralite-alert>
 
     <p>Until raw token interpolation is available, JSON-LD structured data can be included by writing static <code>&lt;script type="application/ld+json"&gt;</code> blocks directly inside your page templates or component HTML.</p>

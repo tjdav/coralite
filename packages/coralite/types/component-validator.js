@@ -7,6 +7,8 @@
  * @property {string[]} refs - Element ref names in template
  * @property {string[]} [imports] - Top level imported symbols
  * @property {string[]} [slots] - Defined slot names
+ * @property {Array<{ name: string, isIgnoredSlot: boolean }>} [templateSlots] - Template slot descriptors
+ * @property {string[]} [ignoredSlots] - Template slot names projected as literal content
  * @property {string | null} [templateId] - Template definition id derived from the component root template element
  */
 
