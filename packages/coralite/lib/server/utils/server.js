@@ -63,6 +63,49 @@ export function getAST (code, locations = false) {
 }
 
 /**
+ * Rewrites dynamic import expressions to an isomorphic custom importer call.
+ *
+ * Static import declarations, `import.meta`, string literals, and comments are
+ * left untouched. Replacements are applied from the end of the source to the
+ * start so earlier node offsets stay valid, and newlines are preserved so
+ * runtime line numbers continue to match the authored script.
+ *
+ * @param {string} code - The module script to rewrite.
+ * @param {string} [replacementName='__coralite_import__'] - The custom importer identifier.
+ * @returns {string} The rewritten module script.
+ */
+export function rewriteDynamicImports (code, replacementName = '__coralite_import__') {
+  if (!code.includes('import(')) {
+    return code
+  }
+
+  const ast = getAST(code)
+  const replacements = []
+
+  walkJS(ast, {
+    ImportExpression (node) {
+      replacements.push({
+        start: node.start,
+        end: node.start + 'import'.length
+      })
+    }
+  })
+
+  if (replacements.length === 0) {
+    return code
+  }
+
+  replacements.sort((a, b) => b.start - a.start)
+
+  let output = code
+  for (const replacement of replacements) {
+    output = output.slice(0, replacement.start) + replacementName + output.slice(replacement.end)
+  }
+
+  return output
+}
+
+/**
  * Resolves potential string values for a node, tracing variables if necessary.
  *
  * @param {any} node - The AST node to resolve

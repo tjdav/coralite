@@ -1,9 +1,9 @@
-import { pathToFileURL } from 'node:url'
-import { resolve } from 'node:path'
+import { pathToFileURL, fileURLToPath } from 'node:url'
+import { resolve, dirname } from 'node:path'
 import { createContext } from 'node:vm'
 import { transform } from 'esbuild'
-import { createRequire } from 'node:module'
-import { extractGlobals } from './utils/server.js'
+import { createRequire, isBuiltin } from 'node:module'
+import { extractGlobals, rewriteDynamicImports } from './utils/server.js'
 import * as serverUtilsBase from './utils/index.js'
 import { CoraliteError } from '../shared/errors.js'
 import { createContext as createContextUtil, ContextRequestEvent } from '../shared/core.js'
@@ -35,6 +35,154 @@ export const RECOGNIZED_PAGE_EXPORTS = PAGE_EXPORTS
 
 const isValidIdentifier = (name) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
 
+const RESERVED_WORDS = new Set([
+  'await',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'debugger',
+  'default',
+  'delete',
+  'do',
+  'else',
+  'enum',
+  'export',
+  'extends',
+  'false',
+  'finally',
+  'for',
+  'function',
+  'if',
+  'implements',
+  'import',
+  'in',
+  'instanceof',
+  'interface',
+  'let',
+  'new',
+  'null',
+  'package',
+  'private',
+  'protected',
+  'public',
+  'return',
+  'static',
+  'super',
+  'switch',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'typeof',
+  'var',
+  'void',
+  'while',
+  'with',
+  'yield'
+])
+
+const isExportableName = (name) => isValidIdentifier(name) && name !== 'default' && !RESERVED_WORDS.has(name)
+
+/**
+ * Creates a specifier resolver anchored to a component or page file.
+ *
+ * Relative specifiers resolve through Node's CommonJS resolver first, which
+ * provides extensionless and directory-index fallbacks. Non-module assets fall
+ * back to a file URL anchored at the source file. Bare packages prefer the
+ * CommonJS resolver so resolution stays correct even when the process was not
+ * started with `--experimental-import-meta-resolve`.
+ *
+ * @param {Object} options - The resolver options.
+ * @param {CoraliteFilePath} options.path - The source file path metadata.
+ * @param {{ (id: string): any, resolve: (specifier: string) => string }} [options.fileRequire] - A require function anchored to the source file.
+ * @returns {(specifier: string) => string} A resolver returning a URL or builtin specifier.
+ */
+export function createDynamicResolver ({ path, fileRequire }) {
+  const componentPath = resolve(path.pathname)
+  const componentFileURL = pathToFileURL(componentPath).href
+  const componentDir = dirname(componentPath)
+  const requireFromComponent = fileRequire || createRequire(componentPath)
+
+  return function resolveDynamicSpecifier (specifier) {
+    if (isBuiltin(specifier)) {
+      return specifier
+    }
+
+    if (/^(file|data|https?):/.test(specifier)) {
+      return specifier
+    }
+
+    try {
+      return pathToFileURL(requireFromComponent.resolve(specifier)).href
+    } catch {
+      if (specifier.startsWith('.') || specifier.startsWith('/')) {
+        return pathToFileURL(resolve(componentDir, specifier)).href
+      }
+
+      try {
+        return import.meta.resolve(specifier, componentFileURL)
+      } catch (error) {
+        throw new CoraliteError(`Failed to resolve "${specifier}" from "${path.pathname}"`, {
+          cause: error,
+          filePath: path.pathname
+        })
+      }
+    }
+  }
+}
+
+/**
+ * Creates a dynamic importer anchored to a component or page file.
+ *
+ * @param {Object} options - The importer options.
+ * @param {Object} options.moduleComponent - The owning module component.
+ * @param {(id: string) => any} options.customRequire - The Coralite-aware require shim.
+ * @param {{ (id: string): any, resolve: (specifier: string) => string }} options.fileRequire - A require function anchored to the source file.
+ * @param {(specifier: string) => string} options.resolve - The anchored specifier resolver.
+ * @returns {(specifier: string, options?: any) => Promise<any>} The dynamic importer.
+ */
+export function createDynamicImporter ({ moduleComponent, customRequire, fileRequire, resolve: resolveSpecifier }) {
+  const sourcePath = moduleComponent.path?.pathname
+
+  return async function importDynamicSpecifier (specifier, options) {
+    try {
+      if (specifier === 'coralite' || specifier === 'coralite/utils' || specifier === 'coralite/utils/server') {
+        return customRequire(specifier)
+      }
+
+      if (isBuiltin(specifier)) {
+        return await import(specifier, options)
+      }
+
+      const targetSpecifier = resolveSpecifier(specifier)
+      const importType = options?.with?.type || options?.assert?.type
+
+      if (!importType && targetSpecifier.startsWith('file:') && targetSpecifier.endsWith('.json')) {
+        const json = fileRequire(fileURLToPath(targetSpecifier))
+        return {
+          default: json,
+          ...json
+        }
+      }
+
+      return await import(targetSpecifier, options)
+    } catch (error) {
+      if (error?.isCoraliteError) {
+        throw error
+      }
+
+      throw new CoraliteError(`Failed to import "${specifier}" from "${sourcePath || moduleComponent.id}": ${error.message}`, {
+        cause: error,
+        filePath: sourcePath,
+        componentId: moduleComponent.id
+      })
+    }
+  }
+}
+
 /**
  * Generates a custom module linker callback for the Node.js VM context.
  *
@@ -43,11 +191,17 @@ const isValidIdentifier = (name) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
  * @param {CoralitePluginContext} options.context - Contextual rendering data
  * @param {Object} options.source - Framework source context
  * @param {Function} options.importModuleDynamically - The dynamic import callback
+ * @param {{ (id: string): any, resolve: (specifier: string) => string }} [options.fileRequire] - A require function anchored to the component file
+ * @param {(specifier: string) => string} [options.resolve] - An anchored specifier resolver
  * @returns {(specifier: string, referencingModule: Module, extra: { attributes: any }) => Promise<Module>}
  */
-export function createModuleLinker ({ path, context, source, importModuleDynamically }) {
-  const componentFileURL = pathToFileURL(resolve(path.pathname)).href
-
+export function createModuleLinker ({ path, context, source, importModuleDynamically, fileRequire, resolve: resolveSpecifier }) {
+  const componentPath = resolve(path.pathname)
+  const requireFromComponent = fileRequire || createRequire(componentPath)
+  const resolveDynamicSpecifier = resolveSpecifier || createDynamicResolver({
+    path,
+    fileRequire: requireFromComponent
+  })
   return async (specifier, referencingModule, extra) => {
     if (!SourceTextModuleCache) {
       SourceTextModuleCache = (await import('node:vm')).SourceTextModule
@@ -63,7 +217,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       utilsExports = 'const utils = globalThis.__coralite__.utils; export default utils;'
 
       for (const key in utils) {
-        if (Object.prototype.hasOwnProperty.call(utils, key) && isValidIdentifier(key)) {
+        if (Object.prototype.hasOwnProperty.call(utils, key) && isExportableName(key)) {
           utilsExports += `export const ${key} = utils["${key}"];\n`
         }
       }
@@ -80,7 +234,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       let serverExports = 'const serverUtils = globalThis.__coralite__.serverUtils; export default serverUtils;\n'
 
       for (const key in serverUtils) {
-        if (Object.prototype.hasOwnProperty.call(serverUtils, key) && isValidIdentifier(key)) {
+        if (Object.prototype.hasOwnProperty.call(serverUtils, key) && isExportableName(key)) {
           serverExports += `export const ${key} = serverUtils["${key}"];\n`
         }
       }
@@ -93,7 +247,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       let coraliteExports = 'const context = globalThis.__coralite__.context; export default context;'
 
       for (const key in context) {
-        if (Object.prototype.hasOwnProperty.call(context, key) && isValidIdentifier(key)) {
+        if (Object.prototype.hasOwnProperty.call(context, key) && isExportableName(key)) {
           coraliteExports += `export const ${key} = context["${key}"];\n`
         }
       }
@@ -111,49 +265,54 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       })
     }
 
-    let targetSpecifier = specifier
-    if (specifier.startsWith('.')) {
-      // handle relative path
-      targetSpecifier = pathToFileURL(resolve(path.dirname, specifier)).href
-    } else {
-      // handle modules
-      targetSpecifier = import.meta.resolve(specifier, componentFileURL)
-    }
+    const targetSpecifier = resolveDynamicSpecifier(specifier)
+    const attributes = extra?.attributes || extra
+    const hasAttributes = attributes && Object.keys(attributes).length > 0
 
     try {
-      let module
-      const attributes = extra?.attributes || extra
+      let importedModule
 
-      if (attributes && Object.keys(attributes).length > 0) {
-        module = await import(targetSpecifier, { with: attributes })
+      if (!hasAttributes && targetSpecifier.startsWith('file:') && targetSpecifier.endsWith('.json')) {
+        const json = requireFromComponent(fileURLToPath(targetSpecifier))
+        importedModule = {
+          default: json,
+          ...json
+        }
+      } else if (hasAttributes) {
+        importedModule = await import(targetSpecifier, { with: attributes })
       } else {
-        module = await import(targetSpecifier)
+        importedModule = await import(targetSpecifier)
       }
 
       let exportModule = ''
+      const namespaceName = 'globalThis[' + JSON.stringify(originalSpecifier) + ']'
 
-      for (const key in module) {
-        if (Object.prototype.hasOwnProperty.call(module, key)) {
-          const name = 'globalThis["' + originalSpecifier + '"].'
-
-          if (key === 'default') {
-            exportModule += 'export default ' + name + key + ';\n'
-          } else {
-            exportModule += 'export const ' + key + ' = ' + name + key + ';\n'
-          }
+      for (const key in importedModule) {
+        if (!Object.prototype.hasOwnProperty.call(importedModule, key)) {
+          continue
         }
 
-        referencingModule.context[originalSpecifier] = module
+        if (key === 'default') {
+          exportModule += 'export default ' + namespaceName + '[' + JSON.stringify(key) + '];\n'
+        } else if (isExportableName(key)) {
+          exportModule += 'export const ' + key + ' = ' + namespaceName + '[' + JSON.stringify(key) + '];\n'
+        }
       }
+
+      referencingModule.context[originalSpecifier] = importedModule
 
       return new SourceTextModule(exportModule, {
         context: referencingModule.context,
         importModuleDynamically
       })
     } catch (error) {
-      throw new CoraliteError(error.message, {
+      if (error?.isCoraliteError) {
+        throw error
+      }
+
+      throw new CoraliteError(`Failed to import "${originalSpecifier}" from "${path.pathname}": ${error.message}`, {
         cause: error,
-        filePath: targetSpecifier
+        filePath: path.pathname
       })
     }
   }
@@ -301,6 +460,14 @@ export async function evaluateDevelopment ({
     path: module.path
   }
 
+  const componentPath = resolve(moduleComponent.path.pathname)
+  const componentFileURL = pathToFileURL(componentPath).href
+  const fileRequire = createRequire(componentPath)
+  const resolveDynamicSpecifier = createDynamicResolver({
+    path: moduleComponent.path,
+    fileRequire
+  })
+
   // eslint-disable-next-line prefer-const -- circular closure; see importModuleDynamically
   let linker
 
@@ -319,16 +486,19 @@ export async function evaluateDevelopment ({
     path: moduleComponent.path,
     context: symmetricalContext,
     source,
-    importModuleDynamically
+    importModuleDynamically,
+    fileRequire,
+    resolve: resolveDynamicSpecifier
   })
 
   const script = new SourceTextModule(module.script, {
     initializeImportMeta (meta) {
-      meta.url = pathToFileURL(resolve(moduleComponent.path.pathname)).href
+      meta.url = componentFileURL
+      meta.resolve = resolveDynamicSpecifier
     },
     importModuleDynamically,
     lineOffset: module.lineOffset || 0,
-    identifier: pathToFileURL(resolve(moduleComponent.path.pathname)).href,
+    identifier: componentFileURL,
     context: contextifiedObject
   })
 
@@ -454,21 +624,28 @@ export async function evaluateProduction ({
     path: module.path
   }
 
+  const componentPath = resolve(moduleComponent.path.pathname)
+  const componentFileURL = pathToFileURL(componentPath).href
+
   if (!moduleComponent.result._compiledCode) {
     const paddingCount = Math.max(0, (module.lineOffset - 1 || 0))
     const padding = '\n'.repeat(paddingCount)
+    const rewrittenScript = rewriteDynamicImports(module.script)
 
-    const { code } = await transform(padding + module.script, {
+    const { code } = await transform(padding + rewrittenScript, {
       loader: 'js',
       format: 'cjs',
       target: 'node18',
-      platform: 'node'
+      platform: 'node',
+      define: {
+        'import.meta': '__coralite_import_meta__'
+      }
     })
 
     moduleComponent.result._compiledCode = `return (async() => {${code}})();`
   }
 
-  const fileRequire = createRequire(resolve(moduleComponent.path.pathname))
+  const fileRequire = createRequire(componentPath)
 
   const serverUtils = {
     ...serverUtilsBase,
@@ -546,6 +723,23 @@ export async function evaluateProduction ({
     return fileRequire(id)
   }
 
+  const resolveDynamicSpecifier = createDynamicResolver({
+    path: moduleComponent.path,
+    fileRequire
+  })
+
+  const customImport = createDynamicImporter({
+    moduleComponent,
+    customRequire,
+    fileRequire,
+    resolve: resolveDynamicSpecifier
+  })
+
+  const importMeta = {
+    url: componentFileURL,
+    resolve: resolveDynamicSpecifier
+  }
+
   const moduleMock = { exports: {} }
 
   if (!moduleComponent.result._compiledFunction) {
@@ -554,6 +748,8 @@ export async function evaluateProduction ({
       'exports',
       'require',
       'coralite',
+      '__coralite_import__',
+      '__coralite_import_meta__',
       moduleComponent.result._compiledCode.trim()
     )
   }
@@ -561,7 +757,7 @@ export async function evaluateProduction ({
   const fn = moduleComponent.result._compiledFunction
 
   try {
-    await fn(moduleMock, moduleMock.exports, customRequire, symmetricalContext)
+    await fn(moduleMock, moduleMock.exports, customRequire, symmetricalContext, customImport, importMeta)
   } catch (error) {
     throw createExecutionErrorFn(error, module, moduleComponent, page, contextId)
   }
