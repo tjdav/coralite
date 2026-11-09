@@ -71,10 +71,10 @@ export function getAST (code, locations = false) {
  * runtime line numbers continue to match the authored script.
  *
  * @param {string} code - The module script to rewrite.
- * @param {string} [replacementName='__coralite_import__'] - The custom importer identifier.
+ * @param {string} [replacementName='coraliteRuntime.import'] - The custom importer expression.
  * @returns {string} The rewritten module script.
  */
-export function rewriteDynamicImports (code, replacementName = '__coralite_import__') {
+export function rewriteDynamicImports (code, replacementName = 'coraliteRuntime.import') {
   if (!code.includes('import(')) {
     return code
   }

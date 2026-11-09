@@ -285,7 +285,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       }
 
       let exportModule = ''
-      const namespaceName = 'globalThis[' + JSON.stringify(originalSpecifier) + ']'
+      const namespaceName = 'globalThis.__coralite__.imports[' + JSON.stringify(originalSpecifier) + ']'
 
       for (const key in importedModule) {
         if (!Object.prototype.hasOwnProperty.call(importedModule, key)) {
@@ -299,7 +299,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
         }
       }
 
-      referencingModule.context[originalSpecifier] = importedModule
+      referencingModule.context.__coralite__.imports[originalSpecifier] = importedModule
 
       return new SourceTextModule(exportModule, {
         context: referencingModule.context,
@@ -426,6 +426,7 @@ export async function evaluateDevelopment ({
       context: symmetricalContext,
       utils: source.utils,
       serverUtils,
+      imports: {},
       defineComponent: boundDefineComponent,
       definePage,
       createContext: createContextUtil,
@@ -638,7 +639,7 @@ export async function evaluateProduction ({
       target: 'node18',
       platform: 'node',
       define: {
-        'import.meta': '__coralite_import_meta__'
+        'import.meta': 'coraliteRuntime.importMeta'
       }
     })
 
@@ -740,6 +741,11 @@ export async function evaluateProduction ({
     resolve: resolveDynamicSpecifier
   }
 
+  const coraliteRuntime = {
+    import: customImport,
+    importMeta
+  }
+
   const moduleMock = { exports: {} }
 
   if (!moduleComponent.result._compiledFunction) {
@@ -748,8 +754,7 @@ export async function evaluateProduction ({
       'exports',
       'require',
       'coralite',
-      '__coralite_import__',
-      '__coralite_import_meta__',
+      'coraliteRuntime',
       moduleComponent.result._compiledCode.trim()
     )
   }
@@ -757,7 +762,7 @@ export async function evaluateProduction ({
   const fn = moduleComponent.result._compiledFunction
 
   try {
-    await fn(moduleMock, moduleMock.exports, customRequire, symmetricalContext, customImport, importMeta)
+    await fn(moduleMock, moduleMock.exports, customRequire, symmetricalContext, coraliteRuntime)
   } catch (error) {
     throw createExecutionErrorFn(error, module, moduleComponent, page, contextId)
   }
