@@ -181,11 +181,16 @@ export function extractPageScript (content, options = {}) {
     }
   }
 
+  // Strip templates and code-blocks so code examples in docs/pages are not mistaken for page scripts
+  const sanitizedContent = content
+    .replace(/<template\b[^>]*>[\s\S]*?<\/template>/gi, '')
+    .replace(/<code-block\b[^>]*>[\s\S]*?<\/code-block>/gi, '')
+
   const scriptRegex = /<script[\s\S]*?>([\s\S]*?)<\/script>/gi
   let match
   let scriptContent = null
 
-  while ((match = scriptRegex.exec(content)) !== null) {
+  while ((match = scriptRegex.exec(sanitizedContent)) !== null) {
     if (match[1] !== undefined) {
       scriptContent = match[1]
       break
