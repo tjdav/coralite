@@ -110,10 +110,11 @@ This command generates a structured GitHub Release Post based on commits and tec
 - `-t, --to <tag>`: Ending tag (defaults to selected new tag)
 - `--package <name>`: Package name (for tag filtering)
 - `--path <path>`: Package path (for commit filtering and output)
-- `-o, --output <file>`: Output file (defaults to package/RELEASE_POST.md or RELEASE_POST.md)
-- `--api-endpoint <url>`: OpenAI API endpoint (defaults to http://localhost:1234/v1)
-- `--api-key <key>`: OpenAI API key (defaults to lm-studio)
-- `--model <model>`: OpenAI Model to use (defaults to local-model)
+- `-o, --output <file>`: Output file (defaults to `package/RELEASE_POST.md` and archived under `package/releases/v<version>.md`)
+- `--api-endpoint <url>`: OpenAI API endpoint (defaults to `$TABBY_API_ENDPOINT` or `http://127.0.0.1:5000/v1`)
+- `--api-key <key>`: OpenAI API key (defaults to `$TABBY_API_KEY`)
+- `--model <model>`: OpenAI Model to use (defaults to `$TABBY_MODEL` or `qwen3.8-27b-exl3-4bpw`)
+- `--max-tokens <num>`: Maximum tokens for generation (defaults to `16384`)
 - `--agy`: Use the `agy` CLI tool to generate the release post
 - `-y, --yes`: Skip confirmation
 - `--stdout`: Print to stdout only, ignore output file

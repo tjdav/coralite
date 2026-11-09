@@ -3,12 +3,13 @@
 import * as prompts from '@clack/prompts'
 import { simpleGit } from 'simple-git'
 import { program } from 'commander'
-import { writeFileSync, readFileSync, existsSync } from 'fs'
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs'
 import path from 'path'
 import { globSync } from 'glob'
 import { execFileSync } from 'child_process'
 import { sortTags, resolveBaselineTag, getCleanVersion } from '../lib/tags.js'
 import { createOrUpdateGitHubRelease, getRepoSlug, isPrerelease, stripLeadingHeading } from '../lib/github.js'
+import { createOrUpdateCodebergRelease, getCodebergRepoSlug } from '../lib/codeberg.js'
 import { updateChangelogData } from '../lib/changelog-entry-generator.js'
 
 const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer with Coralite project releases.
@@ -43,8 +44,24 @@ Your task is to generate a structured GitHub Release Post based on provided git 
 - Translate technical jargon into clear, concise explanations without losing precision.
 - Ensure each release post feels unique by focusing on the specific changes of that version.`
 
+/**
+ * Extracts markdown content from an OpenAI-compatible API response choice,
+ * gracefully handling reasoning tokens from thinking models (such as Qwen/DeepSeek).
+ * @param {Object} data - Raw API JSON response
+ * @returns {string} Extracted markdown text
+ */
+function extractMessageContent (data) {
+  const choice = data?.choices?.[0]
+  const message = choice?.message
+  let text = message?.content || message?.reasoning_content || ''
+  if (typeof text === 'string' && text.includes('</think>')) {
+    text = text.split('</think>').pop().trim()
+  }
+  return text.trim()
+}
+
 function callAgy (promptText, model) {
-  const agyModel = (model && model !== 'local-model') ? model : 'gemini-3.8-flash-high'
+  const agyModel = (model && model !== 'local-model') ? model : 'gemini-3.8-flash-medium'
   // Stay safely under Linux single-arg limit (MAX_ARG_STRLEN = 128 KB)
   const safePrompt = promptText.length > 100000 ? promptText.slice(0, 100000) : promptText
   const args = [
@@ -79,14 +96,32 @@ program
   .option('--package <name>', 'Package name (for tag filtering)')
   .option('--path <path>', 'Package path (for commit filtering and output)')
   .option('-o, --output <file>', 'Output file (defaults to package/RELEASE_POST.md or RELEASE_POST.md)')
-  .option('--api-endpoint <url>', 'OpenAI API endpoint', 'http://localhost:1234/v1')
-  .option('--api-key <key>', 'OpenAI API key', 'lm-studio')
-  .option('--model <model>', 'OpenAI Model to use', 'local-model')
+  .option(
+    '--api-endpoint <url>',
+    'OpenAI API endpoint',
+    process.env.TABBY_API_ENDPOINT || process.env.OPENAI_BASE_URL || 'http://127.0.0.1:5000/v1'
+  )
+  .option(
+    '--api-key <key>',
+    'OpenAI API key',
+    process.env.TABBY_API_KEY || process.env.OPENAI_API_KEY || 'b7a62fcdef299af87be3c516972c9097'
+  )
+  .option(
+    '--model <model>',
+    'OpenAI Model to use',
+    process.env.TABBY_MODEL || process.env.OPENAI_MODEL || 'qwen3.8-27b-exl3-4bpw'
+  )
+  .option(
+    '--max-tokens <num>',
+    'Maximum generation tokens for OpenAI API',
+    '16384'
+  )
   .option('--agy', 'Use the agy CLI tool to generate the release post')
   .option('-y, --yes', 'Skip confirmation')
   .option('--stdout', 'Print to stdout only, ignore output file')
   .option('--no-git', 'Skip git commit and push')
   .option('--github-release', 'Publish release post directly to GitHub Releases', false)
+  .option('--codeberg-release', 'Publish release post directly to Codeberg Releases', false)
   .option('--website-changelog', 'Update website changelog (website/src/data/changelog.json)', false)
   .option('--json', 'Output the gathered data in JSON format instead of calling OpenAI API')
   .action(async (options) => {
@@ -310,10 +345,10 @@ program
           process.exit(0)
         }
       } else if (options.yes) {
-        // Automatically select feat and fix commits as highlights in non-interactive mode
-        selectedHighlights = log.all
-          .filter(commit => /^(feat|fix)(\(|:|!)/i.test(commit.message))
-          .map(commit => commit.hash)
+        // Prioritize feature commits and select top 3 highlights in non-interactive mode
+        const featCommits = log.all.filter(commit => /^feat(\(|:|!)/i.test(commit.message))
+        const fixCommits = log.all.filter(commit => /^fix(\(|:|!)/i.test(commit.message))
+        selectedHighlights = [...featCommits, ...fixCommits].map(commit => commit.hash).slice(0, 3)
       }
 
       let extraContext = ''
@@ -337,7 +372,7 @@ program
           options: [
             {
               value: 'http',
-              label: 'HTTP API (LM Studio / OpenAI endpoint)'
+              label: `HTTP API (TabbyAPI / OpenAI endpoint - ${options.model})`
             },
             {
               value: 'agy',
@@ -384,7 +419,6 @@ program
             })
             .map(part => 'diff --git' + part)
             .join('\n')
-            .slice(0, 5000)
 
           // We'll summarize this later in the next step, for now just collect
           // @ts-ignore
@@ -429,14 +463,17 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
                       content: `Please summarize these changes for a release highlight. Commit: ${commit.message}\n\nDiff:\n${commit.diff}`
                     }
                   ],
-                  temperature: 0.3
+                  temperature: 0.3,
+                  max_tokens: parseInt(options.maxTokens, 10) || 16384
                 })
               })
 
               if (summaryResponse.ok) {
                 const summaryData = await summaryResponse.json()
-                const summary = summaryData.choices[0].message.content
-                highlightSummaries += `\n### Highlight: ${commit.message}\n${summary}\n`
+                const summary = extractMessageContent(summaryData)
+                if (summary) {
+                  highlightSummaries += `\n### Highlight: ${commit.message}\n${summary}\n`
+                }
               }
             } catch (err) {
               prompts.log.warn(`Could not generate AI summary for commit ${hash}: ${err.message}`)
@@ -553,7 +590,8 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
                   content: userMessage
                 }
               ],
-              temperature: 0.7
+              temperature: 0.7,
+              max_tokens: parseInt(options.maxTokens, 10) || 16384
             })
           })
 
@@ -562,7 +600,7 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
           }
 
           const data = await response.json()
-          markdown = data.choices[0].message.content
+          markdown = extractMessageContent(data)
         }
 
         s.stop('Release post generated!')
@@ -586,15 +624,26 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
 
         if (!options.stdout) {
           let outputFile = options.output
+          const filesToCommit = []
 
           if (!outputFile && pkgPath) {
             outputFile = path.join(pkgPath, 'RELEASE_POST.md')
+            const cleanVer = getCleanVersion(toRef, packageName) || toRef.replace(/^v/, '')
+            if (cleanVer && cleanVer !== 'HEAD') {
+              const archiveDir = path.join(pkgPath, 'releases')
+              mkdirSync(archiveDir, { recursive: true })
+              const archiveFile = path.join(archiveDir, `v${cleanVer}.md`)
+              writeFileSync(archiveFile, markdown.trimEnd() + '\n', 'utf8')
+              prompts.log.success(`Versioned release archive written to ${archiveFile}`)
+              filesToCommit.push(archiveFile)
+            }
           } else if (!outputFile) {
             outputFile = 'RELEASE_POST.md'
           }
 
           writeFileSync(outputFile, markdown.trimEnd() + '\n', 'utf8')
           prompts.log.success(`Release post written to ${outputFile}`)
+          filesToCommit.push(outputFile)
 
           if (options.git) {
             let shouldCommit = Boolean(options.yes)
@@ -609,7 +658,9 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
             if (shouldCommit) {
               try {
                 prompts.log.step('Committing release post...')
-                await git.add(outputFile)
+                for (const file of filesToCommit) {
+                  await git.add(file)
+                }
                 const commitResult = await git.commit(`docs: add release post for ${titleVersion}`)
 
                 if (commitResult.commit) {
@@ -661,6 +712,44 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
                 }
               } catch (ghErr) {
                 prompts.log.error(`GitHub release error: ${ghErr.message}`)
+              }
+            }
+
+            let shouldPostToCodeberg = Boolean(options.codebergRelease)
+            if (!options.codebergRelease && !options.yes) {
+              if (process.env.CODEBERG_TOKEN) {
+                shouldPostToCodeberg = true
+              } else {
+                const confirmCb = await prompts.confirm({
+                  message: `Publish this release post to Codeberg Releases for tag "${toRef}"?`,
+                  initialValue: true
+                })
+                shouldPostToCodeberg = Boolean(confirmCb && !prompts.isCancel(confirmCb))
+              }
+            }
+
+            if (shouldPostToCodeberg) {
+              try {
+                prompts.log.step(`Publishing Codeberg release for ${toRef}...`)
+                const repoSlug = getCodebergRepoSlug(process.cwd())
+                const cbResult = await createOrUpdateCodebergRelease({
+                  tag: toRef,
+                  title: `${packageName} v${getCleanVersion(toRef, packageName)}`,
+                  body: markdown,
+                  prerelease: isPrerelease(toRef),
+                  repoSlug
+                })
+
+                if (cbResult.success) {
+                  prompts.log.success(`✅ Successfully published Codeberg Release: ${cbResult.htmlUrl}`)
+                } else if (cbResult.webUrl) {
+                  prompts.log.warn(`⚠️ ${cbResult.error}`)
+                  prompts.log.info(`🔗 Open this link to create the release manually:\n   ${cbResult.webUrl}`)
+                } else {
+                  prompts.log.error(`❌ Failed to publish Codeberg Release: ${cbResult.error}`)
+                }
+              } catch (cbErr) {
+                prompts.log.error(`Codeberg release error: ${cbErr.message}`)
               }
             }
 

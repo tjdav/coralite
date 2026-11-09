@@ -191,10 +191,18 @@ async function processSingleTagRelease ({ tag, options, rootDir, repoSlug }) {
       pkgDir = path.resolve(rootDir, 'packages', packageName)
     }
 
+    const archivePath = path.join(pkgDir, 'releases', `v${version}.md`)
+    const tagArchivePath = path.join(pkgDir, 'releases', `${tag}.md`)
     const pkgReleasePost = path.join(pkgDir, 'RELEASE_POST.md')
     const rootReleasePost = path.join(rootDir, 'RELEASE_POST.md')
 
-    if (existsSync(pkgReleasePost)) {
+    if (existsSync(archivePath)) {
+      releaseBody = readFileSync(archivePath, 'utf8')
+      prompts.log.info(`Found versioned release post in ${path.relative(rootDir, archivePath)}`)
+    } else if (existsSync(tagArchivePath)) {
+      releaseBody = readFileSync(tagArchivePath, 'utf8')
+      prompts.log.info(`Found versioned release post in ${path.relative(rootDir, tagArchivePath)}`)
+    } else if (existsSync(pkgReleasePost)) {
       const content = readFileSync(pkgReleasePost, 'utf8')
       if (matchesReleaseVersion(content, version)) {
         releaseBody = content

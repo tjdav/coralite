@@ -14,6 +14,10 @@ import {
   matchesReleaseVersion,
   stripLeadingHeading
 } from '../lib/github.js'
+import {
+  createOrUpdateCodebergRelease,
+  getCodebergRepoSlug
+} from '../lib/codeberg.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const rootDir = resolve(__dirname, '../../..')
@@ -34,6 +38,8 @@ Options:
   --dry-run           Simulate publish process without uploading
   --github-release    Publish release to GitHub Releases after npm publish
   --no-github-release Skip publishing to GitHub Releases
+  --codeberg-release  Publish release to Codeberg Releases after npm publish
+  --no-codeberg-release Skip publishing to Codeberg Releases
   --notes <path>      Path to release notes file for GitHub release
   --help              Show this help message
 `)
@@ -155,6 +161,14 @@ async function main () {
         default: false
       },
       'no-github-release': {
+        type: 'boolean',
+        default: false
+      },
+      'codeberg-release': {
+        type: 'boolean',
+        default: false
+      },
+      'no-codeberg-release': {
         type: 'boolean',
         default: false
       },
@@ -421,53 +435,74 @@ async function main () {
       shouldPostGitHub = Boolean(chosenConfirm && typeof chosenConfirm !== 'symbol')
     }
 
+    let shouldPostCodeberg = values['codeberg-release']
+    if (!shouldPostCodeberg && !values['no-codeberg-release'] && process.stdout.isTTY && registry === 'npmjs') {
+      if (process.env.CODEBERG_TOKEN) {
+        shouldPostCodeberg = true
+      } else {
+        const { confirm } = await import('@clack/prompts')
+        const chosenConfirm = await confirm({
+          message: `Post Codeberg Release for "${targetTag}"?`,
+          initialValue: true
+        })
+        shouldPostCodeberg = Boolean(chosenConfirm && typeof chosenConfirm !== 'symbol')
+      }
+    }
+
+    let releaseBody = ''
+    if (shouldPostGitHub || shouldPostCodeberg) {
+      if (values.notes && existsSync(values.notes)) {
+        releaseBody = readFileSync(values.notes, 'utf8')
+      } else {
+        const archivePath = resolve(pkgDir, 'releases', `v${version}.md`)
+        const tagArchivePath = resolve(pkgDir, 'releases', `${values.tag}.md`)
+        const pkgReleasePost = resolve(pkgDir, 'RELEASE_POST.md')
+        const rootReleasePost = resolve(rootDir, 'RELEASE_POST.md')
+
+        if (existsSync(archivePath)) {
+          releaseBody = readFileSync(archivePath, 'utf8')
+        } else if (existsSync(tagArchivePath)) {
+          releaseBody = readFileSync(tagArchivePath, 'utf8')
+        } else if (existsSync(pkgReleasePost)) {
+          const content = readFileSync(pkgReleasePost, 'utf8')
+          if (matchesReleaseVersion(content, version)) {
+            releaseBody = content
+          }
+        }
+
+        if (!releaseBody && existsSync(rootReleasePost)) {
+          const content = readFileSync(rootReleasePost, 'utf8')
+          if (matchesReleaseVersion(content, version)) {
+            releaseBody = content
+          }
+        }
+
+        if (!releaseBody) {
+          const pkgChangelog = resolve(pkgDir, 'CHANGELOG.md')
+          const rootChangelog = resolve(rootDir, 'CHANGELOG.md')
+          const targetChangelog = existsSync(pkgChangelog) ? pkgChangelog : rootChangelog
+
+          if (existsSync(targetChangelog)) {
+            const changelogContent = readFileSync(targetChangelog, 'utf8')
+            const section = extractChangelogSection(changelogContent, version)
+            if (section) {
+              releaseBody = section
+            }
+          }
+        }
+
+        if (!releaseBody) {
+          releaseBody = `Automated release for \`${targetTag}\`.`
+        }
+      }
+    }
+
     if (shouldPostGitHub) {
       const repoSlug = getRepoSlug(rootDir)
       if (isDryRun) {
         console.log(`\n[DRY RUN] Would create GitHub Release for "${targetTag}" on ${repoSlug.owner}/${repoSlug.repo}`)
       } else {
         console.log(`\n📦 Preparing GitHub Release for ${targetTag}...`)
-        let releaseBody = ''
-
-        if (values.notes && existsSync(values.notes)) {
-          releaseBody = readFileSync(values.notes, 'utf8')
-        } else {
-          const pkgReleasePost = resolve(pkgDir, 'RELEASE_POST.md')
-          const rootReleasePost = resolve(rootDir, 'RELEASE_POST.md')
-
-          if (existsSync(pkgReleasePost)) {
-            const content = readFileSync(pkgReleasePost, 'utf8')
-            if (matchesReleaseVersion(content, version)) {
-              releaseBody = content
-            }
-          }
-
-          if (!releaseBody && existsSync(rootReleasePost)) {
-            const content = readFileSync(rootReleasePost, 'utf8')
-            if (matchesReleaseVersion(content, version)) {
-              releaseBody = content
-            }
-          }
-
-          if (!releaseBody) {
-            const pkgChangelog = resolve(pkgDir, 'CHANGELOG.md')
-            const rootChangelog = resolve(rootDir, 'CHANGELOG.md')
-            const targetChangelog = existsSync(pkgChangelog) ? pkgChangelog : rootChangelog
-
-            if (existsSync(targetChangelog)) {
-              const changelogContent = readFileSync(targetChangelog, 'utf8')
-              const section = extractChangelogSection(changelogContent, version)
-              if (section) {
-                releaseBody = section
-              }
-            }
-          }
-
-          if (!releaseBody) {
-            releaseBody = `Automated release for \`${targetTag}\`.`
-          }
-        }
-
         const ghResult = await createOrUpdateGitHubRelease({
           tag: targetTag,
           title: `${packageName} v${version}`,
@@ -483,6 +518,31 @@ async function main () {
           console.log(`🔗 Create release manually: ${ghResult.webUrl}`)
         } else {
           console.error(`❌ Failed to publish GitHub Release: ${ghResult.error}`)
+        }
+      }
+    }
+
+    if (shouldPostCodeberg) {
+      const repoSlug = getCodebergRepoSlug(rootDir)
+      if (isDryRun) {
+        console.log(`\n[DRY RUN] Would create Codeberg Release for "${targetTag}" on ${repoSlug.owner}/${repoSlug.repo}`)
+      } else {
+        console.log(`\n📦 Preparing Codeberg Release for ${targetTag}...`)
+        const cbResult = await createOrUpdateCodebergRelease({
+          tag: targetTag,
+          title: `${packageName} v${version}`,
+          body: stripLeadingHeading(releaseBody, version, packageName),
+          prerelease: isPrerelease(version),
+          repoSlug
+        })
+
+        if (cbResult.success) {
+          console.log(`✔ Successfully ${cbResult.action} Codeberg Release: ${cbResult.htmlUrl}`)
+        } else if (cbResult.webUrl) {
+          console.warn(`⚠️ ${cbResult.error}`)
+          console.log(`🔗 Create release manually: ${cbResult.webUrl}`)
+        } else {
+          console.error(`❌ Failed to publish Codeberg Release: ${cbResult.error}`)
         }
       }
     }

@@ -75,9 +75,11 @@ program
   .option('--no-git-tag', 'Skip creating git tag')
   .option('--no-git-commit', 'Skip git commit (only update package.json files)')
   .option('--publish', 'Publish released package(s) to npm after git push', false)
-  .option('--github-release', 'Create GitHub release(s) after publishing', false)
   .option('--no-publish', 'Skip publishing package(s) to npm')
+  .option('--github-release', 'Create GitHub release(s) after publishing', false)
   .option('--no-github-release', 'Skip creating GitHub release(s)')
+  .option('--codeberg-release', 'Create Codeberg release(s) after publishing', false)
+  .option('--no-codeberg-release', 'Skip creating Codeberg release(s)')
   .option('--website-changelog', 'Update website changelog (website/src/data/changelog.json)', false)
   .option('--no-website-changelog', 'Skip updating website changelog')
   .option('--agy', 'Generate release post using agy and publish to GitHub and website changelog', false)
@@ -709,10 +711,11 @@ program
       if (useAgy && succeededPackages.length > 0) {
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
         const releasePostScript = path.join(__dirname, 'release-post.js')
+        const cbFlag = (options.codebergRelease || (!options.noCodebergRelease && process.env.CODEBERG_TOKEN)) ? '--codeberg-release' : ''
         for (const rel of succeededPackages) {
           try {
             prompts.log.step(`\n🤖 Generating AI release post via agy for ${rel.tagName}...`)
-            execSync(`node "${releasePostScript}" --package "${rel.name}" --to "${rel.tagName}" --agy --github-release --website-changelog -y`, {
+            execSync(`node "${releasePostScript}" --package "${rel.name}" --to "${rel.tagName}" --agy --github-release ${cbFlag ? cbFlag + ' ' : ''}--website-changelog -y`, {
               stdio: 'inherit'
             })
             updatedWebsite = true
@@ -732,6 +735,34 @@ program
               })
             } catch (ghErr) {
               prompts.log.error(`GitHub Release creation failed for ${rel.tagName}: ${ghErr.message}`)
+            }
+          }
+        }
+
+        let shouldPostCodeberg = Boolean(options.codebergRelease)
+        if (!options.codebergRelease && !options.noCodebergRelease && succeededPackages.length > 0) {
+          if (process.env.CODEBERG_TOKEN) {
+            shouldPostCodeberg = true
+          } else if (!options.yes) {
+            const confirmCb = await prompts.confirm({
+              message: 'Create Codeberg Release(s) for published packages?',
+              initialValue: true
+            })
+            shouldPostCodeberg = Boolean(confirmCb && !prompts.isCancel(confirmCb))
+          }
+        }
+
+        if (shouldPostCodeberg) {
+          const __dirname = path.dirname(fileURLToPath(import.meta.url))
+          const cbReleaseScript = path.join(__dirname, 'codeberg-release.js')
+          for (const rel of succeededPackages) {
+            try {
+              prompts.log.step(`Creating Codeberg Release for ${rel.tagName}...`)
+              execSync(`node "${cbReleaseScript}" --tag "${rel.tagName}" -y`, {
+                stdio: 'inherit'
+              })
+            } catch (cbErr) {
+              prompts.log.error(`Codeberg Release creation failed for ${rel.tagName}: ${cbErr.message}`)
             }
           }
         }

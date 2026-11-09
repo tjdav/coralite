@@ -47,3 +47,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pnpm release:github --tag "${{ github.event.inputs.tag }}" -y
+
+      - name: Create Codeberg Release
+        if: ${{ secrets.CODEBERG_TOKEN != '' }}
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          pnpm release:codeberg --tag "${{ github.event.inputs.tag }}" -y

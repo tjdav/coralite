@@ -163,10 +163,16 @@ async function processTagEntry ({ tag, options, rootDir, changelogJsonPath, git 
       pkgDir = path.resolve(rootDir, 'packages', packageName)
     }
 
+    const archivePath = path.join(pkgDir, 'releases', `v${version}.md`)
+    const tagArchivePath = path.join(pkgDir, 'releases', `${tag}.md`)
     const pkgReleasePost = path.join(pkgDir, 'RELEASE_POST.md')
     const rootReleasePost = path.join(rootDir, 'RELEASE_POST.md')
 
-    if (existsSync(pkgReleasePost)) {
+    if (existsSync(archivePath)) {
+      markdownNotes = readFileSync(archivePath, 'utf8')
+    } else if (existsSync(tagArchivePath)) {
+      markdownNotes = readFileSync(tagArchivePath, 'utf8')
+    } else if (existsSync(pkgReleasePost)) {
       const content = readFileSync(pkgReleasePost, 'utf8')
       if (matchesReleaseVersion(content, version)) {
         markdownNotes = content

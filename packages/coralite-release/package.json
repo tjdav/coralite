@@ -8,6 +8,7 @@
     "coralite-release-post": "./bin/release-post.js",
     "coralite-publish": "./bin/publish.js",
     "coralite-github-release": "./bin/github-release.js",
+    "coralite-codeberg-release": "./bin/codeberg-release.js",
     "coralite-changelog-post": "./bin/changelog-post.js"
   },
   "scripts": {
