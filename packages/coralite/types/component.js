@@ -91,11 +91,25 @@
  */
 
 /**
+ * Represents a parsed script tag with exact source offsets.
+ * @typedef {Object} CoraliteScriptTag
+ * @property {CoraliteElement} [element] - Parsed script element, when extracted from an AST.
+ * @property {Record<string, string>} attribs - Script tag attributes.
+ * @property {string} content - Raw script text content.
+ * @property {number} tagStart - Index of the opening `<` in the source.
+ * @property {number} tagEnd - Index after the closing `>` in the source.
+ * @property {number} contentStart - Index after the opening tag.
+ * @property {number} contentEnd - Index of the closing `</script>` tag.
+ * @property {number} lineOffset - Zero-based line of the opening tag.
+ */
+
+/**
  * @typedef {Object} ParseHTMLResult
  * @property {CoraliteComponentRoot} root - The root element of the parsed HTML component.
  * @property {CoraliteElement[]} customElements - An array of custom elements identified during parsing.
  * @property {CoraliteElement[]} tempElements - An array of temporary elements created during the parsing process.
  * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
+ * @property {CoraliteScriptTag[]} [scripts] - Inline scripts with exact source offsets.
  */
 
 /**

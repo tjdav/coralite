@@ -61,6 +61,7 @@
  * @typedef {Object} CoraliteModuleSlotElement
  * @property {string} name - Slot element identifier
  * @property {CoraliteElement} element - Corresponding HTML element for the slot
+ * @property {boolean} [isIgnoredSlot] - Whether projected content is literal and excluded from compilation/hydration
  */
 
 /**

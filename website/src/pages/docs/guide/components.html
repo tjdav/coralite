@@ -62,7 +62,7 @@
 
     <coralite-heading level="3" text="Basic Data Binding"></coralite-heading>
 
-    <p>You can pass data into static components using standard HTML attributes. Coralite allows you to display these attribute values inside your component using double curly braces (<code>{{ }}</code>).</p>
+    <p>You can pass data into static components using standard HTML attributes. Coralite allows you to display these attribute values inside your component using double curly braces (<code coralite-ignore>{{ }}</code>).</p>
 
     <coralite-code-html>
       <!-- src/components/user-card.html -->
@@ -134,7 +134,7 @@
       </script>
     </coralite-code-html>
 
-    <p>Both <code>{{ type }}</code> and <code>{{ disabled }}</code> render directly from <code>state</code> at SSR time without getters or client code. Native boolean attributes reflect automatically (present when truthy, omitted when falsy).</p>
+    <p>Both <code coralite-ignore>{{ type }}</code> and <code coralite-ignore>{{ disabled }}</code> render directly from <code>state</code> at SSR time without getters or client code. Native boolean attributes reflect automatically (present when truthy, omitted when falsy).</p>
 
     <coralite-heading level="2" text="Dynamic Components"></coralite-heading>
 
@@ -388,7 +388,7 @@ export async function client ({ state, signal, refs, observe, emit, updateComple
     <coralite-heading level="3" text="Best Practices: Smart State, Dumb Template"></coralite-heading>
 
     <ul>
-      <li><strong>Keep Templates Simple:</strong> Templates should only contain HTML and <code>{{ token }}</code> placeholders. Avoid complex logic in HTML.</li>
+      <li><strong>Keep Templates Simple:</strong> Templates should only contain HTML and <code coralite-ignore>{{ token }}</code> placeholders. Avoid complex logic in HTML.</li>
       <li><strong>Boolean & ARIA Attribute Toggling:</strong> Native HTML boolean attributes (43 standard attributes) and <code>aria-*</code> attributes are automatically added or removed when bound to single state tokens. Learn more in the <a href="/docs/reference/define-component.html#native-html-boolean-attributes--wai-aria-auto-removal">Component API Reference</a>.</li>
       <li><strong>Prefer Primitives for Attributes:</strong> Only pass Strings, Numbers, and Booleans via attributes. Use <code>server</code> for complex objects.</li>
       <li><strong>Clean Up with AbortSignal:</strong> Always pass the <code>signal</code> to <code>addEventListener</code> or <code>fetch</code> inside your <code>client</code> to prevent memory leaks.</li>

@@ -379,7 +379,9 @@ export function collectDeadCode (context) {
       attributeSchemas: Object.fromEntries(context.attributeSchemas || []),
       refs: Array.from(templateRefs.keys()),
       imports: Array.from(topLevelImports.keys()),
-      slots: Array.from(definedSlots)
+      slots: Array.from(definedSlots),
+      templateSlots: context.templateSlots || [],
+      ignoredSlots: Array.from(new Set((context.templateSlots || []).filter(slot => slot.isIgnoredSlot).map(slot => slot.name)))
     },
     unused: {
       getters: unusedGetters,

@@ -7,7 +7,8 @@ import kleur from 'kleur'
 import { camelToKebab, stripHtmlComments } from '../../shared/core.js'
 import { createDiagnostic, formatDiagnosticTerminal, normalizeErrorCodes, matchesErrorCode, getLocForSubstring } from '../../shared/diagnostics.js'
 import { discoverHtmlFiles } from '../utils/html.js'
-import { getIgnoreAttributeMap, findAttributesToIgnore } from '../utils/parse.js'
+import { getIgnoreAttributeMap, findAttributesToIgnore, parseHTML, hasIgnoreAttribute } from '../utils/parse.js'
+import { extractPageScript, isScriptInsideIgnoredSlot } from '../parser/html.js'
 import {
   createValidationContext,
   parseScriptAST,
@@ -30,7 +31,6 @@ import { listsPlugin } from '../../../plugins/lists.js'
  * } from '../../../types/index.js'
  */
 
-const INERT_TAGS = new Set(['template', 'code', 'pre', 'noscript'])
 const DECLARATOR_QUERY_METHODS = new Set(['querySelector', 'querySelectorAll', 'getElementById', 'getElementsByTagName', 'getElementsByClassName'])
 const COMPOUND_QUERY_METHODS = new Set(['querySelector', 'querySelectorAll', 'getElementsByClassName', 'getElementsByTagName', 'matches', 'closest'])
 const MUTABLE_HTML_PROPERTIES = new Set(['innerHTML', 'outerHTML'])
@@ -172,7 +172,7 @@ let cachedCoreComponents = null
  * Extracts component definitions registered by plugins (virtual templates and file paths).
  *
  * @param {Array<any>} [userPlugins=[]] - User-configured plugins from config
- * @returns {Map<string, { attributes: Record<string, any>, slots: string[] }>} Map of component tags to schemas
+ * @returns {Map<string, { attributes: Record<string, any>, slots: string[], ignoredSlots?: string[] }>} Map of component tags to schemas
  */
 export function collectPluginComponents (userPlugins = []) {
   const componentMap = new Map()
@@ -203,7 +203,7 @@ export function collectPluginComponents (userPlugins = []) {
  *
  * @param {Object|null} [compReport=null] - Report from validateComponentsDir
  * @param {Array<any>} [userPlugins=[]] - User plugins from config
- * @returns {Map<string, { attributes: Record<string, any>, slots: string[] }>} Combined map of known component tags to schemas
+ * @returns {Map<string, { attributes: Record<string, any>, slots: string[], ignoredSlots?: string[] }>} Combined map of known component tags to schemas
  */
 export function collectKnownComponents (compReport = null, userPlugins = []) {
   const knownComponents = collectPluginComponents(userPlugins)
@@ -218,7 +218,8 @@ export function collectKnownComponents (compReport = null, userPlugins = []) {
         }, {}) : {})
         knownComponents.set(name.toLowerCase(), {
           attributes: attrSchemas,
-          slots: c.defined?.slots || []
+          slots: c.defined?.slots || [],
+          ignoredSlots: c.defined?.ignoredSlots || []
         })
       }
     }
@@ -295,12 +296,36 @@ export function validatePageSource (sourceCode, options = {}) {
   }
   addIgnoreTags(options.ignoreTags)
 
+  const getIgnoredSlots = (tagName) => {
+    const component = knownMap.get(camelToKebab(String(tagName).toLowerCase()))
+    if (!component || !component.ignoredSlots) {
+      return null
+    }
+    return component.ignoredSlots instanceof Set
+      ? component.ignoredSlots
+      : new Set(component.ignoredSlots)
+  }
+
+  let pageElements = null
+  try {
+    pageElements = parseHTML(cleanSourceCode, rawIgnoreConfig, undefined, () => {
+    })
+  } catch {
+    pageElements = null
+  }
+
   // Pre-pass: scan inline <script> blocks for customElements.define calls
-  const scriptRegex = /<script[\s\S]*?>([\s\S]*?)<\/script>/gi
-  let scriptMatch
-  while ((scriptMatch = scriptRegex.exec(cleanSourceCode)) !== null) {
-    const code = scriptMatch[1]
-    if (code && code.trim()) {
+  if (pageElements) {
+    for (const script of pageElements.scripts || []) {
+      if (hasIgnoreAttribute(script.attribs) || isScriptInsideIgnoredSlot(script, getIgnoredSlots)) {
+        continue
+      }
+
+      const code = script.content
+      if (!code || !code.trim()) {
+        continue
+      }
+
       try {
         const ast = parseJS(code, {
           ecmaVersion: 'latest',
@@ -333,44 +358,87 @@ export function validatePageSource (sourceCode, options = {}) {
       } catch {
         // Ignore syntax errors in pre-pass
       }
+
+      analyzeInlineScript(code, sourceCode, filePath, diagnostics, knownMap, script.contentStart)
     }
   }
 
-  let currentSection = null
-  let scriptContent = ''
-  let scriptSearchOffset = 0
+  if (pageElements) {
+    try {
+      extractPageScript(pageElements, {
+        filePath,
+        rawContent: sourceCode,
+        getIgnoredSlots
+      })
+    } catch (err) {
+      if (err && err.code === 'CORALITE-E107' && /Multiple page controller/.test(err.message)) {
+        const firstScript = pageElements.scripts?.[0]
+        diagnostics.push(createDiagnostic({
+          code: 'CORALITE-E107',
+          severity: 'error',
+          message: err.message,
+          filePath,
+          line: firstScript ? firstScript.lineOffset + 1 : 1,
+          column: 1,
+          sourceCode,
+          cause: 'A page may define exactly one Coralite page controller script. Normal browser scripts are allowed alongside it.'
+        }))
+      }
+    }
+  }
 
-  const inertStack = []
+  const frameStack = []
 
   const parser = new Parser(
     {
       onopentag (name, attribs) {
         const tagName = name.toLowerCase()
+        const hasIgnoredAttr = hasIgnoreAttribute(attribs)
+        const inheritedIgnored = frameStack.some(frame => frame.ignored)
+        let ignored = inheritedIgnored || hasIgnoredAttr
 
-        if (tagName === 'script') {
-          currentSection = 'script'
-          scriptContent = ''
-          scriptSearchOffset = cleanSourceCode.indexOf('<script')
+        if (!ignored) {
+          const immediateParent = frameStack[frameStack.length - 1]
+          if (immediateParent && immediateParent.ignoredSlots) {
+            const slotName = (attribs && attribs.slot) || 'default'
+            if (immediateParent.ignoredSlots.has(slotName)) {
+              ignored = true
+            }
+          }
+        }
+
+        let ignoredSlots = null
+        if (tagName.includes('-') && !ignored) {
+          const normTag = camelToKebab(tagName)
+          const compDef = knownMap.get(normTag)
+          if (compDef && compDef.ignoredSlots) {
+            ignoredSlots = compDef.ignoredSlots instanceof Set
+              ? compDef.ignoredSlots
+              : new Set(compDef.ignoredSlots)
+          }
+        }
+
+        frameStack.push({
+          tag: tagName,
+          ignored,
+          ignoredSlots
+        })
+
+        if (ignored) {
           return
         }
 
-        let isCustomElementPushedToInert = false
+        const hasIgnoredAttrForConfig = ignoreAttributeMap && attribs ? findAttributesToIgnore(ignoreAttributeMap, attribs) : false
+        if (hasIgnoredAttrForConfig) {
+          frameStack[frameStack.length - 1].ignored = true
+          return
+        }
 
-        const hasIgnoredAttr = ignoreAttributeMap && attribs ? findAttributesToIgnore(ignoreAttributeMap, attribs) : false
-
-        if (inertStack.length > 0) {
-          // Inside an inert subtree: skip custom element (CORALITE-PAGE-101) and required attribute (CORALITE-PAGE-102) validation
-        } else if (tagName.includes('-')) {
+        if (tagName.includes('-')) {
           const normTag = camelToKebab(tagName)
 
           if (ignoreTags.has(normTag) || ignoreTags.has(tagName)) {
             // Skip custom element check
-          } else if (hasIgnoredAttr) {
-            inertStack.push({
-              tag: tagName,
-              reason: 'ignored-attr'
-            })
-            isCustomElementPushedToInert = true
           } else {
             const tagLoc = getLocForSubstring(cleanSourceCode, `<${name}`, 0)
 
@@ -420,50 +488,13 @@ export function validatePageSource (sourceCode, options = {}) {
                   }
                 }
               }
-
-              // Check if component defines custom slots
-              if (compDef.slots && compDef.slots.length > 0) {
-                inertStack.push({
-                  tag: tagName,
-                  reason: 'slots'
-                })
-                isCustomElementPushedToInert = true
-              }
             }
           }
         }
-
-        if (!isCustomElementPushedToInert) {
-          const isStandardInertTag = INERT_TAGS.has(tagName)
-          if (isStandardInertTag || hasIgnoredAttr) {
-            const reason = hasIgnoredAttr ? 'ignored-attr' : 'inert-tag'
-            inertStack.push({
-              tag: tagName,
-              reason
-            })
-          }
-        }
       },
 
-      ontext (text) {
-        if (currentSection === 'script') {
-          scriptContent += text
-        }
-      },
-
-      onclosetag (name) {
-        const tagName = name.toLowerCase()
-        if (tagName === 'script' && currentSection === 'script') {
-          currentSection = null
-          if (scriptContent.trim()) {
-            analyzeInlineScript(scriptContent, sourceCode, filePath, diagnostics, knownMap, scriptSearchOffset)
-          }
-          return
-        }
-
-        if (inertStack.length > 0 && inertStack[inertStack.length - 1].tag === tagName) {
-          inertStack.pop()
-        }
+      onclosetag () {
+        frameStack.pop()
       }
     },
     {

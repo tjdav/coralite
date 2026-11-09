@@ -65,7 +65,7 @@ export function server ({ route }) {
 
     <coralite-alert type="warning">
       <strong>Flat Template Tokens Requirement</strong>
-      <p>Coralite template tokens must be flat tokens (e.g., <code>{{ welcome }}</code> or single-level <code>{{ t.welcome }}</code>). Deep nested access such as <code>{{ t.home.title }}</code> is not supported in templates. Flatten your JSON translation structure or derive nested strings using a <code>getters</code> block.</p>
+      <p>Coralite template tokens must be flat tokens (e.g., <code coralite-ignore>{{ welcome }}</code> or single-level <code coralite-ignore>{{ t.welcome }}</code>). Deep nested access such as <code coralite-ignore>{{ t.home.title }}</code> is not supported in templates. Flatten your JSON translation structure or derive nested strings using a <code>getters</code> block.</p>
     </coralite-alert>
 
     <coralite-heading level="2" text="3. Formatting"></coralite-heading>

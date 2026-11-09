@@ -20,10 +20,113 @@ import { CoraliteError, defaultOnError } from '../../shared/errors.js'
  *  CoraliteComponentValues,
  *  CoraliteComponentRoot,
  *  CoraliteContentNode,
+ *  CoraliteScriptTag,
  *  Attribute,
  *  ParseHTMLResult,
  *  CoraliteOnError} from '../../../types/index.js'
  */
+
+const IGNORE_ATTRIBUTE = 'coralite-ignore'
+
+/**
+ * Checks whether an element carries the Coralite ignore directive.
+ *
+ * @param {Record<string, string>} [attributes] - Element attributes
+ * @returns {boolean}
+ */
+export function hasIgnoreAttribute (attributes) {
+  return Boolean(attributes && Object.prototype.hasOwnProperty.call(attributes, IGNORE_ATTRIBUTE))
+}
+
+/**
+ * Calculates the zero-based line for a source offset.
+ *
+ * @param {string} source - Source string
+ * @param {number} index - Source offset
+ * @returns {number}
+ */
+function getLineOffset (source, index) {
+  let line = 0
+  for (let i = 0; i < index && i < source.length; i++) {
+    if (source[i] === '\n') {
+      line++
+    }
+  }
+  return line
+}
+
+/**
+ * Extracts inline script tags with exact source offsets.
+ *
+ * Scripts inside a `coralite-ignore` subtree are excluded. This helper is
+ * intentionally independent of `parseHTML` so validators, fixers, and the
+ * Volar plugin can inspect source without building a full Coralite AST.
+ *
+ * @param {string} source - HTML source
+ * @returns {CoraliteScriptTag[]} Inline script metadata in document order
+ */
+export function extractScriptTagsFromHTML (source) {
+  /** @type {CoraliteScriptTag[]} */
+  const scripts = []
+  let ignoreDepth = 0
+  /** @type {Array<boolean>} */
+  const ignoreStack = []
+  /** @type {CoraliteScriptTag | null} */
+  let capture = null
+
+  const parser = new Parser({
+    onopentag (originalName, attributes) {
+      const name = originalName.toLowerCase()
+      const ignoreAttr = hasIgnoreAttribute(attributes)
+      const ignored = ignoreDepth > 0 || ignoreAttr
+      ignoreStack.push(ignoreAttr)
+
+      if (name === 'script' && !ignored) {
+        capture = {
+          attribs: attributes,
+          content: '',
+          tagStart: parser.startIndex,
+          tagEnd: parser.endIndex + 1,
+          contentStart: parser.endIndex + 1,
+          contentEnd: parser.endIndex + 1,
+          lineOffset: getLineOffset(source, parser.startIndex)
+        }
+      }
+
+      if (ignoreAttr) {
+        ignoreDepth++
+      }
+    },
+    ontext (text) {
+      if (capture) {
+        capture.content += text
+      }
+    },
+    onclosetag (originalName) {
+      if (capture && originalName.toLowerCase() === 'script') {
+        capture.contentEnd = parser.startIndex
+        capture.tagEnd = parser.endIndex + 1
+        scripts.push(capture)
+        capture = null
+      }
+
+      if (ignoreStack.pop()) {
+        ignoreDepth--
+      }
+    }
+  }, { decodeEntities: false })
+
+  parser.write(source)
+  parser.end()
+
+  if (capture) {
+    capture.contentEnd = source.length
+    capture.tagEnd = source.length
+    scripts.push(capture)
+  }
+
+  return scripts
+}
 
 /**
  * @internal
@@ -66,8 +169,9 @@ function handleTemplateOpenTag (attributes) {
  * @param {Record<string, string>} attributes - A dictionary of element attributes
  * @param {string} templateId - Current template definition id
  * @param {Object.<string, Object.<string, CoraliteModuleSlotElement>>} slotElements - State containing slot lists
+ * @param {boolean} [isIgnoredSlot=false] - Whether projected content is literal
  */
-function handleSlotOpenTag (element, attributes, templateId, slotElements) {
+function handleSlotOpenTag (element, attributes, templateId, slotElements, isIgnoredSlot = false) {
   const name = attributes.name || 'default'
   if (slotElements[templateId] && slotElements[templateId][name]) {
     throw new CoraliteError('Slot names must be unique: "' + name + '"', {
@@ -76,7 +180,8 @@ function handleSlotOpenTag (element, attributes, templateId, slotElements) {
   }
   const slot = {
     name,
-    element
+    element,
+    isIgnoredSlot
   }
   if (!slotElements[templateId]) {
     slotElements[templateId] = { [name]: slot }
@@ -114,6 +219,11 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onE
   const tempElements = []
   /** @type {CoraliteElement[]} */
   const skipRenderElements = []
+  /** @type {CoraliteScriptTag[]} */
+  const scripts = []
+  let ignoreDepth = 0
+  /** @type {CoraliteScriptTag | null} */
+  let scriptCapture = null
 
   const ignoreAttributeMap = getIgnoreAttributeMap(ignoreByAttribute)
 
@@ -128,6 +238,8 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onE
     onopentag (originalName, attributes) {
       const name = originalName.toLowerCase()
       const parent = stack[stack.length - 1]
+      const ignoreAttr = hasIgnoreAttribute(attributes)
+      const ignored = ignoreDepth > 0 || ignoreAttr
       const element = createElement({
         name,
         attributes,
@@ -138,21 +250,49 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onE
 
       applySkipRenderAttribute(element, attributes, skipRenderByAttribute)
 
-      if (element.slots) {
+      if (!ignored && element.slots) {
         // store custom element
         customElements.push(element)
       }
 
+      if (name === 'script' && !ignored) {
+        scriptCapture = {
+          element,
+          attribs: attributes,
+          content: '',
+          tagStart: parser.startIndex,
+          tagEnd: parser.endIndex + 1,
+          contentStart: parser.endIndex + 1,
+          contentEnd: parser.endIndex + 1,
+          lineOffset: getLineOffset(string, parser.startIndex)
+        }
+      }
+
       // push element to stack as it may have children
       stack.push(element)
+
+      if (ignoreAttr) {
+        ignoreDepth++
+      }
     },
     ontext (text) {
       const parent = stack[stack.length - 1]
 
       createTextNode(text, parent)
+
+      if (scriptCapture && parent === scriptCapture.element) {
+        scriptCapture.content += text
+      }
     },
     onclosetag () {
       const element = stack[stack.length - 1]
+
+      if (scriptCapture && element === scriptCapture.element) {
+        scriptCapture.contentEnd = parser.startIndex
+        scriptCapture.tagEnd = parser.endIndex + 1
+        scripts.push(scriptCapture)
+        scriptCapture = null
+      }
 
       if (element.type === 'tag') {
         if (element._markedForRemoval) {
@@ -163,6 +303,10 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onE
           // @ts-ignore
           skipRenderElements.push(element.parent.children[element.parent.children.length - 1])
         }
+      }
+
+      if (element.type === 'tag' && hasIgnoreAttribute(element.attribs)) {
+        ignoreDepth--
       }
 
       // remove current element from stack as we're done with its children
@@ -182,6 +326,13 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onE
   parser.write(string)
   parser.end()
 
+  if (scriptCapture) {
+    scriptCapture.contentEnd = string.length
+    scriptCapture.tagEnd = string.length
+    scripts.push(scriptCapture)
+    scriptCapture = null
+  }
+
   relinkChildren(root)
   sortSlottedChildren(customElements)
 
@@ -189,7 +340,8 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onE
     root,
     customElements,
     tempElements,
-    skipRenderElements
+    skipRenderElements,
+    scripts
   }
 }
 
@@ -278,6 +430,8 @@ export function parseModule (string, options = {}) {
   }
   let isScript = false
   let isTemplate = false
+  let templateDepth = 0
+  let ignoreDepth = 0
   let templateId = ''
   const rootClasses = new Set()
   const descendantClasses = new Set()
@@ -294,10 +448,17 @@ export function parseModule (string, options = {}) {
         ignoreByAttribute: ignoreAttributeMap,
         onError
       })
+      // @ts-ignore -- internal source offset for line-accurate diagnostics
+      element.__sourceStart = parser.startIndex
+
+      const ignoreAttr = hasIgnoreAttribute(attributes)
+      const ignored = ignoreDepth > 0 || ignoreAttr
+      const ancestorIgnored = ignoreDepth > 0
+      const isIgnoredSlot = ignoreAttr && element.name === 'slot'
 
       applySkipRenderAttribute(element, attributes, skipRenderByAttribute)
 
-      if (element.slots) {
+      if (!ignored && element.slots) {
         customElements.push(element)
       }
 
@@ -307,20 +468,32 @@ export function parseModule (string, options = {}) {
       if (element.name === 'script') {
         isScript = true
       } else if (element.name === 'template') {
-        isTemplate = true
-        templateId = handleTemplateOpenTag(attributes)
-      } else if (element.name === 'slot') {
-        const isNestedInChildCustomElement = stack.slice(2, -1).some(ancestor => (
-          // @ts-ignore
-          Array.isArray(ancestor.slots) || ('name' in ancestor && ancestor.name && isValidCustomElementName(ancestor.name))
-        ))
-        const name = attributes.name || 'default'
-        const isAlreadyRegistered = slotElements[templateId] && slotElements[templateId][name]
-
-        if (!isNestedInChildCustomElement || !isAlreadyRegistered) {
-          handleSlotOpenTag(element, attributes, templateId, slotElements)
+        templateDepth++
+        if (templateDepth === 1) {
+          isTemplate = true
+          templateId = handleTemplateOpenTag(attributes)
         }
-      } else if (isTemplate) {
+      } else if (element.name === 'slot') {
+        if (!ancestorIgnored) {
+          const isNestedInChildCustomElement = stack.slice(2, -1).some(ancestor => (
+            // @ts-ignore
+            Array.isArray(ancestor.slots) || ('name' in ancestor && ancestor.name && isValidCustomElementName(ancestor.name))
+          ))
+          const name = attributes.name || 'default'
+          const isAlreadyRegistered = slotElements[templateId] && slotElements[templateId][name]
+
+          if (!isNestedInChildCustomElement || !isAlreadyRegistered) {
+            handleSlotOpenTag(element, attributes, templateId, slotElements, isIgnoredSlot)
+          }
+        }
+
+        if (isIgnoredSlot) {
+          delete attributes[IGNORE_ATTRIBUTE]
+          if (element.attribs) {
+            delete element.attribs[IGNORE_ATTRIBUTE]
+          }
+        }
+      } else if (isTemplate && !ignored) {
         const attributeNames = Object.keys(attributes)
 
         // Collect classes
@@ -364,11 +537,15 @@ export function parseModule (string, options = {}) {
           }
         }
       }
+
+      if (ignoreAttr && !isIgnoredSlot) {
+        ignoreDepth++
+      }
     },
     ontext (text) {
       const parent = stack[stack.length - 1]
 
-      if (isTemplate && !isScript && text.trim()) {
+      if (isTemplate && !isScript && ignoreDepth === 0 && text.trim()) {
         const topLevelTokens = getTokensFromString(text, true)
 
         if (topLevelTokens.length) {
@@ -416,9 +593,14 @@ export function parseModule (string, options = {}) {
         element.parent.children.pop()
       }
 
+      if (element.type === 'tag' && hasIgnoreAttribute(element.attribs) && element.name !== 'slot') {
+        ignoreDepth--
+      }
+
       if (name === 'template') {
+        templateDepth--
         // exit template tag
-        isTemplate = false
+        isTemplate = templateDepth > 0
       } else if (name === 'script') {
         isScript = false
       }
@@ -449,6 +631,7 @@ export function parseModule (string, options = {}) {
   let template
   const siblingStyles = []
   let siblingScript = null
+  let scriptNodeStart = -1
 
   for (let i = 0; i < root.children.length; i++) {
     const node = root.children[i]
@@ -466,6 +649,9 @@ export function parseModule (string, options = {}) {
         template = node
 
       } else if (node.name === 'script') {
+        if (hasIgnoreAttribute(node.attribs)) {
+          continue
+        }
         if (node.attribs.type !== 'module') {
           throw new CoraliteError('Template "' + templateId + '" script tag must contain the `type="module"` attribute', {
             componentId: templateId,
@@ -474,6 +660,8 @@ export function parseModule (string, options = {}) {
         }
         const scriptString = node.children[0]
         siblingScript = (scriptString && scriptString.type === 'text') ? scriptString.data : ''
+        // @ts-ignore
+        scriptNodeStart = node.__sourceStart ?? -1
       } else if (node.name === 'style') {
         const styleContent = node.children[0]
 
@@ -509,6 +697,10 @@ export function parseModule (string, options = {}) {
         continue
       }
 
+      if (hasIgnoreAttribute(child.attribs)) {
+        continue
+      }
+
       if (child.name === 'style') {
         const styleContent = child.children[0]
         if (styleContent && styleContent.type === 'text') {
@@ -532,6 +724,8 @@ export function parseModule (string, options = {}) {
           }
           const scriptString = child.children[0]
           inTemplateScript = (scriptString && scriptString.type === 'text') ? scriptString.data : ''
+          // @ts-ignore
+          scriptNodeStart = child.__sourceStart ?? -1
           nodesToRemove.push(child)
         } else if (
           scriptType === 'application/json' ||
@@ -637,11 +831,15 @@ export function parseModule (string, options = {}) {
 
   let lineOffset = 0
   if (script !== undefined) {
-    const scriptIndex = string.indexOf('<script')
-    if (scriptIndex !== -1) {
-      const scriptTagEnd = string.indexOf('>', scriptIndex) + 1
-      const stringHead = string.substring(0, scriptTagEnd)
-      lineOffset = stringHead.split(/\r\n|\r|\n/).length - 1
+    if (scriptNodeStart >= 0) {
+      lineOffset = getLineOffset(string, scriptNodeStart)
+    } else {
+      const scriptIndex = string.indexOf('<script')
+      if (scriptIndex !== -1) {
+        const scriptTagEnd = string.indexOf('>', scriptIndex) + 1
+        const stringHead = string.substring(0, scriptTagEnd)
+        lineOffset = stringHead.split(/\r\n|\r|\n/).length - 1
+      }
     }
   }
 

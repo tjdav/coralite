@@ -1,7 +1,7 @@
 import { dirname, join, relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseHTML, parseModule } from './utils/parse.js'
-import { extractPageScript } from './parser/html.js'
+import { extractPageScript, createIgnoredSlotsResolver } from './parser/html.js'
 import { registerBaseComponent } from './component-setup.js'
 import { prepareAllComponentOps } from './utils/fragment.js'
 import { validateEnumeratedPaths, validatePluginEnumeratedPaths, deduplicateEnumeratedPaths } from './route.js'
@@ -73,22 +73,48 @@ export function createPageHandlers ({
       }
     }
 
+    let elements = null
+    let pageSetupError = null
+    if (data.content !== undefined) {
+      try {
+        elements = parseHTML(data.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
+      } catch (err) {
+        pageSetupError = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
+          cause: err,
+          filePath: data.path.pathname
+        })
+      }
+    }
+
     let parsedScript = {
       hasDefinePage: false,
       hasPageExports: false,
       blocks: null,
-      script: null
+      script: null,
+      lineOffset: 0,
+      tag: null
     }
-    if (data.content !== undefined) {
+    if (elements) {
       try {
-        parsedScript = extractPageScript(data.content, { filePath: data.path.pathname })
+        parsedScript = extractPageScript(elements, {
+          filePath: data.path.pathname,
+          rawContent: data.content,
+          getIgnoredSlots: createIgnoredSlotsResolver(app.components)
+        })
       } catch (err) {
-        if (typeof handleError === 'function') {
+        pageSetupError = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
+          code: err.code || 'CORALITE-E402',
+          cause: err,
+          filePath: data.path.pathname
+        })
+        pageSetupError.filePath = pageSetupError.filePath || data.path.pathname
+
+        if (pageSetupError.code !== 'CORALITE-E107' && typeof handleError === 'function') {
           handleError({
             level: 'ERR',
-            code: err.code,
-            message: err.message,
-            error: err,
+            code: pageSetupError.code,
+            message: pageSetupError.message,
+            error: pageSetupError,
             filePath: data.path.pathname
           })
         }
@@ -110,6 +136,7 @@ export function createPageHandlers ({
       hasDefinePage: parsedScript.hasDefinePage,
       hasPageExports: parsedScript.hasPageExports,
       script: parsedScript.script,
+      scriptLineOffset: parsedScript.lineOffset,
       routePattern,
       routeParams,
       routeSegments,
@@ -117,10 +144,15 @@ export function createPageHandlers ({
       enumeratedPaths: []
     }
 
+    if (pageSetupError) {
+      page.failed = true
+      page.error = pageSetupError
+    }
+
     const contributions = []
     let pageMetaDefaults = {}
 
-    if (parsedScript.script && evaluate) {
+    if (parsedScript.script && evaluate && !page.failed) {
       try {
         const { code: transformedPageScript, declarations } = extractScriptStylesheets(parsedScript.script, {
           filePath: data.path.pathname
@@ -132,7 +164,8 @@ export function createPageHandlers ({
         const module = {
           id: data.path.pathname,
           script: transformedPageScript,
-          path: data.path
+          path: data.path,
+          lineOffset: parsedScript.lineOffset || 0
         }
 
         const pageExports = await evaluate({
@@ -230,7 +263,6 @@ export function createPageHandlers ({
       })
     }
 
-    const elements = parseHTML(data.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
     const directPageComponents = app._dependencyGraph.directPageComponents
 
     if (elements && elements.customElements && directPageComponents) {
@@ -260,6 +292,14 @@ export function createPageHandlers ({
       state,
       page,
       data
+    }
+
+    if (mappedContext.elements !== elements && elements.skipRenderElements?.length && mappedContext.elements) {
+      const current = mappedContext.elements.skipRenderElements || []
+      mappedContext.elements.skipRenderElements = [
+        ...current,
+        ...elements.skipRenderElements.filter(element => !current.includes(element))
+      ]
     }
     if (!page.failed && Array.isArray(pluginHookResults?.rawResults)) {
       for (const item of pluginHookResults.rawResults) {
@@ -339,23 +379,16 @@ export function createPageHandlers ({
     }
 
     const filePath = value.path?.pathname
-    if (!filePath || !value.content) {
+    const pageScript = value.page?.script
+    if (!filePath || !pageScript) {
       if (filePath && typeof scriptManager.unregisterPageStylesheets === 'function') {
         scriptManager.unregisterPageStylesheets(filePath)
       }
       return
     }
 
-    const parsedScript = extractPageScript(value.content, { filePath })
-    if (!parsedScript.script) {
-      if (typeof scriptManager.unregisterPageStylesheets === 'function') {
-        scriptManager.unregisterPageStylesheets(filePath)
-      }
-      return
-    }
-
     try {
-      const { declarations } = extractScriptStylesheets(parsedScript.script, { filePath })
+      const { declarations } = extractScriptStylesheets(pageScript, { filePath })
       scriptManager.registerPageStylesheets(filePath, declarations)
     } catch {
       /* keep existing registrations when dev re-evaluation fails */
@@ -389,7 +422,7 @@ export function createPageHandlers ({
     // eslint-disable-next-line no-param-reassign
     newValue = mappedContext.newValue
 
-    const elements = parseHTML(newValue.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
+    const elements = mappedContext.elements
     const directPageComponents = app._dependencyGraph.directPageComponents
     const pagePath = newValue.path.pathname
 

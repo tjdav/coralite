@@ -4,6 +4,7 @@ import { ancestor as walkAncestorJS } from 'acorn-walk'
 import kleur from 'kleur'
 import { validateComponentSource } from './validator.js'
 import { kebabToCamel, camelToKebab, indexOfCI, extractTemplateBlock } from '../../shared/core.js'
+import { extractScriptTagsFromHTML } from '../utils/parse.js'
 import { extractInlineExpression } from '../../shared/diagnostics.js'
 import { applySlotsFixes } from '../../slots/fixer.js'
 
@@ -476,12 +477,17 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
   let isHtmlFile = false
 
   if (code.includes('<script')) {
-    const scriptMatch = /<script[\s\S]*?>([\s\S]*?)<\/script>/i.exec(code)
-    if (scriptMatch) {
+    const scripts = extractScriptTagsFromHTML(code)
+    const scriptTag = scripts.find(script => {
+      const type = script.attribs?.type ? String(script.attribs.type).trim().toLowerCase() : ''
+      return type === 'module'
+    }) || scripts.find(script => !script.attribs?.type)
+
+    if (scriptTag) {
       isHtmlFile = true
-      scriptContent = scriptMatch[1]
-      scriptLength = scriptMatch[1].length
-      scriptStart = scriptMatch.index + scriptMatch[0].indexOf(scriptMatch[1])
+      scriptContent = scriptTag.content
+      scriptLength = scriptContent.length
+      scriptStart = scriptTag.contentStart
     }
   } else {
     scriptContent = code

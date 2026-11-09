@@ -21,7 +21,7 @@
 
     <coralite-heading level="2" text="Reactive Web Components with Dynamic Attribute Binding"></coralite-heading>
     <p>The code generation engine in <code>script-manager.js</code> has been enhanced to produce more reactive web components. Generated elements now include an <code>observedAttributes()</code> getter and an <code>attributeChangedCallback()</code> to synchronize outer HTML attribute modifications with internal component context in real-time.</p>
-    <p>Additionally, a lightweight text node walker has been implemented. This engine finds and replaces template tokens (e.g. <code>{{ attributeName }}</code>) inside text content and CSS bindings within the shadow DOM, bypassing the need for a full AST compiler for standalone components.</p>
+    <p>Additionally, a lightweight text node walker has been implemented. This engine finds and replaces template tokens (e.g. <code coralite-ignore>{{ attributeName }}</code>) inside text content and CSS bindings within the shadow DOM, bypassing the need for a full AST compiler for standalone components.</p>
 
     <coralite-code-highlight language="javascript">
 // Example structure of generated reactive elements in v0.28.0

@@ -40,7 +40,7 @@
     </coralite-code-highlight>
 
     <blockquote class="warning">
-      <p><strong>CRITICAL RULE:</strong> Do <strong>NOT</strong> attempt to dynamically bind refs or instance IDs to test IDs using curly braces (e.g. <code>❌ &lt;input data-testid="{{ ref_username }}"&gt;</code>).</p>
+      <p><strong>CRITICAL RULE:</strong> Do <strong>NOT</strong> attempt to dynamically bind refs or instance IDs to test IDs using curly braces (e.g. <code coralite-ignore>❌ &lt;input data-testid="{{ ref_username }}"&gt;</code>).</p>
     </blockquote>
 
     <p>The Coralite build compiler automatically parses static <code>data-testid</code> strings and prepends the correct <code>page__</code> or <code>instance-id__</code> prefix during the build process to avoid collisions.</p>

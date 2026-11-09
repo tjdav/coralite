@@ -15,7 +15,9 @@ describe('html.js (extractPageScript)', () => {
       hasDefinePage: false,
       hasPageExports: false,
       blocks: null,
-      script: null
+      script: null,
+      lineOffset: 0,
+      tag: null
     })
   })
 

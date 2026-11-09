@@ -278,7 +278,7 @@ describe('Coralite Page Validator (page-validator.js)', () => {
   })
 
   describe('Inert Containers and Slot Transformations', () => {
-    it('does not flag custom elements inside standard inert tags (<template>, <code>, <pre>, <noscript>)', () => {
+    it('flags custom elements inside <template>, <code>, <pre>, and <noscript> unless coralite-ignore is present', () => {
       const source = `
         <template>
           <unknown-in-template></unknown-in-template>
@@ -293,28 +293,52 @@ describe('Coralite Page Validator (page-validator.js)', () => {
           <unknown-in-noscript></unknown-in-noscript>
         </noscript>
       `
-      const result = validatePageSource(source, {
+      const flagged = validatePageSource(source, {
         knownComponents: new Map()
       })
 
-      assert.equal(result.valid, true)
-      assert.equal(result.diagnostics.length, 0)
+      assert.equal(flagged.valid, false)
+      assert.equal(flagged.diagnostics.filter(d => d.code === 'CORALITE-PAGE-101').length, 4)
+
+      const ignored = validatePageSource(`
+        <template coralite-ignore><unknown-in-template></unknown-in-template></template>
+        <code coralite-ignore><unknown-in-code></unknown-in-code></code>
+        <pre coralite-ignore><unknown-in-pre></unknown-in-pre></pre>
+        <noscript coralite-ignore><unknown-in-noscript></unknown-in-noscript></noscript>
+      `, {
+        knownComponents: new Map()
+      })
+
+      assert.equal(ignored.valid, true)
+      assert.equal(ignored.diagnostics.length, 0)
     })
 
-    it('does not flag custom elements inside components with declared slots in knownComponents', () => {
+    it('only suppresses validation inside components with ignored slots', () => {
       const source = `
         <my-layout>
           <unknown-slotted-child></unknown-slotted-child>
         </my-layout>
       `
-      const result = validatePageSource(source, {
+      const regularSlots = validatePageSource(source, {
         knownComponents: new Map([
           ['my-layout', { slots: ['default'] }]
         ])
       })
 
-      assert.equal(result.valid, true)
-      assert.equal(result.diagnostics.length, 0)
+      assert.equal(regularSlots.valid, false)
+      assert.ok(regularSlots.diagnostics.some(d => d.code === 'CORALITE-PAGE-101'))
+
+      const ignoredSlots = validatePageSource(source, {
+        knownComponents: new Map([
+          ['my-layout', {
+            slots: ['default'],
+            ignoredSlots: ['default']
+          }]
+        ])
+      })
+
+      assert.equal(ignoredSlots.valid, true)
+      assert.equal(ignoredSlots.diagnostics.length, 0)
     })
 
     it('ignores elements inside subtrees carrying ignored attributes (e.g. <div no-hydration>)', () => {
@@ -345,15 +369,15 @@ describe('Coralite Page Validator (page-validator.js)', () => {
       assert.equal(result.diagnostics.length, 0)
     })
 
-    it('handles nested inert containers without premature stack popping', () => {
+    it('handles nested coralite-ignore containers without premature stack popping', () => {
       const source = `
         <my-layout>
-          <pre>
+          <pre coralite-ignore>
             <code>
               <unknown-deep-nested></unknown-deep-nested>
             </code>
           </pre>
-          <template>
+          <template coralite-ignore>
             <another-unknown></another-unknown>
           </template>
         </my-layout>
@@ -368,9 +392,9 @@ describe('Coralite Page Validator (page-validator.js)', () => {
       assert.equal(result.diagnostics.length, 0)
     })
 
-    it('restores normal validation immediately after exiting an inert container (sibling restoration)', () => {
+    it('restores normal validation immediately after exiting a coralite-ignore container', () => {
       const source = `
-        <pre>
+        <pre coralite-ignore>
           <unknown-inside-pre></unknown-inside-pre>
         </pre>
         <unknown-sibling></unknown-sibling>
@@ -566,7 +590,8 @@ describe('Coralite Page Validator (page-validator.js)', () => {
         knownComponents: new Map([
           ['layout-wrapper', {
             attributes: {},
-            slots: ['default']
+            slots: ['default'],
+            ignoredSlots: ['default']
           }]
         ]),
         ignoreAttributes: ['data-custom'],
