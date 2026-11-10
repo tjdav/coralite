@@ -1,6 +1,16 @@
 import { defineComponent, createContext, ContextRequestEvent } from '../../shared/core.js'
 import { definePlugin } from '../../shared/define-plugin.js'
 
+const TOKEN_TEST = /\{\{[\s\S]*?\}\}/
+const TOKEN_GLOBAL = /\{\{[\s\S]*?\}\}/g
+const TAG_RE =
+  /<([a-zA-Z][\w:-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?)*)\s*(\/?)>/gs
+const ATTR_RE =
+  /(\s+[^\s"'>/=]+)\s*=\s*(?:(['"])([\s\S]*?)\2|([^\s"'>]+))/g
+const COMMENT_RE = /<!--(?:>|->|[\s\S]*?(?:-->|$))/g
+const RAW_TEXT_RE =
+  /(<(script|style|textarea|title)\b(?:[^>"']|"[^"]*"|'[^']*')*>)([\s\S]*?)(<\/\2\s*>|$)/gi
+
 /**
  * Creates a Coralite element or a standard HTML element.
  * Delegates to `window.__coralite__.dom.createElement` or `document.createElement`.
@@ -20,20 +30,6 @@ export function createCoraliteElement (tag, options) {
   }
   return document.createElement(tag, options)
 }
-
-const TOKEN_TEST = /\{\{[\s\S]*?\}\}/
-const TOKEN_GLOBAL = /\{\{[\s\S]*?\}\}/g
-
-const TAG_RE =
-  /<([a-zA-Z][\w:-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?)*)\s*(\/?)>/gs
-
-const ATTR_RE =
-  /(\s+[^\s"'>/=]+)\s*=\s*(?:(['"])([\s\S]*?)\2|([^\s"'>]+))/g
-
-const COMMENT_RE = /<!--(?:>|->|[\s\S]*?(?:-->|$))/g
-
-const RAW_TEXT_RE =
-  /(<(script|style|textarea|title)\b(?:[^>"']|"[^"]*"|'[^']*')*>)([\s\S]*?)(<\/\2\s*>|$)/gi
 
 /**
  * Protects comments and raw-text element content from tag rewriting.
