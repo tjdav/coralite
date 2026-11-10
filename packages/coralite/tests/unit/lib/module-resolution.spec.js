@@ -57,9 +57,6 @@ describe('Module Resolution', () => {
       mode: 'development'
     })
 
-
-    // We expect this to fail currently because resolution is relative to coralite lib
-    // but pass after the fix
     const results = await coralite.build()
 
     assert.ok(results.length > 0)
@@ -86,15 +83,17 @@ describe('Module Resolution', () => {
     await assert.rejects(
       () => coralite.build(),
       (error) => {
-        const msg = error.message
-        return msg.includes('Cannot find module') ||
-               msg.includes('failed to resolve') ||
-               msg.includes('Module not found') ||
-               msg.includes('is not defined') ||
-               msg.includes('Cannot find package') ||
-               msg.includes('ERR_MODULE_NOT_FOUND')
+        assert.equal(error.name, 'CoraliteBuildError')
+        assert.equal(error.failedPages.length, 1, 'one page should be marked failed')
+
+        const pageError = error.failedPages[0].error
+        assert.ok(pageError, 'failed page should retain its root error')
+        assert.match(pageError.message, /Failed to resolve "my-plugin"/)
+        assert.match(pageError.message, /missing-import\.html/)
+
+        return true
       },
-      'Error should be about module resolution'
+      'Build should fail with a module resolution error'
     )
   })
 })
