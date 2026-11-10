@@ -115,21 +115,34 @@ export function createDynamicResolver ({ path, fileRequire }) {
       return specifier
     }
 
-    try {
-      return pathToFileURL(requireFromComponent.resolve(specifier)).href
-    } catch {
-      if (specifier.startsWith('.') || specifier.startsWith('/')) {
+    if (specifier.startsWith('.') || specifier.startsWith('/')) {
+      try {
+        return pathToFileURL(requireFromComponent.resolve(specifier)).href
+      } catch {
         return pathToFileURL(resolve(componentDir, specifier)).href
       }
+    }
 
+    // Prefer ESM resolution for bare packages so conditional exports pick the
+    // "import" entry point instead of the CommonJS entry. Importing a dual
+    // package through its CommonJS entry makes `import render from 'pkg'`
+    // resolve to module.exports rather than the package's default export.
+    if (typeof import.meta.resolve === 'function') {
       try {
         return import.meta.resolve(specifier, componentFileURL)
-      } catch (error) {
-        throw new CoraliteError(`Failed to resolve "${specifier}" from "${path.pathname}"`, {
-          cause: error,
-          filePath: path.pathname
-        })
+      } catch {
+        // Fall through to the CommonJS resolver for runtimes/packages that
+        // cannot be resolved through the ESM resolver.
       }
+    }
+
+    try {
+      return pathToFileURL(requireFromComponent.resolve(specifier)).href
+    } catch (error) {
+      throw new CoraliteError(`Failed to resolve "${specifier}" from "${path.pathname}"`, {
+        cause: error,
+        filePath: path.pathname
+      })
     }
   }
 }
