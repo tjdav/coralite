@@ -49,8 +49,11 @@ jobs:
           pnpm release:github --tag "${{ github.event.inputs.tag }}" -y
 
       - name: Create Codeberg Release
-        if: ${{ secrets.CODEBERG_TOKEN != '' }}
         env:
           CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
         run: |
+          if [ -z "$CODEBERG_TOKEN" ]; then
+            echo "CODEBERG_TOKEN is not configured; skipping Codeberg release."
+            exit 0
+          fi
           pnpm release:codeberg --tag "${{ github.event.inputs.tag }}" -y
