@@ -118,4 +118,35 @@ describe('sanitizeTokenAttributes (via processHTML fallback)', () => {
       '<div></div>'
     )
   })
+
+  // === Quoted > in attribute values ===
+
+  it('removes token attributes after a quoted > attribute', () => {
+    assert.strictEqual(
+      sanitize('<div title="a > b" data-id="{{ x }}"></div>'),
+      '<div title="a > b"></div>'
+    )
+  })
+
+  it('removes token attributes on raw-text opening tags with a quoted > attribute', () => {
+    assert.strictEqual(
+      sanitize('<script data-x="a > b" src="{{ url }}">console.log("ok");</script>'),
+      '<script data-x="a > b">console.log("ok");</script>'
+    )
+  })
+
+  it('does not sanitize tags that look like markup inside raw-text content', () => {
+    const html = '<script data-x="a > b">const t = \'<div class="{{ x }}"></div>\'</script>'
+    assert.strictEqual(sanitize(html), html)
+  })
+
+  it('does not sanitize markup inside comments containing >', () => {
+    const html = '<!-- <div title="a > b" class="{{ x }}"></div> -->'
+    assert.strictEqual(sanitize(html), html)
+  })
+
+  it('does not sanitize markup inside unclosed comments', () => {
+    const html = '<!-- <div class="{{ x }}"></div>'
+    assert.strictEqual(sanitize(html), html)
+  })
 })
