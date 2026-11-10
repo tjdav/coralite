@@ -189,6 +189,8 @@ export default defineConfig({
     <ul>
       <li><strong><code>cleanUrls: true</code> (Directory Style, Default):</strong> Page <code>src/pages/about.html</code> builds to <code>dist/about/index.html</code> with route path <code>/about</code>.</li>
       <li><strong><code>cleanUrls: false</code> (File Style):</strong> Page <code>src/pages/about.html</code> builds to <code>dist/about.html</code> with route path <code>/about.html</code>.</li>
+      <li><strong>Nested index pages:</strong> <code>src/pages/docs/guide/index.html</code> is the route for <code>/docs/guide</code>. It builds to <code>dist/docs/guide/index.html</code> with <code>cleanUrls: true</code>, and to <code>dist/docs/guide.html</code> with <code>cleanUrls: false</code>.</li>
+      <li><strong>Collisions:</strong> <code>src/pages/docs/guide.html</code> and <code>src/pages/docs/guide/index.html</code> map to the same route and cannot both exist.</li>
     </ul>
 
     <coralite-heading level="3" text="Zero Server Runtime Hosting"></coralite-heading>
