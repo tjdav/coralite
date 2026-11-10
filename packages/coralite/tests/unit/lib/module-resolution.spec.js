@@ -1,7 +1,9 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
+import { createDynamicResolver } from '../../../lib/server/compiler.js'
 import { createTestProject } from '../utils/project.js'
 
 describe('Module Resolution', () => {
@@ -23,6 +25,32 @@ describe('Module Resolution', () => {
       type: 'module'
     }))
     await writeFile(join(pkgDir, 'index.js'), 'export default "Hello from Dummy Package"')
+
+    const dualPkgDir = join(nodeModulesDir, 'dual-pkg')
+    await mkdir(dualPkgDir, { recursive: true })
+    await writeFile(join(dualPkgDir, 'package.json'), JSON.stringify({
+      name: 'dual-pkg',
+      version: '1.0.0',
+      type: 'module',
+      exports: {
+        '.': {
+          import: './esm.js',
+          require: './cjs.cjs'
+        }
+      }
+    }))
+    await writeFile(join(dualPkgDir, 'esm.js'), `
+      export default function format () {
+        return 'esm-default'
+      }
+      export const named = 'esm-named'
+    `)
+    await writeFile(join(dualPkgDir, 'cjs.cjs'), `
+      module.exports = {
+        default: () => 'cjs-default',
+        named: 'cjs-named'
+      }
+    `)
 
     // Create a page that uses a component
     await project.writePage('index.html', `
@@ -61,6 +89,23 @@ describe('Module Resolution', () => {
 
     assert.ok(results.length > 0)
     assert.match(results[0].content, /Hello from Dummy Package/)
+  })
+
+  it('prefers ESM conditional exports for bare package imports', async () => {
+    const componentPath = join(project.componentsDir, 'conditional.html')
+    const fileRequire = createRequire(componentPath)
+    const resolver = createDynamicResolver({
+      path: { pathname: componentPath },
+      fileRequire
+    })
+
+    const resolved = resolver('dual-pkg')
+    assert.match(resolved, /esm\.js$/)
+
+    const imported = await import(resolved)
+    assert.equal(typeof imported.default, 'function')
+    assert.equal(imported.default(), 'esm-default')
+    assert.equal(imported.named, 'esm-named')
   })
 
   it('should fail the build when a component imports an unresolvable package', async () => {
