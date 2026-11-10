@@ -14,7 +14,8 @@ import {
   extractTemplateBlock,
   stripCssComments,
   stripHtmlComments,
-  normalizeObjectFunctions
+  normalizeObjectFunctions,
+  parseTemplateSegments
 } from '../../../lib/shared/core.js'
 import { astTransformer } from '../../../lib/server/utils/server.js'
 import { CoraliteError } from '../../../lib/shared/errors.js'
@@ -289,6 +290,30 @@ describe('shared/core.js', () => {
       const parent = { children: [] }
       const node = { parent }
       assert.deepStrictEqual(getNodePath(node, { type: 'root' }), [])
+    })
+  })
+
+  describe('parseTemplateSegments', () => {
+    it('parses tokens and segments', () => {
+      const parsed = parseTemplateSegments('Hello {{ name }}!')
+
+      assert.deepStrictEqual(parsed.tokens, ['name'])
+      assert.strictEqual(parsed.isSingleToken, false)
+      assert.deepStrictEqual(parsed.segments, [
+        [0, 'Hello '],
+        [1, 'name'],
+        [0, '!']
+      ])
+    })
+
+    it('handles many unclosed token starts without quadratic scanning', () => {
+      const start = Date.now()
+      const parsed = parseTemplateSegments('{{'.repeat(8000))
+      const elapsed = Date.now() - start
+
+      assert.deepStrictEqual(parsed.tokens, [])
+      assert.strictEqual(parsed.segments, null)
+      assert.ok(elapsed < 1000, `Should complete in < 1000ms, took ${elapsed}ms`)
     })
   })
 

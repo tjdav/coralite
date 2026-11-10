@@ -11,6 +11,7 @@ import {
 } from '../../shared/stylesheets.js'
 import { hash } from './manifest.js'
 import { resolveFileSpecifier } from './package.js'
+import { getAST } from './server.js'
 
 const ASSET_EXTENSIONS = [
   'png',
@@ -118,8 +119,21 @@ export function extractScriptStylesheets (code, options = {}) {
     return cached
   }
 
+  let ast = null
+  if (!allowAllFunctions) {
+    // Full component/page scripts are parsed again by findAndExtractScript()
+    // and the validators through getAST(). Reuse that AST instead of parsing
+    // the same source a second time with Acorn.
+    try {
+      ast = getAST(code, true)
+    } catch {
+      ast = null
+    }
+  }
+
   const result = extractAndTransformCssImports(code, {
     ...options,
+    ...(ast ? { ast } : {}),
     resolveHandle: createStylesheetHandle
   })
 

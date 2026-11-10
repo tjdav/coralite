@@ -714,14 +714,7 @@ export function parseTemplateSegments (template) {
     if (template[i] === '{' && template[i + 1] === '{') {
       const openStart = i
       const contentStart = i + 2
-      let closeStart = -1
-
-      for (let j = contentStart; j < len - 1; j++) {
-        if (template[j] === '}' && template[j + 1] === '}') {
-          closeStart = j
-          break
-        }
-      }
+      const closeStart = template.indexOf('}}', contentStart)
 
       if (closeStart !== -1) {
         if (openStart > cursor) {
@@ -736,6 +729,9 @@ export function parseTemplateSegments (template) {
         i = cursor
         continue
       }
+
+      // No closing delimiter remains, so no later token can be complete.
+      break
     }
     i++
   }

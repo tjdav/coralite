@@ -80,6 +80,18 @@ describe('Parsing pipeline reuse', () => {
       assert.notStrictEqual(first, second)
       assert.deepStrictEqual(first, second)
     })
+
+    it('preserves non-throwing behavior for invalid full scripts', () => {
+      const code = `import './theme.css'
+        const = ;`
+
+      const result = extractScriptStylesheets(code, {
+        filePath: '/site/components/bad.html'
+      })
+
+      assert.equal(result.code, code)
+      assert.deepStrictEqual(result.declarations, [])
+    })
   })
 
   describe('extractComponentProperties() single walk', () => {

@@ -427,13 +427,15 @@ function findEnclosingBlockName (ancestors) {
  * @param {string} [options.filePath] - Declaring component or page file path.
  * @param {(declaration: Object) => string} [options.resolveHandle] - Callback returning a deterministic manifest handle.
  * @param {boolean} [options.allowAllFunctions=false] - Whether `code` is already an isolated `client()` function.
+ * @param {import('acorn').Program} [options.ast] - Pre-parsed module AST for `code` when it is a complete script.
  * @returns {{ code: string, declarations: Array<Object> }} Transformed code and extracted stylesheet declarations.
  */
 export function extractAndTransformCssImports (code, options = {}) {
   const {
     filePath,
     resolveHandle,
-    allowAllFunctions = false
+    allowAllFunctions = false,
+    ast: providedAst = null
   } = options
 
   if (!code || typeof code !== 'string' || !code.includes('import')) {
@@ -443,7 +445,10 @@ export function extractAndTransformCssImports (code, options = {}) {
     }
   }
 
-  const parsed = parseSnippet(code)
+  const parsed = providedAst ? {
+    ast: providedAst,
+    offset: 0
+  } : parseSnippet(code)
   if (!parsed) {
     return {
       code,
