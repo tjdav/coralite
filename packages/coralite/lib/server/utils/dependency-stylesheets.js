@@ -60,9 +60,34 @@ export function createStylesheetHandle (declaration) {
   return `${stem}-${hash(sig).slice(0, 6)}`
 }
 
+const MAX_STYLESHEET_CACHE_ENTRIES = 2000
+
+/**
+ * Results of the last `extractScriptStylesheets()` pass, keyed by source code.
+ *
+ * The same component/page script is extracted several times during a build
+ * (component definition, base registration, script-manager virtual modules,
+ * page collection, renderer serialization). Acorn parsing dominates that work,
+ * so the deterministic result is reused instead of re-parsed.
+ *
+ * @type {Map<string, Map<string, { code: string, declarations: Array<Object> }>>}
+ */
+const stylesheetExtractionCache = new Map()
+
+/**
+ * Clears cached stylesheet extraction results.
+ *
+ * Called by the dev rebuild/reset path so edited scripts are re-analyzed.
+ */
+export function clearScriptStylesheetCache () {
+  stylesheetExtractionCache.clear()
+}
+
 /**
  * Extracts and transforms CSS `import()` calls in a script or `client()` snippet,
  * assigning deterministic handles resolved relative to `filePath`.
+ *
+ * Returned objects are shared and must be treated as read-only.
  *
  * @param {string} code - Script or function source code.
  * @param {Object} [options={}] - Extraction options.
@@ -71,10 +96,43 @@ export function createStylesheetHandle (declaration) {
  * @returns {{ code: string, declarations: Array<Object> }} Transformed code and extracted stylesheet declarations.
  */
 export function extractScriptStylesheets (code, options = {}) {
-  return extractAndTransformCssImports(code, {
+  if (!code || typeof code !== 'string' || !code.includes('import')) {
+    return {
+      code: code || '',
+      declarations: []
+    }
+  }
+
+  const filePath = options.filePath || ''
+  const allowAllFunctions = Boolean(options.allowAllFunctions)
+  const variantKey = `${allowAllFunctions ? '1' : '0'}\u0000${filePath}`
+  let variants = stylesheetExtractionCache.get(code)
+
+  if (!variants) {
+    variants = new Map()
+    stylesheetExtractionCache.set(code, variants)
+  }
+
+  const cached = variants.get(variantKey)
+  if (cached) {
+    return cached
+  }
+
+  const result = extractAndTransformCssImports(code, {
     ...options,
     resolveHandle: createStylesheetHandle
   })
+
+  variants.set(variantKey, result)
+
+  if (stylesheetExtractionCache.size > MAX_STYLESHEET_CACHE_ENTRIES) {
+    const oldestKey = stylesheetExtractionCache.keys().next().value
+    if (oldestKey !== undefined) {
+      stylesheetExtractionCache.delete(oldestKey)
+    }
+  }
+
+  return result
 }
 
 /**

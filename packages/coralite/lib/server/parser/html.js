@@ -1,7 +1,7 @@
 import render from 'dom-serializer'
-import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
 import { parseHTML, hasIgnoreAttribute, extractScriptTagsFromHTML } from '../utils/parse.js'
+import { getAST } from '../utils/server.js'
 import { relinkChildren } from '../utils/dom.js'
 import { CoraliteError } from '../../shared/errors.js'
 import { PAGE_EXPORTS, REJECTED_PAGE_EXPORTS } from '../../shared/page.js'
@@ -239,11 +239,7 @@ export function isScriptInsideIgnoredSlot (script, getIgnoredSlots) {
 function analyzePageScript (scriptContent, rawContent, filePath) {
   let ast
   try {
-    ast = parseJS(scriptContent, {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      locations: true
-    })
+    ast = getAST(scriptContent, true)
   } catch {
     return null
   }

@@ -1,7 +1,7 @@
-import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
 import { kebabToCamel } from '../../../shared/core.js'
 import { isCssSpecifier } from '../../../shared/stylesheets.js'
+import { getAST } from '../../utils/server.js'
 import {
   PAGE_EXPORTS,
   PAGE_HANDLER_EXPORTS,
@@ -50,11 +50,7 @@ export function parseScriptAST (context) {
   const isPage = context.kind === 'page'
 
   try {
-    const ast = parseJS(scriptContent, {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      locations: true
-    })
+    const ast = getAST(scriptContent, true)
 
     const collectTopLevelImportsOutsideClient = (blockNode) => {
       if (!blockNode) {

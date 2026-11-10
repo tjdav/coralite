@@ -6,7 +6,7 @@ import {
   isCoraliteTextNode,
   isCoraliteComment
 } from '../shared/types.js'
-import { findAndExtractScript, extractComponentProperty } from './utils/server.js'
+import { findAndExtractScript, extractComponentProperties } from './utils/server.js'
 import { extractScriptStylesheets } from './utils/dependency-stylesheets.js'
 import { formatComponentCss } from './utils/style.js'
 import { inferTypeFromValues, validateAttributeValue } from '../shared/attributes.js'
@@ -882,7 +882,9 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
 
   // Stamp binding markers before fragment ops are compiled, so production
   // fast-path SSR includes the same binding targets as the hydration map.
-  generateHydrationMap(templateAST, templateValues)
+  // The map is cached on the parsed component and reused by the script manager.
+  const hydrationMap = generateHydrationMap(templateAST, templateValues)
+  component._hydrationMap = hydrationMap
 
   if (component.styles?.length && !component._processedCss) {
     const rawCss = component.styles.join('\n')
@@ -941,6 +943,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
         filePath: componentFilePath,
         allowAllFunctions: true
       }).code
+      scriptObj.stylesheetsExtracted = true
       scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
       scriptObj.provideSource = extractedClient.provideSource
       scriptObj.consumeSource = extractedClient.consumeSource
@@ -948,8 +951,20 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
       extractedComponents = extractedClient.components || []
     }
 
+    const propertyNames = []
     if (!component._extractedServer) {
-      component._extractedServer = extractComponentProperty(component.script, 'server')
+      propertyNames.push('server')
+    }
+    if (!scriptResultMeta) {
+      propertyNames.push('getters', 'style', 'attributes', 'slots', 'onError')
+    }
+
+    const extractedProperties = propertyNames.length > 0
+      ? extractComponentProperties(component.script, propertyNames)
+      : {}
+
+    if (!component._extractedServer) {
+      component._extractedServer = extractedProperties.server || null
     }
     const extractedServer = component._extractedServer
 
@@ -961,7 +976,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     // Attempt to extract getters, attributes, and slots from the script if they weren't provided
     // This provides a fallback if registerBaseComponent evaluation fails.
     if (!scriptResultMeta) {
-      const extractedGetters = extractComponentProperty(component.script, 'getters')
+      const extractedGetters = extractedProperties.getters
       if (extractedGetters) {
         try {
           // Note: we can't easily evaluate the getters content here without a VM context,
@@ -974,7 +989,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
         }
       }
 
-      const extractedStyle = extractComponentProperty(component.script, 'style')
+      const extractedStyle = extractedProperties.style
       if (extractedStyle) {
         try {
           if (extractedStyle.content.trim().startsWith('{')) {
@@ -985,7 +1000,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
         }
       }
 
-      const extractedAttributes = extractComponentProperty(component.script, 'attributes')
+      const extractedAttributes = extractedProperties.attributes
       if (extractedAttributes) {
         try {
           if (extractedAttributes.content.trim().startsWith('{')) {
@@ -997,7 +1012,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
         }
       }
 
-      const extractedSlots = extractComponentProperty(component.script, 'slots')
+      const extractedSlots = extractedProperties.slots
       if (extractedSlots) {
         try {
           if (extractedSlots.content.trim().startsWith('{')) {
@@ -1008,7 +1023,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
         }
       }
 
-      const extractedOnError = extractComponentProperty(component.script, 'onError')
+      const extractedOnError = extractedProperties.onError
       if (extractedOnError) {
         try {
           scriptObj.onError = new Function(`return ${extractedOnError.content}`)()
@@ -1039,6 +1054,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     filePath: component.filePath || (component.path && component.path.pathname),
     templateAST,
     templateValues,
+    hydrationMap: component._hydrationMap,
     defaultValues,
     styles: stylesHTML,
     slots: scriptMeta.slots,
