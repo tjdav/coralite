@@ -148,6 +148,67 @@ describe('Clean URLs Config (P2.08)', () => {
     assert.equal(postBuild.route.path, '/posts/intro.html')
   })
 
+  it('cleanUrls: false maps nested index.html to <dir>.html', async () => {
+    await mkdir(join(PAGES_DIR, 'docs', 'guide'), { recursive: true })
+    await writeFile(
+      join(PAGES_DIR, 'docs', 'guide', 'index.html'),
+      '<!DOCTYPE html><html><body><h1>Guide Overview</h1></body></html>'
+    )
+
+    const app = await createCoralite({
+      components: COMPONENTS_DIR,
+      pages: PAGES_DIR,
+      output: OUTPUT_DIR,
+      cleanUrls: false,
+      mode: 'production',
+      incremental: false
+    })
+
+    const results = await app.save()
+    assert.ok(results.some(r => r.path.endsWith('docs/guide.html')))
+
+    const fileStyleOutput = await readFile(join(OUTPUT_DIR, 'docs', 'guide.html'), 'utf8').catch(() => null)
+    assert.ok(fileStyleOutput, 'docs/guide/index.html must produce dist/docs/guide.html under cleanUrls: false')
+    assert.match(fileStyleOutput, /Guide Overview/)
+
+    const nestedIndexOutput = await readFile(join(OUTPUT_DIR, 'docs', 'guide', 'index.html'), 'utf8').catch(() => null)
+    assert.equal(nestedIndexOutput, null, 'nested index must not also emit docs/guide/index.html')
+
+    const buildResults = await app.build()
+    const guideBuild = buildResults.find(r => r.route.path === '/docs/guide.html')
+    assert.ok(guideBuild, 'nested index route must be /docs/guide.html under cleanUrls: false')
+  })
+
+  it('rejects a collision between <dir>.html and <dir>/index.html', async () => {
+    await mkdir(join(PAGES_DIR, 'docs', 'guide'), { recursive: true })
+    await writeFile(
+      join(PAGES_DIR, 'docs', 'guide.html'),
+      '<!DOCTYPE html><html><body><h1>Guide File</h1></body></html>'
+    )
+    await writeFile(
+      join(PAGES_DIR, 'docs', 'guide', 'index.html'),
+      '<!DOCTYPE html><html><body><h1>Guide Index</h1></body></html>'
+    )
+
+    const app = await createCoralite({
+      components: COMPONENTS_DIR,
+      pages: PAGES_DIR,
+      output: OUTPUT_DIR,
+      cleanUrls: false,
+      mode: 'production',
+      incremental: false
+    })
+
+    await assert.rejects(
+      () => app.build(),
+      (err) => {
+        assert.ok(err instanceof CoraliteError)
+        assert.match(err.message, /Exact route collision/)
+        return true
+      }
+    )
+  })
+
   it('default cleanUrls value is true', async () => {
     await writeFile(
       join(PAGES_DIR, 'about.html'),
