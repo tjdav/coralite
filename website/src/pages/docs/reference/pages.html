@@ -206,6 +206,8 @@ export default defineConfig({
     <ul>
       <li><code>cleanUrls: true</code> (default): Directory-style output. <code>pages/about.html</code> compiles to <code>dist/about/index.html</code> with extensionless <code>route.path = '/about'</code>.</li>
       <li><code>cleanUrls: false</code>: File-style output. <code>pages/about.html</code> compiles to <code>dist/about.html</code> with <code>route.path = '/about.html'</code>.</li>
+      <li>Nested index pages represent the route for their directory. <code>pages/docs/guide/index.html</code> compiles to <code>dist/docs/guide/index.html</code> with <code>route.path = '/docs/guide'</code> under <code>cleanUrls: true</code>, and to <code>dist/docs/guide.html</code> with <code>route.path = '/docs/guide.html'</code> under <code>cleanUrls: false</code>.</li>
+      <li>Declaring both <code>pages/docs/guide.html</code> and <code>pages/docs/guide/index.html</code> is rejected as an exact route collision, since both produce the same route.</li>
       <li>Root page (<code>pages/index.html</code>) always compiles to <code>dist/index.html</code> with <code>route.path = '/'</code> regardless of <code>cleanUrls</code> configuration.</li>
     </ul>
 
