@@ -32,5 +32,12 @@ jobs:
 
           git remote add codeberg git@codeberg.org:tjdavid/coralite.git
 
-          # Mirror all branches and tags, pruning deleted references
-          git push --prune --tags codeberg '+refs/heads/*:refs/heads/*'
+          # Fetch every GitHub branch into a dedicated namespace and every tag.
+          # Without this, actions/checkout only creates the triggering branch,
+          # so `git push --prune` would try to delete the Codeberg default branch.
+          git fetch --prune origin \
+            '+refs/heads/*:refs/mirror/heads/*' \
+            '+refs/tags/*:refs/tags/*'
+
+          # Mirror all branches and tags, pruning deleted references.
+          git push --prune --tags codeberg '+refs/mirror/heads/*:refs/heads/*'
