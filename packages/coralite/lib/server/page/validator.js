@@ -1,5 +1,4 @@
 import { Parser } from 'htmlparser2'
-import { parse as parseJS } from 'acorn'
 import { ancestor as walkAncestorJS } from 'acorn-walk'
 import { readFile, access } from 'node:fs/promises'
 import { relative, resolve } from 'node:path'
@@ -8,6 +7,7 @@ import { camelToKebab, stripHtmlComments } from '../../shared/core.js'
 import { createDiagnostic, formatDiagnosticTerminal, normalizeErrorCodes, matchesErrorCode, getLocForSubstring } from '../../shared/diagnostics.js'
 import { discoverHtmlFiles } from '../utils/html.js'
 import { getIgnoreAttributeMap, findAttributesToIgnore, parseHTML, hasIgnoreAttribute } from '../utils/parse.js'
+import { getAST } from '../utils/server.js'
 import { extractPageScript, isScriptInsideIgnoredSlot } from '../parser/html.js'
 import {
   createValidationContext,
@@ -327,10 +327,7 @@ export function validatePageSource (sourceCode, options = {}) {
       }
 
       try {
-        const ast = parseJS(code, {
-          ecmaVersion: 'latest',
-          sourceType: 'module'
-        })
+        const ast = getAST(code, true)
         walkAncestorJS(ast, {
           CallExpression (node) {
             if (
@@ -548,11 +545,7 @@ function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnosti
 
   let ast
   try {
-    ast = parseJS(scriptContent, {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      locations: true
-    })
+    ast = getAST(scriptContent, true)
   } catch {
     return
   }

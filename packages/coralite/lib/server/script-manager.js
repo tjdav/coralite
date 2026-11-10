@@ -551,6 +551,7 @@ ScriptManager.prototype.collectStylesheetDeclarations = function () {
  * @param {string} [options.filePath] - The source file path used to map back to the original source.
  * @param {Array<Object>|null} [options.templateAST=null] - The parsed HTML template AST for client-side rendering.
  * @param {Object|null} [options.templateValues=null] - The token positions for AST updates.
+ * @param {Object|null} [options.hydrationMap=null] - Precomputed hydration map (binding markers already stamped).
  * @param {Object} [options.defaultValues={}] - The initial default state from setup().
  * @param {Object} [options.getters={}] - The component getters.
  * @param {string} [options.styles=''] - The raw CSS string for the component.
@@ -573,6 +574,7 @@ ScriptManager.prototype.registerComponent = function ({
   filePath,
   templateAST = null,
   templateValues = null,
+  hydrationMap = null,
   defaultValues = {},
   getters = {},
   styles = '',
@@ -627,6 +629,12 @@ ScriptManager.prototype.registerComponent = function ({
   if (templateValues) {
     if (isNew || override) {
       target.templateValues = templateValues
+    }
+  }
+
+  if (hydrationMap) {
+    if (isNew || override || !target.hydrationMap) {
+      target.hydrationMap = hydrationMap
     }
   }
 
@@ -1065,9 +1073,10 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         componentEntryCode += `import "${virtualPrefix}${cssNamespace}${componentId}";\n`
       }
 
-      // Generate the hydration map before serializing the template so binding
-      // markers are present in imperative templateHTML as well as SSR output.
-      const hydrationMapObj = generateHydrationMap(sharedFn.templateAST, sharedFn.templateValues)
+      // Reuse the hydration map generated before fragment ops were compiled so
+      // binding markers are not stamped a second time. The fallback keeps
+      // components registered outside `_safeRegister()` working.
+      const hydrationMapObj = sharedFn.hydrationMap || generateHydrationMap(sharedFn.templateAST, sharedFn.templateValues)
       const hydrationMap = serialize(hydrationMapObj)
 
       // Use a WeakMap to map original nodes to a unique index
@@ -1430,12 +1439,14 @@ export default {
                 }
 
                 if (sharedFn.script.content) {
-                  const transformedClient = extractScriptStylesheets(sharedFn.script.content, {
-                    filePath: sharedFn.filePath,
-                    allowAllFunctions: true
-                  })
+                  const clientCode = sharedFn.script.stylesheetsExtracted
+                    ? sharedFn.script.content
+                    : extractScriptStylesheets(sharedFn.script.content, {
+                      filePath: sharedFn.filePath,
+                      allowAllFunctions: true
+                    }).code
                   const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
-                  contents += `${padding}export const script = ${transformedClient.code};\n`
+                  contents += `${padding}export const script = ${clientCode};\n`
                 } else {
                   contents += 'export const script = null;\n'
                 }
@@ -1733,12 +1744,14 @@ export default {
                 }
 
                 if (sharedFn.script.content) {
-                  const transformedClient = extractScriptStylesheets(sharedFn.script.content, {
-                    filePath: sharedFn.filePath,
-                    allowAllFunctions: true
-                  })
+                  const clientCode = sharedFn.script.stylesheetsExtracted
+                    ? sharedFn.script.content
+                    : extractScriptStylesheets(sharedFn.script.content, {
+                      filePath: sharedFn.filePath,
+                      allowAllFunctions: true
+                    }).code
                   const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
-                  contents += `${padding}export const script = ${transformedClient.code};\n`
+                  contents += `${padding}export const script = ${clientCode};\n`
                 } else {
                   contents += 'export const script = null;\n'
                 }

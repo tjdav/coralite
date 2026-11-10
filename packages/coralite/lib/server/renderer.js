@@ -25,10 +25,11 @@ import {
   replaceToken,
   findAndExtractScript,
   extractComponentProperty,
-  astTransformer
+  astTransformer,
+  clearASTCache
 } from './utils/server.js'
 import { getHtmlFile } from './utils/html.js'
-import { extractScriptStylesheets } from './utils/dependency-stylesheets.js'
+import { extractScriptStylesheets, clearScriptStylesheetCache } from './utils/dependency-stylesheets.js'
 import { parseHTML, getTokensFromString, hasIgnoreAttribute } from './utils/parse.js'
 import { extractPageScript, createIgnoredSlotsResolver } from './parser/html.js'
 import {
@@ -4272,6 +4273,8 @@ export function createRenderer ({
     siteWideBundlePromise = null
     sriDigestCache.clear()
     inFlightCss.clear()
+    clearASTCache()
+    clearScriptStylesheetCache()
 
     if (structural) {
       await scriptManager.disposeContext()

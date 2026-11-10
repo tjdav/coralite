@@ -571,11 +571,192 @@ export function findAndExtractScript (code) {
 }
 
 /**
- * Extracts and normalizes the state content from a component definition.
+ * Resolves a property value to its source representation.
  *
  * @param {string} code - The raw script content
- * @returns {ScriptContent | null}
+ * @param {string} propertyName - The name of the property being extracted
+ * @param {import('acorn').Property} prop - The property AST node
+ * @returns {ScriptContent}
  */
+function resolveComponentPropertySource (code, propertyName, prop) {
+  const { value, method } = prop
+  let startLine = value.loc.start.line - 1
+  let prefix = ''
+  let content = ''
+
+  const source = code.slice(value.start, value.end)
+
+  if (value.type === 'ArrowFunctionExpression') {
+    content = prefix + source
+    startLine = value.loc.start.line - 1
+  } else if (value.type === 'FunctionExpression') {
+    if (method) {
+      const isAsync = value.async
+      prefix += (isAsync ? 'async ' : '') + 'function ' + propertyName
+      content = prefix + source
+      startLine = prop.key.loc.start.line - 1
+    } else {
+      content = prefix + source
+      startLine = value.loc.start.line - 1
+    }
+  } else if (value.type === 'ObjectExpression') {
+    if (propertyName === 'server') {
+      content = `() => (${source})`
+    } else {
+      content = source
+    }
+    startLine = value.loc.start.line - 1
+  } else if (value.type === 'Literal' || value.type === 'Identifier') {
+    content = source
+    startLine = value.loc.start.line - 1
+  }
+
+  return {
+    content,
+    lineOffset: startLine
+  }
+}
+
+/**
+ * Collects top-level variable and function declarations for named exports.
+ *
+ * @param {import('acorn').Program} ast - The parsed module AST
+ * @returns {Map<string, import('acorn').Node>}
+ */
+function collectTopLevelBindings (ast) {
+  const bindings = new Map()
+  for (const node of ast.body) {
+    if (node.type === 'VariableDeclaration') {
+      for (const decl of node.declarations) {
+        if (decl.id?.type === 'Identifier' && decl.init) {
+          bindings.set(decl.id.name, decl.init)
+        }
+      }
+    } else if (node.type === 'FunctionDeclaration' && node.id?.name) {
+      bindings.set(node.id.name, node)
+    }
+  }
+  return bindings
+}
+
+/**
+ * Creates the source representation for a named export binding.
+ *
+ * @param {string} code - The raw script content
+ * @param {string} propertyName - The exported property name
+ * @param {import('acorn').Node} target - The bound declaration or expression
+ * @returns {ScriptContent}
+ */
+function resolveExportedPropertySource (code, propertyName, target) {
+  const source = code.slice(target.start, target.end)
+  const content = (propertyName === 'server' && target.type === 'ObjectExpression')
+    ? `() => (${source})`
+    : source
+
+  return {
+    content,
+    lineOffset: target.loc ? target.loc.start.line - 1 : 0
+  }
+}
+
+/**
+ * Extracts multiple properties from a component script in a single AST walk.
+ *
+ * Only properties present in `propertyNames` are resolved. Missing properties
+ * are `null`, matching `extractComponentProperty()` semantics.
+ *
+ * @param {string} code - The raw script content
+ * @param {Array<string>} propertyNames - The property names to extract
+ * @returns {Record<string, ScriptContent | null>}
+ */
+export function extractComponentProperties (code, propertyNames) {
+  const ast = getAST(code, true)
+  const extracted = new Map()
+  const wanted = new Set(propertyNames)
+
+  walkJS(ast, {
+    CallExpression (node) {
+      if (
+        !node.callee ||
+        node.callee.type !== 'Identifier' ||
+        node.callee.name !== 'defineComponent'
+      ) {
+        return
+      }
+
+      const firstArg = node.arguments[0]
+      if (!firstArg || firstArg.type !== 'ObjectExpression') {
+        return
+      }
+
+      for (const propertyName of wanted) {
+        const prop = firstArg.properties.find(
+          p => p.type === 'Property' &&
+            p.key && p.key.type === 'Identifier' &&
+            p.key.name === propertyName
+        )
+
+        if (prop && prop.type === 'Property') {
+          extracted.set(propertyName, resolveComponentPropertySource(code, propertyName, prop))
+        }
+      }
+    }
+  })
+
+  const missing = propertyNames.filter(name => !extracted.has(name))
+
+  if (missing.length > 0 && ast && Array.isArray(ast.body)) {
+    const topLevelBindings = collectTopLevelBindings(ast)
+
+    for (const node of ast.body) {
+      if (node.type !== 'ExportNamedDeclaration') {
+        continue
+      }
+
+      if (node.declaration) {
+        if (node.declaration.type === 'FunctionDeclaration') {
+          const name = node.declaration.id?.name
+          if (name && wanted.has(name) && !extracted.has(name)) {
+            extracted.set(name, {
+              content: code.slice(node.declaration.start, node.declaration.end),
+              lineOffset: node.declaration.loc ? node.declaration.loc.start.line - 1 : 0
+            })
+          }
+        } else if (node.declaration.type === 'VariableDeclaration') {
+          for (const decl of node.declaration.declarations) {
+            const name = decl.id?.type === 'Identifier' ? decl.id.name : null
+            if (name && wanted.has(name) && decl.init && !extracted.has(name)) {
+              extracted.set(name, resolveExportedPropertySource(code, name, decl.init))
+            }
+          }
+        }
+      } else if (node.specifiers) {
+        for (const spec of node.specifiers) {
+          const exportedValue = spec.exported?.type === 'Identifier' ? spec.exported.name : spec.exported?.value
+          const expName = typeof exportedValue === 'string' ? exportedValue : null
+          if (!expName || !wanted.has(expName) || extracted.has(expName)) {
+            continue
+          }
+
+          const localValue = spec.local?.type === 'Identifier' ? spec.local.name : spec.local?.value
+          const localName = typeof localValue === 'string' ? localValue : null
+          const target = localName ? topLevelBindings.get(localName) : null
+          if (target) {
+            extracted.set(expName, resolveExportedPropertySource(code, expName, target))
+          }
+        }
+      }
+    }
+  }
+
+  /** @type {Record<string, ScriptContent | null>} */
+  const result = {}
+  for (const propertyName of propertyNames) {
+    result[propertyName] = extracted.get(propertyName) || null
+  }
+  return result
+}
+
 /**
  * Extracts a specific property from a defineComponent call.
  *
@@ -584,140 +765,7 @@ export function findAndExtractScript (code) {
  * @returns {ScriptContent | null}
  */
 export function extractComponentProperty (code, propertyName) {
-  const ast = getAST(code, true)
-  let result = null
-
-  walkJS(ast, {
-    CallExpression (node) {
-      if (
-        node.callee &&
-        node.callee.type === 'Identifier' &&
-        node.callee.name === 'defineComponent'
-      ) {
-        const firstArg = node.arguments[0]
-
-        if (firstArg && firstArg.type === 'ObjectExpression') {
-          const prop = firstArg.properties.find(
-            p => p.type === 'Property' &&
-              p.key && p.key.type === 'Identifier' &&
-              p.key.name === propertyName
-          )
-
-          if (prop && prop.type === 'Property') {
-            const { value, method } = prop
-            let startLine = value.loc.start.line - 1
-            let prefix = ''
-            let content = ''
-
-            // Get source slice
-            const source = code.slice(value.start, value.end)
-
-            if (value.type === 'ArrowFunctionExpression') {
-              content = prefix + source
-              startLine = value.loc.start.line - 1
-            } else if (value.type === 'FunctionExpression') {
-              if (method) {
-                const isAsync = value.async
-                prefix += (isAsync ? 'async ' : '') + 'function ' + propertyName
-                content = prefix + source
-                startLine = prop.key.loc.start.line - 1
-              } else {
-                content = prefix + source
-                startLine = value.loc.start.line - 1
-              }
-            } else if (value.type === 'ObjectExpression') {
-              if (propertyName === 'server') {
-                content = `() => (${source})`
-              } else {
-                content = source
-              }
-              startLine = value.loc.start.line - 1
-            } else if (value.type === 'Literal' || value.type === 'Identifier') {
-              content = source
-              startLine = value.loc.start.line - 1
-            }
-
-            result = {
-              content,
-              lineOffset: startLine
-            }
-          }
-        }
-      }
-    }
-  })
-
-  if (!result && ast && Array.isArray(ast.body)) {
-    const topLevelBindings = new Map()
-    for (const node of ast.body) {
-      if (node.type === 'VariableDeclaration') {
-        for (const decl of node.declarations) {
-          if (decl.id?.type === 'Identifier' && decl.init) {
-            topLevelBindings.set(decl.id.name, decl.init)
-          }
-        }
-      } else if (node.type === 'FunctionDeclaration' && node.id?.name) {
-        topLevelBindings.set(node.id.name, node)
-      }
-    }
-
-    for (const node of ast.body) {
-      if (node.type === 'ExportNamedDeclaration') {
-        if (node.declaration) {
-          if (node.declaration.type === 'FunctionDeclaration') {
-            if (node.declaration.id?.name === propertyName) {
-              result = {
-                content: code.slice(node.declaration.start, node.declaration.end),
-                lineOffset: node.declaration.loc ? node.declaration.loc.start.line - 1 : 0
-              }
-              break
-            }
-          } else if (node.declaration.type === 'VariableDeclaration') {
-            for (const decl of node.declaration.declarations) {
-              if (decl.id?.type === 'Identifier' && decl.id.name === propertyName && decl.init) {
-                const source = code.slice(decl.init.start, decl.init.end)
-                const content = (propertyName === 'server' && decl.init.type === 'ObjectExpression')
-                  ? `() => (${source})`
-                  : source
-                result = {
-                  content,
-                  lineOffset: decl.init.loc ? decl.init.loc.start.line - 1 : 0
-                }
-                break
-              }
-            }
-            if (result) {
-              break
-            }
-          }
-        } else if (node.specifiers) {
-          for (const spec of node.specifiers) {
-            const expName = spec.exported?.type === 'Identifier' ? spec.exported.name : spec.exported?.value
-            if (expName === propertyName) {
-              const localName = spec.local?.type === 'Identifier' ? spec.local.name : spec.local?.value
-              const target = topLevelBindings.get(localName)
-              if (target) {
-                const source = code.slice(target.start, target.end)
-                const content = (propertyName === 'server' && target.type === 'ObjectExpression')
-                  ? `() => (${source})`
-                  : source
-                result = {
-                  content,
-                  lineOffset: target.loc ? target.loc.start.line - 1 : 0
-                }
-                break
-              }
-            }
-          }
-          if (result) {
-            break
-          }
-        }
-      }
-    }
-  }
-
-  return result
+  return extractComponentProperties(code, [propertyName])[propertyName]
 }
 
 /**
