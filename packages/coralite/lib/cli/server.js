@@ -68,6 +68,32 @@ export function attachDevRoutes (expressApp) {
 }
 
 /**
+ * Builds lookup keys for a page source or output path.
+ *
+ * cleanUrls: false maps a nested index page to `<dir>.html` on disk while the
+ * source path remains `<dir>/index.html`. A request can arrive with either key,
+ * so both must be considered.
+ *
+ * @param {string|null|undefined} absolutePath - Page source or output path.
+ * @param {string} pagesRoot - Pages root directory.
+ * @returns {string[]} Relative request keys.
+ */
+function getPageRequestKeys (absolutePath, pagesRoot) {
+  if (!absolutePath) {
+    return []
+  }
+
+  const relPath = relative(pagesRoot, absolutePath).split(sep).join('/')
+  const keys = [relPath]
+
+  if (relPath.endsWith('/index.html')) {
+    keys.push(relPath.slice(0, -11) + '.html')
+  }
+
+  return keys
+}
+
+/**
  * Resolves the requested path to a file or a virtual page.
  *
  * @param {string} reqPath - The requested URL path.
@@ -419,21 +445,20 @@ async function server (config, options, runMode = 'dev') {
                 return buildResult
               }
               const injectedHtml = buildResult.content.replace(/<\/body>/i, rebuildScript)
-              const relPath = relative(config.pages, buildResult.path.pathname)
-              const normalizedKey = relPath.split(sep).join('/')
-              const htmlAliasKey = normalizedKey.endsWith('/index.html')
-                ? normalizedKey.slice(0, -11) + '.html'
-                : normalizedKey
+              const sourcePathname = buildResult.sourcePath || buildResult.path.pathname
+              const requestKeys = new Set([
+                ...getPageRequestKeys(sourcePathname, config.pages),
+                ...getPageRequestKeys(buildResult.path.pathname, config.pages)
+              ])
 
-              pageCache.set(normalizedKey, injectedHtml)
-              pageCache.set(htmlAliasKey, injectedHtml)
-
-              const sourcePathname = buildResult.sourcePath || normalize(join(config.pages, htmlAliasKey))
-              memoryPageSource.set(normalizedKey, sourcePathname)
-              memoryPageSource.set(htmlAliasKey, sourcePathname)
+              for (const key of requestKeys) {
+                pageCache.set(key, injectedHtml)
+                memoryPageSource.set(key, sourcePathname)
+              }
 
               return {
                 path: buildResult.path,
+                sourcePath: buildResult.sourcePath,
                 content: injectedHtml,
                 duration: buildResult.duration
               }
@@ -659,27 +684,22 @@ async function server (config, options, runMode = 'dev') {
               // inject a script to enable live reload via Server-Sent Events
               const injectedHtml = buildResult.content.replace(/<\/body>/i, rebuildScript)
 
-              const relPath = relative(basePagesRoot, buildResult.path.pathname)
-              const normalizedKey = relPath.split(sep).join('/')
-              const htmlAliasKey = normalizedKey.endsWith('/index.html')
-                ? normalizedKey.slice(0, -11) + '.html'
-                : normalizedKey
-
               const sourcePathname = buildResult.sourcePath || pathname
-              // map in memory page to source
-              if (normalizedKey !== sourcePathname) {
-                memoryPageSource.set(normalizedKey, sourcePathname)
-              }
-              if (htmlAliasKey !== sourcePathname) {
-                memoryPageSource.set(htmlAliasKey, sourcePathname)
-              }
+              const requestKeys = new Set([
+                ...getPageRequestKeys(sourcePathname, basePagesRoot),
+                ...getPageRequestKeys(buildResult.path.pathname, basePagesRoot)
+              ])
 
-              // cache rendered output under both normalized and .html alias keys
-              pageCache.set(normalizedKey, injectedHtml)
-              pageCache.set(htmlAliasKey, injectedHtml)
+              for (const key of requestKeys) {
+                if (key !== sourcePathname) {
+                  memoryPageSource.set(key, sourcePathname)
+                }
+                pageCache.set(key, injectedHtml)
+              }
 
               return {
                 path: buildResult.path,
+                sourcePath: buildResult.sourcePath,
                 content: injectedHtml,
                 duration: buildResult.duration
               }
@@ -719,12 +739,11 @@ async function server (config, options, runMode = 'dev') {
               if (!matchedDoc || !matchedDoc.content) {
                 return false
               }
-              const relPath = relative(basePagesRoot, matchedDoc.path.pathname)
-              const normalizedKey = relPath.split(sep).join('/')
-              const htmlAliasKey = normalizedKey.endsWith('/index.html')
-                ? normalizedKey.slice(0, -11) + '.html'
-                : normalizedKey
-              return normalizedKey === cacheKey || normalizedKey === cleanCacheKey || htmlAliasKey === cacheKey
+              const requestKeys = new Set([
+                ...getPageRequestKeys(matchedDoc.sourcePath || matchedDoc.path.pathname, basePagesRoot),
+                ...getPageRequestKeys(matchedDoc.path.pathname, basePagesRoot)
+              ])
+              return requestKeys.has(cacheKey) || requestKeys.has(cleanCacheKey)
             })
 
             if (doc) {
