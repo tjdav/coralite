@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { parseModule } from '../../../lib/server/utils/parse.js'
+import { parseModule, getTokensFromString } from '../../../lib/server/utils/parse.js'
 
 /**
  * Test suite for the improved getTokensFromString function
@@ -201,6 +201,14 @@ describe('Token Extraction (getTokensFromString)', () => {
       assert.strictEqual(tokens[0].name, 'className')
       assert.strictEqual(tokens[1].name, 'id')
     })
+
+    it('should collect static ref attributes without tokenizing static values', () => {
+      const template = '<template id="my-comp"><div ref="box" class="static">Content</div></template>'
+      const result = parseModule(template, { ignoreByAttribute: [] })
+
+      assert.deepStrictEqual(result.values.refs.map(ref => ref.name), ['box'])
+      assert.strictEqual(result.values.attributes.length, 0)
+    })
   })
 
   describe('Performance', () => {
@@ -252,6 +260,16 @@ describe('Token Extraction (getTokensFromString)', () => {
       // Should extract all nested tokens
       assert.ok(tokens.length >= 1)
       assert.ok(end - start < 100, `Should complete in < 100ms, took ${end - start}ms`)
+    })
+
+    it('should not rescan suffixes for many unclosed token starts', () => {
+      const input = '{{'.repeat(8000)
+      const start = Date.now()
+      const tokens = getTokensFromString(input)
+      const end = Date.now()
+
+      assert.strictEqual(tokens.length, 0)
+      assert.ok(end - start < 1000, `Should complete in < 1000ms, took ${end - start}ms`)
     })
   })
 })

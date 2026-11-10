@@ -517,7 +517,7 @@ export function parseModule (string, options = {}) {
           for (let i = 0; i < attributeNames.length; i++) {
             const name = attributeNames[i]
             const value = attributes[name]
-            const tokens = getTokensFromString(value)
+            const tokens = value.includes('{{') ? getTokensFromString(value) : []
 
             // store attribute tokens
             if (tokens.length) {
@@ -545,7 +545,7 @@ export function parseModule (string, options = {}) {
     ontext (text) {
       const parent = stack[stack.length - 1]
 
-      if (isTemplate && !isScript && ignoreDepth === 0 && text.trim()) {
+      if (isTemplate && !isScript && ignoreDepth === 0 && text.includes('{{') && text.trim()) {
         const topLevelTokens = getTokensFromString(text, true)
 
         if (topLevelTokens.length) {
@@ -1054,6 +1054,13 @@ export function getTokensFromString (string, topLevelOnly = false) {
     if (string[i] === '{' && string[i + 1] === '{') {
       const tokenStart = i
       i += 2
+
+      // No closing delimiter exists anywhere after this point, so no later
+      // token can be complete either. Avoid rescanning the suffix for every
+      // additional "{{" in malformed input.
+      if (string.indexOf('}}', i) === -1) {
+        break
+      }
 
       // Track brace depth for nested tokens
       let depth = 1
