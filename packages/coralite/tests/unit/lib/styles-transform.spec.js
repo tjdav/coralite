@@ -104,6 +104,22 @@ test('Style Transformation Logic', async (t) => {
     assert.match(result, /\.card-body\s*\{\s*padding:\s*1rem;?\s*\}/)
   })
 
+  await t.test('transformCss skips slotted partitioning when no ::slotted rule exists', async () => {
+    const css = `
+      :host { display: block; }
+      .card { color: red; padding: 1rem; }
+    `
+
+    const plain = await transformCss(css, null, { mode: 'scope' })
+    const split = await transformCss(css, null, {
+      mode: 'scope',
+      splitSlotted: true
+    })
+
+    assert.strictEqual(split.regularCss, plain)
+    assert.strictEqual(split.slottedCss, '')
+  })
+
   await t.test('transformCss transforms :host and :host-context pseudo-class selectors correctly', async () => {
     const css = `
       :host { display: block; }

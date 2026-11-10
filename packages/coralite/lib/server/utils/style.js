@@ -134,7 +134,8 @@ function partitionAst (root) {
  */
 export async function transformCss (css, onError, options = {}) {
   const mode = options.mode || 'nesting'
-  const splitSlotted = options.splitSlotted || false
+  const wantsSplit = Boolean(options.splitSlotted)
+  const splitSlotted = wantsSplit && css.includes('::slotted')
   const processor = postcss([
     {
       postcssPlugin: 'coralite-style-transform',
@@ -430,7 +431,13 @@ export async function transformCss (css, onError, options = {}) {
 
   try {
     const result = await processor.process(css, { from: undefined })
-    return result.css
+    const output = result.css
+    return wantsSplit
+      ? {
+        regularCss: output,
+        slottedCss: ''
+      }
+      : output
   } catch (error) {
     const message = 'Error processing CSS: ' + (error.message || error)
     if (typeof onError === 'function') {
@@ -442,7 +449,12 @@ export async function transformCss (css, onError, options = {}) {
     } else {
       console.error(message, error)
     }
-    return css
+    return wantsSplit
+      ? {
+        regularCss: css,
+        slottedCss: ''
+      }
+      : css
   }
 }
 
