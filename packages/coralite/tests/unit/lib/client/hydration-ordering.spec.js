@@ -68,7 +68,7 @@ describe('Hydration Ordering & Merge Semantics (E2E-3)', () => {
       sharedChunkPath: 'coralite-runtime.js',
       hydrationData: JSON.stringify({ user: { id: 100 } }),
       instanceCounters: JSON.stringify({ 'my-comp': 1 }),
-      pageConfig: 'null'
+      pageConfig: JSON.stringify({ title: 'Hydration Ordering' })
     })
 
     const hydrationAssignIdx = code.indexOf('coralite.state.hydration = Object.assign(')
@@ -84,5 +84,20 @@ describe('Hydration Ordering & Merge Semantics (E2E-3)', () => {
     assert.ok(countersAssignIdx < promiseAllIdx, 'instanceCounters Object.assign must appear before await Promise.all')
     assert.ok(hydrationAssignIdx < promiseAllIdx, 'hydrationData Object.assign must appear before await Promise.all')
     assert.ok(pageConfigAssignIdx < promiseAllIdx, 'pageConfig Object.assign must appear before await Promise.all')
+  })
+
+  it('generateClientRuntime places the null pageConfig fallback before await Promise.all', () => {
+    const code = generateClientRuntime({
+      base: '/',
+      sharedChunkPath: 'coralite-runtime.js',
+      pageConfig: 'null'
+    })
+
+    const pageConfigFallbackIdx = code.indexOf('coralite.config.page = coralite.config.page || null')
+    const promiseAllIdx = code.indexOf('await Promise.all([')
+
+    assert.notEqual(pageConfigFallbackIdx, -1, 'coralite.config.page fallback should be found')
+    assert.notEqual(promiseAllIdx, -1, 'await Promise.all should be found')
+    assert.ok(pageConfigFallbackIdx < promiseAllIdx, 'pageConfig fallback must appear before await Promise.all')
   })
 })
