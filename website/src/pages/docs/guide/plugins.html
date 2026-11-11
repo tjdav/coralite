@@ -270,22 +270,13 @@
       })
     </coralite-code-highlight>
 
-    <ul>
-      <li><strong>Scanned client code:</strong> component/page <code>client()</code>, plugin <code>client.context</code>, <code>client.init</code>, and client lifecycle hooks.</li>
-      <li><strong>Not scanned:</strong> dynamically imported helper modules. They are bundled, but their bodies are not AST-scanned for custom-element creation.</li>
-      <li><strong>Literal tags:</strong> preferred because <code>document.createElement('event-card')</code> is recorded during the build. Dynamic tag expressions are rewritten and lazy-load at runtime, but the concrete component may not appear in page metadata.</li>
-    </ul>
-
-    <p>Keep dynamically imported helpers pure (formatting, mapping, data shaping) or pass a factory from scanned component/page/plugin code. If an unscanned helper must create DOM itself, use <code>window.__coralite__.dom.createElement(tag)</code> or <code>await window.__coralite__.dom.loadComponent(tag)</code> before native creation.</p>
+    <p>Use literal tags so the component is recorded during the build. Plugin <code>client.context</code>, <code>client.init</code>, and lifecycle hooks are scanned; dynamically imported helper modules are bundled but not scanned. Keep helpers pure or use <code>window.__coralite__.dom.createElement(tag)</code> / <code>await window.__coralite__.dom.loadComponent(tag)</code> when an unscanned helper must create DOM.</p>
 
     <p><code>dependencies</code> is unrelated to custom-element tracking; it controls plugin registration order and cross-plugin availability. For example, <code>dependencies: ['$t']</code> ensures the <code>$t</code> plugin is registered before a plugin that consumes it.</p>
 
-    <coralite-alert type="warning">
-      <strong>Production does not patch DOM APIs</strong>
-      <p>Development and testing modes patch <code>document.createElement</code>, <code>innerHTML</code>, and <code>outerHTML</code>; production emits no prototype patching code. Testing can therefore hide a missing production dependency path. Add at least one production-build smoke test for imperative components.</p>
-    </coralite-alert>
-
     <p>Phase 1 of <code>client.context</code> runs before the component loader is ready; create elements in phase 2 or <code>client.init</code>.</p>
+
+    <p>See the <a href="/docs/reference/imperative-components.html">Imperative Components Reference</a> for the complete creation, loading, ownership, styling, and testing model.</p>
 
     <coralite-heading level="2" text="Testing Plugin Context"></coralite-heading>
 

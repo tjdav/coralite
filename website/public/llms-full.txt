@@ -1023,7 +1023,19 @@ Plugin context properties are injected into Component and Page handlers:
 
 ### 7.5 Imperative Custom Elements & Dependency Tracking
 
-Component/page `client()` and plugin client functions (`client.context`, `client.init`, and client lifecycle hooks) are AST-scanned and rewritten. Coralite rewrites `document.createElement`, `innerHTML`, `outerHTML`, and `insertAdjacentHTML` to its on-demand component loaders and records literal custom-element tags in page/component dependency metadata.
+Canonical reference: https://coralite.dev/docs/reference/imperative-components.html
+
+Prefer declarative markup. Use imperative creation only when the element cannot exist at build time.
+
+#### 7.5.1 Creation Paths
+
+| Location | Scanned | Use when |
+|---|---|---|
+| Declarative HTML | N/A | Default for static and SSR-rendered content. |
+| Component `client()` | Yes | Local interactive DOM owned by one component. |
+| Page `client()` | Yes | Page-level DOM not owned by a single component. |
+| Plugin `client.context`, `client.init`, client lifecycle hooks | Yes | Shared cross-page factories and plugin-owned UI. |
+| Dynamically imported helper module | No | Pure formatting, mapping, and data shaping; use public runtime helpers if DOM creation is unavoidable. |
 
 ```javascript
 import { definePlugin } from 'coralite'
@@ -1043,13 +1055,49 @@ export default definePlugin({
 })
 ```
 
+#### 7.5.2 Scan Boundary and Dependency Tracking
+
 - **Scanned locations**: component/page `client()`, plugin `client.context`, `client.init`, and client lifecycle hooks.
+- **Rewritten calls**: `document.createElement`, `innerHTML`, `outerHTML`, and `insertAdjacentHTML`.
 - **Not scanned**: dynamically imported helper modules. They are bundled, but their bodies are not AST-scanned for custom-element creation.
-- **Literal tags**: preferred because `document.createElement('event-card')` is recorded during the build. Dynamic tag expressions are rewritten and lazy-load at runtime, but the concrete component may not appear in page metadata.
-- **Helper rule**: keep dynamically imported helpers pure (formatting, mapping, data shaping) or pass a factory from scanned component/page/plugin code. If an unscanned helper must create DOM itself, use `window.__coralite__.dom.createElement(tag)` or `await window.__coralite__.dom.loadComponent(tag)` before native creation.
-- **Plugin dependencies**: `dependencies` is unrelated to custom-element tracking; it controls plugin registration order and cross-plugin availability. For example, `dependencies: ['$t']` ensures the `$t` plugin is registered before a plugin that consumes it.
-- **Production caveat**: production emits no DOM prototype patches. Development and testing modes patch `document.createElement`, `innerHTML`, and `outerHTML`; testing can therefore hide a missing production dependency path. Add at least one production-build smoke test for imperative components.
-- **Phase 1**: `client.context` phase 1 runs before the component loader is ready; create elements in phase 2 or `client.init`.
+- **Literal tags**: preferred because `document.createElement('event-card')` is recorded in page/component metadata for dependency tracking and cache invalidation.
+- **Dynamic tags**: still rewritten and lazy-load at runtime, but the concrete component may not appear in build metadata.
+
+#### 7.5.3 Rewrite Contract and Public Runtime APIs
+
+Compiler rewrite targets (`createCoraliteElement`, `processHTMLTarget`) are implementation details, not supported user-facing APIs.
+
+Public runtime APIs for unscanned code:
+
+- `window.__coralite__.dom.createElement(tag, options?)` — creates an element and starts on-demand upgrade.
+- `window.__coralite__.dom.loadComponent(tag)` — imports and defines the component module; concurrent loads are deduplicated.
+- `window.__coralite__.dom.upgrade(root)` — upgrades matching elements and waits for `updateComplete`.
+- `window.__coralite__.dom.processHTML(html, instanceId?)` — processes HTML, loads discovered components, and scopes refs when an instance ID is provided.
+
+Loading is asynchronous. `loadComponent()` resolves after the component module is defined; styles are injected during loading and may finish separately. Use `customElements.whenDefined(tag)` or the element's `updateComplete` when ordering matters.
+
+#### 7.5.4 Ownership, Styling, and Lifecycle
+
+- **Refs**: phase-2 context and lifecycle hooks scope injected refs by `instanceId`, with target-owner fallback. A new ref still needs a matching `state.ref_<name>` to resolve through `refs()`. See the DOM refs guide for nesting and slot ownership.
+- **Styling**: imperatively created components load CSS through the component manifest. They do not exist during SSR, so avoid relying on them for above-the-fold critical layout. See the styling guide.
+- **SSR/hydration**: imperative creation is client-only and does not participate in SSR output or hydration payloads unless the element is also rendered declaratively.
+- **Lifecycle**: normal connected/disconnected behavior applies. Make creation idempotent to avoid duplicate content and use the component `signal` for cleanup.
+
+#### 7.5.5 Testing and Troubleshooting
+
+| Mode | DOM prototype patches | What it proves |
+|---|---|---|
+| `development` | Yes | Fast iteration; can mask missing dependency tracking. |
+| `testing` | Yes | Deterministic E2E; can still mask missing dependency tracking. |
+| `production` | No | Real deployment behavior; required for imperative component verification. |
+
+Common failures:
+
+- Element exists but is empty: component not loaded or upgraded.
+- Works in development/testing but not production: creation lives in unscanned code.
+- Missing styles: component did not load, or CSS is still in flight.
+- `refs()` returns null: no `state.ref_<name>` or ownership points at a nested component.
+- Duplicate content: controller created the element more than once or duplicated declarative markup.
 
 ### 7.6 Testing Server Plugins
 
