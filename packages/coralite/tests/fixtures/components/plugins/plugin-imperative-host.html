@@ -1,0 +1,9 @@
+<template id="plugin-imperative-host">
+  <div ref="mount"></div>
+</template>
+
+<script type="module">
+  export function client ({ refs, 'imperative-plugin': imperativePlugin }) {
+    imperativePlugin.create(refs('mount'))
+  }
+</script>

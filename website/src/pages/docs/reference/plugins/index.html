@@ -140,6 +140,32 @@ export default defineComponent({
 })
     </coralite-code-highlight>
 
+    <coralite-heading level="3" text="Imperative Custom Elements"></coralite-heading>
+
+    <p>Client-side plugin functions may create custom elements imperatively with <code>document.createElement()</code> or HTML assignment. Coralite rewrites these calls to its on-demand component loader, so the component bundle is loaded and upgraded without a manual <code>loadComponent()</code> call:</p>
+
+    <coralite-code-highlight language="javascript" title="Creating a Component from Plugin Context">
+import { definePlugin } from 'coralite'
+
+export default definePlugin({
+  name: 'widgets',
+  client: {
+    context: () => (instanceContext) => ({
+      create (container) {
+        const child = document.createElement('my-widget')
+        container.appendChild(child)
+
+        container.insertAdjacentHTML('beforeend', '<my-widget></my-widget>')
+      }
+    })
+  }
+})
+    </coralite-code-highlight>
+
+    <p>This applies to <code>client.context</code> phase 2, <code>client.init</code>, the client lifecycle hooks, and page <code>client()</code> blocks. Phase 1 of <code>client.context</code> runs before the component loader is ready, so synchronous DOM creation there is not upgraded; create elements in phase 2 or <code>client.init</code> instead.</p>
+
+    <p>When a phase-2 context or lifecycle hook receives an instance context, Coralite uses its <code>instanceId</code> to scope refs inside injected HTML. If the instance cannot be determined statically, Coralite falls back to the insertion target’s owning component. A newly injected ref that is not declared in component state is not automatically added to <code>refs()</code>.</p>
+
     <coralite-heading level="2" text="5. Lifecycle Hooks"></coralite-heading>
 
     <p>Plugins intercept framework events across build and runtime phases via lifecycle hooks:</p>

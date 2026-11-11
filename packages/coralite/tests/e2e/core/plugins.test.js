@@ -47,6 +47,17 @@ test.describe('Plugins - Basic Extensibility', () => {
     await expect(child).toHaveText('Msg: Dynamic Module Loaded!')
   })
 
+  test('should upgrade custom elements created in plugin client context', async ({ page }) => {
+    await page.goto('/plugins/imperative-client/')
+    await waitForHydration(page)
+
+    const children = page.locator('plugin-imperative-child')
+    await expect(children).toHaveCount(3)
+    await expect(children.nth(0)).toContainText('Created for')
+    await expect(children.nth(1)).toContainText('Created from plugin HTML')
+    await expect(children.nth(2)).toContainText('Created from page client HTML')
+  })
+
   test('should support the observe pattern via plugins', async ({ page }) => {
     const comp = page.locator('plugin-component').first()
     const observeDisplay = comp.locator('.plugin-observe-display')

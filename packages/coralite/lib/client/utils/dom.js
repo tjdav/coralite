@@ -28,6 +28,41 @@ export function getEnclosingComponent (element) {
 }
 
 /**
+ * Resolves the owning Coralite component instance ID for a DOM node.
+ *
+ * @param {any} node - The DOM node.
+ * @returns {string | null | undefined} The owning component instance ID, or undefined.
+ */
+export function resolveInstanceId (node) {
+  if (!node) {
+    return undefined
+  }
+  if (node._instanceId !== undefined) {
+    return node._instanceId
+  }
+  if (typeof node.getAttribute === 'function') {
+    const owner = node.getAttribute('data-coralite-owner')
+    if (owner) {
+      return owner
+    }
+  }
+  if (typeof node.closest === 'function') {
+    const ownerElement = node.closest('[data-coralite-owner]')
+    if (ownerElement) {
+      return ownerElement.getAttribute('data-coralite-owner')
+    }
+    const instanceElement = node.closest('[data-cid]')
+    if (instanceElement) {
+      return instanceElement.getAttribute('data-cid')
+    }
+  }
+  if (node.host) {
+    return resolveInstanceId(node.host)
+  }
+  return undefined
+}
+
+/**
  * Checks if a candidate node belongs to a specific Coralite component instance.
  * Prioritizes the authoritative `data-coralite-owner` attribute over geometric DOM containment.
  *

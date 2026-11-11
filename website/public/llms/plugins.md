@@ -70,6 +70,31 @@ Plugin context properties are injected into Component and Page handlers:
   - **Getters NEVER receive environment-specific plugin context** (`server.context` or `client.context`). Getters are isomorphic and evaluate synchronously during both SSR and reactive browser state updates.
   - To use data from `server.context` in getters: call the plugin in `server()`, write to `state`, and read from `state` in getters.
 
+### Imperative Custom Elements
+
+Client-side plugin functions may create custom elements with `document.createElement()` or HTML assignment. Coralite rewrites these calls to its on-demand component loader, so the component bundle is loaded and upgraded without a manual `loadComponent()` call:
+
+```javascript
+import { definePlugin } from 'coralite'
+
+export default definePlugin({
+  name: 'widgets',
+  client: {
+    context: () => (instanceContext) => ({
+      create (container) {
+        const child = document.createElement('my-widget')
+        container.appendChild(child)
+        container.insertAdjacentHTML('beforeend', '<my-widget></my-widget>')
+      }
+    })
+  }
+})
+```
+
+This applies to `client.context` phase 2, `client.init`, client lifecycle hooks, and page `client()` blocks. Phase 1 of `client.context` runs before the component loader is ready, so synchronous DOM creation there is not upgraded; create elements in phase 2 or `client.init` instead.
+
+When a phase-2 context or lifecycle hook receives an instance context, its `instanceId` is used to scope refs inside injected HTML. If the instance cannot be determined statically, Coralite falls back to the insertion target's owning component. A newly injected ref that is not declared in component state is not automatically added to `refs()`.
+
 ## 4. Testing Plugins
 
 1. Register the plugin under `plugins: [...]` in `coralite.config.js`.

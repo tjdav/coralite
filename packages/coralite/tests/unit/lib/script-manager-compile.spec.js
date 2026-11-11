@@ -222,6 +222,34 @@ describe('ScriptManager Compilation', () => {
       assert.ok(result.manifest['imperative'], 'Imperative component should be in manifest')
     })
 
+    it('should rewrite imperative custom elements in plugin client contexts', async () => {
+      await sm.use({
+        name: 'imperative-plugin',
+        client: {
+          context: () => (localContext) => ({
+            create () {
+              const el = document.createElement('plugin-imperative-child')
+              el.setAttribute('data-instance', localContext.instanceId)
+              el.innerHTML = '<plugin-imperative-child></plugin-imperative-child>'
+              return el
+            }
+          })
+        }
+      })
+
+      sm.registerComponent({
+        id: 'plugin-imperative-child',
+        script: { content: '() => {}' }
+      })
+
+      const result = await sm.compileComponents('development')
+      const runtime = result.outputFiles[result.manifest['coralite-runtime']].text
+
+      assert.match(runtime, /createCoraliteElement\("plugin-imperative-child"\)/)
+      assert.doesNotMatch(runtime, /document\.createElement\("plugin-imperative-child"\)/)
+      assert.match(runtime, /processHTML\([^)]*localContext\.instanceId/)
+    })
+
     it('should handle nested imperative components by bundling all registered components', async () => {
       sm.registerComponent({
         id: 'parent',

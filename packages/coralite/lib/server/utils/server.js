@@ -769,30 +769,394 @@ export function extractComponentProperty (code, propertyName) {
 }
 
 /**
- * Extracts all component tag names dynamically created via document.createElement.
+ * Collects direct return expressions from a function without descending into nested functions.
  *
- * @param {string} code - The raw script content
- * @returns {Array<string>} - Array of identified imperative component tags
+ * @param {any} fnNode - Function AST node
+ * @returns {any[]} Direct return expressions
  */
-export function findAndExtractImperativeComponents (code) {
-  try {
-    const ast = getAST(code)
+function findDirectReturnExpressions (fnNode) {
+  if (!fnNode || !fnNode.body) {
+    return []
+  }
 
-    const components = new Set()
+  if (fnNode.body.type !== 'BlockStatement') {
+    return [fnNode.body]
+  }
 
-    const findHTMLComponents = (node, ancestors = []) => {
-      if (node.type === 'Literal' && typeof node.value === 'string') {
-        extractFromHTMLString(node.value, components)
-      } else if (node.type === 'TemplateLiteral') {
-        for (const element of node.quasis) {
-          extractFromHTMLString(element.value.cooked, components)
-        }
-      } else {
-        const values = resolveStringValues(node, ancestors)
-        for (const val of values) {
-          extractFromHTMLString(val, components)
+  const returnExprs = []
+  walkAncestorJS(fnNode.body, {
+    ReturnStatement (returnNode, ancestors) {
+      for (let i = ancestors.length - 1; i >= 0; i--) {
+        const ancestor = ancestors[i]
+        if (
+          ancestor.type === 'FunctionDeclaration' ||
+          ancestor.type === 'FunctionExpression' ||
+          ancestor.type === 'ArrowFunctionExpression'
+        ) {
+          return
         }
       }
+      if (returnNode.argument) {
+        returnExprs.push(returnNode.argument)
+      }
+    }
+  })
+  return returnExprs
+}
+
+/**
+ * Resolves a locally declared function binding by name.
+ *
+ * @param {string} name - Binding name
+ * @param {any} fnNode - Enclosing function AST node
+ * @returns {any | null} Resolved function node
+ */
+function resolveLocalFunctionBinding (name, fnNode) {
+  if (!fnNode || !fnNode.body || fnNode.body.type !== 'BlockStatement') {
+    return null
+  }
+
+  for (const stmt of fnNode.body.body) {
+    if (stmt.type === 'FunctionDeclaration' && stmt.id?.name === name) {
+      return stmt
+    }
+
+    if (stmt.type !== 'VariableDeclaration') {
+      continue
+    }
+
+    for (const decl of stmt.declarations) {
+      if (decl.id?.type !== 'Identifier' || decl.id.name !== name || !decl.init) {
+        continue
+      }
+      if (decl.init.type === 'FunctionExpression' || decl.init.type === 'ArrowFunctionExpression') {
+        return decl.init
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Collects function nodes returned by a two-phase context resolver.
+ *
+ * @param {any} expr - Return expression
+ * @param {any} fnNode - Enclosing function AST node
+ * @param {Set<any>} out - Output function set
+ * @returns {void}
+ */
+function collectReturnedFunctionNodes (expr, fnNode, out) {
+  if (!expr) {
+    return
+  }
+
+  if (expr.type === 'FunctionExpression' || expr.type === 'ArrowFunctionExpression') {
+    out.add(expr)
+    return
+  }
+
+  if (expr.type === 'Identifier') {
+    const binding = resolveLocalFunctionBinding(expr.name, fnNode)
+    if (binding) {
+      out.add(binding)
+    }
+    return
+  }
+
+  if (expr.type === 'ConditionalExpression') {
+    collectReturnedFunctionNodes(expr.consequent, fnNode, out)
+    collectReturnedFunctionNodes(expr.alternate, fnNode, out)
+  }
+}
+
+/**
+ * Returns the root function node of a serialized function expression.
+ *
+ * @param {any} ast - Parsed program AST
+ * @returns {any | null} Root function node
+ */
+function getRootFunctionNode (ast) {
+  if (!ast || ast.type !== 'Program') {
+    return null
+  }
+
+  for (const stmt of ast.body) {
+    if (stmt.type === 'FunctionDeclaration') {
+      return stmt
+    }
+    if (stmt.type === 'ExpressionStatement') {
+      const expr = stmt.expression
+      if (expr.type === 'FunctionExpression' || expr.type === 'ArrowFunctionExpression') {
+        return expr
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Checks whether an expression can be safely evaluated twice without side effects.
+ *
+ * @param {any} node - AST node
+ * @returns {boolean} Whether the node is a simple target expression
+ */
+function isSimpleTargetExpression (node) {
+  if (!node) {
+    return false
+  }
+  if (node.type === 'Identifier' || node.type === 'ThisExpression') {
+    return true
+  }
+  if (node.type !== 'MemberExpression') {
+    return false
+  }
+  if (node.computed) {
+    const property = node.property
+    const isStaticProperty = property.type === 'Literal' &&
+      (typeof property.value === 'string' || typeof property.value === 'number')
+    if (!isStaticProperty) {
+      return false
+    }
+  }
+  return isSimpleTargetExpression(node.object)
+}
+
+/**
+ * Derives an instance ID expression from a function parameter.
+ *
+ * @param {any} fnNode - Function AST node
+ * @param {Array<{ start: number, end: number, replacement: string }>} replacements - Replacement sink
+ * @returns {string | null} Instance ID expression, or null when unavailable
+ */
+function getInstanceExpressionFromFunction (fnNode, replacements) {
+  if (!fnNode || !Array.isArray(fnNode.params) || fnNode.params.length === 0) {
+    return null
+  }
+
+  const param = fnNode.params[0]
+  if (param.type === 'Identifier') {
+    return `${param.name}.instanceId`
+  }
+
+  if (param.type === 'AssignmentPattern') {
+    if (param.left.type === 'Identifier') {
+      return `${param.left.name}.instanceId`
+    }
+    if (param.left.type === 'ObjectPattern') {
+      return getInstanceExpressionFromFunction({ params: [param.left] }, replacements)
+    }
+    return null
+  }
+
+  if (param.type !== 'ObjectPattern') {
+    return null
+  }
+
+  const instanceProp = param.properties.find((prop) => {
+    if (prop.type !== 'Property' || prop.computed) {
+      return false
+    }
+    return (prop.key.type === 'Identifier' && prop.key.name === 'instanceId') ||
+      (prop.key.type === 'Literal' && prop.key.value === 'instanceId')
+  })
+
+  if (instanceProp) {
+    if (instanceProp.value.type === 'Identifier') {
+      return instanceProp.value.name
+    }
+    if (instanceProp.value.type === 'AssignmentPattern' && instanceProp.value.left.type === 'Identifier') {
+      return instanceProp.value.left.name
+    }
+    return null
+  }
+
+  const injectedName = '_coralite_pluginInstanceId'
+  replacements.push({
+    start: param.start + 1,
+    end: param.start + 1,
+    replacement: `instanceId: ${injectedName}, `
+  })
+  return injectedName
+}
+
+/**
+ * Collects custom element tags from an HTML-producing expression.
+ *
+ * @param {any} node - AST node
+ * @param {any[]} ancestors - Ancestor nodes
+ * @param {Set<string>} components - Component tag sink
+ * @returns {void}
+ */
+function collectHTMLComponents (node, ancestors, components) {
+  if (!node) {
+    return
+  }
+
+  if (node.type === 'Literal' && typeof node.value === 'string') {
+    extractFromHTMLString(node.value, components)
+    return
+  }
+
+  if (node.type === 'TemplateLiteral') {
+    for (const element of node.quasis) {
+      extractFromHTMLString(element.value.cooked, components)
+    }
+    return
+  }
+
+  const values = resolveStringValues(node, ancestors)
+  for (const val of values) {
+    extractFromHTMLString(val, components)
+  }
+}
+
+/**
+ * Checks whether a call is document.createElement.
+ *
+ * @param {any} node - Call expression AST node
+ * @returns {boolean} Whether the node is document.createElement
+ */
+function isDocumentCreateElementCall (node) {
+  return Boolean(
+    node.callee &&
+    node.callee.type === 'MemberExpression' &&
+    node.callee.object &&
+    node.callee.object.type === 'Identifier' &&
+    node.callee.object.name === 'document' &&
+    node.callee.property &&
+    node.callee.property.type === 'Identifier' &&
+    node.callee.property.name === 'createElement'
+  )
+}
+
+/**
+ * Checks whether a call is createCoraliteElement.
+ *
+ * @param {any} node - Call expression AST node
+ * @returns {boolean} Whether the node is createCoraliteElement
+ */
+function isCreateCoraliteElementCall (node) {
+  return node.callee?.type === 'Identifier' && node.callee.name === 'createCoraliteElement'
+}
+
+/**
+ * Checks whether a call is insertAdjacentHTML.
+ *
+ * @param {any} node - Call expression AST node
+ * @returns {boolean} Whether the node is insertAdjacentHTML
+ */
+function isInsertAdjacentHTMLCall (node) {
+  return Boolean(
+    node.callee &&
+    node.callee.type === 'MemberExpression' &&
+    node.callee.property &&
+    node.callee.property.type === 'Identifier' &&
+    node.callee.property.name === 'insertAdjacentHTML'
+  )
+}
+
+/**
+ * Rewrites imperative custom-element creation and HTML insertion in serialized client code.
+ *
+ * @param {string} code - The client function source to rewrite
+ * @param {Object} [options] - Transform options
+ * @param {'none' | 'context' | 'hook'} [options.instanceScope='none'] - How to resolve a component instance ID
+ * @returns {{ code: string, components: string[] }} The rewritten source and discovered custom-element tags
+ */
+export function transformImperativeComponents (code, options = {}) {
+  const instanceScope = options.instanceScope || 'none'
+
+  try {
+    let source = code
+    let offset = 0
+    let ast
+
+    try {
+      ast = getAST(source)
+    } catch {
+      source = `(${code})`
+      offset = 1
+      ast = getAST(source)
+    }
+
+    const components = new Set()
+    const replacements = []
+    const resolvedInstances = new Map()
+    const rootFunction = getRootFunctionNode(ast)
+    const hookInstanceExpression = instanceScope === 'hook' && rootFunction
+      ? getInstanceExpressionFromFunction(rootFunction, replacements)
+      : null
+    const phase2Functions = new Set()
+    if (instanceScope === 'context' && rootFunction) {
+      for (const expr of findDirectReturnExpressions(rootFunction)) {
+        collectReturnedFunctionNodes(expr, rootFunction, phase2Functions)
+      }
+    }
+
+    const resolveInstanceExpression = (fnNode) => {
+      if (!resolvedInstances.has(fnNode)) {
+        resolvedInstances.set(fnNode, getInstanceExpressionFromFunction(fnNode, replacements))
+      }
+      return resolvedInstances.get(fnNode)
+    }
+
+    const resolveNodeInstance = (ancestors) => {
+      if (phase2Functions.size > 0) {
+        for (let i = ancestors.length - 1; i >= 0; i--) {
+          if (phase2Functions.has(ancestors[i])) {
+            return resolveInstanceExpression(ancestors[i])
+          }
+        }
+      }
+      return hookInstanceExpression
+    }
+
+    const addHTMLProcessing = (htmlNode, targetNode, ancestors) => {
+      if (!htmlNode) {
+        return
+      }
+      const instanceExpression = resolveNodeInstance(ancestors)
+      if (instanceExpression) {
+        replacements.push({
+          start: htmlNode.start,
+          end: htmlNode.start,
+          replacement: 'processHTML('
+        })
+        replacements.push({
+          start: htmlNode.end,
+          end: htmlNode.end,
+          replacement: `, ${instanceExpression})`
+        })
+        return
+      }
+
+      if (isSimpleTargetExpression(targetNode)) {
+        const targetSource = source.slice(targetNode.start, targetNode.end)
+        replacements.push({
+          start: htmlNode.start,
+          end: htmlNode.start,
+          replacement: `processHTMLTarget(${targetSource}, `
+        })
+        replacements.push({
+          start: htmlNode.end,
+          end: htmlNode.end,
+          replacement: ')'
+        })
+        return
+      }
+
+      replacements.push({
+        start: htmlNode.start,
+        end: htmlNode.start,
+        replacement: 'processHTML('
+      })
+      replacements.push({
+        start: htmlNode.end,
+        end: htmlNode.end,
+        replacement: ')'
+      })
     }
 
     walkAncestorJS(ast, {
@@ -802,22 +1166,32 @@ export function findAndExtractImperativeComponents (code) {
           node.left.property.type === 'Identifier' &&
           (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML')
         ) {
-          findHTMLComponents(node.right, ancestors)
+          collectHTMLComponents(node.right, ancestors, components)
+          addHTMLProcessing(node.right, node.left.object, ancestors)
         }
       },
       CallExpression (node, ancestors) {
-        if (
-          node.callee &&
-          ((node.callee.type === 'MemberExpression' &&
-          node.callee.object &&
-          node.callee.object.type === 'Identifier' &&
-          node.callee.object.name === 'document' &&
-          node.callee.property &&
-          node.callee.property.type === 'Identifier' &&
-          node.callee.property.name === 'createElement') ||
-          (node.callee.type === 'Identifier' &&
-          node.callee.name === 'createCoraliteElement'))
-        ) {
+        if (isDocumentCreateElementCall(node)) {
+          const arg = node.arguments[0]
+          if (arg) {
+            const values = resolveStringValues(arg, ancestors)
+            let hasCustomTag = false
+            for (const val of values) {
+              if (val.includes('-')) {
+                components.add(val)
+                hasCustomTag = true
+              }
+            }
+
+            if (hasCustomTag || (arg.type === 'Literal' && typeof arg.value === 'string' && arg.value.includes('-')) || arg.type !== 'Literal') {
+              replacements.push({
+                start: node.callee.start,
+                end: node.callee.end,
+                replacement: 'createCoraliteElement'
+              })
+            }
+          }
+        } else if (isCreateCoraliteElementCall(node)) {
           const arg = node.arguments[0]
           if (arg) {
             const values = resolveStringValues(arg, ancestors)
@@ -829,25 +1203,47 @@ export function findAndExtractImperativeComponents (code) {
           }
         }
 
-        if (
-          node.callee &&
-          node.callee.type === 'MemberExpression' &&
-          node.callee.property &&
-          node.callee.property.type === 'Identifier' &&
-          node.callee.property.name === 'insertAdjacentHTML'
-        ) {
+        if (isInsertAdjacentHTMLCall(node) && !node.optional) {
+          const callee = node.callee
           const arg = node.arguments[1]
-          if (arg) {
-            findHTMLComponents(arg, ancestors)
+          if (callee.type === 'MemberExpression' && !callee.optional && arg) {
+            collectHTMLComponents(arg, ancestors, components)
+            addHTMLProcessing(arg, callee.object, ancestors)
           }
         }
       }
     })
 
-    return [...components]
+    replacements.sort((a, b) => b.start - a.start)
+    let output = source
+    for (const replacement of replacements) {
+      output = output.slice(0, replacement.start) + replacement.replacement + output.slice(replacement.end)
+    }
+
+    if (offset > 0) {
+      output = output.slice(offset, output.length - offset)
+    }
+
+    return {
+      code: output,
+      components: Array.from(components)
+    }
   } catch {
-    return []
+    return {
+      code,
+      components: []
+    }
   }
+}
+
+/**
+ * Extracts all component tag names dynamically created via document.createElement.
+ *
+ * @param {string} code - The raw script content
+ * @returns {Array<string>} - Array of identified imperative component tags
+ */
+export function findAndExtractImperativeComponents (code) {
+  return transformImperativeComponents(code).components
 }
 
 /**

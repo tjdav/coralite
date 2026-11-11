@@ -4,6 +4,13 @@ import { CoraliteError } from '../shared/errors.js'
 import { createIsoPluginProxy } from './utils/iso-plugin-proxy.js'
 import { applyDomBoundAttribute } from '../shared/tags.js'
 import { isBooleanCustomAttribute } from '../shared/attributes.js'
+import { createCoraliteElement, processHTML, processHTMLTarget } from './utils/inject.js'
+
+const PAGE_CLIENT_HELPERS = {
+  createCoraliteElement,
+  processHTML,
+  processHTMLTarget
+}
 
 
 /**
@@ -28,14 +35,16 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
     return
   }
 
-  const parseFn = (fnOrStr) => {
+  const parseFn = (fnOrStr, helpers = null) => {
     if (typeof fnOrStr === 'function') {
       return fnOrStr
     }
     if (typeof fnOrStr === 'string' && fnOrStr.trim()) {
       try {
         const normalizedStr = normalizeFunction(fnOrStr.trim())
-        return new Function(`return (${normalizedStr})`)()
+        const helperNames = helpers ? Object.keys(helpers) : []
+        const helperArgs = helperNames.map((name) => helpers[name])
+        return new Function(...helperNames, `return (${normalizedStr})`)(...helperArgs)
       } catch {
         return null
       }
@@ -345,7 +354,7 @@ export async function setupPageRuntime (pageConfig, getClientContext) {
   applyPageStyles()
   updatePageTokens(true)
 
-  const clientFn = parseFn(pageConfig.client)
+  const clientFn = parseFn(pageConfig.client, PAGE_CLIENT_HELPERS)
   if (typeof clientFn === 'function') {
     const runtimePlugins = win?.__coralite__?.plugins
     const routerCtx = runtimePlugins?.router

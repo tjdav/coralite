@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Imperative Plugin Page</title>
+</head>
+<body>
+  <plugin-imperative-host></plugin-imperative-host>
+  <div id="page-client-mount"></div>
+  <script type="module">
+    import { definePage } from 'coralite'
+
+    export default definePage({
+      client ({ root }) {
+        const mount = root.querySelector('#page-client-mount')
+        mount.innerHTML = '<plugin-imperative-child label="Created from page client HTML"></plugin-imperative-child>'
+      }
+    })
+  </script>
+</body>
+</html>

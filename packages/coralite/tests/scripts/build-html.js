@@ -8,6 +8,7 @@ import { consumerServerPlugin } from '../fixtures/plugins/consumer-server-plugin
 import { consumerClientPlugin } from '../fixtures/plugins/consumer-client-plugin.js'
 import { hookTestPlugin } from '../fixtures/plugins/hook-test-plugin.js'
 import { configTypesPlugin } from '../fixtures/plugins/config-types-plugin.js'
+import { imperativePlugin } from '../fixtures/plugins/imperative-plugin.js'
 
 /**
  * Fixtures that intentionally fail to build — the failure IS the test.
@@ -101,6 +102,7 @@ const coralite = await createCoralite({
     consumerClientPlugin,
     hookTestPlugin,
     configTypesPlugin,
+    imperativePlugin,
     {
       name: 'my-plugin',
       server: {
