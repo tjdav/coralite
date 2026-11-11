@@ -1,5 +1,6 @@
 import { defineComponent, createContext, ContextRequestEvent } from '../../shared/core.js'
 import { definePlugin } from '../../shared/define-plugin.js'
+import { resolveInstanceId } from './dom.js'
 
 const TOKEN_TEST = /\{\{[\s\S]*?\}\}/
 const TOKEN_GLOBAL = /\{\{[\s\S]*?\}\}/g
@@ -251,6 +252,17 @@ export function processHTML (html, instanceId) {
   }
 
   return formatCoraliteHTML(html, instanceId, false)
+}
+
+/**
+ * Processes an HTML string using the owner component inferred from the target element.
+ *
+ * @param {any} target - The DOM node receiving the HTML.
+ * @param {string} html - The HTML string.
+ * @returns {string} The processed HTML string.
+ */
+export function processHTMLTarget (target, html) {
+  return processHTML(html, resolveInstanceId(target))
 }
 
 export { defineComponent, definePlugin, createContext, ContextRequestEvent }

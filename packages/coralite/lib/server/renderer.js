@@ -19,14 +19,16 @@ import {
   camelToKebab,
   resolveComponentSlots,
   NOOP_SIGNAL,
-  isAsyncFunction
+  isAsyncFunction,
+  normalizeFunction
 } from '../shared/core.js'
 import {
   replaceToken,
   findAndExtractScript,
   extractComponentProperty,
   astTransformer,
-  clearASTCache
+  clearASTCache,
+  transformImperativeComponents
 } from './utils/server.js'
 import { getHtmlFile } from './utils/html.js'
 import { extractScriptStylesheets, clearScriptStylesheetCache } from './utils/dependency-stylesheets.js'
@@ -1641,6 +1643,12 @@ export function createRenderer ({
     const mappedPageSource = mappedSession.page || mappedComponent?.page || pageContext
     pageContext = withPageMetaDefaults(mappedPageSource)
     const pageExports = pageContext?.exports || originalDocument?.page?.exports || pageItem.result?.page?.exports || null
+    let pageClientTransform = null
+    if (pageExports && (typeof pageExports.client === 'function' || typeof pageExports.client === 'string')) {
+      pageClientTransform = transformImperativeComponents(normalizeFunction(pageExports.client), {
+        instanceScope: 'none'
+      })
+    }
     const rawRoute = pageContext?.route || targetRoute
     const routeObj = typeof rawRoute === 'object' && rawRoute !== null
       ? {
@@ -2459,6 +2467,13 @@ export function createRenderer ({
       }
     }
 
+    // Include components extracted from the page client controller
+    if (pageClientTransform) {
+      for (const tag of pageClientTransform.components) {
+        addComponentAndDependencies(tag)
+      }
+    }
+
     const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
     const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
 
@@ -2960,7 +2975,10 @@ export function createRenderer ({
 
         let serializedPageClient = null
         if (!isFallbackRender && pageExports && pageExports.client) {
-          serializedPageClient = extractScriptStylesheets(pageExports.client.toString(), {
+          const pageClientSource = pageClientTransform
+            ? pageClientTransform.code
+            : normalizeFunction(pageExports.client)
+          serializedPageClient = extractScriptStylesheets(pageClientSource, {
             filePath: pageItem.path?.pathname,
             allowAllFunctions: true
           }).code

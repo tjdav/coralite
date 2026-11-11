@@ -98,6 +98,26 @@ describe('Page Client Runtime Execution', () => {
     assert.ok(document.documentElement.getAttribute('style')?.includes('--page-count: 42'))
   })
 
+  it('injects imperative DOM helpers into serialized page client strings', async () => {
+    document.documentElement.innerHTML = '<head></head><body><div id="mount"></div></body>'
+
+    const pageConfig = {
+      route: { path: '/' },
+      client: `function client ({ root }) {
+        const mount = root.querySelector('#mount')
+        mount.innerHTML = processHTMLTarget(mount, '<span class="from-page-client">ok</span>')
+        const el = createCoraliteElement('div')
+        el.id = 'created-by-page-client'
+        document.body.appendChild(el)
+      }`
+    }
+
+    await setupPageRuntime(pageConfig)
+
+    assert.equal(document.querySelector('#mount .from-page-client').textContent, 'ok')
+    assert.equal(document.querySelector('#created-by-page-client').tagName, 'DIV')
+  })
+
   it('preserves pre-rendered HTML on boot for type: html tokens and reactively updates innerHTML on flush', async () => {
     // Simulated SSR DOM where <c-token> already has rendered HTML child nodes
     document.documentElement.innerHTML = `

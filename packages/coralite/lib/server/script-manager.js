@@ -1,7 +1,7 @@
 import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, hasContextEntries, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap, generateBindingTree, validateSerializable } from '../shared/core.js'
-import { findAndExtractImperativeComponents, astTransformer } from './utils/server.js'
+import { transformImperativeComponents, astTransformer } from './utils/server.js'
 import { buildDependencyStylesheets, createStylesheetHandle, extractScriptStylesheets } from './utils/dependency-stylesheets.js'
 import { CoraliteError } from '../shared/errors.js'
 import { readFile } from 'node:fs/promises'
@@ -57,6 +57,39 @@ export function getPluginConfig (module) {
     return module.config
   }
   return {}
+}
+
+/**
+ * Normalizes and rewrites the browser-side functions of a plugin module.
+ *
+ * @param {any} module - Registered script module
+ * @returns {{ before: string, after: string, disconnected: string, init: string, context: string, components: string[] }} Rewritten function sources and discovered tags
+ */
+function createPluginFunctionSources (module) {
+  const components = new Set()
+
+  const rewrite = (fn, instanceScope) => {
+    if (!fn) {
+      return 'null'
+    }
+
+    const transformed = transformImperativeComponents(normalizeFunction(fn), {
+      instanceScope
+    })
+    for (const component of transformed.components) {
+      components.add(component)
+    }
+    return transformed.code
+  }
+
+  return {
+    before: rewrite(module.onBeforeComponentRender, 'hook'),
+    after: rewrite(module.onAfterComponentRender, 'hook'),
+    disconnected: rewrite(module.onDisconnected, 'hook'),
+    init: rewrite(module.init, 'none'),
+    context: rewrite(module.context, 'context'),
+    components: Array.from(components)
+  }
 }
 
 /**
@@ -406,6 +439,7 @@ ScriptManager.prototype.use = async function (plugin) {
       || typeof client.onDisconnected === 'function') {
       /** @type {any} */
       const pluginObj = plugin
+      /** @type {any} */
       const moduleRecord = {
         ...plugin,
         client: pluginObj.client || plugin,
@@ -418,16 +452,11 @@ ScriptManager.prototype.use = async function (plugin) {
         rootDir: pluginObj.rootDir || client.rootDir,
         filePath: pluginObj.filePath || client.filePath
       }
+      const sources = createPluginFunctionSources(moduleRecord)
+      moduleRecord._pluginSources = sources
+      moduleRecord._extractedComponents = sources.components
+      client._extractedComponents = sources.components
       this.scriptModules.push(moduleRecord)
-
-      if (client.context) {
-        const contextStr = serialize(client.context)
-        const extractedComponents = findAndExtractImperativeComponents(contextStr)
-
-        if (extractedComponents.length > 0) {
-          client._extractedComponents = Array.from(new Set(extractedComponents))
-        }
-      }
     }
   }
 
@@ -1492,23 +1521,17 @@ export default {
                 return undefined
               }
 
+              const sources = module._pluginSources || createPluginFunctionSources(module)
               let contents = ''
               const rawClientConfig = getPluginConfig(module)
               const configContent = `const pluginConfig = Object.freeze(${serialize(rawClientConfig)});`
 
               contents += configContent + '\n'
 
-              const beforeFn = module.onBeforeComponentRender ? normalizeFunction(module.onBeforeComponentRender) : 'null'
-              contents += `export const onBeforeComponentRender = ${beforeFn};\n`
-
-              const afterFn = module.onAfterComponentRender ? normalizeFunction(module.onAfterComponentRender) : 'null'
-              contents += `export const onAfterComponentRender = ${afterFn};\n`
-
-              const disconnectedFn = module.onDisconnected ? normalizeFunction(module.onDisconnected) : 'null'
-              contents += `export const onDisconnected = ${disconnectedFn};\n`
-
-              const initFn = module.init ? normalizeFunction(module.init) : 'null'
-              contents += `export const init = ${initFn};\n`
+              contents += `export const onBeforeComponentRender = ${sources.before};\n`
+              contents += `export const onAfterComponentRender = ${sources.after};\n`
+              contents += `export const onDisconnected = ${sources.disconnected};\n`
+              contents += `export const init = ${sources.init};\n`
 
               contents += 'export const isomorphicContextProps = {\n'
               if (module.isIsomorphicContext && module.context) {
@@ -1517,7 +1540,7 @@ export default {
                   throw new CoraliteError(`Reserved context key '${isoName}' cannot be used in plugin context.`)
                 }
 
-                const fn = normalizeFunction(module.context)
+                const fn = sources.context
                 const safeIsoName = JSON.stringify(isoName)
 
                 contents += `  ${safeIsoName}: (globalContext) => {\n`
@@ -1556,7 +1579,7 @@ export default {
                   throw new CoraliteError(`Reserved context key '${clientName}' cannot be used in plugin context.`)
                 }
 
-                const fn = normalizeFunction(module.context)
+                const fn = sources.context
                 const safeClientName = JSON.stringify(clientName)
 
                 contents += `  ${safeClientName}: async (globalContext) => {\n`
@@ -1617,6 +1640,11 @@ export default {
             if (path.startsWith(moduleNamespace)) {
               const index = parseInt(path.replace(moduleNamespace, ''), 10)
               const module = this.scriptModules[index]
+              if (!module) {
+                return undefined
+              }
+
+              const sources = module._pluginSources || createPluginFunctionSources(module)
               let contents = ''
 
               const rawClientConfig = getPluginConfig(module)
@@ -1624,17 +1652,10 @@ export default {
 
               contents += configContent + '\n'
 
-              const beforeFn = module.onBeforeComponentRender ? normalizeFunction(module.onBeforeComponentRender) : 'null'
-              contents += `export const onBeforeComponentRender = ${beforeFn};\n`
-
-              const afterFn = module.onAfterComponentRender ? normalizeFunction(module.onAfterComponentRender) : 'null'
-              contents += `export const onAfterComponentRender = ${afterFn};\n`
-
-              const disconnectedFn = module.onDisconnected ? normalizeFunction(module.onDisconnected) : 'null'
-              contents += `export const onDisconnected = ${disconnectedFn};\n`
-
-              const initFn = module.init ? normalizeFunction(module.init) : 'null'
-              contents += `export const init = ${initFn};\n`
+              contents += `export const onBeforeComponentRender = ${sources.before};\n`
+              contents += `export const onAfterComponentRender = ${sources.after};\n`
+              contents += `export const onDisconnected = ${sources.disconnected};\n`
+              contents += `export const init = ${sources.init};\n`
 
               contents += 'export const isomorphicContextProps = {\n'
               if (module.isIsomorphicContext && module.context) {
@@ -1643,7 +1664,7 @@ export default {
                   throw new CoraliteError(`Reserved context key '${isoName}' cannot be used in plugin context.`)
                 }
 
-                const fn = normalizeFunction(module.context)
+                const fn = sources.context
                 const safeIsoName = JSON.stringify(isoName)
 
                 contents += `  ${safeIsoName}: (globalContext) => {\n`
@@ -1682,7 +1703,7 @@ export default {
                   throw new CoraliteError(`Reserved context key '${clientName}' cannot be used in plugin context.`)
                 }
 
-                const fn = normalizeFunction(module.context)
+                const fn = sources.context
                 const safeClientName = JSON.stringify(clientName)
 
                 contents += `  ${safeClientName}: async (globalContext) => {\n`
