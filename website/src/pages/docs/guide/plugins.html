@@ -248,6 +248,45 @@
       });
     </coralite-code-highlight>
 
+    <coralite-heading level="2" text="Imperative Components & Dependency Tracking"></coralite-heading>
+
+    <p>Shared DOM factories belong in a plugin's <code>client.context</code> or in component/page <code>client()</code> code. Coralite AST-scans those client functions, rewrites <code>document.createElement</code>, <code>innerHTML</code>, <code>outerHTML</code>, and <code>insertAdjacentHTML</code> to its on-demand component loaders, and records literal custom-element tags in page/component dependency metadata.</p>
+
+    <coralite-code-highlight language="javascript" title="Creating a Component from Plugin Context">
+      import { definePlugin } from 'coralite'
+
+      export default definePlugin({
+        name: 'eventCards',
+        client: {
+          context: () => (instanceContext) => ({
+            createCard (event) {
+              const card = document.createElement('event-card')
+              card.setAttribute('event-id', event.id)
+              card.setAttribute('label', event.title)
+              return card
+            }
+          })
+        }
+      })
+    </coralite-code-highlight>
+
+    <ul>
+      <li><strong>Scanned client code:</strong> component/page <code>client()</code>, plugin <code>client.context</code>, <code>client.init</code>, and client lifecycle hooks.</li>
+      <li><strong>Not scanned:</strong> dynamically imported helper modules. They are bundled, but their bodies are not AST-scanned for custom-element creation.</li>
+      <li><strong>Literal tags:</strong> preferred because <code>document.createElement('event-card')</code> is recorded during the build. Dynamic tag expressions are rewritten and lazy-load at runtime, but the concrete component may not appear in page metadata.</li>
+    </ul>
+
+    <p>Keep dynamically imported helpers pure (formatting, mapping, data shaping) or pass a factory from scanned component/page/plugin code. If an unscanned helper must create DOM itself, use <code>window.__coralite__.dom.createElement(tag)</code> or <code>await window.__coralite__.dom.loadComponent(tag)</code> before native creation.</p>
+
+    <p><code>dependencies</code> is unrelated to custom-element tracking; it controls plugin registration order and cross-plugin availability. For example, <code>dependencies: ['$t']</code> ensures the <code>$t</code> plugin is registered before a plugin that consumes it.</p>
+
+    <coralite-alert type="warning">
+      <strong>Production does not patch DOM APIs</strong>
+      <p>Development and testing modes patch <code>document.createElement</code>, <code>innerHTML</code>, and <code>outerHTML</code>; production emits no prototype patching code. Testing can therefore hide a missing production dependency path. Add at least one production-build smoke test for imperative components.</p>
+    </coralite-alert>
+
+    <p>Phase 1 of <code>client.context</code> runs before the component loader is ready; create elements in phase 2 or <code>client.init</code>.</p>
+
     <coralite-heading level="2" text="Testing Plugin Context"></coralite-heading>
 
     <p>Use <code>testing.mocks.plugins</code> in <code>mode: 'testing'</code> to shallow-merge mocked methods over a plugin's resolved <code>server.context</code> or <code>client.context</code>. The real Phase 1 and Phase 2 functions still run, so use a stub plugin when the real plugin performs external I/O or side effects during setup.</p>
@@ -262,7 +301,7 @@
 
     <coralite-heading level="2" text="Zero-Config Dependencies"></coralite-heading>
 
-    <p>Unlike earlier versions of Coralite, V1 removes the need for manual dependency arrays like <code>client.imports</code> or <code>client.components</code>. The underlying AST parser automatically detects dynamic imports (e.g., <code>await import('my-analytics-sdk')</code>) inside the actual runtime logic of your context utilities and bundles them automatically.</p>
+    <p>Unlike earlier versions of Coralite, V1 removes the need for manual dependency arrays like <code>client.imports</code> or <code>client.components</code>. The underlying AST parser automatically detects dynamic imports (e.g., <code>await import('my-analytics-sdk')</code>) inside the actual runtime logic of your context utilities and bundles them automatically. This covers import bundling, not custom-element dependency tracking: the imported helper module's body is not AST-scanned for <code>document.createElement</code> or HTML insertion. Keep element creation in scanned client code or use the runtime fallback described above.</p>
 
     <hr>
 

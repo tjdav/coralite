@@ -29,6 +29,9 @@
   - [§7.1 Plugin Schema & Physical Source Error Mapping (`rootDir`, `filePath`)](#71-plugin-schema-physical-source-error-mapping-rootdir-filepath)
   - [§7.2 Context Resolver System (Static vs. Two-Phase Instance Context)](#72-context-resolver-system-static-vs-two-phase-instance-context)
   - [§7.3 Server & Client Lifecycle Hooks](#73-server-client-lifecycle-hooks)
+  - [§7.4 Context Injection Targets & Getter Isomorphism Invariant](#74-context-injection-targets--getter-isomorphism-invariant)
+  - [§7.5 Imperative Custom Elements & Dependency Tracking](#75-imperative-custom-elements--dependency-tracking)
+  - [§7.6 Testing Server Plugins](#76-testing-server-plugins)
 - [§8. Configuration (`coralite.config.js` / `defineConfig`)](#8-configuration-coraliteconfigjs-defineconfig)
   - [§8.1 `defineConfig` Requirements](#81-defineconfig-requirements)
   - [§8.2 Complete Options Reference](#82-complete-options-reference)
@@ -1018,7 +1021,37 @@ Plugin context properties are injected into Component and Page handlers:
   - In development mode, attempting to access a registered `server.context` plugin name on getter context throws a diagnostic warning explaining the invariant.
   - **Architectural pattern**: Access server-only plugin utilities in `server()`, write the fetched or transformed data into `state` (or return it from `server()`), and have isomorphic getters read directly from `state`. For pure synchronous helpers (like `$t`), use top-level `context`.
 
-### 7.5 Testing Server Plugins
+### 7.5 Imperative Custom Elements & Dependency Tracking
+
+Component/page `client()` and plugin client functions (`client.context`, `client.init`, and client lifecycle hooks) are AST-scanned and rewritten. Coralite rewrites `document.createElement`, `innerHTML`, `outerHTML`, and `insertAdjacentHTML` to its on-demand component loaders and records literal custom-element tags in page/component dependency metadata.
+
+```javascript
+import { definePlugin } from 'coralite'
+
+export default definePlugin({
+  name: 'eventCards',
+  client: {
+    context: () => (instanceContext) => ({
+      createCard (event) {
+        const card = document.createElement('event-card')
+        card.setAttribute('event-id', event.id)
+        card.setAttribute('label', event.title)
+        return card
+      }
+    })
+  }
+})
+```
+
+- **Scanned locations**: component/page `client()`, plugin `client.context`, `client.init`, and client lifecycle hooks.
+- **Not scanned**: dynamically imported helper modules. They are bundled, but their bodies are not AST-scanned for custom-element creation.
+- **Literal tags**: preferred because `document.createElement('event-card')` is recorded during the build. Dynamic tag expressions are rewritten and lazy-load at runtime, but the concrete component may not appear in page metadata.
+- **Helper rule**: keep dynamically imported helpers pure (formatting, mapping, data shaping) or pass a factory from scanned component/page/plugin code. If an unscanned helper must create DOM itself, use `window.__coralite__.dom.createElement(tag)` or `await window.__coralite__.dom.loadComponent(tag)` before native creation.
+- **Plugin dependencies**: `dependencies` is unrelated to custom-element tracking; it controls plugin registration order and cross-plugin availability. For example, `dependencies: ['$t']` ensures the `$t` plugin is registered before a plugin that consumes it.
+- **Production caveat**: production emits no DOM prototype patches. Development and testing modes patch `document.createElement`, `innerHTML`, and `outerHTML`; testing can therefore hide a missing production dependency path. Add at least one production-build smoke test for imperative components.
+- **Phase 1**: `client.context` phase 1 runs before the component loader is ready; create elements in phase 2 or `client.init`.
+
+### 7.6 Testing Server Plugins
 
 To test a server plugin:
 1. Register the plugin in `coralite.config.js` via `plugins: [myPlugin]`.
@@ -1229,7 +1262,7 @@ SPA navigation fetches carry the header `X-Coralite-Router: true`, so static ser
 
 ### Testing Mode Target (`mode: 'testing'`)
 - **Velocity Engine**: Coralite's testing plugin automatically suppresses animations, transitions, and smooth scrolling (`*, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }`) to guarantee instantaneous test execution and deterministic visual snapshots.
-- **Three-Tier Prototype Patching**: In `development` and `testing` modes, Coralite patches `Element.prototype.innerHTML`, `outerHTML`, and `document.createElement` to automatically import chunks and upgrade custom elements injected via test fixtures (`mountComponent`) or DevTools console. In production builds, zero prototype patching code is emitted.
+- **Three-Tier Prototype Patching**: In `development` and `testing` modes, Coralite patches `Element.prototype.innerHTML`, `outerHTML`, and `document.createElement` to automatically import chunks and upgrade custom elements injected via test fixtures (`mountComponent`) or DevTools console. In production builds, zero prototype patching code is emitted. This means testing can hide missing imperative component tracking; see §7.5.
 - **Settlement**: Wait on `await el.updateComplete` before assertions to ensure all reactive renders and observers have completely settled.
 
 ### Selector Strategy & `data-testid` Rules
