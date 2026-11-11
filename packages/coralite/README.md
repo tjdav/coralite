@@ -327,15 +327,11 @@ export default definePlugin({
 })
 ```
 
-Use a literal tag when the component should be tracked during the build. Dynamic tag expressions are also rewritten and lazy-load at runtime, but the concrete component may not be recorded in page metadata.
+Use a literal tag when the component should be tracked during the build. Dynamic tag expressions also lazy-load at runtime, but the concrete component may not be recorded in page metadata.
 
-Do not move custom-element creation into a dynamically imported helper module. Those modules are bundled, but their bodies are not AST-scanned. Keep helpers pure (formatting, mapping, data shaping) or pass a factory from scanned component/page/plugin code. If an unscanned helper must create DOM itself, use `window.__coralite__.dom.createElement(tag)` or `await window.__coralite__.dom.loadComponent(tag)` before native creation.
+Do not move custom-element creation into a dynamically imported helper module. Those modules are bundled but not scanned. Keep helpers pure or use `window.__coralite__.dom.createElement(tag)` / `await window.__coralite__.dom.loadComponent(tag)` when DOM creation is unavoidable. `dependencies` controls plugin registration order, not custom-element tracking. Phase 1 of `client.context` runs before the loader is ready; create elements in phase 2 or `client.init`.
 
-`dependencies` is unrelated to custom-element tracking; it controls plugin registration order and cross-plugin availability. For example, `dependencies: ['$t']` ensures the `$t` plugin is registered before a plugin that consumes it.
-
-Production builds emit no DOM prototype patches. Development and testing builds patch `document.createElement`, `innerHTML`, and `outerHTML`; those modes can therefore hide a missing production dependency path. Add at least one production-build smoke test for imperative components.
-
-Phase 1 of `client.context` runs before the component loader is ready; create elements in phase 2 or `client.init`.
+See the [Imperative Components Reference](https://coralite.dev/docs/reference/imperative-components.html) for creation paths, scan boundaries, runtime APIs, upgrade timing, ownership, styling, testing, and troubleshooting.
 
 ---
 

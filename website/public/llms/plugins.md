@@ -91,19 +91,16 @@ export default definePlugin({
 })
 ```
 
-This applies to `client.context` phase 2, `client.init`, client lifecycle hooks, and page/component `client()` blocks. Phase 1 of `client.context` runs before the component loader is ready, so synchronous DOM creation there is not upgraded; create elements in phase 2 or `client.init` instead.
+This applies to plugin `client.context` phase 2, `client.init`, client lifecycle hooks, and component/page `client()` blocks. Phase 1 runs before the component loader is ready; create elements in phase 2 or `client.init`.
 
-- **Scanned locations:** component/page `client()`, plugin `client.context`, `client.init`, and client lifecycle hooks.
-- **Not scanned:** dynamically imported helper modules. They are bundled, but their bodies are not AST-scanned for custom-element creation.
-- **Literal tags:** preferred because `document.createElement('my-widget')` is recorded during the build. Dynamic tag expressions are rewritten and lazy-load at runtime, but the concrete component may not appear in page metadata.
+- **Scanned:** component/page `client()`, plugin `client.context`, `client.init`, and client lifecycle hooks.
+- **Not scanned:** dynamically imported helper modules. Keep them pure or use `window.__coralite__.dom.createElement(tag)` / `await window.__coralite__.dom.loadComponent(tag)`.
+- **Literal tags:** preferred because `document.createElement('my-widget')` is recorded during the build. Dynamic tags may not appear in page metadata.
+- **Dependencies:** `dependencies` controls plugin registration order and cross-plugin availability, not custom-element tracking.
+- **Production:** development and testing patch DOM APIs; production does not. Add a production-build smoke test for imperative components.
+- **Refs:** phase-2 context and lifecycle hooks scope injected refs by `instanceId`, with target-owner fallback. A new ref still needs a matching `state.ref_<name>` to resolve through `refs()`.
 
-Keep dynamically imported helpers pure or pass a factory from scanned component/page/plugin code. If an unscanned helper must create DOM itself, use `window.__coralite__.dom.createElement(tag)` or `await window.__coralite__.dom.loadComponent(tag)` before native creation.
-
-`dependencies` is unrelated to custom-element tracking; it controls plugin registration order and cross-plugin availability. For example, `dependencies: ['$t']` ensures the `$t` plugin is registered before a plugin that consumes it.
-
-Production emits no DOM prototype patches. Development and testing modes patch `document.createElement`, `innerHTML`, and `outerHTML`; testing can therefore hide a missing production dependency path. Add at least one production-build smoke test for imperative components.
-
-When a phase-2 context or lifecycle hook receives an instance context, its `instanceId` is used to scope refs inside injected HTML. If the instance cannot be determined statically, Coralite falls back to the insertion target's owning component. A newly injected ref that is not declared in component state is not automatically added to `refs()`.
+Canonical reference: https://coralite.dev/docs/reference/imperative-components.html
 
 ## 4. Testing Plugins
 

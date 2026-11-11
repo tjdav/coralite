@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Imperative Components Reference: Creation, Tracking & Upgrade"
+    description="Normative guide to creating custom elements from Coralite client code, including scan boundaries, dependency tracking, runtime loaders, upgrade timing, ownership, styling, testing, and troubleshooting."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Imperative Components</h1>
+
+    <p>This page is the canonical reference for creating custom elements from Coralite client-side code. It covers where creation should live, how Coralite tracks dependencies, how loading and upgrades work, and what changes between development, testing, and production.</p>
+
+    <coralite-alert type="info">
+      <strong>Canonical source</strong>
+      <p>This page owns imperative-component behavior. The JavaScript guide, plugin guide, plugin reference, and E2E guide summarize it. <code>llms-full.txt</code> mirrors it as a standalone LLM reference. Update this page first when the contract changes.</p>
+    </coralite-alert>
+
+    <coralite-heading level="2" text="Choosing a Creation Path"></coralite-heading>
+
+    <p>Prefer declarative markup. Use imperative creation only when the element cannot exist at build time, such as a component created in response to a user action or a plugin-provided DOM factory.</p>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Location</th>
+            <th>Scanned?</th>
+            <th>Recommended use</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Declarative HTML</td>
+            <td>N/A</td>
+            <td>Default for static and SSR-rendered content.</td>
+          </tr>
+          <tr>
+            <td>Component <code>client()</code></td>
+            <td>Yes</td>
+            <td>Local interactive DOM owned by one component.</td>
+          </tr>
+          <tr>
+            <td>Page <code>client()</code></td>
+            <td>Yes</td>
+            <td>Page-level DOM that is not owned by a single component.</td>
+          </tr>
+          <tr>
+            <td>Plugin <code>client.context</code>, <code>client.init</code>, client lifecycle hooks</td>
+            <td>Yes</td>
+            <td>Shared cross-page DOM factories and plugin-owned UI.</td>
+          </tr>
+          <tr>
+            <td>Dynamically imported helper module</td>
+            <td>No</td>
+            <td>Pure formatting, mapping, and data shaping. Use public runtime helpers if DOM creation is unavoidable.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="2" text="Scan Boundary and Dependency Tracking"></coralite-heading>
+
+    <p>Coralite scans the source of component/page <code>client()</code> controllers and plugin client functions. The scanned APIs are <code>document.createElement</code>, <code>innerHTML</code>, <code>outerHTML</code>, and <code>insertAdjacentHTML</code>. Calls are rewritten to Coralite's on-demand component loaders.</p>
+
+    <p>Literal tags are preferred because the concrete tag can be recorded in page/component metadata and used for dependency tracking and cache invalidation:</p>
+
+    <coralite-code-highlight language="javascript">
+      const card = document.createElement('event-card')
+    </coralite-code-highlight>
+
+    <p>Dynamic tag expressions are still rewritten and lazy-load at runtime, but the concrete component may not appear in build metadata. If the component is not otherwise declared on the page, prefer a literal tag or load it explicitly.</p>
+
+    <p>Dynamically imported helper modules are bundled by esbuild, but their bodies are not AST-scanned for custom-element creation. Moving <code>document.createElement('event-card')</code> into a helper module can therefore work in development or testing and fail in production. Keep helpers pure, pass a factory from scanned code, or use the public runtime helpers below.</p>
+
+    <coralite-heading level="2" text="Rewrite Contract"></coralite-heading>
+
+    <p>These transformations happen only in scanned client code:</p>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Authored call</th>
+            <th>Rewrite target</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>document.createElement(tag)</code></td>
+            <td><code>createCoraliteElement(tag)</code></td>
+            <td>Literal custom-element tags are tracked. Built-in HTML tags are left native.</td>
+          </tr>
+          <tr>
+            <td><code>element.innerHTML = html</code></td>
+            <td><code>processHTML(html, instanceId)</code></td>
+            <td>Loads custom elements found in the HTML and scopes refs when an instance is known.</td>
+          </tr>
+          <tr>
+            <td><code>element.outerHTML = html</code></td>
+            <td><code>processHTML(html, instanceId)</code></td>
+            <td>Same processing as <code>innerHTML</code>.</td>
+          </tr>
+          <tr>
+            <td><code>element.insertAdjacentHTML(position, html)</code></td>
+            <td><code>processHTML(html, instanceId)</code></td>
+            <td>The original insertion method still performs the DOM write.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><code>createCoraliteElement</code> and <code>processHTMLTarget</code> are compiler helpers. They are implementation details of the rewrite, not supported user-facing APIs. Application and plugin code should use the public runtime APIs when it needs to create or load elements outside scanned code.</p>
+
+    <coralite-heading level="2" text="Public Runtime APIs"></coralite-heading>
+
+    <p>For unscanned helper modules, use the public methods on <code>window.__coralite__.dom</code>:</p>
+
+    <ul>
+      <li><code>window.__coralite__.dom.createElement(tag, options?)</code>: creates an element and starts the on-demand component upgrade when the tag is registered.</li>
+      <li><code>window.__coralite__.dom.loadComponent(tag)</code>: imports and defines the component module. It deduplicates concurrent loads for the same tag.</li>
+      <li><code>window.__coralite__.dom.upgrade(root)</code>: upgrades the root and matching descendants, then waits for <code>updateComplete</code> on upgraded elements.</li>
+      <li><code>window.__coralite__.dom.processHTML(html, instanceId?)</code>: processes an HTML string, loads discovered custom elements, and scopes refs when an instance ID is provided.</li>
+    </ul>
+
+    <p>Loading is asynchronous. <code>loadComponent()</code> resolves after the component module is defined; component styles are injected as part of loading and may finish separately. Use <code>customElements.whenDefined(tag)</code> or the element's <code>updateComplete</code> when ordering matters.</p>
+
+    <coralite-heading level="2" text="Ownership and Refs"></coralite-heading>
+
+    <p>When a component context or lifecycle hook is available, Coralite uses its <code>instanceId</code> to scope refs inside injected HTML. If the instance cannot be determined statically, Coralite falls back to the insertion target's owning component. A new ref that is not declared in component state is not automatically added to <code>refs()</code>.</p>
+
+    <p>See the <a href="/docs/guide/dom-refs.html">DOM refs guide</a> for the full ref ownership model, including nested components and slotted content.</p>
+
+    <coralite-heading level="2" text="Styling and Assets"></coralite-heading>
+
+    <p>Imperatively created components load their component CSS through the same manifest as declaratively created components. Because the element does not exist during SSR, its markup and styles may appear after the initial page paint; avoid relying on imperatively created elements for above-the-fold critical layout.</p>
+
+    <p>See the <a href="/docs/guide/styling.html">styling guide</a> for scoped selectors, host styling, and CSS custom properties.</p>
+
+    <coralite-heading level="2" text="SSR, Hydration, and Lifecycle"></coralite-heading>
+
+    <p>Imperative creation is client-only. The element does not participate in SSR output or hydration payloads unless it is also rendered declaratively elsewhere. Recreating an element that is already present can cause duplicate content; make creation idempotent or guard it in the owning controller.</p>
+
+    <p>Imperatively created Coralite components follow the normal connected/disconnected lifecycle. Clean up listeners and external resources with the component's <code>signal</code>.</p>
+
+    <coralite-heading level="2" text="Testing Matrix"></coralite-heading>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Mode</th>
+            <th>DOM prototype patches</th>
+            <th>What it proves</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>development</code></td>
+            <td>Yes</td>
+            <td>Fast local iteration; missing dependency tracking can be masked.</td>
+          </tr>
+          <tr>
+            <td><code>testing</code></td>
+            <td>Yes</td>
+            <td>Deterministic E2E behavior; missing dependency tracking can still be masked.</td>
+          </tr>
+          <tr>
+            <td><code>production</code></td>
+            <td>No</td>
+            <td>Real deployment behavior. Use this to verify imperative component loading.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Add at least one production-build E2E test when components are created imperatively or outside scanned code. See the <a href="/docs/guide/e2e-testing.html">E2E testing guide</a>.</p>
+
+    <coralite-heading level="2" text="Troubleshooting"></coralite-heading>
+
+    <ul>
+      <li><strong>Element exists but is empty:</strong> the component was not loaded or upgraded. Confirm the tag is tracked, or call <code>dom.loadComponent(tag)</code> / <code>dom.createElement(tag)</code>.</li>
+      <li><strong>Works in development/testing but fails in production:</strong> creation likely lives in an unscanned helper module or another path that relied on DOM prototype patches. Move creation into scanned code or use the public runtime APIs.</li>
+      <li><strong>Styles are missing:</strong> the component may not have loaded at all, or its CSS link may still be in flight. Verify the component manifest entry and loading order.</li>
+      <li><strong><code>refs()</code> returns null:</strong> the ref may be dynamically injected without a matching <code>state.ref_&lt;name&gt;</code>, or ownership may point at a nested component. See the <a href="/docs/guide/dom-refs.html">DOM refs guide</a>.</li>
+      <li><strong>Duplicate content:</strong> the controller may create the element more than once, or it may duplicate a declaratively rendered element. Make creation idempotent.</li>
+    </ul>
+
+    <coralite-heading level="2" text="Related References"></coralite-heading>
+
+    <ul>
+      <li><a href="/docs/guide/javascript.html">Client-side JavaScript guide</a></li>
+      <li><a href="/docs/guide/plugins.html">Plugin authoring guide</a></li>
+      <li><a href="/docs/reference/plugins.html">Plugins reference</a></li>
+      <li><a href="/docs/guide/dom-refs.html">DOM refs guide</a></li>
+      <li><a href="/docs/guide/styling.html">Styling guide</a></li>
+      <li><a href="/docs/guide/e2e-testing.html">E2E testing guide</a></li>
+      <li><a href="/docs/reference/types.html">Runtime type definitions</a></li>
+    </ul>
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
