@@ -86,7 +86,23 @@
         <li><code>instanceId</code>: A unique identifier string for this specific component instance.</li>
     </ul>
 
-    <coralite-heading level="2" text="State Observation & Side-Effects (The observe Pattern)"></coralite-heading>
+    <coralite-alert type="warning">
+      <strong>Imperative custom elements need tracked client code</strong>
+      <p>
+        Create custom elements in scanned client code: component/page <code>client()</code> or plugin client functions.
+        Coralite rewrites <code>document.createElement</code>, <code>innerHTML</code>, <code>outerHTML</code>, and
+        <code>insertAdjacentHTML</code> there and records literal tags for dependency tracking. Dynamically imported helper
+        modules are bundled but not AST-scanned, so do not create custom elements inside them. Keep helpers pure or use
+        <code>window.__coralite__.dom.createElement(tag)</code>. Production builds do not patch DOM APIs; development and
+        testing do, so testing can hide missing production dependency paths.
+      </p>
+      <p>
+        See <a href="/docs/reference/plugins.html#imperative-custom-elements">Imperative Custom Elements</a> for the
+        full rules and fallbacks.
+      </p>
+    </coralite-alert>
+
+    <coralite-heading level="2" text="State Observation & Side-Effects (the observe Pattern)"></coralite-heading>
 
     <p>
       While Coralite components update their templates automatically when state changes, you often need to perform imperative side-effects (such as updating external DOM libraries, sending analytics, or making network requests) in response to state updates. The <code>observe</code> function provides a clean, declarative pattern for handling these state changes.

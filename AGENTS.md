@@ -97,6 +97,17 @@ Rule of thumb: *If the getter body could be replaced by a raw `{{ token }}` in t
 - Fallback chains: `displayValue: ({ state }) => state.value || state.placeholder || '—'`
 - Slot presence: `hasIcon: ({ slots }) => slots.has('icon')`
 
+### Imperative custom elements and dependency tracking
+
+Coralite AST-scans and rewrites imperative DOM creation in component `client()`, page `client()`, and plugin client functions (`client.context`, `client.init`, and client lifecycle hooks). The scanned calls are `document.createElement`, `innerHTML`, `outerHTML`, and `insertAdjacentHTML`; they are rewritten to Coralite's on-demand component loaders.
+
+- Prefer literal tags: `document.createElement('x-card')`. Literal tags are recorded in page/component metadata for dependency tracking and cache invalidation.
+- Dynamic tag expressions are still rewritten, but the concrete component may not be recorded in build metadata.
+- Do not create custom elements inside dynamically imported helper modules. Those modules are bundled, but their bodies are not AST-scanned. Keep helpers pure (formatting/mapping) or create elements at the scanned call site; pass a factory from component/page/plugin client code when behavior is shared.
+- If an unscanned helper must create elements, use `window.__coralite__.dom.createElement(tag)` or `await window.__coralite__.dom.loadComponent(tag)` before native creation.
+- Production emits no DOM prototype patches. Development and testing modes patch `document.createElement`, `innerHTML`, and `outerHTML`, so a passing dev/test run can mask missing production dependency tracking. Add a production-build test when component creation is not statically visible.
+- Phase 1 of `client.context` runs before the component loader is ready; create elements in phase 2 or `client.init`.
+
 ### Ref pragmas for phased component evolution (`CORALITE-W402`)
 
 When authoring UI components incrementally (e.g., Step 1 builds static markup `<button ref="button">`, Step 2 wires events in `client()`), the validator emits `CORALITE-W402: Element ref 'button' defined in template but never accessed`.

@@ -342,6 +342,11 @@ const app = await createCoralite({
 
     <p>Additionally, <code>testing</code> mode acts as a static target just like <code>production</code>. Development-only AST structures are cleaned up and pages are optimized, ensuring the E2E test environment mimics production behavior as closely as possible.</p>
 
+    <coralite-alert type="warning">
+      <strong>Testing mode patches DOM APIs</strong>
+      <p>Development and testing modes patch <code>document.createElement</code>, <code>innerHTML</code>, and <code>outerHTML</code> to load and upgrade custom elements automatically. Production emits no prototype patching code. A component created in a dynamically imported helper module, or another unscanned code path, can therefore pass in testing and still fail in production. Run at least one E2E project against a <code>coralite build</code> production output when testing imperative component creation.</p>
+    </coralite-alert>
+
     <coralite-heading level="2" text="The window.__coralite__.lifecycle.hydrated Promise"></coralite-heading>
 
     <p>To solve this, Coralite injects a global promise named <code>window.__coralite__.lifecycle.hydrated</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>

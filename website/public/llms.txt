@@ -17,6 +17,7 @@ Key words per RFC 2119:
 9. **MUST NEVER mutate state inside `observe()`**: `observe(key, cb)` is exclusively for syncing external DOM/side-effects. Mutating state inside an observer triggers `CORALITE-E302`.
 10. **MUST NEVER use defensive guards in deterministic blocks**: Context keys (`state`, `refs`, `signal`, `emit`, `lists`, etc.) are guaranteed by the framework. Never write `if (!refs) return` or check `typeof window` in `client()` or `server()`.
 11. **MUST use `coralite-ignore` for literal markup**: Everything is processed by default (tokens, custom-element compilation, hydration, validation, and page-controller extraction). Use the `coralite-ignore` attribute on an element/subtree, or `<slot coralite-ignore>` for projected content, to keep markup literal. Do not use `data-coralite-ignore` or `coralite-interpolate`. Pages accept exactly one Coralite controller `<script>` (`CORALITE-E107` on duplicates); normal scripts are allowed and are never evaluated as page modules. `<script>`/`<style>` text is never token-interpolated.
+12. **MUST create custom elements in scanned client code**: Component/page `client()` and plugin client functions (`client.context`, `client.init`, lifecycle hooks) are AST-scanned and rewritten; prefer literal tags such as `document.createElement('x-card')`. Do not create custom elements inside dynamically imported helper modules — they are bundled but not AST-scanned. Production does not patch `document.createElement`; development and testing do, so test a production build for imperative components. For unscanned helpers, use `window.__coralite__.dom.createElement(tag)` or `await window.__coralite__.dom.loadComponent(tag)` before native creation.
 
 ## Core Documentation
 
@@ -24,7 +25,7 @@ Key words per RFC 2119:
 - [Serialization Boundary](/llms/serialization.md): Server/client isolation, SSR data fetching, hydration bridge, and dynamic imports.
 - [Form-Associated Custom Elements (FACE)](/llms/face.md): `formControl = true`, `setFormValue`, constraint validation, and form reset/restore lifecycles.
 - [CSS Scoping & Styling](/llms/css.md): `@layer components`, `:host` & `:host-context()` selectors, dynamic style variables, lazy dependency stylesheets (`await import('*.css')`), and slot layout transparency.
-- [Plugins Reference](/llms/plugins.md): `definePlugin`, two-phase context resolvers, and build/client lifecycle hooks.
+- [Plugins Reference](/llms/plugins.md): `definePlugin`, two-phase context resolvers, build/client lifecycle hooks, and imperative custom-element dependency tracking.
 - [Diagnostics & Validation](/llms/diagnostics.md): Compiler diagnostics (`CORALITE-E1xx` to `E4xx`), root causes, and automated AST fixer (`coralite fix`).
 - [Configuration](/llms/config.md): `coralite.config.js`, `defineConfig` options, CSP policies, and build options.
 - [Automated Testing & E2E](/llms/testing.md): Playwright locator chaining, `updateComplete` settlement, and static `data-testid` conventions.

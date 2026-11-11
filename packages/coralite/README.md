@@ -46,7 +46,7 @@ npm run start
 
 Coralite includes an authoritative, zero-token [`llms.txt`](https://coralite.dev/llms.txt) specification in the root of the published npm package (`node_modules/coralite/llms.txt`).
 
-When using modern AI coding assistants (Claude Code, Cursor, GitHub Copilot, Antigravity, Jules), the model automatically discovers Coralite's specific architectural invariants (dumb templates, serialization boundaries, two-phase plugins, isomorphic state proxy), ensuring accurate, hallucination-free code generation.
+When using modern AI coding assistants (Claude Code, Cursor, GitHub Copilot, Antigravity, Jules), the model automatically discovers Coralite's specific architectural invariants (dumb templates, serialization boundaries, two-phase plugins, isomorphic state proxy, imperative component tracking), ensuring accurate, hallucination-free code generation.
 
 ---
 
@@ -304,6 +304,38 @@ Components access the injected APIs directly via destructuring in `server()` and
   }
 </script>
 ```
+
+### Imperative Custom Elements and Shared Helpers
+
+Shared DOM factories belong in a plugin's `client.context` / `client.init` or in component/page `client()` code. Coralite AST-scans those client functions, rewrites `document.createElement`, `innerHTML`, `outerHTML`, and `insertAdjacentHTML` to its on-demand component loaders, and records literal custom-element tags in page/component dependency metadata.
+
+```javascript
+import { definePlugin } from 'coralite'
+
+export default definePlugin({
+  name: 'eventCards',
+  client: {
+    context: () => (instanceContext) => ({
+      createCard (event) {
+        const card = document.createElement('event-card')
+        card.setAttribute('event-id', event.id)
+        card.setAttribute('label', event.title)
+        return card
+      }
+    })
+  }
+})
+```
+
+Use a literal tag when the component should be tracked during the build. Dynamic tag expressions are also rewritten and lazy-load at runtime, but the concrete component may not be recorded in page metadata.
+
+Do not move custom-element creation into a dynamically imported helper module. Those modules are bundled, but their bodies are not AST-scanned. Keep helpers pure (formatting, mapping, data shaping) or pass a factory from scanned component/page/plugin code. If an unscanned helper must create DOM itself, use `window.__coralite__.dom.createElement(tag)` or `await window.__coralite__.dom.loadComponent(tag)` before native creation.
+
+`dependencies` is unrelated to custom-element tracking; it controls plugin registration order and cross-plugin availability. For example, `dependencies: ['$t']` ensures the `$t` plugin is registered before a plugin that consumes it.
+
+Production builds emit no DOM prototype patches. Development and testing builds patch `document.createElement`, `innerHTML`, and `outerHTML`; those modes can therefore hide a missing production dependency path. Add at least one production-build smoke test for imperative components.
+
+Phase 1 of `client.context` runs before the component loader is ready; create elements in phase 2 or `client.init`.
 
 ---
 

@@ -162,7 +162,22 @@ export default definePlugin({
 })
     </coralite-code-highlight>
 
-    <p>This applies to <code>client.context</code> phase 2, <code>client.init</code>, the client lifecycle hooks, and page <code>client()</code> blocks. Phase 1 of <code>client.context</code> runs before the component loader is ready, so synchronous DOM creation there is not upgraded; create elements in phase 2 or <code>client.init</code> instead.</p>
+    <p>This applies to plugin <code>client.context</code> phase 2, <code>client.init</code>, the client lifecycle hooks, and component/page <code>client()</code> blocks. Phase 1 of <code>client.context</code> runs before the component loader is ready, so synchronous DOM creation there is not upgraded; create elements in phase 2 or <code>client.init</code> instead.</p>
+
+    <ul>
+      <li><strong>Scanned locations:</strong> component/page <code>client()</code>, plugin <code>client.context</code>, <code>client.init</code>, and client lifecycle hooks.</li>
+      <li><strong>Not scanned:</strong> dynamically imported helper modules. They are bundled, but their bodies are not AST-scanned for custom-element creation.</li>
+      <li><strong>Literal tags:</strong> preferred because <code>document.createElement('my-widget')</code> is recorded during the build. Dynamic tag expressions are rewritten and lazy-load at runtime, but the concrete component may not appear in page metadata.</li>
+    </ul>
+
+    <p>Keep dynamically imported helpers pure or pass a factory from scanned component/page/plugin code. If an unscanned helper must create DOM itself, use <code>window.__coralite__.dom.createElement(tag)</code> or <code>await window.__coralite__.dom.loadComponent(tag)</code> before native creation.</p>
+
+    <p><code>dependencies</code> is unrelated to custom-element tracking; it controls plugin registration order and cross-plugin availability. For example, <code>dependencies: ['$t']</code> ensures the <code>$t</code> plugin is registered before a plugin that consumes it.</p>
+
+    <coralite-alert type="warning">
+      <strong>Production does not patch DOM APIs</strong>
+      <p>Development and testing modes patch <code>document.createElement</code>, <code>innerHTML</code>, and <code>outerHTML</code>; production emits no prototype patching code. Testing can therefore hide a missing production dependency path. Add at least one production-build smoke test for imperative components.</p>
+    </coralite-alert>
 
     <p>When a phase-2 context or lifecycle hook receives an instance context, Coralite uses its <code>instanceId</code> to scope refs inside injected HTML. If the instance cannot be determined statically, Coralite falls back to the insertion target’s owning component. A newly injected ref that is not declared in component state is not automatically added to <code>refs()</code>.</p>
 
