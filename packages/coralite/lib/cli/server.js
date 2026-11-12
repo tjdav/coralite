@@ -446,14 +446,22 @@ async function server (config, options, runMode = 'dev') {
               }
               const injectedHtml = buildResult.content.replace(/<\/body>/i, rebuildScript)
               const sourcePathname = buildResult.sourcePath || buildResult.path.pathname
-              const requestKeys = new Set([
-                ...getPageRequestKeys(sourcePathname, config.pages),
-                ...getPageRequestKeys(buildResult.path.pathname, config.pages)
-              ])
+              const sourceKeys = getPageRequestKeys(sourcePathname, config.pages)
+              const generatedKeys = getPageRequestKeys(buildResult.path.pathname, config.pages)
 
-              for (const key of requestKeys) {
-                pageCache.set(key, injectedHtml)
+              for (const key of new Set([...sourceKeys, ...generatedKeys])) {
                 memoryPageSource.set(key, sourcePathname)
+              }
+
+              // A dynamic page produces one document per enumerated locale
+              // while sharing a single source-path key. Caching the current
+              // document under that shared key would let the last built
+              // locale win for every locale, so only concrete keys are
+              // populated for dynamic routes.
+              const htmlKeys = buildResult.route?.dynamic ? generatedKeys : [...sourceKeys, ...generatedKeys]
+
+              for (const key of htmlKeys) {
+                pageCache.set(key, injectedHtml)
               }
 
               return {
@@ -685,15 +693,23 @@ async function server (config, options, runMode = 'dev') {
               const injectedHtml = buildResult.content.replace(/<\/body>/i, rebuildScript)
 
               const sourcePathname = buildResult.sourcePath || pathname
-              const requestKeys = new Set([
-                ...getPageRequestKeys(sourcePathname, basePagesRoot),
-                ...getPageRequestKeys(buildResult.path.pathname, basePagesRoot)
-              ])
+              const sourceKeys = getPageRequestKeys(sourcePathname, basePagesRoot)
+              const generatedKeys = getPageRequestKeys(buildResult.path.pathname, basePagesRoot)
 
-              for (const key of requestKeys) {
+              for (const key of new Set([...sourceKeys, ...generatedKeys])) {
                 if (key !== sourcePathname) {
                   memoryPageSource.set(key, sourcePathname)
                 }
+              }
+
+              // A dynamic page produces one document per enumerated locale
+              // while sharing a single source-path key. Caching the current
+              // document under that shared key would let the last built
+              // locale win for every locale, so only concrete keys are
+              // populated for dynamic routes.
+              const htmlKeys = buildResult.route?.dynamic ? generatedKeys : [...sourceKeys, ...generatedKeys]
+
+              for (const key of htmlKeys) {
                 pageCache.set(key, injectedHtml)
               }
 
@@ -766,9 +782,11 @@ async function server (config, options, runMode = 'dev') {
       })
     })
 
+    let watcher = null
+
     if (runMode !== 'test') {
       // watch for file changes
-      const watcher = chokidar.watch(watchPath, {
+      watcher = chokidar.watch(watchPath, {
         persistent: true,
         // Add ignoreInitial to prevent initial scan events
         ignoreInitial: true
@@ -952,6 +970,21 @@ async function server (config, options, runMode = 'dev') {
 
     process.on('SIGINT', gracefulShutdown)
     process.on('SIGTERM', gracefulShutdown)
+
+    // Expose a teardown that releases every resource the server holds: the
+    // live-reload file watcher and the esbuild context both keep the Node
+    // event loop referenced, which would otherwise hang in-process consumers
+    // such as tests that start the server directly.
+    const originalClose = listener.close.bind(listener)
+    listener.close = (callback) => {
+      return (async () => {
+        if (watcher) {
+          await watcher.close()
+        }
+        await coralite.clearCache(true)
+        originalClose(callback)
+      })()
+    }
 
     return listener
   } catch (error) {

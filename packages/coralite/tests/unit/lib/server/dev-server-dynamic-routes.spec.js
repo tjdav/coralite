@@ -236,4 +236,41 @@ describe('Dev and test server dynamic route resolution', () => {
       await new Promise(resolve => listener.close(resolve))
     }
   })
+
+  it('dev server serves per-locale documents for dynamic routes in both request orders', async () => {
+    const serverConfig = {
+      ...config,
+      server: {
+        port: 4322
+      }
+    }
+
+    const listener = await server(serverConfig, {}, 'dev')
+    assert.ok(listener, 'Server listener should be returned')
+
+    try {
+      const port = listener.address().port
+      const baseUrl = `http://127.0.0.1:${port}`
+
+      const resCa = await getRequest(`${baseUrl}/ca/events/don-giovanni`)
+      assert.strictEqual(resCa.status, 200)
+      const htmlCa = await resCa.text()
+      assert.ok(htmlCa.includes('<html lang="ca"'), 'CA response should declare lang="ca"')
+      assert.ok(htmlCa.includes('<p>Language: ca</p>'), 'CA response should carry CA server state')
+
+      const resEs = await getRequest(`${baseUrl}/es/events/don-giovanni`)
+      assert.strictEqual(resEs.status, 200)
+      const htmlEs = await resEs.text()
+      assert.ok(htmlEs.includes('<html lang="es"'), 'ES response should declare lang="es"')
+      assert.ok(htmlEs.includes('<p>Language: es</p>'), 'ES response should carry ES server state')
+
+      // reverse order exercises the populated page cache
+      const resCaAgain = await getRequest(`${baseUrl}/ca/events/don-giovanni`)
+      assert.strictEqual(resCaAgain.status, 200)
+      const htmlCaAgain = await resCaAgain.text()
+      assert.ok(htmlCaAgain.includes('<html lang="ca"'), 'Cached CA response should still declare lang="ca"')
+    } finally {
+      await listener.close()
+    }
+  })
 })

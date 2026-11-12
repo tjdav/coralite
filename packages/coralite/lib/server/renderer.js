@@ -1575,6 +1575,14 @@ export function createRenderer ({
     } else {
       component = cloneComponentInstance(originalDocument)
       component.ignoreByAttribute = component.ignoreByAttribute || normalizedOptions.ignoreByAttribute || []
+      // cloneComponentInstance copies `page` by reference. Concurrent renders
+      // of the same dynamic page (one task per enumerated locale) would share
+      // it, and the per-task `pageContext.route = targetRoute` assignment
+      // below would let the last writer win for every locale.
+      component.page = {
+        ...originalDocument.page,
+        meta: { ...(originalDocument.page?.meta || {}) }
+      }
       pageContext = component.page
     }
 

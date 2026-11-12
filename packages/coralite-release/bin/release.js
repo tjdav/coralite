@@ -424,7 +424,12 @@ program
           writeFileSync(rel.pkg.path, JSON.stringify(tempPkgData, null, 2) + '\n')
 
           prompts.log.info(`📦 Verifying package content for ${rel.name}...`)
-          execSync('pnpm pack --dry-run', {
+          // The dry-run pack only displays the file list. Without
+          // --ignore-scripts, pnpm pack executes the prepack lifecycle script,
+          // which rebuilds dist and races with anything reading the package
+          // directory concurrently (for example other test suites).
+          const packArgs = options.dryRun ? 'pack --dry-run --ignore-scripts' : 'pack --dry-run'
+          execSync(`pnpm ${packArgs}`, {
             cwd: pkgDir,
             stdio: 'inherit'
           })
