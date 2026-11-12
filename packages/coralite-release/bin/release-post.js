@@ -117,6 +117,7 @@ program
     '16384'
   )
   .option('--agy', 'Use the agy CLI tool to generate the release post')
+  .option('--provider <provider>', 'AI provider to use: http or agy')
   .option('-y, --yes', 'Skip confirmation')
   .option('--stdout', 'Print to stdout only, ignore output file')
   .option('--no-git', 'Skip git commit and push')
@@ -128,6 +129,19 @@ program
     let packageName = options.package
     let pkgPath = options.path
     let useAgy = Boolean(options.agy)
+
+    if (options.provider) {
+      const provider = String(options.provider).toLowerCase()
+      if (provider !== 'http' && provider !== 'agy') {
+        prompts.log.error(`Invalid release post provider "${options.provider}". Use "http" or "agy".`)
+        process.exit(1)
+      }
+      if (options.agy && provider !== 'agy') {
+        prompts.log.error('Use either --agy or --provider http, not both.')
+        process.exit(1)
+      }
+      useAgy = provider === 'agy'
+    }
 
     let originalWrite
     if (options.json) {
@@ -365,7 +379,7 @@ program
         }
       }
 
-      if (!process.env.TEST_NON_INTERACTIVE && !options.json && !options.agy && !options.yes) {
+      if (!process.env.TEST_NON_INTERACTIVE && !options.json && !options.agy && !options.provider && !options.yes) {
         // @ts-ignore
         const selectedProvider = await prompts.select({
           message: 'Select AI provider / generator:',

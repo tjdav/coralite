@@ -8,11 +8,14 @@ import {
   RELEASE_TYPES,
   TOPOLOGICAL_ORDER,
   sortPackagesInTopologicalOrder,
-  parsePackageOption
+  parsePackageOption,
+  buildReleasePostArgs,
+  getReleasePostTargets
 } from '../bin/release.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const releaseBin = path.resolve(__dirname, '../bin/release.js')
+const releasePostBin = path.resolve(__dirname, '../bin/release-post.js')
 const repoRoot = path.resolve(__dirname, '../../..')
 
 describe('coralite-release CLI & versioning logic', () => {
@@ -123,6 +126,115 @@ describe('coralite-release CLI & versioning logic', () => {
     })
   })
 
+  describe('buildReleasePostArgs()', () => {
+    const rel = {
+      name: 'coralite',
+      tagName: 'coralite-v1.3.0'
+    }
+
+    const withToken = (value, fn) => {
+      const previous = process.env.CODEBERG_TOKEN
+      if (value === undefined) {
+        delete process.env.CODEBERG_TOKEN
+      } else {
+        process.env.CODEBERG_TOKEN = value
+      }
+      try {
+        return fn()
+      } finally {
+        if (previous === undefined) {
+          delete process.env.CODEBERG_TOKEN
+        } else {
+          process.env.CODEBERG_TOKEN = previous
+        }
+      }
+    }
+
+    it('builds HTTP provider args with GitHub and website defaults', () => {
+      withToken(undefined, () => {
+        const args = buildReleasePostArgs(rel, {}, 'http')
+
+        assert.match(args, /--package "coralite"/)
+        assert.match(args, /--to "coralite-v1\.3\.0"/)
+        assert.match(args, /--provider http/)
+        assert.doesNotMatch(args, /--agy/)
+        assert.match(args, /--github-release/)
+        assert.match(args, /--website-changelog/)
+        assert.doesNotMatch(args, /--codeberg-release/)
+        assert.match(args, /-y$/)
+      })
+    })
+
+    it('builds agy provider args', () => {
+      withToken(undefined, () => {
+        const args = buildReleasePostArgs(rel, {}, 'agy')
+
+        assert.match(args, /--provider agy/)
+        assert.doesNotMatch(args, /--agy/)
+      })
+    })
+
+    it('adds Codeberg when explicitly requested or a token is present', () => {
+      assert.match(buildReleasePostArgs(rel, { codebergRelease: true }, 'http'), /--codeberg-release/)
+      withToken('token', () => {
+        assert.match(buildReleasePostArgs(rel, {}, 'http'), /--codeberg-release/)
+      })
+    })
+
+    it('respects explicit publish opt-outs', () => {
+      withToken('token', () => {
+        const args = buildReleasePostArgs(rel, {
+          githubRelease: false,
+          noCodebergRelease: true,
+          websiteChangelog: false
+        }, 'http')
+
+        assert.doesNotMatch(args, /--github-release/)
+        assert.doesNotMatch(args, /--codeberg-release/)
+        assert.doesNotMatch(args, /--website-changelog/)
+      })
+    })
+  })
+
+  describe('getReleasePostTargets()', () => {
+    it('returns enabled targets with defaults', () => {
+      const previous = process.env.CODEBERG_TOKEN
+      delete process.env.CODEBERG_TOKEN
+      try {
+        assert.deepStrictEqual(getReleasePostTargets({}), ['GitHub', 'website changelog'])
+      } finally {
+        if (previous !== undefined) {
+          process.env.CODEBERG_TOKEN = previous
+        }
+      }
+    })
+
+    it('includes Codeberg when configured and respects opt-outs', () => {
+      const previous = process.env.CODEBERG_TOKEN
+      process.env.CODEBERG_TOKEN = 'token'
+      try {
+        assert.deepStrictEqual(
+          getReleasePostTargets({}),
+          ['GitHub', 'Codeberg', 'website changelog']
+        )
+        assert.deepStrictEqual(
+          getReleasePostTargets({
+            githubRelease: false,
+            noCodebergRelease: true,
+            websiteChangelog: false
+          }),
+          []
+        )
+      } finally {
+        if (previous === undefined) {
+          delete process.env.CODEBERG_TOKEN
+        } else {
+          process.env.CODEBERG_TOKEN = previous
+        }
+      }
+    })
+  })
+
   describe('CLI options & help', () => {
     it('displays help output containing updated options and release types', () => {
       const output = execFileSync('node', [releaseBin, '--help'], {
@@ -135,6 +247,15 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.match(output, /-p, --package <packages...>/)
       assert.match(output, /-a, --all/)
       assert.match(output, /--agy/)
+      assert.match(output, /--release-post <provider>/)
+    })
+
+    it('displays release-post provider option in help output', () => {
+      const output = execFileSync('node', [releasePostBin, '--help'], {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      })
+      assert.match(output, /--provider <provider>/)
     })
 
     it('executes non-interactive --dry-run with rc type and --allow-any-branch', () => {

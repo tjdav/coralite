@@ -59,6 +59,61 @@ export function parsePackageOption (input) {
     .filter(Boolean)
 }
 
+/**
+ * Builds the argument string forwarded to `coralite-release-post`.
+ *
+ * @param {{ name: string, tagName: string }} rel - Released package metadata.
+ * @param {Object} options - Parsed release command options.
+ * @param {'http'|'agy'} provider - Selected release-post provider.
+ * @returns {string} Release-post CLI arguments.
+ */
+export function buildReleasePostArgs (rel, options, provider) {
+  const args = [
+    `--package "${rel.name}"`,
+    `--to "${rel.tagName}"`,
+    `--provider ${provider}`
+  ]
+
+  if (options.githubRelease !== false) {
+    args.push('--github-release')
+  }
+
+  if (options.codebergRelease || (!options.noCodebergRelease && process.env.CODEBERG_TOKEN)) {
+    args.push('--codeberg-release')
+  }
+
+  if (options.websiteChangelog !== false) {
+    args.push('--website-changelog')
+  }
+
+  args.push('-y')
+  return args.join(' ')
+}
+
+/**
+ * Resolves the enabled release-post publish targets for prompt copy.
+ *
+ * @param {Object} options - Parsed release command options.
+ * @returns {string[]} Enabled target labels.
+ */
+export function getReleasePostTargets (options) {
+  const targets = []
+
+  if (options.githubRelease !== false) {
+    targets.push('GitHub')
+  }
+
+  if (options.codebergRelease || (!options.noCodebergRelease && process.env.CODEBERG_TOKEN)) {
+    targets.push('Codeberg')
+  }
+
+  if (options.websiteChangelog !== false) {
+    targets.push('website changelog')
+  }
+
+  return targets
+}
+
 // Initialize commander
 program
   .name('release')
@@ -82,6 +137,7 @@ program
   .option('--no-codeberg-release', 'Skip creating Codeberg release(s)')
   .option('--website-changelog', 'Update website changelog (website/src/data/changelog.json)', false)
   .option('--no-website-changelog', 'Skip updating website changelog')
+  .option('--release-post <provider>', 'Generate AI release post: http (TabbyAPI/OpenAI), agy, or skip')
   .option('--agy', 'Generate release post using agy and publish to GitHub and website changelog', false)
   .action(async (type, options) => {
     const git = simpleGit()
@@ -91,6 +147,20 @@ program
       // Validate release type
       if (!RELEASE_TYPES.includes(type)) {
         prompts.log.error(`Invalid release type: ${type}. Must be one of: ${RELEASE_TYPES.join(', ')}`)
+        process.exit(1)
+      }
+
+      let requestedReleasePostProvider = null
+      if (options.releasePost) {
+        requestedReleasePostProvider = String(options.releasePost).toLowerCase()
+        if (!['http', 'agy', 'skip'].includes(requestedReleasePostProvider)) {
+          prompts.log.error(`Invalid --release-post provider "${options.releasePost}". Use "http", "agy", or "skip".`)
+          process.exit(1)
+        }
+      }
+
+      if (options.agy && requestedReleasePostProvider && requestedReleasePostProvider !== 'agy') {
+        prompts.log.error('Use either --agy or --release-post http/skip, not both.')
         process.exit(1)
       }
 
@@ -680,7 +750,8 @@ program
 
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
         const publishScript = path.join(__dirname, 'publish.js')
-        const noGhFlag = (options.githubRelease === false || options.agy) ? '--no-github-release' : '--github-release'
+        const aiReleasePostRequested = Boolean(options.agy || (options.releasePost && String(options.releasePost).toLowerCase() !== 'skip'))
+        const noGhFlag = (options.githubRelease === false || aiReleasePostRequested) ? '--no-github-release' : '--github-release'
 
         for (const rel of succeededPackages) {
           prompts.log.step(`\n🚀 Publishing ${rel.name} (${rel.newVersion}) to npm & GitHub...`)
@@ -702,30 +773,89 @@ program
         }
       }
 
-      let useAgy = Boolean(options.agy)
-      if (!options.agy && !options.yes && succeededPackages.length > 0) {
-        const confirmAgy = await prompts.confirm({
-          message: 'Generate AI release post with agy, update GitHub Release, and website changelog?',
-          initialValue: false
+      const releasePostTargets = getReleasePostTargets(options)
+      const targetSuffix = releasePostTargets.length > 0
+        ? ` and publish to ${releasePostTargets.join(', ')}`
+        : ''
+
+      let releasePostProvider
+      if (options.agy) {
+        releasePostProvider = 'agy'
+      } else if (requestedReleasePostProvider) {
+        releasePostProvider = requestedReleasePostProvider
+      } else if (!options.yes && succeededPackages.length > 0) {
+        const selectedProvider = await prompts.select({
+          message: `Generate AI release post for each released package${targetSuffix}?`,
+          options: [
+            {
+              value: 'http',
+              label: 'Tabby API (HTTP)'
+            },
+            {
+              value: 'agy',
+              label: 'agy CLI'
+            },
+            {
+              value: 'skip',
+              label: 'Skip'
+            }
+          ],
+          initialValue: 'skip'
         })
-        useAgy = Boolean(confirmAgy && !prompts.isCancel(confirmAgy))
+        releasePostProvider = prompts.isCancel(selectedProvider) ? 'skip' : selectedProvider
+      } else {
+        releasePostProvider = 'skip'
       }
 
       let updatedWebsite = false
 
-      if (useAgy && succeededPackages.length > 0) {
+      if (releasePostProvider !== 'skip' && succeededPackages.length > 0) {
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
         const releasePostScript = path.join(__dirname, 'release-post.js')
-        const cbFlag = (options.codebergRelease || (!options.noCodebergRelease && process.env.CODEBERG_TOKEN)) ? '--codeberg-release' : ''
+        const ghReleaseScript = path.join(__dirname, 'github-release.js')
+        const cbReleaseScript = path.join(__dirname, 'codeberg-release.js')
+        const changelogPostScript = path.join(__dirname, 'changelog-post.js')
+        const shouldPostGithub = options.githubRelease !== false
+        const shouldPostCodeberg = Boolean(options.codebergRelease || (!options.noCodebergRelease && process.env.CODEBERG_TOKEN))
+        const shouldUpdateWebsite = options.websiteChangelog !== false
+        const providerLabel = releasePostProvider === 'agy' ? 'agy' : 'TabbyAPI/HTTP'
+
         for (const rel of succeededPackages) {
           try {
-            prompts.log.step(`\n🤖 Generating AI release post via agy for ${rel.tagName}...`)
-            execSync(`node "${releasePostScript}" --package "${rel.name}" --to "${rel.tagName}" --agy --github-release ${cbFlag ? cbFlag + ' ' : ''}--website-changelog -y`, {
+            prompts.log.step(`\n🤖 Generating AI release post via ${providerLabel} for ${rel.tagName}...`)
+            const args = buildReleasePostArgs(rel, options, releasePostProvider === 'agy' ? 'agy' : 'http')
+            execSync(`node "${releasePostScript}" ${args}`, {
               stdio: 'inherit'
             })
-            updatedWebsite = true
-          } catch (agyErr) {
-            prompts.log.error(`Release post generation failed for ${rel.tagName}: ${agyErr.message}`)
+            if (shouldUpdateWebsite) {
+              updatedWebsite = true
+            }
+          } catch (releasePostErr) {
+            prompts.log.error(`Release post generation failed for ${rel.tagName}: ${releasePostErr.message}`)
+            prompts.log.step(`Falling back to standard release notes for ${rel.tagName}...`)
+
+            try {
+              if (shouldPostGithub) {
+                execSync(`node "${ghReleaseScript}" --tag "${rel.tagName}" -y`, {
+                  stdio: 'inherit'
+                })
+              }
+
+              if (shouldPostCodeberg) {
+                execSync(`node "${cbReleaseScript}" --tag "${rel.tagName}" -y`, {
+                  stdio: 'inherit'
+                })
+              }
+
+              if (shouldUpdateWebsite) {
+                execSync(`node "${changelogPostScript}" --tag "${rel.tagName}" -y`, {
+                  stdio: 'inherit'
+                })
+                updatedWebsite = true
+              }
+            } catch (fallbackErr) {
+              prompts.log.error(`Standard release fallback failed for ${rel.tagName}: ${fallbackErr.message}`)
+            }
           }
         }
       } else {
