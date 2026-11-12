@@ -341,6 +341,10 @@ describe('Component Named Exports', () => {
     const devResults = await devApp.build()
     const devHtml = devResults[0]?.content || ''
     assert.ok(devHtml.includes('Empty Script Content'), 'renders empty-script-comp in dev')
+
+    // Dispose the dev-mode esbuild context: it keeps the esbuild service
+    // child process referenced and would hold the test process open.
+    await devApp.clearCache(true)
     assert.ok(devHtml.includes('Comment Script Content'), 'renders comment-script-comp in dev')
     assert.ok(devHtml.includes('Helper Script Content'), 'renders helper-script-comp in dev')
   })
