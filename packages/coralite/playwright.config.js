@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig, devices } from '@playwright/test'
+import { E2E_BASE_URLS, E2E_PORTS } from './tests/e2e/ports.js'
 
 /**
  * @see https://playwright.dev/docs/test-configuration
@@ -29,7 +30,7 @@ export default defineConfig({
       testIgnore: /router\.spec\.js$/,
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'http://localhost:3000'
+        baseURL: E2E_BASE_URLS.dev
       }
     },
     {
@@ -38,7 +39,7 @@ export default defineConfig({
       testIgnore: /router\.spec\.js$/,
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'http://localhost:3001'
+        baseURL: E2E_BASE_URLS.prod
       }
     },
     {
@@ -46,7 +47,7 @@ export default defineConfig({
       testDir: './tests/e2e/testing-mode',
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'http://localhost:3002'
+        baseURL: E2E_BASE_URLS.testing
       }
     },
     {
@@ -55,7 +56,7 @@ export default defineConfig({
       testMatch: /router\.spec\.js$/,
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'http://localhost:3003'
+        baseURL: E2E_BASE_URLS.router
       }
     }
   ],
@@ -63,23 +64,23 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: [
     {
-      command: 'pnpm run server:dev',
-      port: 3000,
+      command: 'pnpm run e2e:server:dev',
+      port: E2E_PORTS.dev,
       reuseExistingServer: !process.env.CI
     },
     {
-      command: 'pnpm run server:prod',
-      port: 3001,
+      command: 'pnpm run e2e:server:prod',
+      port: E2E_PORTS.prod,
       reuseExistingServer: !process.env.CI
     },
     {
-      command: 'pnpm run server:testing',
-      port: 3002,
+      command: 'pnpm run e2e:server:testing',
+      port: E2E_PORTS.testing,
       reuseExistingServer: !process.env.CI
     },
     {
-      command: 'pnpm run server:router',
-      port: 3003,
+      command: 'pnpm run e2e:server:router',
+      port: E2E_PORTS.router,
       reuseExistingServer: !process.env.CI
     }
   ]
