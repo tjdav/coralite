@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.3.0
+
+> Comparing `create-coralite-v1.2.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- add codeberg release support, versioned release archives, and tabbyAPI integration (cli) ([b353b14](https://github.com/tjdav/coralite/commit/b353b14ec8b408b4d3fd9a8ba17539cb67ea3d74))
+- support zero-JS static components without dummy exports (compiler) ([26dbb9e](https://github.com/tjdav/coralite/commit/26dbb9efe66e5358a0882cf028fcad610ceeca13))
+
+### 🔨 Other Changes
+
+- release(coralite): version 1.3.0 ([dffaf3b](https://github.com/tjdav/coralite/commit/dffaf3b7f380eb0c9310ce6c914ce5ace14cb4b6))
+
+
 ## v1.2.0
 
 > Comparing `create-coralite-v1.1.0` to `HEAD`
