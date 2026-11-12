@@ -46,7 +46,10 @@ This command creates new releases by bumping versions and tagging commits.
 - `--publish`: Automatically publish released package(s) to npm after git push
 - `--github-release`: Automatically create GitHub release(s) with release notes
 - `--website-changelog`: Automatically add release entry to website changelog timeline
+- `--release-post <provider>`: Generate AI release posts using `http` (TabbyAPI/OpenAI-compatible), `agy`, or `skip`
 - `--agy`: Automatically generate an AI-powered release post using agy, publish to GitHub Releases, and update website changelog timeline
+
+`--release-post http` forwards to `coralite-release-post` and uses `TABBY_API_ENDPOINT`, `TABBY_API_KEY`, and `TABBY_MODEL` when configured. Without an explicit provider or `--agy`, the release command prompts (unless `-y`) with `Skip` selected by default.
 - `--no-publish`: Skip publishing package(s) to npm
 - `--no-github-release`: Skip creating GitHub release(s)
 - `--no-website-changelog`: Skip updating website changelog timeline
@@ -72,6 +75,12 @@ coralite-release patch
 
 # Create a prerelease with custom identifier
 coralite-release prerelease --preid beta
+
+# Generate AI release posts through an OpenAI-compatible HTTP API (TabbyAPI)
+coralite-release minor --release-post http --github-release --codeberg-release --website-changelog -y
+
+# Interactively choose a release-post provider when publishing
+coralite-release minor
 
 # Dry run to see what would happen
 coralite-release minor --dry-run
@@ -116,6 +125,7 @@ This command generates a structured GitHub Release Post based on commits and tec
 - `--model <model>`: OpenAI Model to use (defaults to `$TABBY_MODEL` or `qwen3.8-27b-exl3-4bpw`)
 - `--max-tokens <num>`: Maximum tokens for generation (defaults to `16384`)
 - `--agy`: Use the `agy` CLI tool to generate the release post
+- `--provider <provider>`: Explicitly select `http` or `agy` (skips the provider prompt)
 - `-y, --yes`: Skip confirmation
 - `--stdout`: Print to stdout only, ignore output file
 - `--no-git`: Skip git commit and push
