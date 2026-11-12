@@ -1,5 +1,68 @@
 # Changelog
 
+## v1.3.0
+
+> Comparing `coralite-v1.2.0` to `HEAD`
+
+**Summary:** 29 commits, 3 pull requests
+
+### ✨ Features
+
+- honour coralite-ignore across the HTML pipeline (parser) ([2cdb6dc](https://github.com/tjdav/coralite/commit/2cdb6dcaa6c433fb0ff5b7e776a12a8717a4f851))
+- add codeberg release support, versioned release archives, and tabbyAPI integration (cli) ([b353b14](https://github.com/tjdav/coralite/commit/b353b14ec8b408b4d3fd9a8ba17539cb67ea3d74))
+- support zero-JS static components without dummy exports (compiler) ([26dbb9e](https://github.com/tjdav/coralite/commit/26dbb9efe66e5358a0882cf028fcad610ceeca13))
+
+### 🐛 Bug Fixes
+
+- isolate e2e servers on dedicated ports (test) ([329add2](https://github.com/tjdav/coralite/commit/329add20708a4b7e10e43fd3a2047cb25883386e))
+- isolate page context per concurrent dynamic render (renderer) ([6db82e4](https://github.com/tjdav/coralite/commit/6db82e48f3e3b2691803728c478fdd695624cc79))
+- dispose dev-mode esbuild context in named-exports spec to prevent suite hang (test) ([ddd7e3a](https://github.com/tjdav/coralite/commit/ddd7e3a1f523d12563466ea4a2dda13174ff59e9))
+- load imperative custom elements from client contexts (plugin) ([aeb0253](https://github.com/tjdav/coralite/commit/aeb02533dcbfd1bfccc641a17db35f5ff456e36b))
+- resolve cleanUrls:false nested index pages in dev server (cli) ([ac3d16c](https://github.com/tjdav/coralite/commit/ac3d16cc200a0a9e55c92d9d14636824153f1dc9))
+- prefer ESM conditional exports for bare imports (compiler) ([21c131f](https://github.com/tjdav/coralite/commit/21c131f0da0669def1f5e9e6da07139e49d351f4))
+- make client HTML attribute rewriting quote-aware (component) ([aab6a52](https://github.com/tjdav/coralite/commit/aab6a5208c37e4518d94402b80364d4186382915))
+- anchor dynamic imports to component and page files (compiler) ([fe44885](https://github.com/tjdav/coralite/commit/fe448856f1e1ded4ee45afc2d6369f61cc5f1600))
+- ignore templates and code-blocks when extracting page scripts (parser) ([74d0d89](https://github.com/tjdav/coralite/commit/74d0d897e78de85a7823c31867bbdb2ad7d67219))
+- compile nested custom elements inside slotted HTML and register hydration (renderer) ([2e9de1f](https://github.com/tjdav/coralite/commit/2e9de1f5baa42c9f292d2b66abdd7ae53d541830))
+- resolve changelog HTML plain text duplication and page token architecture (renderer) ([ada43cf](https://github.com/tjdav/coralite/commit/ada43cf4882c28336e8dd4a3c8436f9ecb65df0e))
+
+### ⚡ Performance Improvements
+
+- skip slotted CSS partitioning when unused (compiler) ([0b12512](https://github.com/tjdav/coralite/commit/0b12512767acdabde9c07515e72bf258e8e9d538))
+- avoid redundant token scans (compiler) ([3c08ceb](https://github.com/tjdav/coralite/commit/3c08cebd2ac75cd4eb18b97506af783500cba912))
+- reuse script AST for stylesheet extraction (compiler) ([fd51d24](https://github.com/tjdav/coralite/commit/fd51d24234e3c11eccedf70e1f10b3235906b94c))
+- reuse parsing artifacts across build pipeline (compiler) ([b021368](https://github.com/tjdav/coralite/commit/b021368ad2c8ef93183150b2440d41d3f267f633))
+
+### 📚 Documentation
+
+- consolidate imperative component guidance (plugin) ([2bda678](https://github.com/tjdav/coralite/commit/2bda678e8c5d6b7b2fe3c913e64096c827804773))
+- document imperative component dependency tracking (plugin) ([3212b25](https://github.com/tjdav/coralite/commit/3212b2523b18be16fcf5016627e99f8ecd2de9c8))
+- document coralite-ignore and the literal HTML pipeline (component) ([9d1066d](https://github.com/tjdav/coralite/commit/9d1066d6bda53816d03ea4bf3ea14db0bdf15962))
+
+### ♻️ Code Refactoring
+
+- move regex constants to top of inject module (coralite) ([f7848e6](https://github.com/tjdav/coralite/commit/f7848e645a8d8b774f422d3b78fad887ac352c38))
+- nest dynamic import runtime under coralite namespace (compiler) ([470cecf](https://github.com/tjdav/coralite/commit/470cecf4ec373d58de93ee693662d14767b98b1c))
+
+### ✅ Tests
+
+- cover cleanUrls nested index mapping and collisions (cli) ([b0218f6](https://github.com/tjdav/coralite/commit/b0218f6861837a845c056a5d06970345bba9f51e))
+- fix stale hydration and module-resolution assertions (test) ([7bca437](https://github.com/tjdav/coralite/commit/7bca437c18f4108ca92bbf0f59fcf9a6ba40eb37))
+- add e2e browser hydration tests for nested slotted custom elements (hydration) ([eddeb2c](https://github.com/tjdav/coralite/commit/eddeb2c79fababa4ecac128da8e090832a509820))
+
+### 🔨 Other Changes
+
+- Merge pull request #243 from tjdav/fix/p1-dev-server-cleanurls-index ([#243](https://github.com/tjdav/coralite/pull/243)) ([f26da06](https://github.com/tjdav/coralite/commit/f26da06e8d9d3f3c58de23235008a0e51812a6f2))
+- Merge pull request #242 from tjdav/fix/p1-cjs-esm-conditional-imports ([#242](https://github.com/tjdav/coralite/pull/242)) ([860bd5c](https://github.com/tjdav/coralite/commit/860bd5c0c8f30fbb8a84309f4efd225acee649cf))
+- Merge pull request #234 from tjdav/feat/html-document-pipeline ([#234](https://github.com/tjdav/coralite/pull/234)) ([65cc4d8](https://github.com/tjdav/coralite/commit/65cc4d833d8abc5074e09a4b78dedceb6475ca21))
+
+### 🔗 Pull Requests
+
+- [#234](https://github.com/tjdav/coralite/pull/234)
+- [#242](https://github.com/tjdav/coralite/pull/242)
+- [#243](https://github.com/tjdav/coralite/pull/243)
+
+
 ## v1.2.0
 
 > Comparing `coralite-v1.1.0` to `HEAD`
