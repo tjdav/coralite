@@ -1,5 +1,27 @@
 [
   {
+    "id": "create-coralite-v1-3-1",
+    "version": "1.3.1",
+    "package": "create-coralite",
+    "tag": "create-coralite-v1.3.1",
+    "date": "2026-11-17T13:08:33+01:00",
+    "formattedDate": "Nov 17, 2026",
+    "title": "create-coralite v1.3.1",
+    "summary": "Release 1.3.1 for create-coralite.",
+    "html": "<p>> Comparing <code>create-coralite-v1.3.0</code> to <code>HEAD</code></p>\n<p><strong>Summary:</strong> 3 commits</p>\n<coralite-heading level=\"3\" text=\"🐛 Bug Fixes\"></coralite-heading>\n<ul>\n  <li>recover stale dev assets and isolate mode state (cli) (<a href=\"https://github.com/tjdav/coralite/commit/f13e75075f418a01b3133c66de287e34cc1afc5c\">f13e750</a>)</li>\n</ul>\n<coralite-heading level=\"3\" text=\"📚 Documentation\"></coralite-heading>\n<ul>\n  <li>update release changelog timeline [skip ci] (website) (<a href=\"https://github.com/tjdav/coralite/commit/18fb965d8e066e7f471d5d569f3cb4ebd97b9015\">18fb965</a>)</li>\n</ul>\n<coralite-heading level=\"3\" text=\"🔨 Other Changes\"></coralite-heading>\n<ul>\n  <li>release(coralite): version 1.3.1 (<a href=\"https://github.com/tjdav/coralite/commit/1f4cb9242c598c82fbf36ca686a2eff73c8f32cf\">1f4cb92</a>)</li>\n</ul>"
+  },
+  {
+    "id": "coralite-v1-3-1",
+    "version": "1.3.1",
+    "package": "coralite",
+    "tag": "coralite-v1.3.1",
+    "date": "2026-11-17T13:08:24+01:00",
+    "formattedDate": "Nov 17, 2026",
+    "title": "coralite v1.3.1",
+    "summary": "Release 1.3.1 for coralite.",
+    "html": "<p>> Comparing <code>coralite-v1.3.0</code> to <code>HEAD</code></p>\n<p><strong>Summary:</strong> 3 commits</p>\n<coralite-heading level=\"3\" text=\"🐛 Bug Fixes\"></coralite-heading>\n<ul>\n  <li>avoid reflecting request paths in dev asset errors (cli) (<a href=\"https://github.com/tjdav/coralite/commit/3aced9bd20cca775dfbe721886d364f80ad3178e\">3aced9b</a>)</li>\n  <li>recover stale dev assets and isolate mode state (cli) (<a href=\"https://github.com/tjdav/coralite/commit/f13e75075f418a01b3133c66de287e34cc1afc5c\">f13e750</a>)</li>\n</ul>\n<coralite-heading level=\"3\" text=\"📚 Documentation\"></coralite-heading>\n<ul>\n  <li>update release changelog timeline [skip ci] (website) (<a href=\"https://github.com/tjdav/coralite/commit/18fb965d8e066e7f471d5d569f3cb4ebd97b9015\">18fb965</a>)</li>\n</ul>"
+  },
+  {
     "id": "create-coralite-v1-3-0",
     "version": "1.3.0",
     "package": "create-coralite",
