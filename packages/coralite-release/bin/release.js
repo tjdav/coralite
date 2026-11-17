@@ -86,6 +86,10 @@ export function buildReleasePostArgs (rel, options, provider) {
     args.push('--website-changelog')
   }
 
+  if (provider === 'agy' && options.agyModel) {
+    args.push(`--agy-model "${options.agyModel}"`)
+  }
+
   args.push('-y')
   return args.join(' ')
 }
@@ -138,6 +142,7 @@ program
   .option('--website-changelog', 'Update website changelog (website/src/data/changelog.json)', false)
   .option('--no-website-changelog', 'Skip updating website changelog')
   .option('--release-post <provider>', 'Generate AI release post: http (TabbyAPI/OpenAI), agy, or skip')
+  .option('--agy-model <model>', 'Model passed to agy when generating release posts')
   .option('--agy', 'Generate release post using agy and publish to GitHub and website changelog', false)
   .action(async (type, options) => {
     const git = simpleGit()
