@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.3.1
+
+> Comparing `coralite-v1.3.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### 🐛 Bug Fixes
+
+- avoid reflecting request paths in dev asset errors (cli) ([3aced9b](https://github.com/tjdav/coralite/commit/3aced9bd20cca775dfbe721886d364f80ad3178e))
+- recover stale dev assets and isolate mode state (cli) ([f13e750](https://github.com/tjdav/coralite/commit/f13e75075f418a01b3133c66de287e34cc1afc5c))
+
+### 📚 Documentation
+
+- update release changelog timeline [skip ci] (website) ([18fb965](https://github.com/tjdav/coralite/commit/18fb965d8e066e7f471d5d569f3cb4ebd97b9015))
+
+
 ## v1.3.0
 
 > Comparing `coralite-v1.2.0` to `HEAD`
