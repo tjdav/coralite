@@ -14,6 +14,7 @@ import ora from 'ora'
  */
 export async function buildCommand (config, options, logger = null) {
   const mode = 'build'
+  const projectRoot = config.projectRoot || process.cwd()
   const PAD = '  '
   const border = '─'.repeat(Math.min(process.stdout.columns || 36, 36) / 2)
   const dash = colours.gray(' ─ ')
@@ -84,6 +85,8 @@ export async function buildCommand (config, options, logger = null) {
     baseURL: config.baseURL,
     cleanUrls: config.cleanUrls,
     output: config.output,
+    projectRoot,
+    cacheDir: join(projectRoot, '.coralite', 'build'),
     mode: 'production',
     onError: ({ level, message, error }) => {
       if (level === 'ERR') {

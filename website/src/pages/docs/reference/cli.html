@@ -113,6 +113,8 @@
     <coralite-heading level="2" text="Configuration File Support"></coralite-heading>
     <p><code>coralite dev</code>, <code>coralite test</code>, and <code>coralite build</code> require a <code>coralite.config.js</code> file in the current working directory. Paths such as <code>pages</code>, <code>components</code>, and <code>output</code>, plus <code>mode</code> and <code>cleanUrls</code>, are all declared there via <code>defineConfig</code> imported from <code>coralite</code> — the CLI itself no longer accepts directory or output flags.</p>
 
+    <p>The development and testing servers emit generated assets and incremental state to <code>.coralite/dev</code> and <code>.coralite/test</code> respectively, while production builds emit to <code>dist</code> and keep their manifest in <code>.coralite/build</code>. Running <code>--clean</code> on <code>dev</code> or <code>test</code> removes only that mode's directory.</p>
+
     <coralite-heading level="2" text="Examples"></coralite-heading>
 
     <p><strong>1. Start the development server:</strong></p>

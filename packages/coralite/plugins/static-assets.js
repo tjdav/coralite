@@ -8,6 +8,87 @@ import { resolvePackageFile } from '../lib/server/utils/package.js'
  */
 
 /**
+ * Copies configured static assets into the output directory.
+ *
+ * @param {CoraliteStaticAsset[]} assets - Static assets to copy.
+ * @param {{ projectRoot?: string, outputDir?: string, inFlight?: Map<string, { promise: Promise<void>, src: string }> }} [options] - Copy options.
+ * @returns {Promise<void>} Resolves when every copy has settled.
+ */
+export async function copyStaticAssets (assets = [], options = {}) {
+  const projectRoot = options.projectRoot || process.cwd()
+  const outputDir = options.outputDir || join(projectRoot, 'dist')
+  const inFlight = options.inFlight || new Map()
+  const copyTasks = []
+
+  for (const asset of assets) {
+    if (!asset.dest) {
+      throw new Error('staticAssetPlugin requires assets to have a dest property.')
+    }
+
+    const dest = isAbsolute(asset.dest) ? asset.dest : join(outputDir, asset.dest)
+    let src = asset.src
+
+    if (src && !isAbsolute(src)) {
+      src = join(projectRoot, src)
+    }
+
+    if (!src) {
+      if (!asset.pkg || !asset.path) {
+        throw new Error('staticAssetPlugin requires assets to have pkg and path state when src is not provided.')
+      }
+
+      src = resolvePackageFile(asset.pkg, asset.path, projectRoot)
+    }
+
+    if (inFlight.has(dest)) {
+      const active = inFlight.get(dest)
+      if (active.src !== src) {
+        console.warn(`[staticAssetPlugin] Destination collision: Both "${src}" and "${active.src}" are targeting "${asset.dest}". Only the first one will be processed.`)
+      }
+      copyTasks.push(active.promise)
+      continue
+    }
+
+    const performCopy = (async () => {
+      try {
+        const [srcStat, destStat] = await Promise.all([
+          stat(src).catch(() => null),
+          stat(dest).catch(() => null)
+        ])
+
+        if (!srcStat) {
+          console.warn(`[staticAssetPlugin] Source file not found: ${src}`)
+          return
+        }
+
+        // Only optimize for individual files; directories must always be copied to capture deep changes
+        if (srcStat.isFile() && destStat) {
+          if (Math.floor(srcStat.mtimeMs) === Math.floor(destStat.mtimeMs) && srcStat.size === destStat.size) {
+            return
+          }
+        }
+
+        await mkdir(dirname(dest), { recursive: true })
+        await cp(src, dest, {
+          recursive: true,
+          preserveTimestamps: true
+        })
+      } finally {
+        inFlight.delete(dest)
+      }
+    })()
+
+    inFlight.set(dest, {
+      promise: performCopy,
+      src
+    })
+    copyTasks.push(performCopy)
+  }
+
+  await Promise.all(copyTasks)
+}
+
+/**
  * Coralite plugin to copy static assets during build
  * @param {CoraliteStaticAsset[]} assets - Static assets to copy during build.
  */
@@ -20,74 +101,12 @@ export const staticAssetPlugin = (assets = []) => {
       onBeforeBuild: async function (context) {
         const projectRoot = context.app.options.projectRoot || process.cwd()
         const outputDir = context.app.options.output || join(projectRoot, 'dist')
-        const copyTasks = []
 
-        for (const asset of assets) {
-          if (!asset.dest) {
-            throw new Error('staticAssetPlugin requires assets to have a dest property.')
-          }
-
-          const dest = isAbsolute(asset.dest) ? asset.dest : join(outputDir, asset.dest)
-          let src = asset.src
-
-          if (src && !isAbsolute(src)) {
-            src = join(projectRoot, src)
-          }
-
-          if (!src) {
-            if (!asset.pkg || !asset.path) {
-              throw new Error('staticAssetPlugin requires assets to have pkg and path state when src is not provided.')
-            }
-
-            src = resolvePackageFile(asset.pkg, asset.path, projectRoot)
-          }
-
-          if (inFlight.has(dest)) {
-            const active = inFlight.get(dest)
-            if (active.src !== src) {
-              console.warn(`[staticAssetPlugin] Destination collision: Both "${src}" and "${active.src}" are targeting "${asset.dest}". Only the first one will be processed.`)
-            }
-            copyTasks.push(active.promise)
-            continue
-          }
-
-          const performCopy = (async () => {
-            try {
-              const [srcStat, destStat] = await Promise.all([
-                stat(src).catch(() => null),
-                stat(dest).catch(() => null)
-              ])
-
-              if (!srcStat) {
-                console.warn(`[staticAssetPlugin] Source file not found: ${src}`)
-                return
-              }
-
-              // Only optimize for individual files; directories must always be copied to capture deep changes
-              if (srcStat.isFile() && destStat) {
-                if (Math.floor(srcStat.mtimeMs) === Math.floor(destStat.mtimeMs) && srcStat.size === destStat.size) {
-                  return
-                }
-              }
-
-              await mkdir(dirname(dest), { recursive: true })
-              await cp(src, dest, {
-                recursive: true,
-                preserveTimestamps: true
-              })
-            } finally {
-              inFlight.delete(dest)
-            }
-          })()
-
-          inFlight.set(dest, {
-            promise: performCopy,
-            src
-          })
-          copyTasks.push(performCopy)
-        }
-
-        await Promise.all(copyTasks)
+        await copyStaticAssets(assets, {
+          projectRoot,
+          outputDir,
+          inFlight
+        })
       }
     }
   })

@@ -172,6 +172,7 @@
  * @property {'full' | 'minimal'} [reconcile='full'] - Reconcile mode.
  * @property {'full' | 'minimal'} [listStrategy='full'] - Reconciliation strategy.
  * @property {string} [projectRoot] - The root directory of the project.
+ * @property {string} [cacheDir] - Directory used to persist the incremental build manifest. Defaults to `<projectRoot>/.coralite`.
  * @property {CoralitePath} [path] - Internal path mapping.
  * @property {{ port?: number, host?: string }} [server] - Script-specific server options.
  * @property {{ input?: string[], processors?: Object }} [styles] - Script-specific styles options.

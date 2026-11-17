@@ -4,11 +4,12 @@ import localAccess from 'local-access'
 import chokidar from 'chokidar'
 import buildStyles from './build-styles.js'
 import { displayError, displayInfo, displayWarning, displaySuccess, toCode, toMS, toTime, deleteDirectoryRecursive } from './build-utils.js'
-import { dirname, extname, join, normalize, relative, sep } from 'path'
+import { dirname, extname, isAbsolute, join, normalize, relative, sep } from 'path'
 import { access, constants, mkdir, readFile, writeFile } from 'fs/promises'
 import { createCoralite, resolveCspConfig } from 'coralite'
 import { buildRouteTable } from '../server/routes/build-table.js'
 import { matchRoute } from '../server/routes/match.js'
+import { copyStaticAssets } from '../../plugins/static-assets.js'
 import portfinder from 'portfinder'
 
 /**
@@ -336,6 +337,342 @@ async function server (config, options, runMode = 'dev') {
     let currentConfig = config
     const pluginPaths = new Set()
 
+    const projectRoot = currentConfig.projectRoot || process.cwd()
+    const modeName = runMode === 'test' ? 'test' : 'dev'
+    const modeCacheDir = currentConfig.cacheDir || join(projectRoot, '.coralite', modeName)
+    const relativeOutput = relative(process.cwd(), currentConfig.output)
+    const outputHint = relativeOutput && !relativeOutput.startsWith('..') && !isAbsolute(relativeOutput)
+      ? relativeOutput
+      : currentConfig.output
+
+    if (options?.clean) {
+      try {
+        await access(currentConfig.output, constants.F_OK)
+        deleteDirectoryRecursive(currentConfig.output)
+      } catch {
+        // A missing output directory is already clean
+      }
+    }
+    await mkdir(currentConfig.output, { recursive: true })
+
+    const emittedAssets = new Map()
+    const reportedMissingAssets = new Set()
+    const staticAssetInFlight = new Map()
+    let externalStyleUrls = new Set()
+    let stylesPromise = null
+
+    /**
+     * @param {CoraliteConfig} cfg - Coralite configuration.
+     * @returns {Set<string>} Configured external stylesheet URLs.
+     */
+    const getExternalStyleUrls = (cfg) => new Set((cfg.styles?.input || []).map(input => {
+      const ext = input.split('.').pop()
+      return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')
+    }))
+
+    externalStyleUrls = getExternalStyleUrls(currentConfig)
+
+    /**
+     * Resolves a generated output file to its absolute path and public URL.
+     *
+     * @param {any} file - Generated output file.
+     * @param {string} [outputDir] - Output directory.
+     * @returns {{outFile: string, url: string|null}} Resolved paths.
+     */
+    const resolveOutputFile = (file, outputDir = currentConfig.output) => {
+      const sourcePath = file.path || file.hashedPath || ''
+      const isCSS = sourcePath.endsWith('.css')
+      const baseAssetsDir = isCSS ? join(outputDir, 'assets', 'css') : join(outputDir, 'assets', 'js')
+      const outFile = file.outputDir
+        ? join(outputDir, file.outputDir, file.hashedPath)
+        : join(baseAssetsDir, file.hashedPath)
+      const rel = relative(outputDir, outFile).split(sep).join('/')
+      return {
+        outFile,
+        url: rel ? '/' + rel : null
+      }
+    }
+
+    const recordEmittedAssets = () => {
+      if (!coralite?.outputFiles) {
+        return
+      }
+      for (const file of Object.values(coralite.outputFiles)) {
+        const resolved = resolveOutputFile(file)
+        if (resolved.url) {
+          emittedAssets.set(resolved.url, {
+            file,
+            outFile: resolved.outFile
+          })
+        }
+      }
+    }
+
+    const writeOutputFiles = async () => {
+      if (!coralite?.outputFiles) {
+        return
+      }
+      const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
+        const { outFile } = resolveOutputFile(file)
+        const contents = file.contents !== undefined ? file.contents : file.text
+
+        await mkdir(dirname(outFile), { recursive: true })
+        await writeFile(outFile, contents)
+      })
+
+      await Promise.all(assetWrites)
+      recordEmittedAssets()
+    }
+
+    const getStaticAssetUrls = () => {
+      const assets = coralite?.options?.assets || currentConfig.assets || []
+      const urls = []
+      for (const asset of assets) {
+        if (!asset?.dest) {
+          continue
+        }
+        const dest = isAbsolute(asset.dest) ? asset.dest : join(currentConfig.output, asset.dest)
+        const rel = relative(currentConfig.output, dest)
+        if (!rel || rel.startsWith('..') || isAbsolute(rel)) {
+          continue
+        }
+        urls.push('/' + rel.split(sep).join('/'))
+      }
+      return urls
+    }
+
+    const matchesStaticAsset = (url) => getStaticAssetUrls().some(base => url === base || url.startsWith(base + '/'))
+
+    const getOutputFileUrls = () => {
+      const urls = new Set()
+      if (!coralite?.outputFiles) {
+        return urls
+      }
+      for (const file of Object.values(coralite.outputFiles)) {
+        const { url } = resolveOutputFile(file)
+        if (url) {
+          urls.add(url)
+        }
+      }
+      return urls
+    }
+
+    const isManagedAssetUrl = (url, currentUrls = getOutputFileUrls()) => {
+      return emittedAssets.has(url) ||
+        currentUrls.has(url) ||
+        externalStyleUrls.has(url) ||
+        matchesStaticAsset(url)
+    }
+
+    const extractPageAssets = (html) => {
+      const matches = html.match(/\/assets\/(?:[A-Za-z0-9._-]+\/)*[A-Za-z0-9._-]+\.[A-Za-z0-9]+/g) || []
+      const currentUrls = getOutputFileUrls()
+      return [...new Set(matches)].filter(url => isManagedAssetUrl(url, currentUrls))
+    }
+
+    const setPageCache = (keys, html) => {
+      const entry = {
+        html,
+        managedAssets: null
+      }
+      for (const key of keys) {
+        pageCache.set(key, entry)
+      }
+    }
+
+    const getPageCache = (key) => {
+      const entry = pageCache.get(key)
+      if (!entry) {
+        return null
+      }
+      if (entry.managedAssets === null) {
+        entry.managedAssets = extractPageAssets(entry.html)
+      }
+      return entry
+    }
+
+    const getMissingPageAssets = (entry) => {
+      const currentUrls = getOutputFileUrls()
+      return entry.managedAssets.filter(url => {
+        return !emittedAssets.has(url) &&
+          !currentUrls.has(url) &&
+          !externalStyleUrls.has(url) &&
+          !matchesStaticAsset(url)
+      })
+    }
+
+    const escapeHtml = (value) => String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+
+    const sendUnrecoverablePage = (res, missing) => {
+      displayError(`Cached page references assets that cannot be restored: ${missing.join(', ')}`)
+      const items = missing.map(url => `<li><code>${escapeHtml(url)}</code></li>`).join('')
+      res.status(500).type('text/html').send(`<!DOCTYPE html>
+<html>
+<head><title>Coralite asset error</title></head>
+<body>
+  <h1>Coralite asset error</h1>
+  <p>This page references assets that the dev server can no longer restore.</p>
+  <ul>${items}</ul>
+  <p>Restart the dev server or remove <code>${escapeHtml(outputHint)}</code>.</p>
+</body>
+</html>`)
+    }
+
+    const sendMissingAsset = (reqPath, res) => {
+      if (!reportedMissingAssets.has(reqPath)) {
+        reportedMissingAssets.add(reqPath)
+        displayError(`Unable to restore asset "${reqPath}". Restart the dev server or remove "${outputHint}".`)
+      }
+      res.status(404).type('text/plain').send(`Unable to restore asset "${reqPath}".\nRestart the dev server or remove "${outputHint}".\n`)
+    }
+
+    const toOutputPath = (url) => {
+      if (typeof url !== 'string' || !url.startsWith('/')) {
+        return null
+      }
+      const fullPath = join(currentConfig.output, url.slice(1))
+      const rel = relative(currentConfig.output, fullPath)
+      if (!rel || rel.startsWith('..') || isAbsolute(rel)) {
+        return null
+      }
+      return fullPath
+    }
+
+    const sendAssetContents = (res, outFile, contents) => {
+      const ext = extname(outFile)
+      if (ext === '.wasm') {
+        res.type('application/wasm')
+      } else if (ext) {
+        res.type(ext)
+      }
+      res.send(contents)
+    }
+
+    const compileStyles = async ({ log = false } = {}) => {
+      if (!currentConfig.styles?.input) {
+        externalStyleUrls = new Set()
+        return []
+      }
+
+      externalStyleUrls = getExternalStyleUrls(currentConfig)
+
+      if (stylesPromise) {
+        return stylesPromise
+      }
+
+      const promise = buildStyles({
+        input: currentConfig.styles.input,
+        output: join(currentConfig.output, 'assets', 'css'),
+        processors: currentConfig.styles.processors
+      })
+      stylesPromise = promise
+
+      try {
+        const results = await promise
+        if (log) {
+          const dash = colours.gray(' ─ ')
+          for (const result of results) {
+            process.stdout.write(toTime() + colours.bgGreen(' Compiled STYLES ') + dash + toMS(result.duration) + dash + result.input + '\n')
+          }
+        }
+        return results
+      } finally {
+        if (stylesPromise === promise) {
+          stylesPromise = null
+        }
+      }
+    }
+
+    const recoverAsset = async (reqPath) => {
+      const url = normalize(reqPath).split(sep).join('/')
+      if (!url.startsWith('/')) {
+        return null
+      }
+
+      const isAssetLike = url.startsWith('/assets/') || externalStyleUrls.has(url) || matchesStaticAsset(url)
+      if (!isAssetLike) {
+        return null
+      }
+
+      const emitted = emittedAssets.get(url)
+      if (emitted) {
+        const contents = emitted.file.contents !== undefined ? emitted.file.contents : emitted.file.text
+        await mkdir(dirname(emitted.outFile), { recursive: true })
+        await writeFile(emitted.outFile, contents)
+        return {
+          outFile: emitted.outFile,
+          contents
+        }
+      }
+
+      await compilePromise.catch(() => {
+      })
+
+      const emittedAfterBuild = emittedAssets.get(url)
+      if (emittedAfterBuild) {
+        const contents = emittedAfterBuild.file.contents !== undefined ? emittedAfterBuild.file.contents : emittedAfterBuild.file.text
+        await mkdir(dirname(emittedAfterBuild.outFile), { recursive: true })
+        await writeFile(emittedAfterBuild.outFile, contents)
+        return {
+          outFile: emittedAfterBuild.outFile,
+          contents
+        }
+      }
+
+      if (externalStyleUrls.has(url)) {
+        try {
+          await compileStyles()
+        } catch (error) {
+          displayError(`Failed to rebuild styles for "${url}"`, error)
+          return null
+        }
+        const outFile = toOutputPath(url)
+        if (!outFile) {
+          return null
+        }
+        try {
+          const contents = await readFile(outFile)
+          return {
+            outFile,
+            contents
+          }
+        } catch {
+          return null
+        }
+      }
+
+      if (matchesStaticAsset(url)) {
+        try {
+          await copyStaticAssets(coralite?.options?.assets || currentConfig.assets || [], {
+            projectRoot,
+            outputDir: currentConfig.output,
+            inFlight: staticAssetInFlight
+          })
+        } catch (error) {
+          displayError(`Failed to restore static asset "${url}"`, error)
+          return null
+        }
+        const outFile = toOutputPath(url)
+        if (!outFile) {
+          return null
+        }
+        try {
+          const contents = await readFile(outFile)
+          return {
+            outFile,
+            contents
+          }
+        } catch {
+          return null
+        }
+      }
+
+      return null
+    }
+
     /**
      * Asynchronously extracts relative plugin paths from the `coralite.config.js` file.
      * This function clears the existing `pluginPaths` Set, reads the configuration file
@@ -401,6 +738,9 @@ async function server (config, options, runMode = 'dev') {
       displayInfo('Initializing Coralite...')
 
       pageCache.clear()
+      emittedAssets.clear()
+      reportedMissingAssets.clear()
+      externalStyleUrls = getExternalStyleUrls(currentConfig)
 
       coralite = await createCoralite({
         components: currentConfig.components,
@@ -420,6 +760,8 @@ async function server (config, options, runMode = 'dev') {
         viewTransitions: currentConfig.viewTransitions,
         ignoreByAttribute: currentConfig.ignoreByAttribute,
         skipRenderByAttribute: currentConfig.skipRenderByAttribute,
+        projectRoot: currentConfig.projectRoot || projectRoot,
+        cacheDir: currentConfig.cacheDir || modeCacheDir,
         mode: runMode === 'test' ? 'testing' : 'development',
         output: currentConfig.output,
         onError: ({ level, message, error }) => {
@@ -460,9 +802,7 @@ async function server (config, options, runMode = 'dev') {
               // populated for dynamic routes.
               const htmlKeys = buildResult.route?.dynamic ? generatedKeys : [...sourceKeys, ...generatedKeys]
 
-              for (const key of htmlKeys) {
-                pageCache.set(key, injectedHtml)
-              }
+              setPageCache(htmlKeys, injectedHtml)
 
               return {
                 path: buildResult.path,
@@ -472,24 +812,7 @@ async function server (config, options, runMode = 'dev') {
               }
             })
 
-            if (coralite.outputFiles) {
-              const assetsJsDir = join(config.output, 'assets', 'js')
-              const assetsCssDir = join(config.output, 'assets', 'css')
-
-              const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
-                const isCSS = (file.path || file.hashedPath)?.endsWith('.css')
-                const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
-                const outFile = file.outputDir
-                  ? join(config.output, file.outputDir, file.hashedPath)
-                  : join(baseAssetsDir, file.hashedPath)
-                const contents = file.contents !== undefined ? file.contents : file.text
-
-                await mkdir(dirname(outFile), { recursive: true })
-                await writeFile(outFile, contents)
-              })
-
-              await Promise.all(assetWrites)
-            }
+            await writeOutputFiles()
           } catch (error) {
             displayError(error.message, error)
           }
@@ -590,20 +913,7 @@ async function server (config, options, runMode = 'dev') {
         cacheControl: false
       }))
 
-      // rebuild CSS and send notification
-      const results = await buildStyles({
-        input: config.styles.input,
-        output: join(config.output, 'assets', 'css'),
-        processors: config.styles.processors
-      })
-
-      const dash = colours.gray(' ─ ')
-
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i]
-
-        process.stdout.write(toTime() + colours.bgGreen(' Compiled STYLES ') + dash + toMS(result.duration) + dash + result.input + '\n')
-      }
+      await compileStyles({ log: true })
     }
 
     app.locals.clients = clients
@@ -618,6 +928,24 @@ async function server (config, options, runMode = 'dev') {
 
       // Only handle HTML requests or extension-less requests (assumed to be pages)
       if (extension && extension !== '.html') {
+        const assetUrl = normalize(reqPath).split(sep).join('/')
+        const isAssetRequest = assetUrl.startsWith('/assets/') ||
+          externalStyleUrls.has(assetUrl) ||
+          matchesStaticAsset(assetUrl)
+
+        if (isAssetRequest) {
+          try {
+            const recovered = await recoverAsset(reqPath)
+            if (recovered) {
+              sendAssetContents(res, recovered.outFile, recovered.contents)
+              return
+            }
+          } catch (error) {
+            displayError(`Failed to restore asset "${reqPath}"`, error)
+          }
+          return sendMissingAsset(reqPath, res)
+        }
+
         return res.sendStatus(404)
       }
 
@@ -633,24 +961,28 @@ async function server (config, options, runMode = 'dev') {
         ? cacheKey.slice(0, -5) + '/index.html'
         : cacheKey
 
-      if (pageCache.has(cacheKey)) {
-        res.send(pageCache.get(cacheKey))
-        return
-      }
-      if (pageCache.has(cleanCacheKey)) {
-        res.send(pageCache.get(cleanCacheKey))
+      const cached = getPageCache(cacheKey) || getPageCache(cleanCacheKey)
+      if (cached) {
+        const missingAssets = getMissingPageAssets(cached)
+        if (missingAssets.length > 0) {
+          sendUnrecoverablePage(res, missingAssets)
+          return
+        }
+        res.send(cached.html)
         return
       }
 
       await new Promise((resolve) => {
         compilePromise = compilePromise.then(async () => {
           try {
-            if (pageCache.has(cacheKey)) {
-              res.send(pageCache.get(cacheKey))
-              return
-            }
-            if (pageCache.has(cleanCacheKey)) {
-              res.send(pageCache.get(cleanCacheKey))
+            const cachedAfterBuild = getPageCache(cacheKey) || getPageCache(cleanCacheKey)
+            if (cachedAfterBuild) {
+              const missingAssets = getMissingPageAssets(cachedAfterBuild)
+              if (missingAssets.length > 0) {
+                sendUnrecoverablePage(res, missingAssets)
+                return
+              }
+              res.send(cachedAfterBuild.html)
               return
             }
 
@@ -709,9 +1041,7 @@ async function server (config, options, runMode = 'dev') {
               // populated for dynamic routes.
               const htmlKeys = buildResult.route?.dynamic ? generatedKeys : [...sourceKeys, ...generatedKeys]
 
-              for (const key of htmlKeys) {
-                pageCache.set(key, injectedHtml)
-              }
+              setPageCache(htmlKeys, injectedHtml)
 
               return {
                 path: buildResult.path,
@@ -721,37 +1051,7 @@ async function server (config, options, runMode = 'dev') {
               }
             }
 
-            // build the HTML for this page using the built-in compiler.
-            const documents = item
-              ? await coralite.build(pathname, buildCallback)
-              : await coralite.build(buildCallback)
-
-            // Write ESM script and style assets generated during the build phase
-            if (coralite.outputFiles) {
-              const assetsJsDir = join(config.output, 'assets', 'js')
-              const assetsCssDir = join(config.output, 'assets', 'css')
-
-              const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
-                const isCSS = (file.path || file.hashedPath)?.endsWith('.css')
-                const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
-                const outFile = file.outputDir
-                  ? join(config.output, file.outputDir, file.hashedPath)
-                  : join(baseAssetsDir, file.hashedPath)
-                const contents = file.contents !== undefined ? file.contents : file.text
-
-                await mkdir(dirname(outFile), { recursive: true })
-                await writeFile(outFile, contents)
-              })
-
-              await Promise.all(assetWrites)
-            }
-
-            // prints time and path to the file that has been changed or added.
-            const compileDuration = process.hrtime(start)
-            process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(compileDuration) + dash + '/' + cacheKey + '\n')
-
-            // find the document that matches the request path
-            const doc = documents.find(matchedDoc => {
+            const findMatchingDocument = (documents) => documents.find(matchedDoc => {
               if (!matchedDoc || !matchedDoc.content) {
                 return false
               }
@@ -762,9 +1062,39 @@ async function server (config, options, runMode = 'dev') {
               return requestKeys.has(cacheKey) || requestKeys.has(cleanCacheKey)
             })
 
+            const buildDocuments = async (buildOptions) => {
+              if (buildOptions) {
+                if (item) {
+                  return coralite.build(pathname, buildOptions, buildCallback)
+                }
+                return coralite.build(buildOptions, buildCallback)
+              }
+              if (item) {
+                return coralite.build(pathname, buildCallback)
+              }
+              return coralite.build(buildCallback)
+            }
+
+            // build the HTML for this page using the built-in compiler.
+            let documents = await buildDocuments()
+
+            // Write ESM script and style assets generated during the build phase
+            await writeOutputFiles()
+
+            let doc = findMatchingDocument(documents)
+
+            if (!doc && runMode === 'test') {
+              documents = await buildDocuments({ incremental: false })
+              await writeOutputFiles()
+              doc = findMatchingDocument(documents)
+            }
+
+            // prints time and path to the file that has been changed or added.
+            const compileDuration = process.hrtime(start)
+            process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(compileDuration) + dash + '/' + cacheKey + '\n')
+
             if (doc) {
-              pageCache.set(cacheKey, doc.content)
-              pageCache.set(cleanCacheKey, doc.content)
+              setPageCache([cacheKey, cleanCacheKey], doc.content)
               res.send(doc.content)
             } else {
               res.sendStatus(404)
@@ -815,9 +1145,10 @@ async function server (config, options, runMode = 'dev') {
           }
 
           pageCache.clear()
+          emittedAssets.clear()
+          reportedMissingAssets.clear()
 
           isCompiling = true
-          const dash = colours.gray(' ─ ')
 
           // Process all pending changes
           const changes = Array.from(pendingChanges)
@@ -853,10 +1184,17 @@ async function server (config, options, runMode = 'dev') {
                 if (freshConfigModule.default) {
                   currentConfig = defineConfig(freshConfigModule.default)
                   currentConfig.output = config.output
+                  currentConfig.cacheDir = config.cacheDir
                   currentConfig.server = config.server
 
                   // Re-initialize Coralite with new config
                   await initCoralite()
+
+                  await compileStyles({ log: true })
+
+                  for (const input of currentConfig.styles?.input || []) {
+                    watcher.add(dirname(input))
+                  }
                 }
               } catch (err) {
                 displayError('Failed to reload configuration', err)
@@ -869,16 +1207,8 @@ async function server (config, options, runMode = 'dev') {
             }
 
             // Handle STYLES changes - rebuild all STYLES files once
-            if (stylesChanges.length > 0 && currentConfig.styles?.input) {
-              const results = await buildStyles({
-                input: currentConfig.styles.input,
-                processors: currentConfig.styles.processors,
-                output: join(config.output, 'assets', 'css')
-              })
-
-              for (const result of results) {
-                process.stdout.write(toTime() + colours.bgGreen(' Compiled STYLES ') + dash + toMS(result.duration) + dash + result.input + '\n')
-              }
+            if (stylesChanges.length > 0 && configChanges.length === 0 && currentConfig.styles?.input) {
+              await compileStyles({ log: true })
             }
 
             // Notify clients to reload

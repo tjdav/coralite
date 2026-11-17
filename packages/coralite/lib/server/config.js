@@ -127,6 +127,15 @@ export function defineConfig (options, { onError } = {}) {
     throw new CoraliteError(`Config property "projectRoot" must be a string, received ${typeof options.projectRoot}`)
   }
 
+  if (options.cacheDir !== undefined) {
+    if (typeof options.cacheDir !== 'string') {
+      throw new CoraliteError(`Config property "cacheDir" must be a string, received ${typeof options.cacheDir}`)
+    }
+    if (options.cacheDir.trim() === '') {
+      throw new CoraliteError('Config property "cacheDir" cannot be empty')
+    }
+  }
+
   // Validate path property
   if (options.path !== undefined && (typeof options.path !== 'object' || options.path === null)) {
     throw new CoraliteError('Config property "path" must be an object')
