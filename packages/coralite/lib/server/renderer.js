@@ -954,7 +954,7 @@ export function createRenderer ({
           if (!scriptResult.__script__.state) {
             scriptResult.__script__.state = {}
           }
-          if (!noHydration && page?.file?.pathname) {
+          if (!noHydration && scriptResult.__script__.hydrate !== false && page?.file?.pathname) {
             currentSession.scripts.add(page.file.pathname, {
               id: currentContextId,
               componentId: module.id,
@@ -2928,21 +2928,25 @@ export function createRenderer ({
         scriptHashes.push(calculateHash(mapContent, hashAlgo))
       }
 
+      const pageStateSnapshot = createPageStateSnapshot(activePageState, {
+        includeGetters: !isFallbackRender
+      })
+
       const hydrationData = {}
 
       for (const [id, instance] of Object.entries(instances)) {
-        if (instance.state && Object.keys(instance.state).length > 0) {
-          validateSerializable(instance.state, `component "${instance.componentId}" state`)
-          hydrationData[id] = normalizeObjectFunctions(instance.state, astTransformer)
-        }
+        const componentState = pruneComponentHydrationState(instance.state, pageStateSnapshot)
+        validateSerializable(componentState, `component "${instance.componentId}" state`)
+        hydrationData[id] = normalizeObjectFunctions(componentState, astTransformer)
       }
 
       const inlinedStyles = mappedSessionObject.styles && mappedSessionObject.styles.size > 0
         ? Array.from(mappedSessionObject.styles.keys())
         : []
 
+      const hasHydrationEntries = Object.keys(hydrationData).length > 0
       let pageConfigObj = null
-      if (hasPageClientReactivity || isFallbackRender) {
+      if (hasPageClientReactivity || isFallbackRender || hasHydrationEntries) {
         const gettersSource = {}
         if (pageExports && pageExports.getters && typeof pageExports.getters === 'object') {
           for (const [k, v] of Object.entries(pageExports.getters)) {
@@ -2957,29 +2961,6 @@ export function createRenderer ({
             styleSource[k] = typeof v === 'function' ? v.toString() : v
           }
         }
-        const stateData = {}
-        for (const [k, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(activePageState))) {
-          if (!descriptor.get) {
-            stateData[k] = activePageState[k]
-          } else if (!isFallbackRender) {
-            try {
-              stateData[k] = activePageState[k]
-            } catch {
-              /* ignore getter errors during serialization */
-            }
-          }
-        }
-
-        let serializedState = stateData
-        if (stateData.page && typeof stateData.page === 'object') {
-          const serializedPage = { ...stateData.page }
-          delete serializedPage.script
-          delete serializedPage.blocks
-          serializedState = {
-            ...stateData,
-            page: serializedPage
-          }
-        }
 
         let serializedPageClient = null
         if (!isFallbackRender && pageExports && pageExports.client) {
@@ -2992,7 +2973,7 @@ export function createRenderer ({
           }).code
         }
         pageConfigObj = {
-          state: normalizeObjectFunctions(serializedState, astTransformer),
+          state: normalizeObjectFunctions(pageStateSnapshot, astTransformer),
           route: routeObj,
           getters: gettersSource,
           style: styleSource,
@@ -4319,6 +4300,87 @@ export function createRenderer ({
     createComponentElement,
     build
   }
+}
+
+/**
+ * Creates the minimal page descriptor serialized for client hydration.
+ *
+ * @param {any} page - Full page object.
+ * @returns {any} Minimal page descriptor.
+ */
+function createHydrationPageDescriptor (page) {
+  if (!page || typeof page !== 'object') {
+    return page ?? null
+  }
+
+  const descriptor = {}
+  for (const key of ['url', 'meta', 'route', 'is404']) {
+    if (page[key] !== undefined) {
+      descriptor[key] = page[key]
+    }
+  }
+  return descriptor
+}
+
+/**
+ * Creates the single serialized page-state snapshot used by hydration.
+ *
+ * @param {any} state - Page state.
+ * @param {{ includeGetters?: boolean }} [options] - Snapshot options.
+ * @returns {Object} Page-state snapshot.
+ */
+function createPageStateSnapshot (state, options = {}) {
+  const snapshot = {}
+  if (!state || typeof state !== 'object') {
+    return snapshot
+  }
+
+  for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(state))) {
+    if (key === '__script__') {
+      continue
+    }
+    if (!descriptor.get) {
+      snapshot[key] = state[key]
+    } else if (options.includeGetters) {
+      try {
+        snapshot[key] = state[key]
+      } catch {
+        /* ignore getter errors during serialization */
+      }
+    }
+  }
+
+  if (snapshot.page) {
+    snapshot.page = createHydrationPageDescriptor(snapshot.page)
+  }
+
+  return snapshot
+}
+
+/**
+ * Removes inherited page state from a component hydration entry.
+ *
+ * @param {any} state - Component state.
+ * @param {Object} pageState - Serialized page-state snapshot.
+ * @returns {Object} Component-owned hydration state.
+ */
+function pruneComponentHydrationState (state, pageState) {
+  const result = {}
+  if (!state || typeof state !== 'object') {
+    return result
+  }
+
+  for (const [key, value] of Object.entries(state)) {
+    if (key === '__script__' || key === 'page') {
+      continue
+    }
+    if (Object.hasOwn(pageState, key) && Object.is(value, pageState[key])) {
+      continue
+    }
+    result[key] = value
+  }
+
+  return result
 }
 
 function resolveTokenKey (key, stateObj, routeObjParam) {

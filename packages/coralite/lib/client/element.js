@@ -1631,6 +1631,12 @@ export class CoraliteElement extends BaseElement {
 
     // Hydrate data() block results from the SSR payload
     const runtimeState = typeof window !== 'undefined' ? window['__coralite__']?.state : null
+    const coraliteConfig = runtimeState && window['__coralite__'] ? window['__coralite__'].config : null
+    const page = coraliteConfig ? coraliteConfig.page : null
+    const pageState = page ? page.state : null
+    if (pageState && typeof pageState === 'object') {
+      Object.assign(target, pageState)
+    }
     const store = runtimeState?.hydration || null
     if (store && store[this._instanceId]) {
       Object.assign(target, store[this._instanceId])

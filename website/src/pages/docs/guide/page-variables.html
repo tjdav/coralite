@@ -15,6 +15,8 @@
 
     <p>These core variables are organized into <code>url</code> and <code>file</code> objects within the <code>page</code> context.</p>
 
+    <p><strong>Build-time versus client hydration:</strong> <code>page.file</code>, page source, and route-building metadata are available during build-time rendering in <code>server()</code>, component <code>server()</code>, and plugin hooks. Client hydration serializes only <code>page.url</code>, <code>page.meta</code>, <code>page.route</code>, and <code>page.is404</code>. To use file metadata in client code, expose it explicitly through <code>server()</code>, as shown below. Page-level state is serialized once per page and shared by hydrated component instances, so treat nested page-state objects as read-only.</p>
+
     <coralite-heading level="2" text="Available Page Variables"></coralite-heading>
 
     <ul>

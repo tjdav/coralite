@@ -677,22 +677,24 @@ async function _processServerSlots (slots, state, root, context, app, module) {
   }
 }
 
-function _finalizeScriptState (state, options, module) {
-  const { attributes, server, getters, slots, client, style, provide, consume, formAssociated, formControl, listStrategy, onError } = options
+function _finalizeScriptState (state, options) {
+  const { server, getters, client, style, provide, consume, formAssociated, formControl, listStrategy, onError, attributes, slots } = options
   const hasClient = typeof client === 'function'
   const hasSlots = slots && Object.keys(slots).length > 0
   const hasGetters = getters && Object.keys(getters).length > 0
   const hasAttributes = attributes && Object.keys(attributes).length > 0
   const hasServer = typeof server === 'function'
-  const hasStyles = module.styles && module.styles.length > 0
   const hasComponentStyle = style && Object.keys(style).length > 0
+  const hasReactiveStyle = style && Object.values(style).some(value => typeof value === 'function')
   const hasProvide = hasContextEntries(provide)
   const hasConsume = Boolean(consume)
   const hasOnError = typeof onError === 'function'
   const hasFormControl = formControl !== undefined || formAssociated !== undefined
   const hasListStrategy = Boolean(listStrategy)
+  const hasHydration = hasClient || hasSlots || hasGetters || hasServer || hasReactiveStyle || hasProvide || hasConsume || hasOnError || hasFormControl || hasListStrategy
+  const hasMetadata = hasHydration || hasAttributes || hasComponentStyle
 
-  if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume || hasOnError || hasFormControl || hasListStrategy) {
+  if (hasMetadata) {
     const args = {}
     for (const key in state) {
       if (!Object.hasOwn(state, key) || key === '__script__') {
@@ -702,6 +704,7 @@ function _finalizeScriptState (state, options, module) {
       args[key] = state[key]
     }
     Object.assign(state.__script__.state, args)
+    state.__script__.hydrate = hasHydration
   } else {
     delete state.__script__
   }
@@ -859,7 +862,7 @@ export function createComponentDefinition ({ app }) {
     await _executeServerGetters(getters, state, root, context, app, module)
     await _processServerSlots(slots, state, root, context, app, module)
 
-    _finalizeScriptState(state, options, module)
+    _finalizeScriptState(state, options)
 
     return state
   }
