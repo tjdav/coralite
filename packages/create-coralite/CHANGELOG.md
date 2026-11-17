@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.3.1
+
+> Comparing `create-coralite-v1.3.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### 🐛 Bug Fixes
+
+- recover stale dev assets and isolate mode state (cli) ([f13e750](https://github.com/tjdav/coralite/commit/f13e75075f418a01b3133c66de287e34cc1afc5c))
+
+### 📚 Documentation
+
+- update release changelog timeline [skip ci] (website) ([18fb965](https://github.com/tjdav/coralite/commit/18fb965d8e066e7f471d5d569f3cb4ebd97b9015))
+
+### 🔨 Other Changes
+
+- release(coralite): version 1.3.1 ([1f4cb92](https://github.com/tjdav/coralite/commit/1f4cb9242c598c82fbf36ca686a2eff73c8f32cf))
+
+
 ## v1.3.0
 
 > Comparing `create-coralite-v1.2.0` to `HEAD`
