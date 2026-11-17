@@ -18,6 +18,7 @@ function request (url) {
         resolve({
           status: res.statusCode,
           type: res.headers['content-type'] || '',
+          headers: res.headers,
           body: Buffer.concat(chunks).toString('utf8')
         })
       })
@@ -204,10 +205,14 @@ describe('Dev server asset recovery', () => {
   })
 
   it('returns an actionable 404 for an unknown asset', async () => {
-    const response = await request(base + '/assets/js/missing-DOESNOTEXIST.js')
+    const requestedAsset = '/assets/js/missing-DOESNOTEXIST.js'
+    const response = await request(base + requestedAsset)
     assert.equal(response.status, 404)
     assert.match(response.type, /text\/plain/)
-    assert.match(response.body, /Unable to restore asset/)
+    assert.match(response.body, /Coralite could not restore the requested asset/)
+    assert.match(response.body, /Restart the dev server/)
+    assert.doesNotMatch(response.body, /missing-DOESNOTEXIST/)
+    assert.equal(response.headers['x-content-type-options'], 'nosniff')
   })
 })
 

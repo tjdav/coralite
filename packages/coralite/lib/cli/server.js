@@ -344,6 +344,9 @@ async function server (config, options, runMode = 'dev') {
     const outputHint = relativeOutput && !relativeOutput.startsWith('..') && !isAbsolute(relativeOutput)
       ? relativeOutput
       : currentConfig.output
+    const missingAssetBody = `Coralite could not restore the requested asset.
+The dev asset cache is stale. Restart the dev server or remove ${JSON.stringify(outputHint)}.
+`
 
     if (options?.clean) {
       try {
@@ -524,9 +527,9 @@ async function server (config, options, runMode = 'dev') {
     const sendMissingAsset = (reqPath, res) => {
       if (!reportedMissingAssets.has(reqPath)) {
         reportedMissingAssets.add(reqPath)
-        displayError(`Unable to restore asset "${reqPath}". Restart the dev server or remove "${outputHint}".`)
+        displayError(`Unable to restore asset ${JSON.stringify(reqPath)}. Restart the dev server or remove ${JSON.stringify(outputHint)}.`)
       }
-      res.status(404).type('text/plain').send(`Unable to restore asset "${reqPath}".\nRestart the dev server or remove "${outputHint}".\n`)
+      res.status(404).type('text/plain').send(missingAssetBody)
     }
 
     const toOutputPath = (url) => {
@@ -863,6 +866,7 @@ async function server (config, options, runMode = 'dev') {
       res.setHeader('Surrogate-Control', 'no-store')
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
       res.setHeader('Expires', '0')
+      res.setHeader('X-Content-Type-Options', 'nosniff')
 
       next()
     })
