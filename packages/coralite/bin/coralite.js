@@ -161,7 +161,8 @@ async function main () {
         }
       }
 
-      loadedConfig.output = join(process.cwd(), '.coralite')
+      loadedConfig.output = join(process.cwd(), '.coralite', 'dev')
+      loadedConfig.cacheDir = loadedConfig.output
       await mkdir(loadedConfig.output, { recursive: true })
 
       await server(loadedConfig, options, 'dev')
@@ -193,7 +194,8 @@ async function main () {
         }
       }
 
-      loadedConfig.output = join(process.cwd(), '.coralite')
+      loadedConfig.output = join(process.cwd(), '.coralite', 'test')
+      loadedConfig.cacheDir = loadedConfig.output
       await mkdir(loadedConfig.output, { recursive: true })
 
       await server(loadedConfig, options, 'test')

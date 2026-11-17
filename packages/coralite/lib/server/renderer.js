@@ -3309,7 +3309,7 @@ export function createRenderer ({
 
     // Phase 0: Manifest Loading
     const projectRoot = app.options.projectRoot || process.cwd()
-    const cacheDir = join(projectRoot, '.coralite')
+    const cacheDir = normalizedOptions.cacheDir || join(projectRoot, '.coralite')
     const manifestPath = join(cacheDir, 'manifest.json')
     let manifest = {
       physical: {},

@@ -94,6 +94,12 @@ export default defineConfig({
         <td><code>'production'</code></td>
         <td>Build and execution environment mode.</td>
       </tr>
+      <tr slot="body">
+        <td><code>cacheDir</code></td>
+        <td><code>string</code></td>
+        <td><code>&lt;projectRoot&gt;/.coralite</code></td>
+        <td>Directory used to persist the incremental build manifest. The CLI scopes this per mode (<code>.coralite/dev</code>, <code>.coralite/test</code>, <code>.coralite/build</code>) so concurrent commands do not overwrite each other's state.</td>
+      </tr>
     </coralite-table>
 
     <coralite-heading level="2" text="4. Extended Options"></coralite-heading>
