@@ -50,7 +50,7 @@ function inlineCode (value) {
  */
 function escapeRawTags (html) {
   return html.replace(
-    /<(\/?)(script|slot|template|noscript|pre)(\b[^>]*)>/gi,
+    /<(\/?)(script|slot|template|noscript|pre|button|input|select|textarea|form)(\b[^>]*)>/gi,
     (_, closing, name, attributes) => `&lt;${closing}${name}${attributes}&gt;`
   )
 }

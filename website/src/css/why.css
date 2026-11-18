@@ -91,7 +91,7 @@ main.why-page .check-list code {
   padding: 2px 6px;
   font-family: var(--font-mono);
   font-size: 14px;
-  color: var(--accent-violet);
+  color: var(--accent-violet-text);
   background: var(--bg-card);
   border-radius: 4px;
 }
@@ -129,7 +129,7 @@ main.why-page .track-header h3 {
 }
 
 main.why-page .track-icon {
-  color: var(--accent-violet);
+  color: var(--accent-violet-text);
 }
 
 main.why-page .callout-section {

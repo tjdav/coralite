@@ -68,7 +68,7 @@ main.learn-page .module-title h3 {
 }
 
 main.learn-page .module-icon {
-  color: var(--accent-violet);
+  color: var(--accent-violet-text);
 }
 
 main.learn-page .lesson-list {

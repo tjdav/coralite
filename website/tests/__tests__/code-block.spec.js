@@ -21,7 +21,7 @@ test('css code blocks are syntax highlighted', async ({ page }) => {
   const block = page.locator('code-block[language="css"]').first()
   await expect(block).toHaveCount(1)
   await expect(block.locator('code .code-selector-pseudo').first()).toHaveText(':host')
-  await expect(block.locator('code .code-attribute').first()).toHaveCSS('color', 'rgb(139, 92, 246)')
+  await expect(block.locator('code .code-attribute').first()).toHaveCSS('color', 'rgb(167, 139, 250)')
   await expect(block.locator('code .code-number').first()).toHaveCSS('color', 'rgb(245, 158, 11)')
 })
 

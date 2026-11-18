@@ -34,7 +34,7 @@ main.blog-page .featured-read:hover { text-decoration: underline; }
 
 main.blog-page .featured-visual { display: flex; justify-content: center; }
 main.blog-page .visual-placeholder { display: flex; gap: 16px; align-items: center; padding: 32px; font-family: var(--font-mono); font-size: 24px; color: var(--text-muted); background: var(--bg-code); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
-main.blog-page .visual-placeholder .arrow { color: var(--accent-violet); }
+main.blog-page .visual-placeholder .arrow { color: var(--accent-violet-text); }
 
 main.blog-page .changelog-section { padding: 64px 0; border-top: 1px solid var(--border-subtle); }
 main.blog-page .changelog-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 32px; }

@@ -6,14 +6,14 @@
 /* HTML Tokens */
 .code-tag { color: var(--accent-cyan); }
 .code-name { color: var(--accent-cyan); }
-.code-attr { color: var(--accent-violet); }
+.code-attr { color: var(--accent-violet-text); }
 .code-string { color: var(--accent-green); }
 
 /* JavaScript Tokens */
 .code-keyword { color: var(--accent-pink); }
 .code-built_in { color: var(--accent-cyan); }
-.code-title { color: var(--accent-violet); }
-.code-function { color: var(--accent-violet); }
+.code-title { color: var(--accent-violet-text); }
+.code-function { color: var(--accent-violet-text); }
 .code-params { color: var(--text-primary); }
 .code-variable { color: var(--text-primary); }
 .code-literal { color: var(--accent-pink); }
@@ -27,8 +27,8 @@
 .code-selector-id { color: var(--accent-cyan); }
 .code-selector-tag { color: var(--accent-pink); }
 .code-selector-pseudo { color: var(--accent-pink); }
-.code-selector-attr { color: var(--accent-violet); }
-.code-attribute { color: var(--accent-violet); }
+.code-selector-attr { color: var(--accent-violet-text); }
+.code-attribute { color: var(--accent-violet-text); }
 .code-property { color: var(--accent-cyan); }
 
 /* Shell Tokens */

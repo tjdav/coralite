@@ -118,9 +118,8 @@ main.home-page .ast-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(var(--border-strong) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(55, 65, 81, .3) 1px, transparent 1px);
   background-size: 20px 20px;
-  opacity: .3;
 }
 
 main.home-page .ast-node {
@@ -372,7 +371,7 @@ main.home-page .failure-output {
   white-space: pre-wrap;
 }
 
-main.home-page .diag-prompt { color: var(--accent-violet); }
+main.home-page .diag-prompt { color: var(--accent-violet-text); }
 main.home-page .diag-code { font-weight: 600; color: var(--accent-red); }
 main.home-page .diag-muted { color: var(--text-muted); }
 main.home-page .diag-section { color: var(--accent-cyan); }

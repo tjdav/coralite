@@ -52,7 +52,8 @@ body {
 .lesson-body ol { padding-left: 24px; margin: 0 0 24px; font-size: 16px; line-height: 1.7; color: var(--text-body); }
 .lesson-body li { margin-bottom: 8px; }
 .lesson-body li > p { margin-bottom: 8px; }
-.lesson-body a { color: var(--accent-cyan); text-decoration: none; }
+.lesson-body a { color: var(--accent-cyan); text-decoration: underline; text-underline-offset: 2px; }
+main a:not([class]) { color: var(--accent-cyan); text-decoration: underline; text-underline-offset: 2px; }
 .lesson-body a:hover { text-decoration: underline; }
 .lesson-body strong { color: var(--text-primary); }
 .lesson-body blockquote { padding: 8px 20px; margin: 24px 0; color: var(--text-muted); border-left: 3px solid var(--border-strong); }
@@ -64,6 +65,10 @@ code { padding: 2px 6px; font-family: var(--font-mono); font-size: 14px; color: 
 pre code { padding: 0; font-size: inherit; color: inherit; background: transparent; border-radius: 0; }
 
 .docs-table-wrap { margin: 24px 0; overflow-x: auto; }
+.docs-table-wrap:focus-visible,
+.table-responsive:focus-visible,
+.table-wrap:focus-visible,
+.table-scroll:focus-visible { outline-offset: -2px; }
 .docs-table { width: 100%; font-size: 14px; color: var(--text-body); border-collapse: collapse; }
 .docs-table th,
 .docs-table td { padding: 10px 14px; text-align: left; vertical-align: top; border: 1px solid var(--border-subtle); }
@@ -83,7 +88,7 @@ pre code { padding: 0; font-size: inherit; color: inherit; background: transpare
 .docs-toc h4 { margin: 0 0 8px; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
 .docs-toc a { padding-left: 12px; font-size: 14px; color: var(--text-muted); text-decoration: none; border-left: 2px solid transparent; transition: color .2s ease; }
 .docs-toc a:hover { color: var(--text-primary); }
-.docs-toc a.active { font-weight: 500; color: var(--accent-violet); border-left-color: var(--accent-violet); }
+.docs-toc a.active { font-weight: 500; color: var(--accent-violet-text); border-left-color: var(--accent-violet); }
 
 .diagnostic-callout {
   padding: 20px;
@@ -98,7 +103,7 @@ pre code { padding: 0; font-size: inherit; color: inherit; background: transpare
 
 .demo-box { display: flex; justify-content: center; padding: 32px; margin: 32px 0; background: var(--bg-card); border: 1px dashed var(--border-strong); border-radius: var(--radius-lg); }
 @layer components {
-  .demo-btn { padding: 24px; font-family: var(--font-sans); font-weight: 700; color: #fff; background: var(--accent-violet); border: none; border-radius: 8px; }
+  .demo-btn { padding: 24px; font-family: var(--font-sans); font-weight: 700; color: #fff; background: var(--accent-violet-strong); border: none; border-radius: 8px; }
 }
 .demo-utility { padding: 8px 16px; }
 
@@ -132,17 +137,17 @@ pre code { padding: 0; font-size: inherit; color: inherit; background: transpare
 /* Changelog (scoped to avoid colliding with blog release cards) */
 .changelog-page { max-width: 1000px; padding: 96px 24px; margin: 0 auto; }
 .changelog-page .changelog-lead { max-width: 70ch; margin-bottom: 48px; font-size: 16px; line-height: 1.6; color: var(--text-muted); }
-.changelog-page .changelog-lead a { color: var(--accent-cyan); text-decoration: none; }
+.changelog-page .changelog-lead a { color: var(--accent-cyan); text-decoration: underline; text-underline-offset: 2px; }
 .changelog-page .changelog-timeline { display: flex; flex-direction: column; }
 .changelog-page .changelog-item { display: grid; grid-template-columns: 180px 1fr; gap: 32px; margin-bottom: 24px; }
 .changelog-page .changelog-aside { position: sticky; top: 96px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; align-self: start; }
 .changelog-page .changelog-date { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text-muted); }
-.changelog-page .changelog-badge { display: inline-flex; align-items: center; padding: 3px 10px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--accent-violet); background: rgba(139, 92, 246, .12); border: 1px solid rgba(139, 92, 246, .3); border-radius: 9999px; }
+.changelog-page .changelog-badge { display: inline-flex; align-items: center; padding: 3px 10px; font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--accent-violet-text); background: rgba(139, 92, 246, .12); border: 1px solid rgba(139, 92, 246, .3); border-radius: 9999px; }
 .changelog-page .changelog-content { position: relative; padding-bottom: 32px; padding-left: 32px; border-left: 2px solid var(--border-subtle); }
 .changelog-page .changelog-content::before { position: absolute; top: 8px; left: -6px; width: 10px; height: 10px; content: ""; background: var(--accent-violet); border-radius: 50%; box-shadow: 0 0 10px rgba(139, 92, 246, .5); }
 .changelog-page .changelog-title { margin: 0 0 12px; font-size: 24px; line-height: 1.3; }
 .changelog-page .changelog-title a { color: var(--text-primary); text-decoration: none; }
-.changelog-page .changelog-title a:hover { color: var(--accent-violet); }
+.changelog-page .changelog-title a:hover { color: var(--accent-violet-text); }
 .changelog-page .changelog-summary { max-width: 70ch; margin-bottom: 20px; font-size: 16px; line-height: 1.7; color: var(--text-body); }
 .changelog-page .changelog-body { font-size: 15px; line-height: 1.65; color: var(--text-body); }
 .changelog-page .changelog-body h3 { margin: 28px 0 10px; font-size: 19px; color: var(--text-primary); }
@@ -155,7 +160,7 @@ pre code { padding: 0; font-size: inherit; color: inherit; background: transpare
 .changelog-page .changelog-body code { padding: 2px 6px; font-family: var(--font-mono); font-size: 13px; color: var(--accent-cyan); background: var(--bg-card); border-radius: 4px; }
 .changelog-page .changelog-body a { color: var(--accent-cyan); }
 .changelog-page .changelog-footer { display: flex; gap: 24px; padding-top: 16px; margin-top: 20px; border-top: 1px solid var(--border-subtle); }
-.changelog-page .changelog-anchor-link { font-size: 13px; font-weight: 500; color: var(--accent-violet); text-decoration: none; }
+.changelog-page .changelog-anchor-link { font-size: 13px; font-weight: 500; color: var(--accent-violet-text); text-decoration: none; }
 .changelog-page .changelog-anchor-link:hover { text-decoration: underline; }
 
 @media (max-width: 768px) {
@@ -213,7 +218,7 @@ pre code { padding: 0; font-size: inherit; color: inherit; background: transpare
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
-  color: var(--accent-violet);
+  color: var(--accent-violet-text);
 }
 
 .pipeline-step strong {

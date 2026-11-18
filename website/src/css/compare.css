@@ -65,7 +65,7 @@ main.compare-page .ledger-table .coralite-col {
 
 main.compare-page .ledger-table .highlight {
   font-weight: 600;
-  color: var(--accent-violet);
+  color: var(--accent-violet-text);
 }
 
 main.compare-page .ledger-table code {
@@ -127,7 +127,7 @@ main.compare-page .icon-wrapper {
 }
 
 main.compare-page .icon-cyan { color: var(--accent-cyan); }
-main.compare-page .icon-violet { color: var(--accent-violet); }
+main.compare-page .icon-violet { color: var(--accent-violet-text); }
 main.compare-page .icon-pink { color: var(--accent-pink); }
 
 main.compare-page .metric-value {

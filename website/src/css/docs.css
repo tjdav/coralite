@@ -33,7 +33,6 @@ main.docs-page .ref-section h2 {
 
 main.docs-page .ref-section a {
   color: var(--accent-cyan);
-  text-decoration: none;
 }
 
 main.docs-page .ref-section a:hover {
@@ -79,8 +78,8 @@ main.docs-page .all-link {
 }
 
 main.docs-page .all-link a {
-  color: var(--accent-violet);
-  text-decoration: none;
+  color: var(--accent-violet-text);
+  text-decoration: underline;
 }
 
 main.docs-page .ref-cta {
