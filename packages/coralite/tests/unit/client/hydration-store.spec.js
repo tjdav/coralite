@@ -59,6 +59,59 @@ describe('Live hydration store', () => {
     }
   })
 
+  it('merges shared page state before component-specific hydration', () => {
+    const origCoralite = globalThis.window.__coralite__
+    globalThis.window.__coralite__ = {
+      config: {
+        page: {
+          state: {
+            title: 'Page Title',
+            event: { id: 1 },
+            page: {
+              url: { pathname: '/about' },
+              meta: { lang: 'en' }
+            }
+          }
+        }
+      },
+      state: {
+        hydration: {
+          'test-page-state-1': {
+            title: 'Component Title'
+          }
+        }
+      }
+    }
+
+    const CompClass = createCoraliteClass({
+      componentId: 'test-comp-page-state',
+      defaultValues: {
+        title: 'Default Title'
+      }
+    })
+
+    const tag = 'test-page-state-elem'
+    if (!customElements.get(tag)) {
+      customElements.define(tag, CompClass)
+    }
+
+    const el = document.createElement(tag)
+    el.setAttribute('data-cid', 'test-page-state-1')
+    document.body.appendChild(el)
+
+    assert.strictEqual(el._state.title, 'Component Title')
+    assert.strictEqual(el._state.page.url.pathname, '/about')
+    assert.strictEqual(el._state.page.meta.lang, 'en')
+    assert.strictEqual(el._state.event.id, 1)
+
+    document.body.removeChild(el)
+    if (origCoralite) {
+      globalThis.window.__coralite__ = origCoralite
+    } else {
+      delete globalThis.window.__coralite__
+    }
+  })
+
   it('state hydration primitives getHydration, mergeHydration, replaceHydration work as expected', () => {
     const origCoralite = globalThis.window.__coralite__
 
