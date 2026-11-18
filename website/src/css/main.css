@@ -7,10 +7,13 @@
 
   /* Accents */
   --accent-violet: #8b5cf6;
+  --accent-violet-text: #a78bfa;
+  --accent-violet-strong: #7c3aed;
   --accent-cyan: #06b6d4;
   --accent-pink: #ec4899;
   --accent-amber: #f59e0b;
   --accent-red: #ef4444;
+  --accent-red-strong: #dc2626;
 
   /* Typography */
   --text-primary: #f8fafc;
@@ -22,6 +25,7 @@
   /* Borders & Layout */
   --border-subtle: #1f2937;
   --border-strong: #374151;
+  --border-control: #6b7280;
   --radius-md: 8px;
   --radius-lg: 12px;
 }

@@ -58,7 +58,7 @@ test('secondary links use the design system instead of native button styles', as
   await expect(link).toHaveCSS('text-decoration-line', 'none')
 
   const borderColor = await link.evaluate((el) => getComputedStyle(el).borderTopColor)
-  expect(borderColor).toBe('rgb(55, 65, 81)')
+  expect(borderColor).toBe('rgb(107, 114, 128)')
 })
 
 test('external links get target and rel', async ({ page }) => {
