@@ -42,7 +42,8 @@ Your task is to generate a structured GitHub Release Post based on provided git 
 - Base content strictly on the provided commit logs and technical summaries; do not hallucinate features.
 - Group related commits into logical technical categories.
 - Translate technical jargon into clear, concise explanations without losing precision.
-- Ensure each release post feels unique by focusing on the specific changes of that version.`
+- Ensure each release post feels unique by focusing on the specific changes of that version.
+- Escape HTML inside code samples ("&lt;script&gt;", not "<script>") and never emit "file://" links or local filesystem paths; reference repository files with GitHub blob URLs on the "main" branch.`
 
 /**
  * Extracts markdown content from an OpenAI-compatible API response choice,

@@ -4,6 +4,7 @@ import autoprefixer from 'autoprefixer'
 import floatingPlugin from './src/plugins/floating-ui.js'
 import sitemapPlugin from './src/plugins/sitemap.js'
 import searchPlugin from './src/plugins/search.js'
+import changelogPlugin from './src/plugins/changelog.js'
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3333
 
@@ -27,6 +28,7 @@ export default defineConfig({
   components: 'src/components',
   plugins: [
     floatingPlugin,
+    changelogPlugin,
     sitemapPlugin({ customFiles: llmsFiles }),
     searchPlugin
   ],
