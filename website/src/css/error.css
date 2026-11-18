@@ -1,82 +1,82 @@
 main.error-page.page-container {
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
+  max-width: 1440px;
+  padding: 0 24px;
+  margin: 0 auto;
+}
 
-  main.error-page .error-hero {
-    text-align: center;
-    padding: 120px 0 64px 0;
-    max-width: 800px;
-    margin: 0 auto;
-  }
+main.error-page .error-hero {
+  max-width: 800px;
+  padding: 120px 0 64px;
+  margin: 0 auto;
+  text-align: center;
+}
 
-  main.error-page .error-code {
-    font-family: var(--font-mono);
-    font-size: 64px;
-    font-weight: 700;
-    color: var(--accent-amber);
-    margin-bottom: 24px;
-  }
+main.error-page .error-code {
+  margin-bottom: 24px;
+  font-family: var(--font-mono);
+  font-size: 64px;
+  font-weight: 700;
+  color: var(--accent-amber);
+}
 
-  main.error-page .error-hero h1 {
-    font-size: 40px;
-    font-weight: 700;
-    margin-bottom: 16px;
-    color: var(--text-primary);
-  }
+main.error-page .error-hero h1 {
+  margin-bottom: 16px;
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
 
-  main.error-page .error-hero .subhead {
-    font-size: 18px;
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
+main.error-page .error-hero .subhead {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
 
-  main.error-page .terminal-section {
-    max-width: 800px;
-    margin: 0 auto 64px auto;
-  }
+main.error-page .terminal-section {
+  max-width: 800px;
+  margin: 0 auto 64px;
+}
 
-  main.error-page .recovery-section {
-    max-width: 800px;
-    margin: 0 auto 64px auto;
-  }
+main.error-page .recovery-section {
+  max-width: 800px;
+  margin: 0 auto 64px;
+}
 
-  main.error-page .recovery-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-  }
+main.error-page .recovery-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
 
-  main.error-page .did-you-mean {
-    text-align: center;
-    padding-bottom: 120px;
-  }
+main.error-page .did-you-mean {
+  padding-bottom: 120px;
+  text-align: center;
+}
 
-  main.error-page .did-you-mean p {
-    font-family: var(--font-mono);
-    color: var(--text-muted);
-    margin-bottom: 16px;
-  }
+main.error-page .did-you-mean p {
+  margin-bottom: 16px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
 
-  main.error-page .suggestion-links {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-  }
+main.error-page .suggestion-links {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+}
 
-  main.error-page .suggestion-links a {
-    color: var(--accent-cyan);
-    text-decoration: none;
-    font-family: var(--font-mono);
-    font-size: 14px;
-  }
+main.error-page .suggestion-links a {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
 
-  main.error-page .suggestion-links a:hover {
-    text-decoration: underline;
-  }
+main.error-page .suggestion-links a:hover {
+  text-decoration: underline;
+}
 
-  @media (max-width: 768px) {
-    main.error-page .recovery-grid { grid-template-columns: 1fr; }
-    main.error-page .suggestion-links { flex-direction: column; gap: 12px; }
-  }
+@media (max-width: 768px) {
+  main.error-page .recovery-grid { grid-template-columns: 1fr; }
+  main.error-page .suggestion-links { flex-direction: column; gap: 12px; }
+}

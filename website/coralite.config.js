@@ -1,4 +1,6 @@
 import { defineConfig } from 'coralite'
+import postcssImport from 'postcss-import'
+import autoprefixer from 'autoprefixer'
 import floatingPlugin from './src/plugins/floating-ui.js'
 import sitemapPlugin from './src/plugins/sitemap.js'
 import searchPlugin from './src/plugins/search.js'
@@ -48,18 +50,14 @@ export default defineConfig({
     port
   },
   styles: {
-    input: [
-      'src/css/fonts.css',
-      'src/css/main.css',
-      'src/css/why.css',
-      'src/css/home.css',
-      'src/css/compare.css',
-      'src/css/blog.css',
-      'src/css/docs.css',
-      'src/css/reference.css',
-      'src/css/learn.css',
-      'src/css/error.css',
-      'src/css/code-theme.css'
-    ]
+    input: ['src/css/styles.css'],
+    processors: {
+      postcss: {
+        plugins: [
+          postcssImport(),
+          autoprefixer()
+        ]
+      }
+    }
   }
 })

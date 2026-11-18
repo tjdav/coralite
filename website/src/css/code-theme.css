@@ -1,6 +1,6 @@
 /* Coralite Syntax Highlight Theme */
 :root {
-  --accent-green: #10B981;
+  --accent-green: #10b981;
 }
 
 /* HTML Tokens */
@@ -20,7 +20,7 @@
 .code-number { color: var(--accent-amber); }
 
 /* General */
-.code-comment { color: var(--text-muted); font-style: italic; }
+.code-comment { font-style: italic; color: var(--text-muted); }
 
 /* CSS Tokens */
 .code-selector-class,

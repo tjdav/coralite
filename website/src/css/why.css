@@ -1,173 +1,173 @@
 main.why-page {
-    display: block;
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
+  display: block;
+  max-width: 1440px;
+  padding: 0 24px;
+  margin: 0 auto;
+}
 
-  /* Client-side navigation keeps the previous page's inline <style> in the
+/* Client-side navigation keeps the previous page's inline \3c style> in the
      DOM. Reset the generic rules that leak from home/compare. */
-  main.why-page section {
-    padding: 0;
-    border-bottom: none;
-  }
+main.why-page section {
+  padding: 0;
+  border-bottom: none;
+}
 
-  main.why-page .hero-section {
-    display: block;
-    grid-template-columns: none;
-    padding: 0;
-    max-width: 800px;
-    margin: 80px auto 64px auto; /* Reduced bottom margin */
-    text-align: center;
-  }
+main.why-page .hero-section {
+  display: block;
+  grid-template-columns: none;
+  max-width: 800px;
+  padding: 0;
+  margin: 80px auto 64px; /* Reduced bottom margin */
+  text-align: center;
+}
 
-  main.why-page .hero-section h1 {
-    font-size: 56px;
-    font-weight: 700;
-    line-height: 1.1;
-    margin: 24px 0;
-    color: var(--text-primary);
-  }
+main.why-page .hero-section h1 {
+  margin: 24px 0;
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
 
-  main.why-page .hero-section .subhead {
-    font-size: 24px;
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
+main.why-page .hero-section .subhead {
+  font-size: 24px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
 
-  main.why-page .manifesto-content {
-    max-width: 800px;
-    margin: 0 auto 96px auto;
-    font-size: 18px;
-    color: var(--text-body);
-    line-height: 1.7;
-  }
+main.why-page .manifesto-content {
+  max-width: 800px;
+  margin: 0 auto 96px;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--text-body);
+}
 
-  main.why-page .manifesto-content .lead {
-    font-size: 20px;
-    color: var(--text-primary);
-    margin-bottom: 32px;
-  }
+main.why-page .manifesto-content .lead {
+  margin-bottom: 32px;
+  font-size: 20px;
+  color: var(--text-primary);
+}
 
-  main.why-page .pull-quote {
-    margin: 48px 0;
-    padding: 32px 40px; /* Increased padding */
-    border-left: 4px solid var(--accent-violet);
-    background: linear-gradient(to right, var(--bg-card), transparent);
-    font-family: var(--font-mono);
-    font-size: 24px;
-    line-height: 1.5; /* Better line height */
-    color: var(--accent-violet);
-    font-style: italic;
-    border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  }
+main.why-page .pull-quote {
+  padding: 32px 40px; /* Increased padding */
+  margin: 48px 0;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-style: italic;
+  line-height: 1.5; /* Better line height */
+  color: var(--accent-violet);
+  background: linear-gradient(to right, var(--bg-card), transparent);
+  border-left: 4px solid var(--accent-violet);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
 
-  main.why-page .manifesto-content h2 {
-    font-size: 32px;
-    margin: 48px 0 24px 0;
-    color: var(--text-primary);
-  }
+main.why-page .manifesto-content h2 {
+  margin: 48px 0 24px;
+  font-size: 32px;
+  color: var(--text-primary);
+}
 
-  main.why-page .check-list {
-    list-style: none;
-    padding: 0;
-    margin: 24px 0;
-  }
+main.why-page .check-list {
+  padding: 0;
+  margin: 24px 0;
+  list-style: none;
+}
 
-  main.why-page .check-list li {
-    position: relative;
-    padding-left: 28px;
-    margin-bottom: 16px;
-  }
+main.why-page .check-list li {
+  position: relative;
+  padding-left: 28px;
+  margin-bottom: 16px;
+}
 
-  main.why-page .check-list li::before {
-    content: '✔';
-    position: absolute;
-    left: 0;
-    color: var(--accent-cyan);
-  }
+main.why-page .check-list li::before {
+  position: absolute;
+  left: 0;
+  color: var(--accent-cyan);
+  content: "✔";
+}
 
-  main.why-page .check-list code {
-    background: var(--bg-card);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: var(--font-mono);
-    font-size: 14px;
-    color: var(--accent-violet);
-  }
+main.why-page .check-list code {
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--accent-violet);
+  background: var(--bg-card);
+  border-radius: 4px;
+}
 
-  main.why-page .tracks-section {
-    margin-bottom: 96px;
-  }
+main.why-page .tracks-section {
+  margin-bottom: 96px;
+}
 
-  main.why-page .tracks-section h2 {
-    font-size: 32px;
-    text-align: center;
-    margin-bottom: 48px;
-  }
+main.why-page .tracks-section h2 {
+  margin-bottom: 48px;
+  font-size: 32px;
+  text-align: center;
+}
 
-  main.why-page .tracks-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
+main.why-page .tracks-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
 
-  main.why-page .track-header {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
+main.why-page .track-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
 
-  main.why-page .track-header h3 {
-    margin: 0;
-    font-size: 20px;
-    color: var(--text-primary);
-  }
+main.why-page .track-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text-primary);
+}
 
-  main.why-page .track-icon {
-    color: var(--accent-violet);
-  }
+main.why-page .track-icon {
+  color: var(--accent-violet);
+}
 
-  main.why-page .callout-section {
-    margin-bottom: 96px;
-  }
+main.why-page .callout-section {
+  margin-bottom: 96px;
+}
 
-  main.why-page .callout-box {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start; /* Changed from center */
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    padding: 48px;
-    gap: 32px;
-  }
+main.why-page .callout-box {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start; /* Changed from center */
+  justify-content: space-between;
+  padding: 48px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
 
-  main.why-page .callout-box ui-button {
-    margin-top: 8px; /* Align with the heading */
-    white-space: nowrap;
-  }
+main.why-page .callout-box ui-button {
+  margin-top: 8px; /* Align with the heading */
+  white-space: nowrap;
+}
 
-  main.why-page .callout-text h2 {
-    font-size: 24px;
-    margin: 0 0 16px 0;
-    color: var(--text-primary);
-  }
+main.why-page .callout-text h2 {
+  margin: 0 0 16px;
+  font-size: 24px;
+  color: var(--text-primary);
+}
 
-  main.why-page .callout-text p {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: 16px;
-    line-height: 1.6;
-    max-width: 600px;
-  }
+main.why-page .callout-text p {
+  max-width: 600px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
 
-  @media (max-width: 768px) {
-    main.why-page .hero-section h1 { font-size: 40px; }
-    main.why-page .tracks-grid { grid-template-columns: 1fr; }
-    main.why-page .callout-box { flex-direction: column; align-items: flex-start; }
-  }
+@media (max-width: 768px) {
+  main.why-page .hero-section h1 { font-size: 40px; }
+  main.why-page .tracks-grid { grid-template-columns: 1fr; }
+  main.why-page .callout-box { flex-direction: column; align-items: flex-start; }
+}
