@@ -14,7 +14,12 @@ export default defineConfig({
   expect: {
     toHaveScreenshot: {
       animations: 'disabled',
-      maxDiffPixels: 600
+      // Arrow glyphs (U+2192) are not part of the self-hosted font subsets, so
+      // Chromium resolves them from a system font that differs between the
+      // development machine and the CI runner. The budget covers glyph-level
+      // variance (observed max ~1.7k px) while staying far below the tens of
+      // thousands of pixels a layout regression produces.
+      maxDiffPixels: 2500
     }
   },
   use: {
