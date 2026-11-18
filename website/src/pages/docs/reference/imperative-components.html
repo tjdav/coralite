@@ -153,13 +153,13 @@
 
             <p>When a component context or lifecycle hook is available, Coralite uses its <code>instanceId</code> to scope refs inside injected HTML. If the instance cannot be determined statically, Coralite falls back to the insertion target's owning component. A new ref that is not declared in component state is not automatically added to <code>refs()</code>.</p>
 
-            <p>See the <a href="/docs/guide/dom-refs">DOM refs guide</a> for the full ref ownership model, including nested components and slotted content.</p>
+            <p>See the <a href="/docs/guide/dom-refs/">DOM refs guide</a> for the full ref ownership model, including nested components and slotted content.</p>
 
             <h2 id="styling-and-assets">Styling and Assets</h2>
 
             <p>Imperatively created components load their component CSS through the same manifest as declaratively created components. Because the element does not exist during SSR, its markup and styles may appear after the initial page paint; avoid relying on imperatively created elements for above-the-fold critical layout.</p>
 
-            <p>See the <a href="/docs/guide/styling">styling guide</a> for scoped selectors, host styling, and CSS custom properties.</p>
+            <p>See the <a href="/docs/guide/styling/">styling guide</a> for scoped selectors, host styling, and CSS custom properties.</p>
 
             <h2 id="ssr-hydration-and-lifecycle">SSR, Hydration, and Lifecycle</h2>
 
@@ -198,7 +198,7 @@
               </table>
             </div>
 
-            <p>Add at least one production-build E2E test when components are created imperatively or outside scanned code. See the <a href="/docs/guide/e2e-testing">E2E testing guide</a>.</p>
+            <p>Add at least one production-build E2E test when components are created imperatively or outside scanned code. See the <a href="/docs/guide/e2e-testing/">E2E testing guide</a>.</p>
 
             <h2 id="troubleshooting">Troubleshooting</h2>
 
@@ -206,26 +206,26 @@
               <li><strong>Element exists but is empty:</strong> the component was not loaded or upgraded. Confirm the tag is tracked, or call <code>dom.loadComponent(tag)</code> / <code>dom.createElement(tag)</code>.</li>
               <li><strong>Works in development/testing but fails in production:</strong> creation likely lives in an unscanned helper module or another path that relied on DOM prototype patches. Move creation into scanned code or use the public runtime APIs.</li>
               <li><strong>Styles are missing:</strong> the component may not have loaded at all, or its CSS link may still be in flight. Verify the component manifest entry and loading order.</li>
-              <li><strong><code>refs()</code> returns null:</strong> the ref may be dynamically injected without a matching <code>state.ref_&lt;name&gt;</code>, or ownership may point at a nested component. See the <a href="/docs/guide/dom-refs">DOM refs guide</a>.</li>
+              <li><strong><code>refs()</code> returns null:</strong> the ref may be dynamically injected without a matching <code>state.ref_&lt;name&gt;</code>, or ownership may point at a nested component. See the <a href="/docs/guide/dom-refs/">DOM refs guide</a>.</li>
               <li><strong>Duplicate content:</strong> the controller may create the element more than once, or it may duplicate a declaratively rendered element. Make creation idempotent.</li>
             </ul>
 
             <h2 id="related-references">Related References</h2>
 
             <ul>
-              <li><a href="/docs/guide/javascript">Client-side JavaScript guide</a></li>
-              <li><a href="/docs/guide/plugins">Plugin authoring guide</a></li>
-              <li><a href="/docs/reference/plugins">Plugins reference</a></li>
-              <li><a href="/docs/guide/dom-refs">DOM refs guide</a></li>
-              <li><a href="/docs/guide/styling">Styling guide</a></li>
-              <li><a href="/docs/guide/e2e-testing">E2E testing guide</a></li>
-              <li><a href="/docs/reference/types">Runtime type definitions</a></li>
+              <li><a href="/docs/guide/javascript/">Client-side JavaScript guide</a></li>
+              <li><a href="/docs/guide/plugins/">Plugin authoring guide</a></li>
+              <li><a href="/docs/reference/plugins/">Plugins reference</a></li>
+              <li><a href="/docs/guide/dom-refs/">DOM refs guide</a></li>
+              <li><a href="/docs/guide/styling/">Styling guide</a></li>
+              <li><a href="/docs/guide/e2e-testing/">E2E testing guide</a></li>
+              <li><a href="/docs/reference/types/">Runtime type definitions</a></li>
             </ul>
       </div>
 
       <div class="lesson-navigation">
-        <ui-link href="/docs/reference/define-component" variant="secondary">← Previous: Component API Reference</ui-link>
-        <ui-link href="/docs/reference/coralite-ignore" variant="primary">Next: coralite-ignore Reference →</ui-link>
+        <ui-link href="/docs/reference/define-component/" variant="secondary">← Previous: Component API Reference</ui-link>
+        <ui-link href="/docs/reference/coralite-ignore/" variant="primary">Next: coralite-ignore Reference →</ui-link>
       </div>
     </div>
 

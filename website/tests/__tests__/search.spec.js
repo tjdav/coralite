@@ -18,7 +18,7 @@ test('command palette searches the site index and navigates', async ({ page }) =
   await expect(page.locator('.cp-item').first()).toContainText('Reactivity')
 
   await page.keyboard.press('Enter')
-  await expect(page).toHaveURL(/\/docs\/concepts\/reactivity$/)
+  await expect(page).toHaveURL(/\/docs\/concepts\/reactivity\/$/)
 })
 
 test('command palette finds release notes', async ({ page }) => {

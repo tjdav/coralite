@@ -86,8 +86,12 @@ The build produces a static site in `dist/`. Deploy `dist/` to any static host.
 
 - Build command: `pnpm build`
 - Output directory: `dist`
-- URLs are clean (`/about`, not `/about.html`); the host must serve directory
-  indexes (`/blog/x` → `/blog/x/index.html`).
+- URLs are clean and trailing-slash (`/docs/guide/getting-started/`). Each page
+  is built as a directory index; statichost.eu 308s the slashless form to the
+  slash URL. Canonical tags, the sitemap and every redirect target use the
+  slash form, so no canonical or redirect points at a URL that redirects.
+- `/index.html` is force-redirected to `/` (`301!`) because the file exists in
+  the output and static files win over redirects by default.
 - `public/_redirects` maps every legacy `.html` URL to its clean target. The
   host must honour it (Netlify and Cloudflare Pages do).
 
@@ -97,9 +101,9 @@ provided the host supports the URL rules above.
 ### Cutover runbook
 
 1. Deploy `dist/` to a preview URL.
-2. Sign off these routes: `/`, `/why`, `/compare`,
-   `/docs/guide/getting-started`, `/reference/client`, `/learn/`, `/blog/`,
-   `/blog/coralite-v0-43-1`, `/changelog/`, `/404`.
+2. Sign off these routes: `/`, `/why/`, `/compare/`,
+   `/docs/guide/getting-started/`, `/reference/client/`, `/learn/`, `/blog/`,
+   `/blog/coralite-v0-43-1/`, `/changelog/`, `/404`.
 3. Confirm the legacy redirects return `301` to their targets —
    `/blog/page/2.html` … `/blog/page/7.html` → `/blog/`, `/docs/guide.html` →
    `/docs/guide/`, `/docs/reference.html` → `/docs/reference/`,

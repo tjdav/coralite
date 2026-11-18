@@ -50,8 +50,11 @@ export default (options = {}) => {
             continue
           }
 
-          // Convert file paths to the clean URLs produced by the build
+          // Convert file paths to the trailing-slash URLs produced by the build
           pathname = pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, '')
+          if (!pathname.endsWith('/')) {
+            pathname += '/'
+          }
 
           const pageMeta = item.state?.page?.meta || {}
 

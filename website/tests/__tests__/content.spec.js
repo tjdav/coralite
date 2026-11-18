@@ -7,11 +7,11 @@ const pages = [
   },
   {
     name: 'docs-guide',
-    url: '/docs/guide/getting-started'
+    url: '/docs/guide/getting-started/'
   },
   {
     name: 'docs-reference',
-    url: '/docs/reference/config'
+    url: '/docs/reference/config/'
   },
   {
     name: 'blog-hub',
@@ -19,7 +19,7 @@ const pages = [
   },
   {
     name: 'blog-release',
-    url: '/blog/coralite-v0-43-1'
+    url: '/blog/coralite-v0-43-1/'
   }
 ]
 

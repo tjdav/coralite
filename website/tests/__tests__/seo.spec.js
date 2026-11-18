@@ -52,12 +52,12 @@ test.describe('page metadata', () => {
   })
 
   test('content pages keep their documented title format', async ({ page }) => {
-    await page.goto('/docs/guide/getting-started')
+    await page.goto('/docs/guide/getting-started/')
     await page.waitForLoadState('networkidle')
 
     await expect(page).toHaveTitle('Getting Started — Coralite Docs')
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Getting Started — Coralite Docs')
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `${ORIGIN}/docs/guide/getting-started`)
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `${ORIGIN}/docs/guide/getting-started/`)
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /install Coralite/)
     await expect(page.locator('meta[property="article:published_time"]')).toHaveCount(0)
   })
@@ -79,14 +79,14 @@ test.describe('page metadata', () => {
   })
 
   test('blog posts declare article metadata', async ({ page }) => {
-    await page.goto('/blog/coralite-v0-43-1')
+    await page.goto('/blog/coralite-v0-43-1/')
     await page.waitForLoadState('networkidle')
 
     await expect(page.locator('meta[property="og:type"]')).toHaveAttribute('content', 'article')
     await expect(page.locator('meta[property="article:published_time"]')).toHaveAttribute('content', '2026-07-10')
     await expect(page.locator('meta[property="article:author"]')).toHaveAttribute('content', 'Thomas David')
     await expect(page.locator('meta[name="published_time"]')).toHaveAttribute('content', '2026-07-10')
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `${ORIGIN}/blog/coralite-v0-43-1`)
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `${ORIGIN}/blog/coralite-v0-43-1/`)
     await expect(page).toHaveTitle(/ — Coralite Blog$/)
   })
 

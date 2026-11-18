@@ -39,11 +39,34 @@ function collectPages (dir, out = []) {
  * @returns {string} Route path.
  */
 function routeFor (file) {
+  if (file === '404.html') {
+    return '/404'
+  }
+
   const path = `/${file}`
   if (path.endsWith('/index.html')) {
     return path.slice(0, -'index.html'.length)
   }
-  return path.replace(/\.html$/, '')
+
+  return `${path.replace(/\.html$/, '')}/`
+}
+
+/**
+ * Collects files beneath a directory.
+ * @param {string} dir - Directory to scan.
+ * @param {string[]} [out] - Accumulator.
+ * @returns {string[]} File paths.
+ */
+function collectFiles (dir, out = []) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      collectFiles(path, out)
+    } else if (entry.name.endsWith('.html')) {
+      out.push(path)
+    }
+  }
+  return out
 }
 
 /**
@@ -132,6 +155,26 @@ for (const [from, { to, status }] of redirects) {
   }
   if (!resolveRoute(to)) {
     problems.push(`Redirect ${from} -> ${to} (${status}) targets a missing route`)
+  }
+}
+
+const protect = /<code-block\b[^>]*>[\s\S]*?<\/code-block>|<script\b[^>]*>[\s\S]*?<\/script>/gi
+const liveLink = /<(?:a|ui-link|ui-nav-link|ui-card)\b[^>]*?\bhref="(\/[^"#?]*)(?:[#?][^"]*)?"/g
+
+for (const file of collectFiles(join(root, 'src'))) {
+  if (file.includes('/__tests__/')) {
+    continue
+  }
+
+  const source = readFileSync(file, 'utf8').replace(protect, '')
+  for (const match of source.matchAll(liveLink)) {
+    const url = match[1]
+    if (url === '/' || url.endsWith('/') || /\.[a-z0-9]+$/i.test(url)) {
+      continue
+    }
+    if (routes.has(`${url}/`)) {
+      problems.push(`Internal link ${url} in ${relative(root, file)} should end with a slash`)
+    }
   }
 }
 

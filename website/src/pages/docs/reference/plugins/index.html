@@ -181,7 +181,7 @@
 
             <p>Use phase 2 of <code>client.context</code> or <code>client.init</code> for element creation. Phase 1 runs before the component loader is ready, so synchronous DOM creation there is not upgraded. Dynamically imported helper modules are bundled but not AST-scanned; keep them pure or use <code>window.__coralite__.dom.createElement(tag)</code> / <code>await window.__coralite__.dom.loadComponent(tag)</code>. Plugin <code>dependencies</code> controls registration order, not custom-element tracking.</p>
 
-            <p>See the <a href="/docs/reference/imperative-components">Imperative Components Reference</a> for scan boundaries, literal vs. dynamic tags, runtime APIs, upgrade timing, ownership, styling, testing, and troubleshooting.</p>
+            <p>See the <a href="/docs/reference/imperative-components/">Imperative Components Reference</a> for scan boundaries, literal vs. dynamic tags, runtime APIs, upgrade timing, ownership, styling, testing, and troubleshooting.</p>
 
             <h2 id="5-lifecycle-hooks">5. Lifecycle Hooks</h2>
 

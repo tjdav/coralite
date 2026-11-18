@@ -18,7 +18,7 @@ test('the logo links to the homepage', async ({ page }) => {
 })
 
 test('navigation links render as anchors, not nested buttons', async ({ page }) => {
-  for (const url of ['/', '/learn/01-the-document', '/reference/client', '/docs/guide/ssr']) {
+  for (const url of ['/', '/learn/01-the-document/', '/reference/client/', '/docs/guide/ssr/']) {
     await page.goto(url)
     await page.waitForLoadState('networkidle')
 
@@ -29,9 +29,9 @@ test('navigation links render as anchors, not nested buttons', async ({ page }) 
   await page.goto('/reference/client')
   await page.waitForLoadState('networkidle')
 
-  const next = page.locator('.lesson-navigation ui-link a[href="/reference/server"]')
+  const next = page.locator('.lesson-navigation ui-link a[href="/reference/server/"]')
   await expect(next).toHaveCount(1)
-  await expect(next).toHaveAttribute('href', '/reference/server')
+  await expect(next).toHaveAttribute('href', '/reference/server/')
 })
 
 test('prev/next navigation works from the keyboard', async ({ page }) => {
@@ -41,11 +41,11 @@ test('prev/next navigation works from the keyboard', async ({ page }) => {
     window.__sameDocument = true
   })
 
-  const next = page.locator('.lesson-navigation ui-link a[href="/reference/server"]')
+  const next = page.locator('.lesson-navigation ui-link a[href="/reference/server/"]')
   await next.focus()
   await page.keyboard.press('Enter')
 
-  await expect(page).toHaveURL(/\/reference\/server$/)
+  await expect(page).toHaveURL(/\/reference\/server\/$/)
   expect(await page.evaluate(() => window.__sameDocument)).toBe(true)
 })
 

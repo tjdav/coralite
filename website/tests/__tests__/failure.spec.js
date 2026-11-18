@@ -12,7 +12,7 @@ test('homepage explains the fail-closed diagnostic loop', async ({ page }) => {
   await expect(demo).toContainText('Suggested 1-Shot Fix')
   await expect(demo).toContainText('exit code 1')
 
-  await expect(page.locator('.failure-copy ui-link')).toHaveAttribute('href', '/docs/guide/validation')
+  await expect(page.locator('.failure-copy ui-link')).toHaveAttribute('href', '/docs/guide/validation/')
 })
 
 test('compare and why surface failure discovery', async ({ page }) => {
@@ -25,5 +25,5 @@ test('compare and why surface failure discovery', async ({ page }) => {
   await page.goto('/why')
   await page.waitForLoadState('networkidle')
   await expect(page.getByText('Invalid templates, broken component contracts, and server imports cannot compile.')).toBeVisible()
-  await expect(page.locator('.manifesto-content a[href="/docs/guide/validation"]')).toBeVisible()
+  await expect(page.locator('.manifesto-content a[href="/docs/guide/validation/"]')).toBeVisible()
 })

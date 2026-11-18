@@ -62,7 +62,7 @@
 
             <p><strong>Static Page Exemption:</strong> Pages that require no dynamic data fetching or path enumeration can be authored as pure HTML documents with no <code>&lt;script type="module"&gt;</code> block. Coralite processes static HTML pages directly during build time.</p>
 
-            <p><strong>One page controller:</strong> a page may contain exactly one Coralite page controller <code>&lt;script&gt;</code> — a script that exports page blocks or uses <code>definePage</code>. It is removed from rendered output. Normal inline and external scripts are allowed alongside it and are never evaluated as page modules. More than one controller fails the page with <code>CORALITE-E107</code>. See the <a href="/docs/reference/coralite-ignore"><code>coralite-ignore</code> Reference</a> for literal script and markup regions.</p>
+            <p><strong>One page controller:</strong> a page may contain exactly one Coralite page controller <code>&lt;script&gt;</code> — a script that exports page blocks or uses <code>definePage</code>. It is removed from rendered output. Normal inline and external scripts are allowed alongside it and are never evaluated as page modules. More than one controller fails the page with <code>CORALITE-E107</code>. See the <a href="/docs/reference/coralite-ignore/"><code>coralite-ignore</code> Reference</a> for literal script and markup regions.</p>
 
             <h2 id="2-file-based-routing">2. File-Based Routing</h2>
 
@@ -410,12 +410,12 @@
               <li><strong>View Transitions.</strong> When the project sets <code>viewTransitions: true</code>, the browser supports <code>document.startViewTransition</code>, and the user has not enabled <code>prefers-reduced-motion</code>, the outlet swap runs inside a native View Transition (crossfade); otherwise the swap is a direct DOM replacement. This is distinct from the native MPA crossfades between full page loads described in Section 9.</li>
             </ul>
 
-            <p><em>For the full API reference, see the <a href="/docs/reference/plugins/router">Router Plugin Reference</a>. For detailed SPA routing patterns, persistent state across route swaps, and production pitfalls, see the <a href="/docs/guide/spa-router">SPA Router Guide</a>.</em></p>
+            <p><em>For the full API reference, see the <a href="/docs/reference/plugins/router/">Router Plugin Reference</a>. For detailed SPA routing patterns, persistent state across route swaps, and production pitfalls, see the <a href="/docs/guide/spa-router/">SPA Router Guide</a>.</em></p>
       </div>
 
       <div class="lesson-navigation">
-        <ui-link href="/docs/reference/config" variant="secondary">← Previous: Configuration Reference</ui-link>
-        <ui-link href="/docs/reference/components" variant="primary">Next: Components Reference →</ui-link>
+        <ui-link href="/docs/reference/config/" variant="secondary">← Previous: Configuration Reference</ui-link>
+        <ui-link href="/docs/reference/components/" variant="primary">Next: Components Reference →</ui-link>
       </div>
     </div>
 

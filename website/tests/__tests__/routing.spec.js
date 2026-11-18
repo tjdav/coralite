@@ -2,13 +2,13 @@ import { test, expect } from '../fixtures.js'
 
 const PAGES = [
   '/',
-  '/why',
-  '/compare',
-  '/docs/guide/getting-started',
-  '/reference/client',
+  '/why/',
+  '/compare/',
+  '/docs/guide/getting-started/',
+  '/reference/client/',
   '/learn/',
   '/blog/',
-  '/blog/coralite-v0-43-1',
+  '/blog/coralite-v0-43-1/',
   '/changelog/',
   '/404'
 ]

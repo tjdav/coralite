@@ -56,16 +56,21 @@
   export function server ({ page }) {
     const pathname = page.url.pathname
     const filePath = page.file?.pathname || ''
-    const isIndexPage = /(^|\/)index\.html$/.test(filePath)
 
     if (pathname === '/' || pathname === '/index.html') {
       return { routePath: '/' }
     }
 
-    if (isIndexPage) {
-      return { routePath: `${pathname.replace(/\/+$/, '')}/` }
+    const cleanPath = pathname.replace(/\.html$/, '').replace(/\/+$/, '')
+
+    // Every page except 404 is emitted as a directory index and is served at
+    // its trailing-slash URL; the host 308s the slashless form. Keep the
+    // canonical URL identical to the final URL so no page canonicalises to a
+    // redirect.
+    if (/(^|\/)404\.html$/.test(filePath)) {
+      return { routePath: cleanPath }
     }
 
-    return { routePath: pathname.replace(/\.html$/, '') }
+    return { routePath: `${cleanPath}/` }
   }
 </script>

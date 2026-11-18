@@ -53,9 +53,14 @@ export default definePlugin({
         return
       }
 
-      const url = page.url.pathname
+      let url = page.url.pathname
         .replace(/\/index\.html$/, '/')
         .replace(/\.html$/, '')
+
+      if (!url.endsWith('/')) {
+        url += '/'
+      }
+
       if (!INDEXED_PREFIXES.some(prefix => url.startsWith(prefix))) {
         return
       }
