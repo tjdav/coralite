@@ -158,6 +158,7 @@ describe('coralite-release CLI & versioning logic', () => {
         assert.match(args, /--to "coralite-v1\.3\.0"/)
         assert.match(args, /--provider http/)
         assert.doesNotMatch(args, /--agy/)
+        assert.doesNotMatch(args, /--agy-model/)
         assert.match(args, /--github-release/)
         assert.match(args, /--website-changelog/)
         assert.doesNotMatch(args, /--codeberg-release/)
@@ -171,7 +172,16 @@ describe('coralite-release CLI & versioning logic', () => {
 
         assert.match(args, /--provider agy/)
         assert.doesNotMatch(args, /--agy/)
+        assert.doesNotMatch(args, /--agy-model/)
       })
+    })
+
+    it('forwards a custom agy model', () => {
+      const args = buildReleasePostArgs(rel, {
+        agyModel: 'gemini-4-hydrogen-high'
+      }, 'agy')
+
+      assert.match(args, /--agy-model "gemini-4-hydrogen-high"/)
     })
 
     it('adds Codeberg when explicitly requested or a token is present', () => {
@@ -247,6 +257,7 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.match(output, /-p, --package <packages...>/)
       assert.match(output, /-a, --all/)
       assert.match(output, /--agy/)
+      assert.match(output, /--agy-model <model>/)
       assert.match(output, /--release-post <provider>/)
     })
 
@@ -256,6 +267,8 @@ describe('coralite-release CLI & versioning logic', () => {
         encoding: 'utf8'
       })
       assert.match(output, /--provider <provider>/)
+      assert.match(output, /--agy-model <model>/)
+      assert.match(output, /gemini-4-hydrogen-medium/)
     })
 
     it('executes non-interactive --dry-run with rc type and --allow-any-branch', () => {

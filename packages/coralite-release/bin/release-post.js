@@ -61,7 +61,7 @@ function extractMessageContent (data) {
 }
 
 function callAgy (promptText, model) {
-  const agyModel = (model && model !== 'local-model') ? model : 'gemini-3.8-flash-medium'
+  const agyModel = model || process.env.AGY_MODEL || 'gemini-4-hydrogen-medium'
   // Stay safely under Linux single-arg limit (MAX_ARG_STRLEN = 128 KB)
   const safePrompt = promptText.length > 100000 ? promptText.slice(0, 100000) : promptText
   const args = [
@@ -108,8 +108,13 @@ program
   )
   .option(
     '--model <model>',
-    'OpenAI Model to use',
+    'OpenAI model to use for the HTTP API',
     process.env.TABBY_MODEL || process.env.OPENAI_MODEL || 'qwen3.8-27b-exl3-4bpw'
+  )
+  .option(
+    '--agy-model <model>',
+    'agy model to use',
+    process.env.AGY_MODEL || 'gemini-4-hydrogen-medium'
   )
   .option(
     '--max-tokens <num>',
@@ -450,7 +455,7 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
               const userMsg = `Please summarize these changes for a release highlight. Commit: ${commit.message}\n\nDiff:\n${commit.diff}`
               const promptText = `${systemMsg}\n\n${userMsg}`
 
-              const summary = callAgy(promptText, options.model)
+              const summary = callAgy(promptText, options.agyModel)
               highlightSummaries += `\n### Highlight: ${commit.message}\n${summary}\n`
             } catch (err) {
               prompts.log.warn(`Could not generate AI summary for commit ${hash}: ${err.message}`)
@@ -584,7 +589,7 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
         let markdown = ''
         if (useAgy) {
           const combinedPrompt = `${SYSTEM_PROMPT}\n\n${userMessage}`
-          markdown = callAgy(combinedPrompt, options.model)
+          markdown = callAgy(combinedPrompt, options.agyModel)
         } else {
           const response = await fetch(`${options.apiEndpoint}/chat/completions`, {
             method: 'POST',
