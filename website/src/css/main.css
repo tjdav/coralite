@@ -319,3 +319,28 @@ pre code { padding: 0; font-size: inherit; color: inherit; background: transpare
 .lesson-body h4 {
   scroll-margin-top: 96px;
 }
+
+/* Keyboard focus and motion preferences */
+:where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+[id="main-content"]:focus {
+  outline: none;
+}
+
+/* A single global override is the only reliable way to cover every
+   component animation; scoped disables keep the rule local to this block. */
+/* stylelint-disable declaration-no-important */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* stylelint-enable declaration-no-important */

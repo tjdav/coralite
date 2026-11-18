@@ -1,5 +1,5 @@
 <template id="ui-nav-link">
-  <a href="{{ href }}" class="c-nav-link {{ activeClass }}">
+  <a href="{{ href }}" class="c-nav-link {{ activeClass }}" aria-current="{{ current }}">
     <slot></slot>
   </a>
 </template>
@@ -11,7 +11,8 @@
   }
 
   export const getters = {
-    activeClass: ({ state }) => (state.active ? 'c-nav-link--active' : '')
+    activeClass: ({ state }) => (state.active ? 'c-nav-link--active' : ''),
+    current: ({ state }) => (state.active ? 'page' : null)
   }
 </script>
 

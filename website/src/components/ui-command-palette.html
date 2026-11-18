@@ -7,6 +7,11 @@
           ref="searchInput"
           class="cp-input"
           type="text"
+          role="combobox"
+          aria-label="Search the site"
+          aria-autocomplete="list"
+          aria-expanded="true"
+          aria-controls="cp-results"
           placeholder="Search docs, reference, lessons, and posts..."
           autocomplete="off"
           spellcheck="false"
@@ -14,7 +19,9 @@
         <kbd class="cp-esc">esc</kbd>
       </div>
 
-      <div class="cp-results" ref="resultsContainer"></div>
+      <div class="cp-results" ref="resultsContainer" id="cp-results" role="listbox" aria-label="Search results"></div>
+
+      <p class="cp-status" ref="status" aria-live="polite"></p>
 
       <div class="cp-footer">
         <div class="cp-hints">
@@ -36,14 +43,15 @@
     openClass: ({ state }) => (state.open ? 'is-open' : '')
   }
 
-  export function client ({ state, refs, signal }) {
+  export function client ({ state, refs, signal, observe }) {
     const overlay = refs('overlay')
     const searchInput = refs('searchInput')
     const resultsContainer = refs('resultsContainer')
+    const status = refs('status')
 
     const fallback = [
       { title: 'Documentation', url: '/docs/', kind: 'docs', description: 'Guides, concepts, and the full reference' },
-      { title: 'Getting Started', url: '/docs/guide/getting-started', kind: 'docs', description: 'Install Coralite and build your first page' },
+      { title: 'Getting Started', url: '/docs/guide/getting-started/', kind: 'docs', description: 'Install Coralite and build your first page' },
       { title: 'Component API', url: '/reference/', kind: 'docs', description: 'Every component export' },
       { title: 'Learn', url: '/learn/', kind: 'learn', description: 'The zero-syntax curriculum' },
       { title: 'Blog', url: '/blog/', kind: 'blog', description: 'Articles and release notes' },
@@ -88,15 +96,26 @@
       return loading
     }
 
+    const updateActiveDescendant = () => {
+      const active = items[activeIndex]
+      if (active) {
+        searchInput.setAttribute('aria-activedescendant', active.id)
+      } else {
+        searchInput.removeAttribute('aria-activedescendant')
+      }
+    }
+
     const render = (results) => {
       resultsContainer.replaceChildren()
       items = []
+      status.textContent = results.length === 1 ? '1 result' : `${results.length} results`
 
       if (!results.length) {
         const empty = document.createElement('p')
         empty.className = 'cp-empty'
         empty.textContent = 'No results.'
         resultsContainer.appendChild(empty)
+        updateActiveDescendant()
         return
       }
 
@@ -104,7 +123,10 @@
         const link = document.createElement('a')
         link.className = 'cp-item' + (items.length === activeIndex ? ' active' : '')
         link.href = result.url
-        link.tabIndex = 0
+        link.id = `cp-option-${items.length}`
+        link.setAttribute('role', 'option')
+        link.setAttribute('aria-selected', String(items.length === activeIndex))
+        link.tabIndex = -1
 
         const kind = document.createElement('span')
         kind.className = 'cp-kind'
@@ -126,6 +148,8 @@
         resultsContainer.appendChild(link)
         items.push(link)
       }
+
+      updateActiveDescendant()
     }
 
     const search = () => {
@@ -147,16 +171,61 @@
         return
       }
       items[activeIndex]?.classList.remove('active')
+      items[activeIndex]?.setAttribute('aria-selected', 'false')
       activeIndex = (nextIndex + items.length) % items.length
       items[activeIndex].classList.add('active')
+      items[activeIndex].setAttribute('aria-selected', 'true')
       items[activeIndex].scrollIntoView({ block: 'nearest' })
+      searchInput.setAttribute('aria-activedescendant', items[activeIndex].id)
+    }
+
+    let lastFocused = null
+    let background = []
+
+    const setBackgroundInert = (on) => {
+      if (on) {
+        background = [document.querySelector('main'), document.querySelector('site-footer')].filter(Boolean)
+      }
+      for (const element of background) {
+        if (on) {
+          element.setAttribute('inert', '')
+        } else {
+          element.removeAttribute('inert')
+        }
+      }
+      if (!on) {
+        background = []
+      }
+    }
+
+    const closePalette = () => {
+      state.open = false
     }
 
     const openPalette = () => {
+      const trigger = document.querySelector('.search-btn')
+      const focused = document.activeElement
+      lastFocused = focused instanceof HTMLElement && focused !== document.body
+        ? focused
+        : trigger
+
       state.open = true
       ensureIndex().then(search)
-      setTimeout(() => searchInput.focus(), 50)
     }
+
+    observe('open', (open) => {
+      if (open) {
+        document.body.style.overflow = 'hidden'
+        setBackgroundInert(true)
+        requestAnimationFrame(() => searchInput.focus())
+      } else {
+        document.body.style.overflow = ''
+        setBackgroundInert(false)
+        if (lastFocused instanceof HTMLElement) {
+          lastFocused.focus()
+        }
+      }
+    })
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -164,7 +233,8 @@
         openPalette()
       }
       if (e.key === 'Escape' && state.open) {
-        state.open = false
+        e.preventDefault()
+        closePalette()
       }
     }, { signal })
 
@@ -172,7 +242,14 @@
 
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
-        state.open = false
+        closePalette()
+      }
+    }, { signal })
+
+    overlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        searchInput.focus()
       }
     }, { signal })
 
@@ -189,7 +266,7 @@
         e.preventDefault()
         const active = items[activeIndex]
         if (active) {
-          state.open = false
+          closePalette()
           active.click()
         }
       }
@@ -255,7 +332,7 @@
     flex-grow: 1;
     background: transparent;
     border: none;
-    outline: none;
+    border-radius: 4px;
     color: var(--text-primary);
     font-family: var(--font-sans);
     font-size: 18px;
@@ -294,6 +371,23 @@
   .cp-item.active {
     background: var(--bg-card);
     border-left-color: var(--accent-violet);
+  }
+
+  .cp-item:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: -2px;
+  }
+
+  .cp-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .cp-kind {

@@ -1,9 +1,9 @@
 <template id="ui-toggle">
   <div class="toggle-group">
-    <button ref="btn-left" class="toggle-btn {{ leftClass }}" type="button">
+    <button ref="btn-left" class="toggle-btn {{ leftClass }}" type="button" aria-pressed="{{ leftPressed }}">
       <slot name="left"></slot>
     </button>
-    <button ref="btn-right" class="toggle-btn {{ rightClass }}" type="button">
+    <button ref="btn-right" class="toggle-btn {{ rightClass }}" type="button" aria-pressed="{{ rightPressed }}">
       <slot name="right"></slot>
     </button>
   </div>
@@ -16,7 +16,9 @@
 
   export const getters = {
     leftClass: ({ state }) => (state.active === 'left' ? 'active' : ''),
-    rightClass: ({ state }) => (state.active === 'right' ? 'active' : '')
+    rightClass: ({ state }) => (state.active === 'right' ? 'active' : ''),
+    leftPressed: ({ state }) => state.active === 'left',
+    rightPressed: ({ state }) => state.active === 'right'
   }
 
   export function client ({ state, refs, signal, emit }) {

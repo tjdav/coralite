@@ -10,7 +10,7 @@
 <body>
   <site-header></site-header>
 
-  <main class="compare-page page-container">
+  <main id="main-content" tabindex="-1" class="compare-page page-container">
     <ui-icon style="display: none;" aria-hidden="true"></ui-icon>
     <section class="hero-section">
       <ui-badge variant="violet">Architecture Evaluation</ui-badge>
@@ -21,12 +21,12 @@
     <section class="table-section">
       <div class="table-scroll">
         <table class="ledger-table">
-        <thead>
+        <th scope="col"ead>
           <tr>
-            <th>Feature / Metric</th>
-            <th class="coralite-col">Coralite (Structural)</th>
-            <th>Next.js / Astro (Reputational)</th>
-            <th>React (Library)</th>
+            <th scope="col">Feature / Metric</th>
+            <th scope="col" class="coralite-col">Coralite (Structural)</th>
+            <th scope="col">Next.js / Astro (Reputational)</th>
+            <th scope="col">React (Library)</th>
           </tr>
         </thead>
         <tbody>

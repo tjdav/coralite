@@ -12,9 +12,14 @@
     placement: { type: String, default: 'bottom' }
   }
 
-  export function client ({ state, refs, signal, $floating: { createFloating } }) {
+  export function client ({ state, refs, signal, instanceId, root, $floating: { createFloating } }) {
     const reference = refs('reference')
     const floating = refs('floating')
+
+    floating.id = `${instanceId}-tooltip`
+    for (const element of root.querySelectorAll('a, button, input, select, textarea, [tabindex]')) {
+      element.setAttribute('aria-describedby', floating.id)
+    }
 
     let cleanup
 
@@ -39,8 +44,8 @@
 
     reference.addEventListener('mouseenter', show, { signal })
     reference.addEventListener('mouseleave', hide, { signal })
-    reference.addEventListener('focus', show, { signal })
-    reference.addEventListener('blur', hide, { signal })
+    reference.addEventListener('focusin', show, { signal })
+    reference.addEventListener('focusout', hide, { signal })
     reference.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         hide()

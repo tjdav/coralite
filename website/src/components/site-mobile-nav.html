@@ -1,11 +1,11 @@
 <template id="site-mobile-nav">
-  <button ref="toggleBtn" class="hamburger-btn" type="button" aria-label="Open menu">
+  <button ref="toggleBtn" class="hamburger-btn" type="button" aria-label="{{ toggleLabel }}" aria-expanded="{{ expanded }}" aria-controls="mobile-drawer">
     <ui-icon name="hamburger-menu" size="24"></ui-icon>
   </button>
 
   <div class="mobile-overlay {{ overlayClass }}" ref="overlay"></div>
 
-  <div class="mobile-drawer {{ drawerClass }}">
+  <div class="mobile-drawer {{ drawerClass }}" ref="drawer" id="mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu" inert="{{ closed }}">
     <div class="drawer-header">
       <span class="logo">Coralite</span>
       <button ref="closeBtn" class="close-btn" type="button" aria-label="Close menu">
@@ -34,13 +34,70 @@
 
   export const getters = {
     overlayClass: ({ state }) => (state.open ? 'is-open' : ''),
-    drawerClass: ({ state }) => (state.open ? 'is-open' : '')
+    drawerClass: ({ state }) => (state.open ? 'is-open' : ''),
+    expanded: ({ state }) => state.open,
+    closed: ({ state }) => !state.open,
+    toggleLabel: ({ state }) => (state.open ? 'Close menu' : 'Open menu')
   }
 
-  export function client ({ state, refs, signal }) {
+  export function client ({ state, refs, signal, observe }) {
     const toggleBtn = refs('toggleBtn')
     const closeBtn = refs('closeBtn')
     const overlay = refs('overlay')
+    const drawer = refs('drawer')
+    let lastFocused = null
+    let background = []
+
+    const setBackgroundInert = (on) => {
+      if (on) {
+        background = [document.querySelector('main'), document.querySelector('site-footer')].filter(Boolean)
+      }
+      for (const element of background) {
+        if (on) {
+          element.setAttribute('inert', '')
+        } else {
+          element.removeAttribute('inert')
+        }
+      }
+      if (!on) {
+        background = []
+      }
+    }
+
+    observe('open', (open) => {
+      if (open) {
+        lastFocused = document.activeElement
+        document.body.style.overflow = 'hidden'
+        setBackgroundInert(true)
+        requestAnimationFrame(() => closeBtn.focus())
+      } else {
+        document.body.style.overflow = ''
+        setBackgroundInert(false)
+        if (lastFocused instanceof HTMLElement) {
+          lastFocused.focus()
+        }
+      }
+    })
+
+    drawer.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab' || !state.open) {
+        return
+      }
+      const focusable = Array.from(drawer.querySelectorAll('a[href], button:not([disabled])'))
+        .filter(element => element instanceof HTMLElement)
+      if (!focusable.length) {
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }, { signal })
 
     toggleBtn.addEventListener('click', () => {
       state.open = true

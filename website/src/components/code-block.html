@@ -5,9 +5,9 @@
       <button ref="popoverBtn" type="button" class="button button-icon">
         Copy to clipboard
       </button>
-      <div ref="popoverTarget" popover>Code copied!</div>
+      <div ref="popoverTarget" popover role="status" aria-live="polite">Code copied!</div>
     </div>
-    <pre ref="code" class="code-body"><code class="language-{{ languageClass }}"><slot coralite-ignore></slot></code></pre>
+    <pre ref="code" class="code-body" tabindex="0" role="region" aria-label="{{ codeLabel }}"><code class="language-{{ languageClass }}"><slot coralite-ignore></slot></code></pre>
   </div>
 </template>
 
@@ -73,7 +73,8 @@
   }
 
   export const getters = {
-    languageClass: ({ state }) => state.language.toLowerCase()
+    languageClass: ({ state }) => state.language.toLowerCase(),
+    codeLabel: ({ state }) => `Code sample, ${state.language}`
   }
 
   export const slots = {
@@ -227,6 +228,11 @@
   .button-icon:hover {
     background-color: var(--border-subtle);
     color: var(--text-primary);
+  }
+
+  .code-body:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: -2px;
   }
 
   .code-body,

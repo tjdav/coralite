@@ -1,5 +1,5 @@
 <template id="docs-sidebar">
-  <nav class="docs-nav">
+  <nav class="docs-nav" aria-label="Documentation">
     <div class="docs-group docs-group--guide">
       <h4>Guide</h4>
       <a href="/docs/guide/getting-started/" data-page="guide/getting-started">Getting Started</a>
@@ -66,6 +66,17 @@
 <script type="module">
   export const attributes = {
     active: { type: String, default: '' }
+  }
+
+  export function client ({ root, state }) {
+    if (!state.active) {
+      return
+    }
+
+    const current = root.querySelector(`[data-page="${state.active}"]`)
+    if (current) {
+      current.setAttribute('aria-current', 'page')
+    }
   }
 </script>
 
