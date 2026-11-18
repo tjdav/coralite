@@ -22,7 +22,7 @@
         Search... <kbd>Ctrl K</kbd>
       </button>
       <a href="https://github.com/tjdav/coralite" class="github-link">GitHub</a>
-      <ui-badge variant="violet">v1.3.0</ui-badge>
+      <ui-badge variant="violet">v{{ version }}</ui-badge>
     </div>
   </header>
   <ui-command-palette></ui-command-palette>
@@ -39,6 +39,10 @@
     compareCurrent: ({ route }) => route.path.startsWith('/compare') ? 'page' : null,
     blogCurrent: ({ route }) => route.path.startsWith('/blog') ? 'page' : null,
     changelogCurrent: ({ route }) => route.path.startsWith('/changelog') ? 'page' : null
+  }
+
+  export function server ({ $version }) {
+    return { version: $version }
   }
 
   export function client ({ refs, signal }) {
