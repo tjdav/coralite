@@ -106,6 +106,15 @@ export function resolveCspConfig (baseCsp = {}, mode = 'production') {
 }
 
 /**
+ * Reports whether a directive source list already allows inline content.
+ * @param {string[]|undefined} sources - Directive sources, if configured.
+ * @returns {boolean} True when the list contains `'unsafe-inline'`.
+ */
+function allowsInline (sources) {
+  return Boolean(sources && sources.includes("'unsafe-inline'"))
+}
+
+/**
  * Formats CSP directives into a single header / meta content string
  * @param {Record<string, string|string[]>} [directives={}] - Map of directive names to source lists
  * @param {object} [options={}] - Options object
@@ -150,7 +159,11 @@ export function formatCSPDirectives (directives = {}, { scriptHashes = [], style
     if (!merged['style-src'].includes(nonceSrc)) {
       merged['style-src'].push(nonceSrc)
     }
-  } else if (styleHashes.length > 0) {
+  } else if (styleHashes.length > 0 && !allowsInline(merged['style-src'])) {
+    // CSP treats a hash or nonce in a directive as superseding 'unsafe-inline'.
+    // Adding a style hash next to 'unsafe-inline' would therefore block every
+    // authored `style` attribute, which cannot be hashed. The hash adds nothing
+    // in that case: the inline sheet is already allowed.
     merged['style-src'] = merged['style-src'] ? [...merged['style-src']] : ["'self'"]
     for (const h of styleHashes) {
       if (!merged['style-src'].includes(h)) {

@@ -118,6 +118,15 @@ describe('CSP Utilities & Config Validation', () => {
       assert.ok(result.includes("style-src 'self' 'nonce-test-nonce'"))
     })
 
+    it('should not append style hashes when unsafe-inline already allows the sheet', () => {
+      const result = formatCSPDirectives(
+        { 'style-src': ["'self'", "'unsafe-inline'"] },
+        { styleHashes: ["'sha256-xyz'"] }
+      )
+      assert.ok(result.includes("style-src 'self' 'unsafe-inline'"))
+      assert.ok(!result.includes("'sha256-xyz'"))
+    })
+
     it('should format directives with script/style hashes', () => {
       const result = formatCSPDirectives(
         {},
