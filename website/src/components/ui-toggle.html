@@ -24,7 +24,9 @@
     const btnRight = refs('btn-right')
 
     const setActive = (val) => {
-      if (state.active === val) return
+      if (state.active === val) {
+        return
+      }
       state.active = val
       emit('toggle-change', { active: val })
     }

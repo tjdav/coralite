@@ -71,12 +71,19 @@ export default definePlugin({
       let content = body ? extractText(body) : ''
       content = content.replace(/\s+/g, ' ').trim().slice(0, 2000)
 
+      let kind = 'docs'
+      if (url.startsWith('/blog/')) {
+        kind = 'blog'
+      } else if (url.startsWith('/learn/')) {
+        kind = 'learn'
+      }
+
       searchIndex.push({
         url,
         title,
         description,
         content,
-        kind: url.startsWith('/blog/') ? 'blog' : url.startsWith('/learn/') ? 'learn' : 'docs'
+        kind
       })
     },
     async onAfterBuild ({ app }) {

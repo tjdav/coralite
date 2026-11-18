@@ -80,7 +80,9 @@
     default: ({ nodes, state }) => {
       // Slots are also revived in the browser, but highlight.js and the server
       // HTML utilities are not part of the client bundle: bail out there.
-      if (globalThis.document) return
+      if (globalThis.document) {
+        return
+      }
 
       let fullText = ''
       const placeholders = Object.create(null)
@@ -119,15 +121,15 @@
 
       const dedented = dedent(fullText).trim()
       const indentedContent = indent(dedented, '  ')
-      
+  
       try {
         const lang = state.language.toLowerCase()
         if (!hljs.getLanguage(lang)) {
           return [{ type: 'text', data: dedented }]
         }
         const highlightCode = hljs.highlight(indentedContent, { language: lang })
-        const nodes = parseHTML(highlightCode.value.trimEnd())
-        return replacePlaceholders(nodes.root.children, placeholders)
+        const highlightedNodes = parseHTML(highlightCode.value.trimEnd())
+        return replacePlaceholders(highlightedNodes.root.children, placeholders)
       } catch (err) {
         console.error('Highlight.js failed:', err)
         return [{ type: 'text', data: dedented }]
@@ -150,25 +152,37 @@
 
     const codeEl = codeBody.querySelector('code') || codeBody
     if (codeEl && !codeEl.querySelector('.code-keyword, .code-string, .code-tag')) {
-      const { default: hljs } = await import('highlight.js/lib/core')
-      const { default: javascript } = await import('highlight.js/lib/languages/javascript')
-      const { default: xml } = await import('highlight.js/lib/languages/xml')
-      const { default: typescript } = await import('highlight.js/lib/languages/typescript')
-      const { default: css } = await import('highlight.js/lib/languages/css')
-      const { default: bash } = await import('highlight.js/lib/languages/bash')
-      const { default: diff } = await import('highlight.js/lib/languages/diff')
-      if (!hljs.getLanguage('javascript')) hljs.registerLanguage('javascript', javascript)
-      if (!hljs.getLanguage('xml')) hljs.registerLanguage('xml', xml)
-      if (!hljs.getLanguage('typescript')) hljs.registerLanguage('typescript', typescript)
-      if (!hljs.getLanguage('css')) hljs.registerLanguage('css', css)
-      if (!hljs.getLanguage('bash')) hljs.registerLanguage('bash', bash)
-      if (!hljs.getLanguage('diff')) hljs.registerLanguage('diff', diff)
-      hljs.configure({ classPrefix: 'code-' })
+      const { default: hljsLib } = await import('highlight.js/lib/core')
+      const { default: javascriptLang } = await import('highlight.js/lib/languages/javascript')
+      const { default: xmlLang } = await import('highlight.js/lib/languages/xml')
+      const { default: typescriptLang } = await import('highlight.js/lib/languages/typescript')
+      const { default: cssLang } = await import('highlight.js/lib/languages/css')
+      const { default: bashLang } = await import('highlight.js/lib/languages/bash')
+      const { default: diffLang } = await import('highlight.js/lib/languages/diff')
+      if (!hljsLib.getLanguage('javascript')) {
+        hljsLib.registerLanguage('javascript', javascriptLang)
+      }
+      if (!hljsLib.getLanguage('xml')) {
+        hljsLib.registerLanguage('xml', xmlLang)
+      }
+      if (!hljsLib.getLanguage('typescript')) {
+        hljsLib.registerLanguage('typescript', typescriptLang)
+      }
+      if (!hljsLib.getLanguage('css')) {
+        hljsLib.registerLanguage('css', cssLang)
+      }
+      if (!hljsLib.getLanguage('bash')) {
+        hljsLib.registerLanguage('bash', bashLang)
+      }
+      if (!hljsLib.getLanguage('diff')) {
+        hljsLib.registerLanguage('diff', diffLang)
+      }
+      hljsLib.configure({ classPrefix: 'code-' })
 
       const lang = (state.language || 'text').toLowerCase()
-      if (hljs.getLanguage(lang)) {
+      if (hljsLib.getLanguage(lang)) {
         const rawCode = codeEl.textContent.trim()
-        const highlighted = hljs.highlight(rawCode, { language: lang })
+        const highlighted = hljsLib.highlight(rawCode, { language: lang })
         codeEl.innerHTML = highlighted.value
       }
     }

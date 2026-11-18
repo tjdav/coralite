@@ -7,8 +7,11 @@ const pagesDir = path.resolve('src/pages')
 function collectPages (dir, result = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name)
-    if (entry.isDirectory()) collectPages(full, result)
-    else if (entry.name.endsWith('.html')) result.push(full)
+    if (entry.isDirectory()) {
+      collectPages(full, result)
+    } else if (entry.name.endsWith('.html')) {
+      result.push(full)
+    }
   }
   return result
 }
@@ -18,7 +21,9 @@ test('every in-page anchor resolves to a unique id', () => {
 
   for (const file of collectPages(pagesDir)) {
     const source = fs.readFileSync(file, 'utf8')
-    if (!source.includes('href="#')) continue
+    if (!source.includes('href="#')) {
+      continue
+    }
 
     const codeRanges = [...source.matchAll(/<code-block\b[^>]*>[\s\S]*?<\/code-block>/g)]
       .map(match => [match.index, match.index + match[0].length])
@@ -27,7 +32,9 @@ test('every in-page anchor resolves to a unique id', () => {
 
     const ids = []
     for (const match of source.matchAll(/\bid="([^"]+)"/g)) {
-      if (inCode(match.index)) continue
+      if (inCode(match.index)) {
+        continue
+      }
       ids.push(match[1])
     }
     const idSet = new Set(ids)
@@ -37,7 +44,9 @@ test('every in-page anchor resolves to a unique id', () => {
     }
 
     for (const match of source.matchAll(/<a\b[^>]*href="#([^"]+)"/g)) {
-      if (inCode(match.index)) continue
+      if (inCode(match.index)) {
+        continue
+      }
       if (!idSet.has(match[1])) {
         problems.push(`${path.relative(pagesDir, file)}: missing target #${match[1]}`)
       }

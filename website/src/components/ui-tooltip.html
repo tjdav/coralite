@@ -24,13 +24,17 @@
         reference,
         floating,
         placement: state.placement,
-        onCleanup: (c) => { cleanup = c }
+        onCleanup: (c) => {
+          cleanup = c
+        }
       })
     }
 
     const hide = () => {
       floating.setAttribute('aria-hidden', 'true')
-      if (cleanup) cleanup()
+      if (cleanup) {
+        cleanup()
+      }
     }
 
     reference.addEventListener('mouseenter', show, { signal })
@@ -38,7 +42,9 @@
     reference.addEventListener('focus', show, { signal })
     reference.addEventListener('blur', hide, { signal })
     reference.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') hide()
+      if (e.key === 'Escape') {
+        hide()
+      }
     }, { signal })
   }
 </script>

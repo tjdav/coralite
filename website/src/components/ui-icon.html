@@ -11,7 +11,7 @@
 
   export function client ({ state, refs, observe }) {
     const wrapper = refs('wrapper')
-    
+  
     const updateIcon = async () => {
       const { renderIcon } = await import('../utils/icon-registry.js')
       renderIcon(wrapper, {

@@ -20,7 +20,8 @@ export const test = base.extend({
       await page.waitForFunction(async () => {
         const faces = await document.fonts.load('400 16px Inter')
         return faces.length > 0 && faces.every(face => face.status === 'loaded')
-      }, undefined, { timeout: 10000 }).catch(() => {})
+      }, undefined, { timeout: 10000 }).catch(() => {
+      })
 
       await page.evaluate(async () => {
         const faces = [
@@ -32,7 +33,8 @@ export const test = base.extend({
           '500 14px "JetBrains Mono"',
           '700 14px "JetBrains Mono"'
         ]
-        await Promise.all(faces.map(face => document.fonts.load(face))).catch(() => {})
+        await Promise.all(faces.map(face => document.fonts.load(face))).catch(() => {
+        })
         await document.fonts.ready
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
       })

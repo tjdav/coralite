@@ -58,7 +58,10 @@ function readRedirects () {
       continue
     }
     const [from, to, status] = entry.split(/\s+/)
-    redirects.set(from, { to, status })
+    redirects.set(from, {
+      to,
+      status
+    })
   }
   return redirects
 }

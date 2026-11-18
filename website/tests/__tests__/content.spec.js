@@ -1,11 +1,26 @@
 import { test, expect } from '../fixtures.js'
 
 const pages = [
-  { name: 'docs-hub', url: '/docs/' },
-  { name: 'docs-guide', url: '/docs/guide/getting-started' },
-  { name: 'docs-reference', url: '/docs/reference/config' },
-  { name: 'blog-hub', url: '/blog/' },
-  { name: 'blog-release', url: '/blog/coralite-v0-43-1' }
+  {
+    name: 'docs-hub',
+    url: '/docs/'
+  },
+  {
+    name: 'docs-guide',
+    url: '/docs/guide/getting-started'
+  },
+  {
+    name: 'docs-reference',
+    url: '/docs/reference/config'
+  },
+  {
+    name: 'blog-hub',
+    url: '/blog/'
+  },
+  {
+    name: 'blog-release',
+    url: '/blog/coralite-v0-43-1'
+  }
 ]
 
 for (const entry of pages) {

@@ -36,7 +36,10 @@ test('home sections are full-bleed with contained content', async ({ page }) => 
   expect(at1440.sectionWidth).toBe(at1440.viewportWidth)
   expect(at1440.headingLeft).toBe(24)
 
-  await page.setViewportSize({ width: 1920, height: 900 })
+  await page.setViewportSize({
+    width: 1920,
+    height: 900
+  })
   await page.waitForTimeout(200)
 
   const at1920 = await page.evaluate(() => {

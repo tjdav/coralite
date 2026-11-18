@@ -29,7 +29,10 @@ export const SOLAR_ICON_MAP = {
   search: MagnifierLinearIcon,
   github: GithubLinearIcon,
   copy: CopyLinearIcon,
-  check: { linear: CheckCircleLinearIcon, bold: CheckCircleLinearIcon },
+  check: {
+    linear: CheckCircleLinearIcon,
+    bold: CheckCircleLinearIcon
+  },
   'chevron-down': AltArrowDownLinearIcon,
   'chevron-left': AltArrowLeftLinearIcon,
   'chevron-right': AltArrowRightLinearIcon,
@@ -72,8 +75,14 @@ function createSvgNode ([tag, attrs, children]) {
   return el
 }
 
+/**
+ *
+ */
 export function createSvgElement (iconAst, customAttrs = {}) {
-  const attrs = { ...defaultSvgAttrs, ...customAttrs }
+  const attrs = {
+    ...defaultSvgAttrs,
+    ...customAttrs
+  }
   return createSvgNode(['svg', attrs, iconAst])
 }
 
@@ -86,7 +95,9 @@ export function createSvgElement (iconAst, customAttrs = {}) {
  */
 export function renderIcon (wrapper, { name, active = false, size = 24 } = {}) {
   if (!wrapper || !name) {
-    if (wrapper) wrapper.replaceChildren()
+    if (wrapper) {
+      wrapper.replaceChildren()
+    }
     return
   }
 
@@ -106,7 +117,7 @@ export function renderIcon (wrapper, { name, active = false, size = 24 } = {}) {
   }
 
   const sizePx = isNaN(Number(size)) ? size : `${size}px`
-  
+
   const svgEl = createSvgElement(iconAst, {
     class: `solar solar-${name}`,
     style: `width: ${sizePx}; height: ${sizePx};`,

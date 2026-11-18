@@ -335,6 +335,18 @@ export default [
     }
   },
   {
+    files: ['website/**/*.html'],
+    rules: {
+      // The site keeps attribute maps and short guards on one line, including
+      // inside documentation code samples.
+      curly: 'off',
+      '@stylistic/js/brace-style': 'off',
+      '@stylistic/js/curly-newline': 'off',
+      '@stylistic/js/no-confusing-arrow': 'off',
+      '@stylistic/js/object-property-newline': 'off'
+    }
+  },
+  {
     ignores: [
       '**/dist/',
       '**/bench/',

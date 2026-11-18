@@ -27,12 +27,17 @@ export default definePlugin({
 
         const update = async () => {
           const middleware = [offset(8), flip(), shift({ padding: 8 })]
-          if (arrow) middleware.push(arrowMiddleware({ element: arrow }))
+          if (arrow) {
+            middleware.push(arrowMiddleware({ element: arrow }))
+          }
 
           const { x, y, placement: finalPlacement, middlewareData } = await computePosition(
             reference,
             floating,
-            { placement, middleware }
+            {
+              placement,
+              middleware
+            }
           )
 
           floating.setAttribute('data-placement', finalPlacement)
@@ -53,8 +58,8 @@ export default definePlugin({
             }[finalPlacement.split('-')[0]]
 
             Object.assign(arrow.style, {
-              left: arrowX != null ? `${arrowX}px` : '',
-              top: arrowY != null ? `${arrowY}px` : '',
+              left: typeof arrowX === 'number' ? `${arrowX}px` : '',
+              top: typeof arrowY === 'number' ? `${arrowY}px` : '',
               right: '',
               bottom: '',
               [staticSide]: '-4px'
@@ -63,7 +68,9 @@ export default definePlugin({
         }
 
         const cleanup = autoUpdate(reference, floating, update)
-        if (onCleanup) onCleanup(cleanup)
+        if (onCleanup) {
+          onCleanup(cleanup)
+        }
         return cleanup
       }
     })

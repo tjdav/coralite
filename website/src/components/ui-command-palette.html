@@ -51,23 +51,25 @@
     ]
 
     let fuse = null
-    let dataset = fallback
     let items = []
     let activeIndex = 0
     let loading = null
 
     const ensureIndex = () => {
-      if (loading) return loading
+      if (loading) {
+        return loading
+      }
       loading = (async () => {
         try {
           const [{ default: Fuse }, response] = await Promise.all([
             import('fuse.js'),
             fetch('/search-index.json')
           ])
-          if (!response.ok) return
+          if (!response.ok) {
+            return
+          }
           const entries = await response.json()
           if (Array.isArray(entries) && entries.length) {
-            dataset = entries
             fuse = new Fuse(entries, {
               keys: [
                 { name: 'title', weight: 0.6 },
@@ -141,7 +143,9 @@
     }
 
     const setActive = (nextIndex) => {
-      if (!items.length) return
+      if (!items.length) {
+        return
+      }
       items[activeIndex]?.classList.remove('active')
       activeIndex = (nextIndex + items.length) % items.length
       items[activeIndex].classList.add('active')

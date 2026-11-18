@@ -9,16 +9,46 @@ import changelogPlugin from './src/plugins/changelog.js'
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3333
 
 const llmsFiles = [
-  { file: 'llms.txt', priority: '0.7' },
-  { file: 'llms-full.txt', priority: '0.5' },
-  { file: 'llms/components.md', priority: '0.6' },
-  { file: 'llms/serialization.md', priority: '0.6' },
-  { file: 'llms/face.md', priority: '0.6' },
-  { file: 'llms/css.md', priority: '0.6' },
-  { file: 'llms/plugins.md', priority: '0.6' },
-  { file: 'llms/diagnostics.md', priority: '0.6' },
-  { file: 'llms/config.md', priority: '0.6' },
-  { file: 'llms/testing.md', priority: '0.6' }
+  {
+    file: 'llms.txt',
+    priority: '0.7'
+  },
+  {
+    file: 'llms-full.txt',
+    priority: '0.5'
+  },
+  {
+    file: 'llms/components.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/serialization.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/face.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/css.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/plugins.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/diagnostics.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/config.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/testing.md',
+    priority: '0.6'
+  }
 ]
 
 export default defineConfig({

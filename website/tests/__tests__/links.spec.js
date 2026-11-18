@@ -8,7 +8,9 @@ test('the logo links to the homepage', async ({ page }) => {
   await expect(logo).toHaveAttribute('href', '/')
   await expect(logo).toHaveAccessibleName('Coralite')
 
-  await page.evaluate(() => { window.__sameDocument = true })
+  await page.evaluate(() => {
+    window.__sameDocument = true
+  })
   await logo.click()
 
   await expect(page).toHaveURL(/\/$/)
@@ -35,7 +37,9 @@ test('navigation links render as anchors, not nested buttons', async ({ page }) 
 test('prev/next navigation works from the keyboard', async ({ page }) => {
   await page.goto('/reference/client')
   await page.waitForLoadState('networkidle')
-  await page.evaluate(() => { window.__sameDocument = true })
+  await page.evaluate(() => {
+    window.__sameDocument = true
+  })
 
   const next = page.locator('.lesson-navigation ui-link a[href="/reference/server"]')
   await next.focus()

@@ -22,8 +22,7 @@ test('learn hub exposes every module and lesson without gating', async ({ page }
   await expect(page.locator('.module-card')).toHaveCount(4)
   await expect(page.locator('.lesson-list a')).toHaveCount(lessonHrefs.length)
 
-  const hrefs = await page.locator('.lesson-list a').evaluateAll(links =>
-    links.map(link => link.getAttribute('href'))
+  const hrefs = await page.locator('.lesson-list a').evaluateAll(links => links.map(link => link.getAttribute('href'))
   )
   for (const href of lessonHrefs) {
     expect(hrefs).toContain(href)
@@ -55,8 +54,7 @@ test('lesson sidebars list the whole curriculum with every module open', async (
     await expect(sidebar.locator('ui-nav-link')).toHaveCount(lessonHrefs.length)
     await expect(sidebar.locator('.progress-widget')).toHaveCount(0)
 
-    const hrefs = await sidebar.locator('ui-nav-link').evaluateAll(links =>
-      links.map(link => link.getAttribute('href'))
+    const hrefs = await sidebar.locator('ui-nav-link').evaluateAll(links => links.map(link => link.getAttribute('href'))
     )
     for (const href of lessonHrefs) {
       expect(hrefs).toContain(href)
@@ -67,7 +65,9 @@ test('lesson sidebars list the whole curriculum with every module open', async (
 test('lesson links navigate across modules', async ({ page }) => {
   await page.goto('/learn/01-the-document')
   await page.waitForLoadState('networkidle')
-  await page.evaluate(() => { window.__sameDocument = true })
+  await page.evaluate(() => {
+    window.__sameDocument = true
+  })
 
   await page.click('aside.sidebar-wrapper ui-nav-link a[href="/learn/10-reactive-state"]')
 

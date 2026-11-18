@@ -16,7 +16,7 @@ test.describe('Interactions', () => {
 
     const input = page.locator('.cp-input')
     await expect(input).toBeFocused()
-    
+
     // Close palette
     await page.keyboard.press('Escape')
     await expect(overlay).not.toHaveClass(/is-open/)
@@ -62,7 +62,7 @@ test.describe('Interactions', () => {
       const host = document.querySelector('.education-content ui-link')
       const link = host.querySelector('a')
       const rect = link.getBoundingClientRect()
-      const top = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
+      const top = document.elementFromPoint(rect.left + (rect.width / 2), rect.top + (rect.height / 2))
       return host.contains(top)
     })
 
@@ -70,16 +70,19 @@ test.describe('Interactions', () => {
   })
 
   test('Mobile Nav Drawer opens and closes', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 })
+    await page.setViewportSize({
+      width: 375,
+      height: 812
+    })
     await page.goto('/learn/01-the-document')
-    
+
     const drawer = page.locator('.mobile-drawer')
     const hamburger = page.locator('.hamburger-btn')
-    
+
     // Open drawer
     await hamburger.click()
     await expect(drawer).toHaveClass(/is-open/)
-    
+
     // Close via overlay
     await page.locator('.mobile-overlay').click({ force: true })
     await expect(drawer).not.toHaveClass(/is-open/)

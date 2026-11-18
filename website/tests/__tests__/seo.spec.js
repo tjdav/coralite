@@ -10,7 +10,9 @@ function collectPages (dir = PAGES_DIR, out = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name)
     if (entry.isDirectory()) {
-      if (entry.name === '__tests__') continue
+      if (entry.name === '__tests__') {
+        continue
+      }
       collectPages(path, out)
     } else if (entry.name.endsWith('.html')) {
       out.push(path)
@@ -141,7 +143,9 @@ test.describe('page metadata source', () => {
     const blogDir = join(PAGES_DIR, 'blog')
 
     for (const entry of readdirSync(blogDir)) {
-      if (!entry.endsWith('.html') || entry === 'index.html') continue
+      if (!entry.endsWith('.html') || entry === 'index.html') {
+        continue
+      }
 
       const source = readFileSync(join(blogDir, entry), 'utf8')
       const match = source.match(/<article-meta[\s\S]*?<\/article-meta>/)

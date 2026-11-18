@@ -41,16 +41,16 @@
   }
 
   export const getters = {
-    fullTitle: ({ state }) => state.section
+    fullTitle: ({ state }) => (state.section
       ? `${state.title} — Coralite ${state.section}`
-      : state.title,
+      : state.title),
     canonicalUrl: ({ state }) => `https://coralite.dev${state.routePath}`,
-    imageUrl: ({ state }) => state.image.startsWith('http')
+    imageUrl: ({ state }) => (state.image.startsWith('http')
       ? state.image
-      : `https://coralite.dev${state.image}`,
-    robots: ({ state }) => state.noindex
+      : `https://coralite.dev${state.image}`),
+    robots: ({ state }) => (state.noindex
       ? 'noindex, follow'
-      : 'index, follow, max-image-preview:large'
+      : 'index, follow, max-image-preview:large')
   }
 
   export function server ({ page }) {

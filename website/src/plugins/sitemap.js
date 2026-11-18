@@ -19,7 +19,7 @@ import { stat } from 'node:fs/promises'
  * Sitemap plugin for Coralite.
  * Generates sitemap.xml in the build output directory using the site's clean URLs.
  *
- * @param {SitemapPluginOptions} [options={}]
+ * @param {SitemapPluginOptions} [options={}] - Canonical origin and extra public files to list.
  */
 export default (options = {}) => {
   const origin = options.origin || 'https://coralite.dev'

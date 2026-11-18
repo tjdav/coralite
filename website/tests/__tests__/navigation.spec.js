@@ -5,7 +5,9 @@ test('client-side navigation applies the destination page styles', async ({ page
   await page.waitForLoadState('networkidle')
 
   // Mark the document so we can assert navigation did not reload the page.
-  await page.evaluate(() => { window.__sameDocument = true })
+  await page.evaluate(() => {
+    window.__sameDocument = true
+  })
 
   await page.click('.desktop-nav a[href="/why/"]')
   await expect(page).toHaveURL(/\/why\/$/)

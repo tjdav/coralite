@@ -68,12 +68,12 @@
 </template>
 
 <script type="module">
-  export async function server ({ state }) {
+  export async function server () {
     // This code runs ONLY during the build
     const fs = await import('node:fs/promises')
     const raw = await fs.readFile('data/user.json', 'utf8')
     const user = JSON.parse(raw)
-    
+  
     // Return data to hydrate state
     return {
       name: user.name,

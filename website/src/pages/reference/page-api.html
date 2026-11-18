@@ -108,13 +108,13 @@
     async paths () {
       const fs = await import('node:fs/promises')
       const files = await fs.readdir('src/data/blog')
-      
+  
       return files.map(file => ({
         path: `/blog/${file.replace('.json', '')}`,
         params: { id: file.replace('.json', '') }
       }))
     },
-    
+  
     async server ({ params }) {
       const fs = await import('node:fs/promises')
       const data = await fs.readFile(`src/data/blog/${params.id}.json`, 'utf8')
