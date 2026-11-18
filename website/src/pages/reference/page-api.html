@@ -54,8 +54,8 @@
       </div>
 
       <div class="lesson-body">
-        <h2 id="the-definepage-syntax">The definePage Syntax</h2>
-        <p>Unlike components, which use top-level named exports, pages must use <code>export default definePage({ ... })</code>. This is because pages are entry points, not Web Components.</p>
+        <h2 id="the-definepage-syntax">The definePage Syntax (Legacy)</h2>
+        <p>Components and pages share the same export surface: top-level named exports. Pages are entry points, not Web Components, so <code>export default definePage({ ... })</code> is retained as a legacy shape; new pages use <code>export function server</code>, <code>export const meta</code>, and the other named exports.</p>
 
         <code-block language="html" filename="index.html">
 <!DOCTYPE html>

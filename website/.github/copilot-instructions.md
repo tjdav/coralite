@@ -14,8 +14,9 @@ When generating or editing Coralite files (`src/components/*.html`, `src/pages/*
   - **Handlers (`export function`)**: `server`, `client`, `onError`.
   - **Declarations (`export const`)**: `attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`.
   - Extra/helper exports are ignored by the compiler and preserved in module scope.
-- **Pages (`src/pages/*.html`)**: Always use `export default definePage({ ... })` imported from `'coralite'`. Never use bare named exports in pages (`CORALITE-E108`).
-  - Valid `definePage` blocks: `paths`, `server`, `getters`, `style`, `provide`, `client`, `onError`.
+- **Pages (`src/pages/*.html`)**: Use top-level named exports, exactly like components. `export default definePage({ ... })` is retained strictly for legacy compatibility.
+  - **Handlers (`export function`)**: `paths`, `server`, `client`, `onError`.
+  - **Declarations (`export const`)**: `meta`, `getters`, `style`, `provide`.
   - Pages do not support `attributes`, `slots`, `consume`, or `formControl`, and must not query component internals directly (`CORALITE-PAGE-201`).
 - **Plugins**: Always use `export default definePlugin({ ... })` with two-phase curried context: `context: (pluginCtx) => (instanceCtx) => ({ ... })`.
 - **Templates**: Flat `{{ token }}` placeholders only. No expressions (`{{ a + b }}`), dot notation (`{{ user.name }}`), conditionals, loops, or function calls (`CORALITE-E201`). Move all derived logic into synchronous `getters`.
@@ -84,22 +85,19 @@ When generating or editing Coralite files (`src/components/*.html`, `src/pages/*
 </html>
 
 <script type="module">
-  import { definePage } from 'coralite'
+  export const getters = {
+    pageTitle: ({ state }) => state.title
+  }
 
-  export default definePage({
-    getters: {
-      pageTitle: ({ state }) => state.title
-    },
-    server () {
-      return { title: 'Home' }
-    }
-  })
+  export function server () {
+    return { title: 'Home' }
+  }
 </script>
 ```
 
 ## 3. Import rule & Serialization boundary
 
-- Top-level imports are reserved for `definePage` / `definePlugin` and modules used by isomorphic code (`getters`, `style`, `slots`).
+- Top-level imports are reserved for `definePlugin` and modules used by isomorphic page/component code (`getters`, `style`, `slots`).
 - `server()` runs in Node.js at build time and is stripped from the browser bundle. It returns an object to initialize/hydrate `state`.
 - `client()` is serialized to run in the browser and cannot reference module-scope variables or top-level imports. Modules used by `server()`, `client()`, or `paths()` must be loaded with dynamic `await import()` inside the block (`CORALITE-E301`).
 - **Lazy dependency stylesheets (`await import('*.css')`)**: Load dependency or local `.css` files lazily inside component and page `client()` blocks (or transitive client `.js` helpers) via `await import('pkg/styles.css', options)` (`{ default: link.sheet ?? null, link }`). Static top-level `.css` imports or dynamic `.css` imports outside `client()` throw `CORALITE-E109`; unresolvable `.css` files throw `CORALITE-E403`.

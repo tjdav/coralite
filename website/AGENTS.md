@@ -14,10 +14,11 @@ Read this file before starting any task in this project. Rules apply to every ta
   - **Handlers (`export function`)**: `server`, `client`, `onError`.
   - **Declarations (`export const`)**: `attributes`, `getters`, `style`, `slots`, `provide`, `consume`, `formControl`, `listStrategy`.
   - Extra/helper exports are ignored by the compiler and preserved in module scope.
-- **Pages (`src/pages/*.html`)**: Always use `export default definePage({ ... })` imported from `'coralite'`. Never use bare named exports in pages (`CORALITE-E108`).
-  - Valid `definePage` blocks: `paths`, `server`, `getters`, `style`, `provide`, `client`, `onError`.
+- **Pages (`src/pages/*.html`)**: Use top-level named exports, exactly like components. `export default definePage({ ... })` is retained strictly for legacy compatibility.
+  - **Handlers (`export function`)**: `paths`, `server`, `client`, `onError`.
+  - **Declarations (`export const`)**: `meta`, `getters`, `style`, `provide`.
   - Pages do not support `attributes`, `slots`, `consume`, or `formControl`, and must not query component internals directly (`CORALITE-PAGE-201`).
-- **Test fixtures (`tests/fixtures/`)**: Author test fixtures under `tests/fixtures/` (`tests/fixtures/pages` for test pages, `tests/fixtures/components` for mock/harness components) and configure `fixtures` in `coralite.config.js`. Never place test fixtures or test files inside `src/pages/` or `src/components/`.
+- **Test pages**: The component fixture page lives at `src/pages/__tests__/atoms.html`. Coralite excludes `__tests__` from production builds and the sitemap; the Playwright specs load it at `/__tests__/atoms`. Other test fixtures belong in `tests/fixtures/` and are configured through `fixtures` in `coralite.config.js`.
 - **Plugins**: Always use `export default definePlugin({ ... })` with two-phase curried context: `context: (pluginCtx) => (instanceCtx) => ({ ... })`. Top-level `context` is ubiquitous across Component and Page `server`, `getters`, `client`, `slots`, and `style`. Environment-specific `server.context` / `client.context` are injected into Component and Page `server()` and `client()` handlers respectively. Reserved framework keys (`route`, `app`, etc.) take strict precedence.
 - **Templates**: Flat `{{ token }}` placeholders only. No expressions (`{{ a + b }}`), dot notation (`{{ user.name }}`), conditionals, loops, or function calls (`CORALITE-E201`). Move all derived logic into synchronous `getters`.
 - **Events**: No inline event handlers (`onclick="..."`, `@click`, `CORALITE-E203`). Bind in `client()` using `refs('name').addEventListener('click', fn, { signal })`. Emit custom events via `emit('name', detail)` (never `root.dispatchEvent`).
@@ -178,22 +179,19 @@ Do NOT delete the `ref` attribute, and do NOT add an empty `client({ refs }) { r
 </html>
 
 <script type="module">
-  import { definePage } from 'coralite'
+  export const getters = {
+    pageTitle: ({ state }) => `App — ${state.title}`
+  }
 
-  export default definePage({
-    getters: {
-      pageTitle: ({ state }) => `App — ${state.title}`
-    },
-    server () {
-      return { title: 'Home' }
-    }
-  })
+  export function server () {
+    return { title: 'Home' }
+  }
 </script>
 ```
 
 ## 3. Import rule
 
-Top-level imports are reserved for `definePage` / `definePlugin` and modules used by isomorphic code (`getters`, `style`, `slots`). Modules used by `server()`, `client()`, or `paths()` must be loaded with dynamic `await import()` inside the block (`CORALITE-E301`).
+Top-level imports are reserved for `definePlugin` and modules used by isomorphic page/component code (`getters`, `style`, `slots`). Modules used by `server()`, `client()`, or `paths()` must be loaded with dynamic `await import()` inside the block (`CORALITE-E301`).
 
 - **Lazy dependency stylesheets (`await import('*.css')`)**: Load dependency or local `.css` files lazily inside component and page `client()` blocks (or transitive client `.js` helpers) via `await import('pkg/styles.css', options)`, which bundles CSS at build time into hashed `assets/css/` assets, injects `<link rel="stylesheet">` into `<head>` in deterministic manifest order at runtime, and resolves to `{ default: link.sheet ?? null, link }`. Both flat options (`{ media, nonce, crossorigin, referrerPolicy, signal, force }`) and Import Attributes (`{ with: { type: 'css', ... }, signal, force }`) are supported. Static top-level `.css` imports or dynamic `.css` imports outside `client()` throw `CORALITE-E109`; unresolvable `.css` files throw `CORALITE-E403`.
 
@@ -213,19 +211,30 @@ Top-level imports are reserved for `definePage` / `definePlugin` and modules use
 
 - **Factory functions over classes**: Default to factory functions (`createX`). No `this` outside class bodies; always use destructured context (`state`, `refs`, `emit`, `root`).
 - **Scoped CSS**: Use `:host` for the custom element root and `:host-context(.selector)` for ancestor themes. Write `.child` directly instead of `:host .child`.
+- **One stylesheet entry**: `src/css/styles.css` is the only `styles.input` value. It `@import`s `fonts`, `main`, and the per-section partials in that order; `postcss-import` inlines them and `autoprefixer` runs at build time. Add a new partial by importing it from `styles.css`, and keep `pnpm lint:css` green.
 
 ## 7. Workflow & project layout
 
-- `pnpm dev` — start development server
+- `pnpm dev` / `pnpm start` — start the development server
 - `pnpm build` — build production output to `dist/`
 - `pnpm check` — validate components, pages, and plugins (`coralite check`)
 - `pnpm fix` — auto-fix safe validation diagnostics (`coralite fix`)
+- `pnpm test:visual` — run the Playwright suite
+- `pnpm check:redirects` — audit legacy URLs against the live sitemap fixture
+- `pnpm lint:css` / `pnpm lint:css:fix` — stylelint over `src/css`
+
+From the monorepo root: `pnpm website:dev`, `pnpm website:build`, `pnpm website:check`, `pnpm website:test`, `pnpm website:lint:css`.
 
 ### Where things live
 
 - `src/components/` — reusable custom elements (`.html`)
 - `src/pages/` — route definitions (`.html`)
-- `tests/fixtures/` — component test fixtures (`.html`)
+- `src/pages/__tests__/atoms.html` — component fixture page (excluded from builds)
+- `src/data/changelog.json` — release data rendered by the changelog plugin
+- `src/plugins/` — floating-ui, changelog, sitemap, search
+- `src/css/styles.css` — the single stylesheet entry; imports the partials
+- `tests/__tests__/` — Playwright specs and snapshots
+- `scripts/check-redirects.js` + `scripts/fixtures/live-sitemap.xml` — redirect audit
 - `public/` — static assets copied verbatim to output
 - `coralite.config.js` — project & plugin configuration
 

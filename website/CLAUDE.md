@@ -60,22 +60,19 @@ Refer to [`AGENTS.md`](./AGENTS.md) for complete architectural invariants. Quick
 </html>
 
 <script type="module">
-  import { definePage } from 'coralite'
+  export const getters = {
+    pageTitle: ({ state }) => state.title
+  }
 
-  export default definePage({
-    getters: {
-      pageTitle: ({ state }) => state.title
-    },
-    server () {
-      return { title: 'Home' }
-    }
-  })
+  export function server () {
+    return { title: 'Home' }
+  }
 </script>
 ```
 
 ## Core Invariants
 
-1. **Components vs. Pages**: Components use top-level named exports (`export function`, `export const`). Pages use `export default definePage({ ... })` (never bare named exports).
+1. **Components vs. Pages**: Both use top-level named exports (`export function`, `export const`). `export default definePage({ ... })` is legacy compatibility only.
 2. **Flat Tokens Only in `<template>`**: `{{ token }}` placeholders only. No logic, expressions, dot notation, or inline events in HTML.
 3. **Serialization Boundary**: Code inside `client()` is serialized for the browser. Never close over module-scope variables or top-level imports inside `client()`; use dynamic `await import()` inside `client()`, `server()`, or `paths()`.
 4. **No Defensive Guards**: Context keys (`state`, `refs`, `signal`, `emit`, `lists`, etc.) are guaranteed by the framework. Never guard context keys or check `typeof window` in `client()` or `server()`.
@@ -85,7 +82,10 @@ Refer to [`AGENTS.md`](./AGENTS.md) for complete architectural invariants. Quick
 
 ## Commands
 
-- `pnpm dev` — start development server
+- `pnpm dev` / `pnpm start` — start the development server
 - `pnpm build` — build production output to `dist/`
 - `pnpm check` — validate components, pages, and plugins (`coralite check`)
 - `pnpm fix` — auto-fix safe validation diagnostics (`coralite fix`)
+- `pnpm test:visual` — run the Playwright suite
+- `pnpm check:redirects` — audit legacy URLs against the live sitemap fixture
+- `pnpm lint:css` — stylelint over `src/css`
