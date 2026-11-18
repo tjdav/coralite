@@ -54,6 +54,11 @@ export default (options = {}) => {
           pathname = pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, '')
 
           const pageMeta = item.state?.page?.meta || {}
+
+          if (typeof pageMeta.robots === 'string' && pageMeta.robots.includes('noindex')) {
+            continue
+          }
+
           let lastmod = pageMeta.published_time || pageMeta.updated_time
 
           if (!lastmod) {

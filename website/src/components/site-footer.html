@@ -9,10 +9,12 @@
         <a href="/changelog/">Changelog</a>
       </div>
       <div class="footer-col">
-        <h4>Explore</h4>
-        <a href="/learn/">Learn</a>
-        <a href="/compare/">Compare</a>
-        <a href="/blog/">Blog</a>
+        <h4>Legal</h4>
+        <a href="/privacy/">Privacy</a>
+        <a href="/terms/">Terms</a>
+        <a href="/license/">Licensing</a>
+        <a href="/legal/">Legal Notice</a>
+        <a href="/accessibility/">Accessibility</a>
       </div>
       <div class="footer-col">
         <h4>Community</h4>
@@ -31,7 +33,7 @@
     </div>
     <div class="footer-bottom">
       <span>© 2026 Coralite. Built with Coralite (<a href="https://github.com/tjdav/coralite" target="_blank" rel="noopener noreferrer">View Source</a>).</span>
-      <span>MIT License · Production Ready</span>
+      <span><a href="/license/">MPL-2.0</a> · Production Ready</span>
     </div>
   </footer>
 </template>
@@ -110,5 +112,19 @@
   .footer-bottom a:hover,
   .footer-bottom a:focus-visible {
     color: var(--text-primary);
+  }
+
+  @media (max-width: 760px) {
+    .footer-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    .footer-bottom {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
   }
 </style>
