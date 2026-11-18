@@ -20,7 +20,8 @@
     "fix": "coralite fix",
     "test:visual": "playwright test",
     "lint:css": "stylelint 'src/css/*.css'",
-    "lint:css:fix": "stylelint --fix 'src/css/*.css'"
+    "lint:css:fix": "stylelint --fix 'src/css/*.css'",
+    "check:redirects": "node scripts/check-redirects.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",

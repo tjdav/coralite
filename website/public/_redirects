@@ -30,8 +30,8 @@
 /docs/guide/styling.html /docs/guide/styling 301
 /docs/guide/testing.html /docs/guide/testing 301
 /docs/guide/validation.html /docs/guide/validation 301
-/docs/guides/building.html /docs/guides/building 301
-/docs/guides/testing.html /docs/guides/testing 301
+/docs/guides/building.html /docs/guide/building 301
+/docs/guides/testing.html /docs/guide/testing 301
 /docs/reference/cli.html /docs/reference/cli 301
 /docs/reference/components.html /docs/reference/components 301
 /docs/reference/config.html /docs/reference/config 301
@@ -174,3 +174,14 @@
 /blog/coralite-v0-8-1.html /blog/coralite-v0-8-1 301
 /blog/coralite-v0-9-0.html /blog/coralite-v0-9-0 301
 /blog/the-ai-refactoring-trap.html /blog/ai-versioning-trap 301
+
+# Legacy pagination and hub pages
+/blog/page/2.html /blog/ 301
+/blog/page/3.html /blog/ 301
+/blog/page/4.html /blog/ 301
+/blog/page/5.html /blog/ 301
+/blog/page/6.html /blog/ 301
+/blog/page/7.html /blog/ 301
+/docs/guide.html /docs/guide/ 301
+/docs/reference.html /docs/reference/ 301
+/docs/reference/plugins.html /docs/reference/plugins/ 301

@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3333
-const baseURL = `http://localhost:${port}`
+const externalBaseURL = process.env.BASE_URL
+const baseURL = externalBaseURL || `http://localhost:${port}`
 
 export default defineConfig({
   testDir: './tests/__tests__',
@@ -26,10 +27,12 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'pnpm coralite dev',
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-  },
+  webServer: externalBaseURL
+    ? undefined
+    : {
+        command: 'pnpm coralite dev',
+        url: baseURL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000,
+      },
 })
