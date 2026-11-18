@@ -70,6 +70,15 @@ main.home-page .hero-visual {
   }
 }
 
+/* The rays layer is two repeating gradients over the full hero. Painted on
+     narrow screens it costs more than it returns, so it is hidden below the
+     desktop layout breakpoint. */
+@media (max-width: 1100px) {
+  main.home-page .hero-rays {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   main.home-page .hero-rays {
     animation: none;
