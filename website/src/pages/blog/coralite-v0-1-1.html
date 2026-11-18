@@ -1,97 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.1.1" description="Discover Coralite’s first public release of its HTML module static site generator, featuring component-based architecture and metadata extraction for efficient website creation. Explore core functionalities, testing improvements, and configuration enhancements in this foundational release."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-01-15T15:14:26+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.1.1"
+    description="Discover Coralite’s first public release of its HTML module static site generator, featuring component-based architecture and metadata extraction"
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-01-15"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.1.1</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.1.1</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-01-15T15:14:26+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.1.1</h1>
+        <p class="subhead">Discover Coralite’s first public release of its HTML module static site generator, featuring component-based architecture and metadata extraction for efficient website creation. Explore core functionalities, testing improvements, and configuration enhancements in this foundational release.</p>
 
-    <p>Coralite’s first public release of its HTML module static site generator introduces foundational features for building and rendering static websites, with a focus on component-based architecture and metadata extraction.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">January 15, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <p>This initial version includes core functionality for parsing templates, resolving components, and handling token replacements, alongside improvements to configuration management and testing infrastructure. Below are key highlights from this release: </p>
+      <div class="post-body">
+        <p>Coralite’s first public release of its HTML module static site generator introduces foundational features for building and rendering static websites, with a focus on component-based architecture and metadata extraction.</p>
 
-    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
+            <p>This initial version includes core functionality for parsing templates, resolving components, and handling token replacements, alongside improvements to configuration management and testing infrastructure. Below are key highlights from this release: </p>
 
-    <ul>
-      <li>Introduced support for rendering custom HTML elements through the <code>evalComputedTokens</code> function,
-        enabling dynamic attribute replacements during template processing. </li>
-      <li>Resolved issues with package.json parsing in older Node.js versions by updating compatibility checks for
-        <code>Dirent</code> usage. </li>
-      <li>Implemented a global types file to standardise type definitions across modules, ensuring consistent
-        development and maintenance practices. </li>
-    </ul>
+            <h2 id="core-functionality">Core Functionality</h2>
 
-    <coralite-heading level="2" text="Testing Infrastructure"></coralite-heading>
+            <ul>
+              <li>Introduced support for rendering custom HTML elements through the <code>evalComputedTokens</code> function,
+                enabling dynamic attribute replacements during template processing. </li>
+              <li>Resolved issues with package.json parsing in older Node.js versions by updating compatibility checks for
+                <code>Dirent</code> usage. </li>
+              <li>Implemented a global types file to standardise type definitions across modules, ensuring consistent
+                development and maintenance practices. </li>
+            </ul>
 
-    <ul>
-      <li>Expanded test coverage for component rendering, token replacement logic, and metadata extraction from
-        documents. </li>
-      <li>Refactored test fixtures to use consistent naming conventions (e.g., replacing placeholder names with
-        standardised identifiers). </li>
-      <li>Updated testing scripts to ensure compatibility with async operations in token evaluation functions. </li>
-    </ul>
+            <h2 id="testing-infrastructure">Testing Infrastructure</h2>
 
-    <coralite-heading level="2" text="Configuration Management"></coralite-heading>
+            <ul>
+              <li>Expanded test coverage for component rendering, token replacement logic, and metadata extraction from
+                documents. </li>
+              <li>Refactored test fixtures to use consistent naming conventions (e.g., replacing placeholder names with
+                standardised identifiers). </li>
+              <li>Updated testing scripts to ensure compatibility with async operations in token evaluation functions. </li>
+            </ul>
 
-    <ul>
-      <li>Introduced a CLI command structure to manage script execution via <code>commander</code>, enhancing user
-        interaction and argument handling. </li>
-      <li>Added support for excluding specific files during HTML parsing, providing greater control over template
-        processing workflows. </li>
-      <li>Improved configuration resolution for JSON files, ensuring correct path resolution across different project
-        structures. </li>
-    </ul>
+            <h2 id="configuration-management">Configuration Management</h2>
 
-    <coralite-heading level="2" text="Rendering Pipeline"></coralite-heading>
+            <ul>
+              <li>Introduced a CLI command structure to manage script execution via <code>commander</code>, enhancing user
+                interaction and argument handling. </li>
+              <li>Added support for excluding specific files during HTML parsing, providing greater control over template
+                processing workflows. </li>
+              <li>Improved configuration resolution for JSON files, ensuring correct path resolution across different project
+                structures. </li>
+            </ul>
 
-    <ul>
-      <li>Optimised rendering logic to correctly merge components into documents using the
-        <code>mergeComponentToDocument</code> function. </li>
-      <li>Enhanced regex patterns for identifying custom elements with multiple dashes, improving accuracy in template
-        parsing. </li>
-      <li>Fixed issues where undefined values during token replacement could disrupt rendering workflows. </li>
-    </ul>
+            <h2 id="rendering-pipeline">Rendering Pipeline</h2>
 
-    <coralite-heading level="2" text="Token Handling and Metadata Extraction"></coralite-heading>
+            <ul>
+              <li>Optimised rendering logic to correctly merge components into documents using the
+                <code>mergeComponentToDocument</code> function. </li>
+              <li>Enhanced regex patterns for identifying custom elements with multiple dashes, improving accuracy in template
+                parsing. </li>
+              <li>Fixed issues where undefined values during token replacement could disrupt rendering workflows. </li>
+            </ul>
 
-    <ul>
-      <li>Generalised context parameters for token resolution, enabling more flexible attribute value replacements
-        across templates. </li>
-      <li>Implemented metadata extraction from HTML documents using a dedicated <code>getMetadataFromDocument</code>
-        function, supporting structured data retrieval. </li>
-      <li>Refactored token parsing logic to use consistent naming conventions (e.g., renaming
-        <code>evalComputedAttributes</code> to <code>evalComputedTokens</code>). </li>
-    </ul>
+            <h2 id="token-handling-and-metadata-extraction">Token Handling and Metadata Extraction</h2>
 
-    <coralite-heading level="2" text="Code Quality and Tooling"></coralite-heading>
+            <ul>
+              <li>Generalised context parameters for token resolution, enabling more flexible attribute value replacements
+                across templates. </li>
+              <li>Implemented metadata extraction from HTML documents using a dedicated <code>getMetadataFromDocument</code>
+                function, supporting structured data retrieval. </li>
+              <li>Refactored token parsing logic to use consistent naming conventions (e.g., renaming
+                <code>evalComputedAttributes</code> to <code>evalComputedTokens</code>). </li>
+            </ul>
 
-    <ul>
-      <li>Integrated ESLint for code linting and style enforcement, ensuring adherence to best practices. </li>
-      <li>Updated file naming conventions to use kebab-case for consistency with modern web standards. </li>
-      <li>Resolved typos and configuration errors in package.json files across the project’s dependency tree. </li>
-    </ul>
+            <h2 id="code-quality-and-tooling">Code Quality and Tooling</h2>
 
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <ul>
+              <li>Integrated ESLint for code linting and style enforcement, ensuring adherence to best practices. </li>
+              <li>Updated file naming conventions to use kebab-case for consistency with modern web standards. </li>
+              <li>Resolved typos and configuration errors in package.json files across the project’s dependency tree. </li>
+            </ul>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.1.1</coralite-code-highlight>
+            <h2 id="get-the-release">Get the release</h2>
 
-    <p>This release lays the groundwork for a robust static site generation workflow, with further enhancements planned
-      for component rendering, performance optimisations, and advanced metadata handling in future versions.</p>
+            <code-block language="bash">npm install coralite@0.1.1</code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <p>This release lays the groundwork for a robust static site generation workflow, with further enhancements planned
+              for component rendering, performance optimisations, and advanced metadata handling in future versions.</p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

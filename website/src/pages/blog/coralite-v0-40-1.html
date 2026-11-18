@@ -1,58 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.40.1 Released: Robust Asset Tracking and Cleanup"
-    description="Coralite v0.40.1 introduces robust centralized asset tracking, enhanced build directory cleanup, and refined HTML parser warnings."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-06-25T21:38:51+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.40.1 Released: Robust Asset Tracking and Cleanup</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.40.1 Released: Robust Asset Tracking and Cleanup"
+    description="Coralite v0.40.1 introduces robust centralized asset tracking, enhanced build directory cleanup, and refined HTML parser warnings."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-06-25"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.40.1 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.40.1 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-06-25T21:38:51+02:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.40.1 Released</h1>
+        <p class="subhead">Coralite v0.40.1 introduces robust centralized asset tracking, enhanced build directory cleanup, and refined HTML parser warnings.</p>
 
-    <p>Coralite v0.40.1 is now available. This release focuses on improving build system reliability by introducing robust, centralized asset tracking APIs. These changes prevent accidental deletion of plugin-generated assets during build cleanups, automatically track local external style dependencies, and refine parser warning validations in unit tests.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">June 25, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Centralized Asset Tracking and Improved Cleanup"></coralite-heading>
-    <p>To prevent build-time cleanups from purge-deleting custom or plugin-generated files, Coralite now implements a centralized asset tracking mechanism. A new <code>app.writeFile(dest, content)</code> core API manages file writes automatically, registering output paths to a centralized whitelist. In addition, developers can manually track files using core methods:</p>
+      <div class="post-body">
+        <p>Coralite v0.40.1 is now available. This release focuses on improving build system reliability by introducing robust, centralized asset tracking APIs. These changes prevent accidental deletion of plugin-generated assets during build cleanups, automatically track local external style dependencies, and refine parser warning validations in unit tests.</p>
 
-    <coralite-code-highlight language="javascript">
-// Track output files to prevent them from being purged during build cleanup
-app.trackOutputFile(absolutePath);
+            <h2 id="centralized-asset-tracking-and-improved-cleanup">Centralized Asset Tracking and Improved Cleanup</h2>
+            <p>To prevent build-time cleanups from purge-deleting custom or plugin-generated files, Coralite now implements a centralized asset tracking mechanism. A new <code>app.writeFile(dest, content)</code> core API manages file writes automatically, registering output paths to a centralized whitelist. In addition, developers can manually track files using core methods:</p>
 
-// Retrieve all currently tracked files
-const trackedFiles = app.getTrackedOutputFiles();
-    </coralite-code-highlight>
+            <code-block language="javascript">
+        // Track output files to prevent them from being purged during build cleanup
+        app.trackOutputFile(absolutePath);
 
-    <p>The <code>coralite-scripts</code> build cleanup process has been updated to respect all absolute paths tracked through these new core APIs. Local <code>externalStyles</code> are also automatically tracked alongside source maps to guarantee their preservation. Internal plugins, including search and sitemap, have been refactored to use the new <code>app.writeFile</code> API directly.</p>
+        // Retrieve all currently tracked files
+        const trackedFiles = app.getTrackedOutputFiles();
+            </code-block>
 
-    <coralite-heading level="2" text="Parser Warnings and Test Suite Enhancements"></coralite-heading>
-    <p>Unit tests for <code>parseHTML</code> warnings now use more specific markup examples (such as <code>&lt;invalid--name&gt;</code>) to ensure warnings related to invalid custom element tag names match the parser's expected warning schemas precisely.</p>
-    <p>Additionally, a dedicated test suite has been introduced to cover asset tracking features, verifying manual tracking, automatic tracking of files written with <code>writeFile</code>, and local vs. remote external style tracking behavior.</p>
+            <p>The <code>coralite-scripts</code> build cleanup process has been updated to respect all absolute paths tracked through these new core APIs. Local <code>externalStyles</code> are also automatically tracked alongside source maps to guarantee their preservation. Internal plugins, including search and sitemap, have been refactored to use the new <code>app.writeFile</code> API directly.</p>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="parser-warnings-and-test-suite-enhancements">Parser Warnings and Test Suite Enhancements</h2>
+            <p>Unit tests for <code>parseHTML</code> warnings now use more specific markup examples (such as <code>&lt;invalid--name&gt;</code>) to ensure warnings related to invalid custom element tag names match the parser's expected warning schemas precisely.</p>
+            <p>Additionally, a dedicated test suite has been introduced to cover asset tracking features, verifying manual tracking, automatic tracking of files written with <code>writeFile</code>, and local vs. remote external style tracking behavior.</p>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-npm install coralite@0.40.1
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-npm install coralite-scripts@0.40.1
-    </coralite-code-highlight>
+            <code-block language="bash">
+        npm install coralite@0.40.1
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+        npm install coralite-scripts@0.40.1
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

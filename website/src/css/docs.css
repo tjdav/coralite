@@ -1,0 +1,116 @@
+main.docs-page.page-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  main.docs-page .hero-section {
+    text-align: center;
+    padding: 96px 0 64px 0;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  main.docs-page .hero-section h1 {
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 24px 0;
+    color: var(--text-primary);
+  }
+
+  main.docs-page .ref-section {
+    padding: 48px 0;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  main.docs-page .ref-section h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  main.docs-page .ref-section a {
+    color: var(--accent-cyan);
+    text-decoration: none;
+  }
+
+  main.docs-page .ref-section a:hover {
+    text-decoration: underline;
+  }
+
+  main.docs-page .section-intro {
+    color: var(--text-muted);
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
+
+  main.docs-page .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  main.docs-page .ref-card {
+    text-decoration: none;
+    display: block;
+    color: inherit;
+  }
+
+  main.docs-page .ref-card h3 {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  main.docs-page .ref-card p {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  main.docs-page .all-link {
+    margin: 32px 0 0;
+    font-size: 15px;
+  }
+
+  main.docs-page .all-link a {
+    color: var(--accent-violet);
+    text-decoration: none;
+  }
+
+  main.docs-page .ref-cta {
+    padding: 48px 0 96px 0;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  main.docs-page .cta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+  }
+
+  main.docs-page .cta-row h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  main.docs-page .cta-row .subhead {
+    color: var(--text-muted);
+    font-size: 15px;
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    main.docs-page .cta-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }

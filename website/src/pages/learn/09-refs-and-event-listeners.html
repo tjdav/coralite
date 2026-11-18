@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Refs &amp; Event Listeners"
+    description="Safely bind DOM events with automatic cleanup using the lifecycle signal."
+    section="Learn"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <!-- Sidebar -->
+        <div slot="sidebar">
+      <ui-accordion title="Module 1: HTML Foundations" open>
+        <ui-nav-link href="/learn/01-the-document">1. The Document</ui-nav-link>
+        <ui-nav-link href="/learn/02-semantic-tags">2. Semantic Tags</ui-nav-link>
+        <ui-nav-link href="/learn/03-attributes-data">3. Attributes & Data</ui-nav-link>
+        <ui-nav-link href="/learn/04-structuring-a-page">4. Structuring a Page</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 2: CSS & Styling" open>
+        <ui-nav-link href="/learn/05-native-css-scoping">1. Native CSS Scoping</ui-nav-link>
+        <ui-nav-link href="/learn/06-cascade-layers">2. Cascade Layers</ui-nav-link>
+        <ui-nav-link href="/learn/07-theming-with-variables">3. Theming with Variables</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 3: JavaScript Behavior" open>
+        <ui-nav-link href="/learn/08-the-client-runtime">1. The Client Runtime</ui-nav-link>
+        <ui-nav-link href="/learn/09-refs-and-event-listeners" active>2. Refs & Event Listeners</ui-nav-link>
+        <ui-nav-link href="/learn/10-reactive-state">3. Reactive State</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 4: The Coralite Ecosystem" open>
+        <ui-nav-link href="/learn/11-server-side-rendering">1. Server-Side Rendering</ui-nav-link>
+        <ui-nav-link href="/learn/13-building-for-production">2. Building for Production</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <!-- Content -->
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/learn/">Learn</a>
+        <span class="separator">/</span>
+        <a href="/learn/">Module 3</a>
+        <span class="separator">/</span>
+        <span>Lesson 2: Refs & Event Listeners</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <ui-badge variant="cyan">Lesson 09</ui-badge>
+        <h1>Refs & Event Listeners</h1>
+        <p class="subhead">Safely bind DOM events with automatic cleanup using the lifecycle signal.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="the-signal-parameter">The signal Parameter</h2>
+        <p>When a component is removed from the DOM (e.g., during SPA navigation or conditional rendering), any event listeners attached to the document or window can cause memory leaks if they are not removed.</p>
+        
+        <p>Coralite solves this by providing a standard <code>AbortSignal</code> in the <code>client()</code> context. You must pass this signal to every <code>addEventListener</code> call.</p>
+
+        <code-block language="html" filename="counter.html">
+<template id="counter">
+  <button ref="incrementBtn">Increment</button>
+  <span>{{ count }}</span>
+</template>
+
+<script type="module">
+  export function server () {
+    return { count: 0 }
+  }
+
+  export async function client ({ state, refs, signal }) {
+    const btn = refs('incrementBtn')
+
+    // Pass { signal } as the third argument
+    btn.addEventListener('click', () => {
+      state.count++
+    }, { signal })
+  }
+</script>
+        </code-block>
+
+        <h2 id="no-inline-handlers">No Inline Handlers</h2>
+        <p>Coralite strictly forbids inline event handlers in templates (like <code>onclick="..."</code>). This is not just a stylistic choice—it is a hard requirement for Content Security Policy (CSP) compliance.</p>
+
+        <div class="diagnostic-callout">
+          <strong>CORALITE-E203: Inline Event Handler</strong>
+          <p>Attributes like <code>onclick="doThing()"</code> or <code>onsubmit="..."</code> are forbidden in <code>&lt;template&gt;</code>. All event wiring must be done inside the <code>client()</code> block using <code>refs()</code>.</p>
+        </div>
+
+        <h2 id="how-the-signal-works">How the Signal Works</h2>
+        <p>The <code>signal</code> is automatically aborted when the component disconnects from the DOM. The browser's native event listener API handles the cleanup for you.</p>
+
+        <code-block language="javascript" filename="cleanup.js">
+// When the component disconnects:
+// 1. The signal is aborted.
+// 2. The listener is automatically removed.
+// 3. No memory leaks.
+
+// You don't need to write:
+// return () => btn.removeEventListener('click', fn)
+        </code-block>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/learn/08-the-client-runtime" variant="secondary">← Previous</ui-link>
+        <ui-link href="/learn/10-reactive-state" variant="primary">Next: Reactive State →</ui-link>
+      </div>
+    </div>
+
+    <!-- TOC -->
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-signal-parameter">The signal Parameter</a>
+        <a href="#no-inline-handlers">No Inline Handlers</a>
+        <a href="#how-the-signal-works">How the Signal Works</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

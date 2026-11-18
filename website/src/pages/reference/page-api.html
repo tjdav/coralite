@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Page API"
+    description="Pages are thin orchestrators. They compose components and define the routing manifest."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <div slot="sidebar">
+      <ui-accordion title="Component API">
+        <ui-nav-link href="/reference/attributes">attributes</ui-nav-link>
+        <ui-nav-link href="/reference/client">client</ui-nav-link>
+        <ui-nav-link href="/reference/server">server</ui-nav-link>
+        <ui-nav-link href="/reference/getters">getters</ui-nav-link>
+        <ui-nav-link href="/reference/style">style</ui-nav-link>
+        <ui-nav-link href="/reference/slots">slots</ui-nav-link>
+        <ui-nav-link href="/reference/form-control">formControl</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Page API" open>
+        <ui-nav-link href="/reference/page-api" active>paths & definePage</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Plugin API">
+        <ui-nav-link href="/reference/plugins">definePlugin</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="CLI">
+        <ui-nav-link href="/reference/cli">commands</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Page API</a>
+        <span class="separator">/</span>
+        <span>paths & definePage</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Page API</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">Pages are thin orchestrators. They compose components and define the routing manifest.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="the-definepage-syntax">The definePage Syntax</h2>
+        <p>Unlike components, which use top-level named exports, pages must use <code>export default definePage({ ... })</code>. This is because pages are entry points, not Web Components.</p>
+
+        <code-block language="html" filename="index.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>{{ title }}</title>
+</head>
+<body>
+  <site-header></site-header>
+  <main>
+    <h1>{{ title }}</h1>
+  </main>
+  <site-footer></site-footer>
+</body>
+</html>
+
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    getters: {
+      title: () => 'Home Page'
+    }
+  })
+</script>
+        </code-block>
+
+        <h2 id="valid-page-blocks">Valid Page Blocks</h2>
+        <p>Pages support a subset of the component API:</p>
+        <ul>
+          <li><code>paths</code>: For dynamic routing.</li>
+          <li><code>server</code>: For SSR data fetching.</li>
+          <li><code>getters</code>: For derived state.</li>
+          <li><code>style</code>: For page-level CSS variables.</li>
+          <li><code>provide</code>: For tree-based dependency injection.</li>
+          <li><code>client</code>: For page-level interactivity.</li>
+          <li><code>onError</code>: For page-level error boundaries.</li>
+        </ul>
+
+        <p><strong>Pages do not support</strong> <code>attributes</code>, <code>slots</code>, <code>consume</code>, or <code>formControl</code>.</p>
+
+        <h2 id="dynamic-routing-with-paths">Dynamic Routing with paths()</h2>
+        <p>The <code>paths()</code> function allows you to generate multiple HTML files from a single page template. This is how you build a blog or a documentation site with hundreds of pages without duplicating the layout.</p>
+
+        <code-block language="javascript" filename="blog-post.html">
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    async paths () {
+      const fs = await import('node:fs/promises')
+      const files = await fs.readdir('src/data/blog')
+      
+      return files.map(file => ({
+        path: `/blog/${file.replace('.json', '')}`,
+        params: { id: file.replace('.json', '') }
+      }))
+    },
+    
+    async server ({ params }) {
+      const fs = await import('node:fs/promises')
+      const data = await fs.readFile(`src/data/blog/${params.id}.json`, 'utf8')
+      return JSON.parse(data)
+    }
+  })
+</script>
+        </code-block>
+
+        <h2 id="the-page-boundary">The Page Boundary</h2>
+        <p>Pages are strictly consumers of components. They must not query component internals or reach into their shadow/light DOM. The component's <code>client()</code> block is the only place where internal logic should live.</p>
+
+        <div class="diagnostic-callout">
+          <strong>CORALITE-PAGE-201: Encapsulation Violation</strong>
+          <p>Do not use <code>document.querySelector</code> or DOM manipulation inside a page's <code>client()</code> block to target elements inside a component. If a page needs to interact with a component, it should pass data via attributes and listen for custom events using <code>emit()</code>.</p>
+        </div>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/form-control" variant="secondary">← Previous: formControl</ui-link>
+        <ui-link href="/reference/plugins" variant="primary">Next: Plugins →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-definepage-syntax">The definePage Syntax</a>
+        <a href="#valid-page-blocks">Valid Page Blocks</a>
+        <a href="#dynamic-routing-with-paths">Dynamic Routing</a>
+        <a href="#the-page-boundary">The Page Boundary</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

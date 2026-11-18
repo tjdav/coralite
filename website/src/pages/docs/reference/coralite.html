@@ -1,231 +1,278 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <coralite-meta no-hydration title="Coralite Library Reference: Complete API Documentation"
-    description="Comprehensive documentation for the Coralite library, including constructor, methods, and configuration options for building static sites with HTML modules."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite Library Reference: Complete API Documentation"
+    description="Comprehensive documentation for the Coralite library, including constructor, methods, and configuration options for building static sites with HTML modules."
+    section="Docs"></page-meta>
 </head>
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main class="container content">
-    <h1 class="display">Coralite Library</h1>
-    <p>
-      The Coralite library is used for processing and rendering HTML documents with custom elements, components, and plugins. It provides a structured way to manage document metadata, component paths, plugin configurations, and ignored attributes during rendering.
-    </p>
+  <site-header></site-header>
 
-    <coralite-heading level="2" text="Table of Contents"></coralite-heading>
-    <ul>
-      <li><a href="#create-coralite">createCoralite Factory</a></li>
-      <li><a href="#build-method">Build Method</a></li>
-      <li><a href="#save-method">Save Method</a></li>
-      <li><a href="#csp-utilities">Content Security Policy Utilities</a></li>
-      <li><a href="#csp-build-results">Content Security Policy Build Results</a></li>
-      <li><a href="#get-page-paths-using-custom-element">Get Page Paths Using Custom Element</a></li>
-      <li><a href="#add-render-queue">Add Render Queue</a></li>
-      <li><a href="#create-component">Create Component</a></li>
-      <li><a href="#write-file">Write File</a></li>
-      <li><a href="#track-output-file">Track Output File</a></li>
-    </ul>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="reference/coralite"></docs-sidebar>
 
-    <coralite-heading level="2" text="createCoralite Factory" id="create-coralite"></coralite-heading>
-    <p>Initializes a Coralite instance using the <code>await createCoralite</code> factory function. This replaces the legacy <code>new Coralite()</code> constructor.</p>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/">Reference</a>
+        <span class="separator">/</span>
+        <span>Coralite Library</span>
+      </ui-breadcrumb>
 
-    <coralite-heading level="3" text="Parameters"></coralite-heading>
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Type</th>
-            <th scope="col">Attribute</th>
-            <th scope="col">Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">options</th>
-            <td><code>Object</code></td>
-            <td>Required</td>
-            <td>Configuration options for the Coralite instance.</td>
-          </tr>
-          <tr>
-            <th scope="row">options.components</th>
-            <td><code>string</code></td>
-            <td>Required</td>
-            <td>The absolute or relative path to the directory containing Coralite components.</td>
-          </tr>
-          <tr>
-            <th scope="row">options.pages</th>
-            <td><code>string</code></td>
-            <td>Required</td>
-            <td>The absolute or relative path to the directory containing pages to be rendered.</td>
-          </tr>
-          <tr>
-            <th scope="row">options.plugins</th>
-            <td><code>CoralitePluginInstance[]</code></td>
-            <td>Optional</td>
-            <td>An array of plugin instances.</td>
-          </tr>
-          <tr>
-            <th scope="row">options.mode</th>
-            <td><code>'production' | 'development'</code></td>
-            <td>Optional</td>
-            <td>Build mode. Defaults to <code>'production'</code>.</td>
-          </tr>
-          <tr>
-            <th scope="row">options.ignoreByAttribute</th>
-            <td><code>IgnoreByAttribute[] | string[]</code></td>
-            <td>Optional</td>
-            <td>Attributes to ignore during processing.</td>
-          </tr>
-          <tr>
-            <th scope="row">options.skipRenderByAttribute</th>
-            <td><code>IgnoreByAttribute[] | string[]</code></td>
-            <td>Optional</td>
-            <td>Attributes that trigger skipping element rendering.</td>
-          </tr>
-          <tr>
-            <th scope="row">options.onError</th>
-            <td><code>CoraliteOnError</code></td>
-            <td>Optional</td>
-            <td>A callback function for handling errors and warnings.</td>
-          </tr>
-          <tr>
-            <th scope="row">options.csp</th>
-            <td><code>CoraliteCSPConfig</code></td>
-            <td>Optional</td>
-            <td>Content Security Policy options for SSG hashing, SSR nonces, and script/style externalization.</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Coralite Library</h1>
+          <ui-badge variant="cyan">Reference</ui-badge>
+        </div>
+        <p class="subhead">Comprehensive documentation for the Coralite library, including constructor, methods, and configuration options for building static sites with HTML modules.</p>
+      </div>
+
+      <div class="lesson-body">
+        <p>
+              The Coralite library is used for processing and rendering HTML documents with custom elements, components, and plugins. It provides a structured way to manage document metadata, component paths, plugin configurations, and ignored attributes during rendering.
+            </p>
+
+            <h2 id="table-of-contents">Table of Contents</h2>
+            <ul>
+              <li><a href="#createcoralite-factory">createCoralite Factory</a></li>
+              <li><a href="#build-method">Build Method</a></li>
+              <li><a href="#save-method">Save Method</a></li>
+              <li><a href="#content-security-policy-utilities">Content Security Policy Utilities</a></li>
+              <li><a href="#content-security-policy-build-results">Content Security Policy Build Results</a></li>
+              <li><a href="#get-page-paths-using-custom-element">Get Page Paths Using Custom Element</a></li>
+              <li><a href="#add-render-queue">Add Render Queue</a></li>
+              <li><a href="#create-component">Create Component</a></li>
+              <li><a href="#write-file">Write File</a></li>
+              <li><a href="#track-output-file">Track Output File</a></li>
+            </ul>
+
+            <h2 id="createcoralite-factory">createCoralite Factory</h2>
+            <p>Initializes a Coralite instance using the <code>await createCoralite</code> factory function. This replaces the legacy <code>new Coralite()</code> constructor.</p>
+
+            <h3 id="parameters">Parameters</h3>
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Attribute</th>
+                    <th scope="col">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">options</th>
+                    <td><code>Object</code></td>
+                    <td>Required</td>
+                    <td>Configuration options for the Coralite instance.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">options.components</th>
+                    <td><code>string</code></td>
+                    <td>Required</td>
+                    <td>The absolute or relative path to the directory containing Coralite components.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">options.pages</th>
+                    <td><code>string</code></td>
+                    <td>Required</td>
+                    <td>The absolute or relative path to the directory containing pages to be rendered.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">options.plugins</th>
+                    <td><code>CoralitePluginInstance[]</code></td>
+                    <td>Optional</td>
+                    <td>An array of plugin instances.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">options.mode</th>
+                    <td><code>'production' | 'development'</code></td>
+                    <td>Optional</td>
+                    <td>Build mode. Defaults to <code>'production'</code>.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">options.ignoreByAttribute</th>
+                    <td><code>IgnoreByAttribute[] | string[]</code></td>
+                    <td>Optional</td>
+                    <td>Attributes to ignore during processing.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">options.skipRenderByAttribute</th>
+                    <td><code>IgnoreByAttribute[] | string[]</code></td>
+                    <td>Optional</td>
+                    <td>Attributes that trigger skipping element rendering.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">options.onError</th>
+                    <td><code>CoraliteOnError</code></td>
+                    <td>Optional</td>
+                    <td>A callback function for handling errors and warnings.</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">options.csp</th>
+                    <td><code>CoraliteCSPConfig</code></td>
+                    <td>Optional</td>
+                    <td>Content Security Policy options for SSG hashing, SSR nonces, and script/style externalization.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3 id="example-usage">Example Usage</h3>
+            <code-block language="JavaScript">import { createCoralite } from 'coralite';
+
+        const app = await createCoralite({
+          components: './src/components',
+          pages: './src/pages',
+          mode: 'production',
+          plugins: [myCustomPlugin]
+        });</code-block>
+
+            <h2 id="build-method">Build Method</h2>
+            <p>Compiles specified page(s) using the <strong>Three-Phase Sealed Queue</strong> architecture. It handles discovery, ISR invalidation, and parallel rendering.</p>
+
+            <code-block language="JavaScript">/**
+         * Compiles specified page(s).
+         *
+         * @param {string | string[]} [path] - Path(s) to build. If omitted, builds all invalidated pages.
+         * @param {CoraliteBuildOptions} [options] - Build configuration.
+         * @param {function} [callback] - Optional per-page transform callback.
+         * @return {Promise<CoraliteBuildResult[]>}
+         */
+        await app.build(path, options, callback)</code-block>
+
+            <h2 id="save-method">Save Method</h2>
+            <p>Saves processed pages and generated client-side assets to the configured output directory.</p>
+
+            <code-block language="JavaScript">/**
+         * Compiles and saves pages to disk.
+         *
+         * @param {string | string[]} [path] - Optional page path(s) to build.
+         * @param {CoraliteBuildOptions} [options] - Build options.
+         * @returns {Promise<CoraliteSaveResult[]>} Array of saved file results.
+         */
+        await app.save(path, options)</code-block>
+
+            <h2 id="content-security-policy-utilities">Content Security Policy Utilities</h2>
+
+            <p>Coralite exports low-level CSP helper functions for custom server integrations and middleware pipelines.</p>
+
+            <h3 id="calculatehash-content-algorithm">calculateHash(content, algorithm)</h3>
+            <p>Calculates a cryptographic base64 hash string suitable for CSP header source lists.</p>
+
+            <code-block language="JavaScript">import { calculateHash } from 'coralite';
+
+        // Returns: "'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='"
+        const hash = calculateHash('console.log("hello");', 'sha256');</code-block>
+
+            <h3 id="formatcspdirectives-directives-options">formatCSPDirectives(directives, options)</h3>
+            <p>Converts a directive dictionary into a normalized Content-Security-Policy HTTP header string.</p>
+
+            <code-block language="JavaScript">import { formatCSPDirectives } from 'coralite';
+
+        const headerString = formatCSPDirectives({
+          'default-src': ["'self'"],
+          'script-src': ["'self'", "'sha256-abc...'"]
+        });</code-block>
+
+            <h3 id="injectcspmeta-root-head-cspcontent-reportonly">injectCSPMeta(root, head, cspContent, reportOnly)</h3>
+            <p>Helper used during AST compilation to insert or update the <code>&lt;meta http-equiv="Content-Security-Policy"&gt;</code> element in the document <code>&lt;head&gt;</code>.</p>
+
+            <h2 id="content-security-policy-build-results">Content Security Policy Build Results</h2>
+
+            <p>When rendering or compiling pages via <code>app.build()</code> or <code>app.save()</code>, each returned page result object exposes a <code>csp</code> property (type <code>CoraliteCSPResult</code>):</p>
+
+            <code-block language="JavaScript">const results = await app.build('/index.html');
+        const { csp } = results[0];
+
+        console.log(csp.mode);         // 'ssg-hash' | 'ssr-nonce' | 'external-scripts'
+        console.log(csp.header);       // "default-src 'self'; script-src 'self' 'sha256-...';"
+        console.log(csp.scriptHashes); // ["sha256-..."]
+        console.log(csp.directives);   // { 'default-src': ["'self'"], ... }</code-block>
+
+            <h2 id="get-page-paths-using-custom-element">Get Page Paths Using Custom Element</h2>
+            <p>Uses the internal dependency graph to find all pages that consume a specific component.</p>
+
+            <code-block language="JavaScript">/**
+         * @param {string} path - Component path or ID.
+         * @returns {string[]} Page paths consuming this component.
+         */
+        app.getPagePathsUsingCustomElement(path)</code-block>
+
+            <h2 id="add-render-queue">Add Render Queue</h2>
+            <p>Adds a page (physical or virtual) to the current render queue. Virtual pages must be added during the <code>onBeforeBuild</code> hook.</p>
+
+            <code-block language="JavaScript">/**
+         * @param {string | Object} value - Page path or virtual page object.
+         * @param {string} buildId - The current build ID.
+         */
+        await app.addRenderQueue(value, buildId)</code-block>
+
+            <h2 id="create-component">Create Component</h2>
+            <p>Imperatively creates a component element for inclusion in the AST.</p>
+
+            <code-block language="JavaScript">/**
+         * @param {ComponentElementOptions} options
+         * @returns {Promise<CoraliteAnyNode | void>}
+         */
+        await app.createComponentElement(options)</code-block>
+
+            <h2 id="write-file">Write File</h2>
+            <p>Writes a file to the output directory and automatically registers it for the build cleanup whitelist. This is the recommended way for plugins to generate additional assets.</p>
+
+            <code-block language="JavaScript">/**
+         * @param {string} dest - Relative path within the output directory.
+         * @param {string | Buffer} content - The file content.
+         * @param {object} [options] - Node.js writeFile options.
+         * @returns {Promise<string>} The absolute path to the written file.
+         */
+        await app.writeFile('my-asset.json', JSON.stringify(data))</code-block>
+
+            <h2 id="track-output-file">Track Output File</h2>
+            <p>Manually registers a file path to be preserved during the build cleanup phase. This is useful for files generated by external tools or complex plugin logic that doesn't use <code>app.writeFile</code>.</p>
+
+            <code-block language="JavaScript">/**
+         * @param {string} path - Absolute path to the file.
+         */
+        app.trackOutputFile(absolutePath)</code-block>
+
+            <h3 id="get-tracked-output-files">Get Tracked Output Files</h3>
+            <p>Retrieves an array of all currently registered output file paths.</p>
+
+            <code-block language="JavaScript">/**
+         * @returns {string[]}
+         */
+        app.getTrackedOutputFiles()</code-block>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/reference/types" variant="secondary">← Previous: Coralite Type Reference</ui-link>
+      </div>
     </div>
 
-    <coralite-heading level="3" text="Example Usage"></coralite-heading>
-    <coralite-code-highlight language="JavaScript">import { createCoralite } from 'coralite';
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#table-of-contents">Table of Contents</a>
+        <a href="#createcoralite-factory">createCoralite Factory</a>
+        <a href="#build-method">Build Method</a>
+        <a href="#save-method">Save Method</a>
+        <a href="#content-security-policy-utilities">Content Security Policy Utilities</a>
+        <a href="#content-security-policy-build-results">Content Security Policy Build Results</a>
+        <a href="#get-page-paths-using-custom-element">Get Page Paths Using Custom Element</a>
+        <a href="#add-render-queue">Add Render Queue</a>
+        <a href="#create-component">Create Component</a>
+        <a href="#write-file">Write File</a>
+        <a href="#track-output-file">Track Output File</a>
+      </div>
+    </div>
+  </docs-layout>
 
-const app = await createCoralite({
-  components: './src/components',
-  pages: './src/pages',
-  mode: 'production',
-  plugins: [myCustomPlugin]
-});</coralite-code-highlight>
-
-    <coralite-heading level="2" text="Build Method" id="build-method"></coralite-heading>
-    <p>Compiles specified page(s) using the <strong>Three-Phase Sealed Queue</strong> architecture. It handles discovery, ISR invalidation, and parallel rendering.</p>
-
-    <coralite-code-highlight language="JavaScript">/**
- * Compiles specified page(s).
- *
- * @param {string | string[]} [path] - Path(s) to build. If omitted, builds all invalidated pages.
- * @param {CoraliteBuildOptions} [options] - Build configuration.
- * @param {function} [callback] - Optional per-page transform callback.
- * @return {Promise<CoraliteBuildResult[]>}
- */
-await app.build(path, options, callback)</coralite-code-highlight>
-
-    <coralite-heading level="2" text="Save Method" id="save-method"></coralite-heading>
-    <p>Saves processed pages and generated client-side assets to the configured output directory.</p>
-
-    <coralite-code-highlight language="JavaScript">/**
- * Compiles and saves pages to disk.
- *
- * @param {string | string[]} [path] - Optional page path(s) to build.
- * @param {CoraliteBuildOptions} [options] - Build options.
- * @returns {Promise<CoraliteSaveResult[]>} Array of saved file results.
- */
-await app.save(path, options)</coralite-code-highlight>
-
-    <coralite-heading level="2" text="Content Security Policy Utilities" id="csp-utilities"></coralite-heading>
-
-    <p>Coralite exports low-level CSP helper functions for custom server integrations and middleware pipelines.</p>
-
-    <coralite-heading level="3" text="calculateHash(content, algorithm)"></coralite-heading>
-    <p>Calculates a cryptographic base64 hash string suitable for CSP header source lists.</p>
-
-    <coralite-code-highlight language="JavaScript">import { calculateHash } from 'coralite';
-
-// Returns: "'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='"
-const hash = calculateHash('console.log("hello");', 'sha256');</coralite-code-highlight>
-
-    <coralite-heading level="3" text="formatCSPDirectives(directives, options)"></coralite-heading>
-    <p>Converts a directive dictionary into a normalized Content-Security-Policy HTTP header string.</p>
-
-    <coralite-code-highlight language="JavaScript">import { formatCSPDirectives } from 'coralite';
-
-const headerString = formatCSPDirectives({
-  'default-src': ["'self'"],
-  'script-src': ["'self'", "'sha256-abc...'"]
-});</coralite-code-highlight>
-
-    <coralite-heading level="3" text="injectCSPMeta(root, head, cspContent, reportOnly)"></coralite-heading>
-    <p>Helper used during AST compilation to insert or update the <code>&lt;meta http-equiv="Content-Security-Policy"&gt;</code> element in the document <code>&lt;head&gt;</code>.</p>
-
-    <coralite-heading level="2" text="Content Security Policy Build Results" id="csp-build-results"></coralite-heading>
-
-    <p>When rendering or compiling pages via <code>app.build()</code> or <code>app.save()</code>, each returned page result object exposes a <code>csp</code> property (type <code>CoraliteCSPResult</code>):</p>
-
-    <coralite-code-highlight language="JavaScript">const results = await app.build('/index.html');
-const { csp } = results[0];
-
-console.log(csp.mode);         // 'ssg-hash' | 'ssr-nonce' | 'external-scripts'
-console.log(csp.header);       // "default-src 'self'; script-src 'self' 'sha256-...';"
-console.log(csp.scriptHashes); // ["sha256-..."]
-console.log(csp.directives);   // { 'default-src': ["'self'"], ... }</coralite-code-highlight>
-
-    <coralite-heading level="2" text="Get Page Paths Using Custom Element"></coralite-heading>
-    <p>Uses the internal dependency graph to find all pages that consume a specific component.</p>
-
-    <coralite-code-highlight language="JavaScript">/**
- * @param {string} path - Component path or ID.
- * @returns {string[]} Page paths consuming this component.
- */
-app.getPagePathsUsingCustomElement(path)</coralite-code-highlight>
-
-    <coralite-heading level="2" text="Add Render Queue"></coralite-heading>
-    <p>Adds a page (physical or virtual) to the current render queue. Virtual pages must be added during the <code>onBeforeBuild</code> hook.</p>
-
-    <coralite-code-highlight language="JavaScript">/**
- * @param {string | Object} value - Page path or virtual page object.
- * @param {string} buildId - The current build ID.
- */
-await app.addRenderQueue(value, buildId)</coralite-code-highlight>
-
-    <coralite-heading level="2" text="Create Component" id="create-component"></coralite-heading>
-    <p>Imperatively creates a component element for inclusion in the AST.</p>
-
-    <coralite-code-highlight language="JavaScript">/**
- * @param {ComponentElementOptions} options
- * @returns {Promise<CoraliteAnyNode | void>}
- */
-await app.createComponentElement(options)</coralite-code-highlight>
-
-    <coralite-heading level="2" text="Write File" id="write-file"></coralite-heading>
-    <p>Writes a file to the output directory and automatically registers it for the build cleanup whitelist. This is the recommended way for plugins to generate additional assets.</p>
-
-    <coralite-code-highlight language="JavaScript">/**
- * @param {string} dest - Relative path within the output directory.
- * @param {string | Buffer} content - The file content.
- * @param {object} [options] - Node.js writeFile options.
- * @returns {Promise<string>} The absolute path to the written file.
- */
-await app.writeFile('my-asset.json', JSON.stringify(data))</coralite-code-highlight>
-
-    <coralite-heading level="2" text="Track Output File" id="track-output-file"></coralite-heading>
-    <p>Manually registers a file path to be preserved during the build cleanup phase. This is useful for files generated by external tools or complex plugin logic that doesn't use <code>app.writeFile</code>.</p>
-
-    <coralite-code-highlight language="JavaScript">/**
- * @param {string} path - Absolute path to the file.
- */
-app.trackOutputFile(absolutePath)</coralite-code-highlight>
-
-    <coralite-heading level="3" text="Get Tracked Output Files"></coralite-heading>
-    <p>Retrieves an array of all currently registered output file paths.</p>
-
-    <coralite-code-highlight language="JavaScript">/**
- * @returns {string[]}
- */
-app.getTrackedOutputFiles()</coralite-code-highlight>
-
-  </main>
-  <coralite-footer></coralite-footer>
+  <site-footer></site-footer>
 </body>
 </html>

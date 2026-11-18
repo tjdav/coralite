@@ -1,0 +1,157 @@
+main.compare-page.page-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  main.compare-page .hero-section {
+    text-align: center;
+    padding: 96px 0;
+  }
+
+  main.compare-page .hero-section h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin: 24px 0;
+    color: var(--text-primary);
+  }
+
+  main.compare-page .hero-section .subhead {
+    font-size: 20px;
+    color: var(--text-muted);
+  }
+
+  /* Trust Ledger Table */
+  main.compare-page .table-section {
+    margin-bottom: 96px;
+    overflow-x: auto;
+  }
+
+  main.compare-page .ledger-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  main.compare-page .ledger-table th, main.compare-page .ledger-table td {
+    padding: 20px 24px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+  }
+
+  main.compare-page .ledger-table th {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  main.compare-page .ledger-table tbody tr:nth-child(even) {
+    background: var(--bg-card);
+  }
+
+  main.compare-page .ledger-table .coralite-col {
+    background: rgba(139, 92, 246, 0.05);
+    border-left: 1px solid var(--accent-violet);
+    border-right: 1px solid var(--accent-violet);
+    color: var(--text-primary);
+  }
+
+  main.compare-page .ledger-table .highlight {
+    color: var(--accent-violet);
+    font-weight: 600;
+  }
+
+  main.compare-page .ledger-table code {
+    background: var(--bg-main);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-cyan);
+  }
+
+  /* Benchmarks */
+  main.compare-page .benchmark-section {
+    text-align: center;
+    margin-bottom: 96px;
+  }
+
+  main.compare-page .benchmark-section h2 {
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+
+  main.compare-page .benchmark-section > p {
+    color: var(--text-muted);
+    margin-bottom: 48px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  main.compare-page .table-scroll {
+    overflow-x: auto;
+  }
+
+  main.compare-page .ledger-table {
+    min-width: 760px;
+  }
+
+  main.compare-page .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  main.compare-page .metric-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  main.compare-page .metric-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--text-primary);
+  }
+
+  main.compare-page .icon-wrapper {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: var(--radius-md);
+  }
+
+  main.compare-page .icon-cyan { color: var(--accent-cyan); }
+  main.compare-page .icon-violet { color: var(--accent-violet); }
+  main.compare-page .icon-pink { color: var(--accent-pink); }
+
+  main.compare-page .metric-value {
+    font-family: var(--font-mono);
+    font-size: 48px;
+    font-weight: 700;
+    margin: 16px 0;
+    text-align: left;
+  }
+
+  main.compare-page .metric-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: left;
+  }
+
+  @media (max-width: 900px) {
+    main.compare-page .metrics-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    main.compare-page .hero-section { padding: 64px 0; }
+    main.compare-page .hero-section h1 { font-size: 36px; }
+  }

@@ -1,48 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.29.1 Released: Reactive Token Replacement in Imperative Web Components"
-    description="Coralite v0.29.1 introduces dynamic token replacement in CoraliteElement for client-side components, enabling reactive template string hydration."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-03-24T08:48:03+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.29.1 Released: Reactive Token Replacement in Imperative Web Components</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.29.1 Released: Reactive Token Replacement in Imperative Web Components"
+    description="Coralite v0.29.1 introduces dynamic token replacement in CoraliteElement for client-side components, enabling reactive template string hydration."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-03-24"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.29.1 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.29.1 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-03-24T08:48:03+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.29.1 Released</h1>
+        <p class="subhead">Coralite v0.29.1 introduces dynamic token replacement in CoraliteElement for client-side components, enabling reactive template string hydration.</p>
 
-    <p>Coralite v0.29.1 is now available. This release introduces dynamic token replacement in client-side web components, enabling automatic and reactive template hydration, alongside formatting and consistency improvements to the testing suite.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">March 24, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Reactive Token Replacement in Imperative Web Components"></coralite-heading>
-    <p>With this release, we have implemented reactive token replacement within <code>CoraliteElement</code> for imperative web components. This enables full client-side template string hydration. The component updates dynamically in response to changes in internal values or element attributes, managed via a debounced <code>MutationObserver</code>.</p>
-    <p>We have also added E2E tests to ensure that the initial token replacement runs correctly and that subsequent DOM updates trigger seamlessly upon state modifications.</p>
+      <div class="post-body">
+        <p>Coralite v0.29.1 is now available. This release introduces dynamic token replacement in client-side web components, enabling automatic and reactive template hydration, alongside formatting and consistency improvements to the testing suite.</p>
 
-    <coralite-heading level="2" text="Consistent Test Formatting"></coralite-heading>
-    <p>The whitespace formatting in the <code>reactive-token-parent</code> test fixture has been standardized to ensure consistent outputs across different environments.</p>
+            <h2 id="reactive-token-replacement-in-imperative-web-components">Reactive Token Replacement in Imperative Web Components</h2>
+            <p>With this release, we have implemented reactive token replacement within <code>CoraliteElement</code> for imperative web components. This enables full client-side template string hydration. The component updates dynamically in response to changes in internal values or element attributes, managed via a debounced <code>MutationObserver</code>.</p>
+            <p>We have also added E2E tests to ensure that the initial token replacement runs correctly and that subsequent DOM updates trigger seamlessly upon state modifications.</p>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="consistent-test-formatting">Consistent Test Formatting</h2>
+            <p>The whitespace formatting in the <code>reactive-token-parent</code> test fixture has been standardized to ensure consistent outputs across different environments.</p>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite@0.29.1
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite-scripts@0.29.1
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite@0.29.1
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+              npm install coralite-scripts@0.29.1
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

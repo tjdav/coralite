@@ -1,43 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.11.2" description="Coralite v0.11.2 introduces enhanced static site generation with improved HTML module functionality, bug fixes, and usability improvements for developers."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-06-15T09:13:46+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.11.2"
+    description="Coralite v0.11.2 introduces enhanced static site generation with improved HTML module functionality, bug fixes, and usability improvements for developers."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-06-15"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.11.2</h1>
-    <coralite-author name="thomas" date-time="2025-06-15T09:13:46+02:00"></coralite-author>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.11.2</span>
+    </ui-breadcrumb>
 
-    <p>Coralite’s latest release, version 0.11.2, introduces several enhancements and bug fixes to improve the HTML module static site generator’s reliability, usability, and maintainability.</p>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.11.2</h1>
+        <p class="subhead">Coralite v0.11.2 introduces enhanced static site generation with improved HTML module functionality, bug fixes, and usability improvements for developers.</p>
 
-    <coralite-heading level="2" text="Key Improvements and Fixes"></coralite-heading>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">June 15, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <ul>
-      <li>Introduced a new <code>save</code> method in the Coralite API to allow developers to export processed documents as HTML files directly from the module, streamlining output management.</li>
-      <li>Refactored internal file operations to use the standard <code>coralite.save()</code> method instead of manual file handling, reducing redundancy and improving consistency across the codebase.</li>
-      <li>Improved error messages for common issues such as missing template directories or incorrect module exports, aiding in faster debugging and resolution.</li>
-      <li>Updated parameter names and type annotations in documentation to enhance clarity and accuracy for developers using the tool.</li>
-      <li>Enhanced comment formatting consistency across the codebase for better readability and maintainability.</li>
-      <li>Added a TypeScript ignore directive (<code>// @ts-ignore</code>) for specific module exports to address compatibility issues during type checking.</li>
-      <li>Fixed an issue in the <code>replaceToken</code> function where directive nodes were not being correctly skipped, ensuring more accurate template processing and rendering.</li>
-    </ul>
-    
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
-    <coralite-code-highlight language="bash">npm install coralite@0.11.2</coralite-code-highlight>
+      <div class="post-body">
+        <p>Coralite’s latest release, version 0.11.2, introduces several enhancements and bug fixes to improve the HTML module static site generator’s reliability, usability, and maintainability.</p>
 
-    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.11.2" target="_blank">git v0.11.2 changelog</a></p>
+            <h2 id="key-improvements-and-fixes">Key Improvements and Fixes</h2>
 
-    <coralite-related-posts></coralite-related-posts>
+            <ul>
+              <li>Introduced a new <code>save</code> method in the Coralite API to allow developers to export processed documents as HTML files directly from the module, streamlining output management.</li>
+              <li>Refactored internal file operations to use the standard <code>coralite.save()</code> method instead of manual file handling, reducing redundancy and improving consistency across the codebase.</li>
+              <li>Improved error messages for common issues such as missing template directories or incorrect module exports, aiding in faster debugging and resolution.</li>
+              <li>Updated parameter names and type annotations in documentation to enhance clarity and accuracy for developers using the tool.</li>
+              <li>Enhanced comment formatting consistency across the codebase for better readability and maintainability.</li>
+              <li>Added a TypeScript ignore directive (<code>// @ts-ignore</code>) for specific module exports to address compatibility issues during type checking.</li>
+              <li>Fixed an issue in the <code>replaceToken</code> function where directive nodes were not being correctly skipped, ensuring more accurate template processing and rendering.</li>
+            </ul>
+            
+            <h2 id="get-the-release">Get the release</h2>
+            <code-block language="bash">npm install coralite@0.11.2</code-block>
+
+            <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.11.2" target="_blank">git v0.11.2 changelog</a></p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

@@ -1,0 +1,74 @@
+<template id="ui-input">
+  <div class="c-input-wrapper">
+    <slot name="icon-left"></slot>
+    <input 
+      class="c-input" 
+      type="{{ type }}" 
+      placeholder="{{ placeholder }}" 
+    />
+    <slot name="icon-right"></slot>
+  </div>
+</template>
+
+<script type="module">
+  export const attributes = {
+    type: { type: String, default: 'text' },
+    placeholder: { type: String, default: '' }
+  }
+</script>
+
+<style>
+  :host {
+    display: block;
+    width: 100%;
+  }
+
+  .c-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .c-input-wrapper:focus-within {
+    border-color: var(--accent-violet);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  }
+
+  .c-input {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    padding: 0;
+  }
+
+  .c-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  ::slotted(svg),
+  ::slotted(ui-icon) {
+    color: var(--text-muted);
+    width: 16px;
+    height: 16px;
+  }
+
+  ::slotted(kbd) {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    background-color: var(--bg-main);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+  }
+</style>

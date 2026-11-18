@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="The AI Versioning Trap"
+    description="When a framework introduces a necessary, fundamental architectural change, AI agents often struggle to keep up."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-07-14"
+    author="Thomas David"></article-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/blog/">Architecture</a>
+      <span class="separator">/</span>
+      <span>The AI Versioning Trap</span>
+    </ui-breadcrumb>
+
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Architecture</ui-badge>
+        <h1>The AI Versioning Trap: Why We Might Be Stuck, and How the Native Web Can Help</h1>
+        <p class="subhead">When a framework introduces a necessary, fundamental architectural change, AI agents often struggle to keep up.</p>
+        
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">July 14, 2026 · 8 min read</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="post-body">
+        <p class="lead">In my experience building frameworks and tools, I've noticed a recurring friction point that seems to be quietly slowing us down. As we shift toward AI-driven development, where LLMs generate large portions of our code, versioning has become a surprisingly difficult hurdle.</p>
+
+        <p>Take <a href="https://pocketbase.io/" target="_blank" rel="noopener noreferrer">Pocketbase</a>, an amazing open source backend. I've found while attempting to use an LLM for help, only for it to confidently generate code using syntax from a year ago, insisting it's the latest version. Until a new update achieves massive, overwhelming adoption, the bulk of the AI's training data remains anchored to older patterns.</p>
+
+        <blockquote>
+          We find ourselves a bit stuck, tied to the architectural decisions of the past simply because that is what the models know best.
+        </blockquote>
+
+        <h2>The Modern Stack vs. The Native Web API</h2>
+        <p>To navigate this, I think we might need to reconsider our reliance on heavy, proprietary abstractions. Currently, if you want a complete, production-ready application, you usually have to stitch together a much larger stack, pairing your UI library with a meta-framework like Next.js or Astro just to handle server-side rendering (SSR) and static site generation (SSG).</p>
+
+        <p>This is exactly why I built Coralite. I wanted to step away from proprietary dependencies and build directly on top of the native Web API because it is simply the most stable API we can depend on.</p>
+
+        <code-block language="html" filename="counter-card.html">
+<template id="counter-card">
+  <button ref="incrementBtn">+</button>
+  <span>{{ count }}</span>
+</template>
+
+<script type="module">
+  export const attributes = { step: { type: Number, default: 1 } }
+  export function server () { return { count: 0 } }
+  export async function client ({ state, refs, signal }) {
+    refs('incrementBtn').addEventListener('click', () => {
+      state.count += state.step
+    }, { signal })
+  }
+</script>
+        </code-block>
+
+        <h2>A Deliberately Predictable API</h2>
+        <p>One of the primary issues with stitching together a modern stack is the resulting complexity. Deeply nested configurations and proprietary hooks can confuse both developers and AI models alike. When designing Coralite, I intentionally leaned toward simplicity through a "Flat Options" API.</p>
+
+        <p>The naming conventions within this API are very deliberate. A component's logic is isolated into four distinct blocks: <code>attributes</code>, <code>server</code>, <code>getters</code>, and <code>client</code>. There is very little room for misinterpretation when the terminology maps so directly to its function.</p>
+
+        <p>By using universally understood concepts, the cognitive load drops significantly. The framework manages the reactivity under the hood through a straightforward equation where <code>Attributes + ServerState + Getters = State</code>.</p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <site-footer></site-footer>
+</body>
+</html>

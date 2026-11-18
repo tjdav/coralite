@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="getters"
+    description="Isomorphic, synchronous derivation of state. The only place logic belongs before rendering."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <div slot="sidebar">
+      <ui-accordion title="Component API" open>
+        <ui-nav-link href="/reference/attributes">attributes</ui-nav-link>
+        <ui-nav-link href="/reference/client">client</ui-nav-link>
+        <ui-nav-link href="/reference/server">server</ui-nav-link>
+        <ui-nav-link href="/reference/getters">getters</ui-nav-link>
+        <ui-nav-link href="/reference/style">style</ui-nav-link>
+        <ui-nav-link href="/reference/slots">slots</ui-nav-link>
+        <ui-nav-link href="/reference/form-control">formControl</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Page API">
+        <ui-nav-link href="/reference/page-api">paths & definePage</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Plugin API">
+        <ui-nav-link href="/reference/plugins">definePlugin</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="CLI">
+        <ui-nav-link href="/reference/cli">commands</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Component API</a>
+        <span class="separator">/</span>
+        <span>getters</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>getters</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">Isomorphic, synchronous derivation of state. The only place logic belongs before rendering.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="typescript-signature">TypeScript Signature</h2>
+        <code-block language="typescript" filename="getters.ts">
+export const getters: Record<string, (context: {
+  state: Readonly<Record<string, any>>;
+  root: HTMLElement | null;
+  refs: (id: string) => HTMLElement | null;
+  slots: any;
+  signal: AbortSignal;
+}) => any>
+        </code-block>
+
+        <h2 id="isomorphic-execution">Isomorphic Execution</h2>
+        <p>Getters are pure functions. They run during SSR (on the server) to generate the initial HTML, and they run again in the browser when reactive state changes. Because they must execute in both environments, they must be strictly synchronous.</p>
+
+        <div class="diagnostic-callout">
+          <strong>CORALITE-E303: Asynchronous Getter</strong>
+          <p>You cannot use <code>async/await</code> or return a <code>Promise</code> from a getter. If you need asynchronous data, fetch it in <code>server()</code> and place the result in <code>state</code>.</p>
+        </div>
+
+        <h2 id="smart-state-dumb-templates">Smart State, Dumb Templates</h2>
+        <p coralite-ignore>Coralite templates do not allow complex expressions. You cannot write <code>{{ firstName + ' ' + lastName }}</code>. All logic must be lifted into a getter.</p>
+
+        <code-block language="javascript" filename="combine.js">
+export const getters = {
+  fullName: ({ state }) => `${state.firstName} ${state.lastName}`
+}
+        </code-block>
+
+        <h2 id="no-passthrough-getters">No Passthrough Getters</h2>
+        <p coralite-ignore>Do not write a getter just to alias a state field. It adds unnecessary overhead and bloats the component. If the getter body is just <code>state.foo</code>, use the template token <code>{{ foo }}</code> directly.</p>
+
+        <h2 id="forbidden-vs-required">Forbidden vs. Required</h2>
+        <div class="split-code">
+          <div class="forbidden">
+            <code-block language="javascript" filename="forbidden.js">
+export const getters = {
+  // ❌ Passthrough (Dead code)
+  displayName: ({ state }) => state.name
+}
+            </code-block>
+          </div>
+          <div class="required">
+            <code-block language="html" filename="required.html">
+<!-- ✅ Direct token usage in template -->
+<span>{{ name }}</span>
+            </code-block>
+          </div>
+        </div>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/server" variant="secondary">← Previous: server</ui-link>
+        <ui-link href="/reference/style" variant="primary">Next: style →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#typescript-signature">TypeScript Signature</a>
+        <a href="#isomorphic-execution">Isomorphic Execution</a>
+        <a href="#smart-state-dumb-templates">Smart State, Dumb Templates</a>
+        <a href="#no-passthrough-getters">No Passthrough</a>
+        <a href="#forbidden-vs-required">Forbidden vs. Required</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

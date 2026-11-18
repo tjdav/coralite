@@ -1,107 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Coralite Managing the DOM: The Refs Plugin"
-    description="Learn how to safely and efficiently access the DOM in Coralite using the built-in refs plugin, bypassing manual querySelectors."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite Managing the DOM: The Refs Plugin"
+    description="Learn how to safely and efficiently access the DOM in Coralite using the built-in refs plugin, bypassing manual querySelectors."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main class="container content">
-    <h1 class="display">Managing the DOM</h1>
+  <script type="module">
+    export const meta = {}
+  </script>
 
-    <p>When writing JavaScript for the browser, you usually need to interact with HTML elements on the page. In traditional web development, you might use <code>document.querySelector('.my-class')</code> or <code>document.getElementById('my-id')</code>.</p>
+  <site-header></site-header>
 
-    <p>In Coralite, direct DOM querying is typically replaced by the built-in <strong>refs plugin</strong>. This plugin provides a safe, runtime DOM element targeting system specifically designed for component encapsulation. The Coralite refs system generates unique IDs directly assigned to the <code>ref</code> attribute, allowing you to leave the standard <code>id</code> attribute intact for other uses (like linking a label's <code>for</code> attribute to an input's <code>id</code>).</p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="guide/dom-refs"></docs-sidebar>
 
-    <coralite-heading level="2" text="Why Use Refs Instead of querySelector?"></coralite-heading>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/guide/">Guide</a>
+        <span class="separator">/</span>
+        <span>Managing the DOM</span>
+      </ui-breadcrumb>
 
-    <ul>
-      <li><strong>Encapsulation:</strong> When you use <code>document.querySelector</code>, you risk selecting an element outside your component, or selecting an element from a <em>different instance</em> of the same component on the page.</li>
-      <li><strong>Unreliable Selectors:</strong> Because Coralite components can have many instances on a single page, the framework dynamically generates unique, namespaced selectors for each element marked with a <code>ref</code>. Relying on standard CSS classes or IDs from a global script is highly unreliable as these selectors are managed internally by the framework.</li>
-      <li><strong>Performance:</strong> The refs plugin caches DOM lookups, so subsequent calls to retrieve the same element are instant.</li>
-    </ul>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Managing the DOM</h1>
+          <ui-badge variant="cyan">Guide</ui-badge>
+        </div>
+        <p class="subhead">Learn how to safely and efficiently access the DOM in Coralite using the built-in refs plugin, bypassing manual querySelectors.</p>
+      </div>
 
-    <coralite-heading level="2" text="How to Use Refs"></coralite-heading>
+      <div class="lesson-body">
+        <p>When writing JavaScript for the browser, you usually need to interact with HTML elements on the page. In traditional web development, you might use <code>document.querySelector('.my-class')</code> or <code>document.getElementById('my-id')</code>.</p>
 
-    <p>Using the refs plugin is a simple two-step process: defining the reference in your HTML template, and accessing it in your client-side client block. <strong>Note:</strong> The <code>refs</code> function is only available within a component's <code>client</code> block; elements inside a component cannot be reliably targeted from outside the component.</p>
+            <p>In Coralite, direct DOM querying is typically replaced by the built-in <strong>refs plugin</strong>. This plugin provides a safe, runtime DOM element targeting system specifically designed for component encapsulation. The Coralite refs system generates unique IDs directly assigned to the <code>ref</code> attribute, allowing you to leave the standard <code>id</code> attribute intact for other uses (like linking a label's <code>for</code> attribute to an input's <code>id</code>).</p>
 
-    <coralite-heading level="3" text="1. Template Setup"></coralite-heading>
+            <h2 id="why-use-refs-instead-of-queryselector">Why Use Refs Instead of querySelector?</h2>
 
-    <p>Add a <code>ref="yourName"</code> attribute to any HTML element inside your component's <code>&lt;template&gt;</code>.</p>
+            <ul>
+              <li><strong>Encapsulation:</strong> When you use <code>document.querySelector</code>, you risk selecting an element outside your component, or selecting an element from a <em>different instance</em> of the same component on the page.</li>
+              <li><strong>Unreliable Selectors:</strong> Because Coralite components can have many instances on a single page, the framework dynamically generates unique, namespaced selectors for each element marked with a <code>ref</code>. Relying on standard CSS classes or IDs from a global script is highly unreliable as these selectors are managed internally by the framework.</li>
+              <li><strong>Performance:</strong> The refs plugin caches DOM lookups, so subsequent calls to retrieve the same element are instant.</li>
+            </ul>
 
-    <p>During the server-side build, Coralite intercepts this attribute, generates a unique, component-instance-specific ID for the element, and maps it behind the scenes.</p>
+            <h2 id="how-to-use-refs">How to Use Refs</h2>
 
-    <coralite-code-html>
-      <template id="my-form">
-        <form>
-          <!-- Assign a ref name to the input -->
-          <input type="text" ref="usernameInput" placeholder="Enter username">
-          <!-- Assign a ref name to the button -->
-          <button type="submit" ref="submitBtn">Submit</button>
-        </form>
-      </template>
-    </coralite-code-html>
+            <p>Using the refs plugin is a simple two-step process: defining the reference in your HTML template, and accessing it in your client-side client block. <strong>Note:</strong> The <code>refs</code> function is only available within a component's <code>client</code> block; elements inside a component cannot be reliably targeted from outside the component.</p>
 
-    <coralite-heading level="3" text="2. Client-Side Client Block"></coralite-heading>
+            <h3 id="1-template-setup">1. Template Setup</h3>
 
-    <p>Inside your <code>defineComponent</code>'s <code>client</code> block, the refs plugin provides a helper function: <code>refs('yourName')</code>.</p>
+            <p>Add a <code>ref="yourName"</code> attribute to any HTML element inside your component's <code>&lt;template&gt;</code>.</p>
 
-    <p>Call this function with the name you defined in the template to retrieve the actual DOM element.</p>
+            <p>During the server-side build, Coralite intercepts this attribute, generates a unique, component-instance-specific ID for the element, and maps it behind the scenes.</p>
 
-    <coralite-code-html>
-      <script type="module">
-        import { defineComponent } from 'coralite'
+            <code-block language="html">
+              <template id="my-form">
+                <form>
+                  <!-- Assign a ref name to the input -->
+                  <input type="text" ref="usernameInput" placeholder="Enter username">
+                  <!-- Assign a ref name to the button -->
+                  <button type="submit" ref="submitBtn">Submit</button>
+                </form>
+              </template>
+            </code-block>
 
-        export default defineComponent({
-          client: ({ refs }) => {
+            <h3 id="2-client-side-client-block">2. Client-Side Client Block</h3>
 
-            // Safe DOM element retrieval
-            const input = refs('usernameInput')
-            const button = refs('submitBtn')
+            <p>Inside your <code>defineComponent</code>'s <code>client</code> block, the refs plugin provides a helper function: <code>refs('yourName')</code>.</p>
 
-            // Now use standard DOM APIs
-            button.addEventListener('click', (e) => {
-              e.preventDefault()
-              console.log(`Submitted username: ${input.value}`)
-            })
-          }
-        })
-      </script>
-    </coralite-code-html>
+            <p>Call this function with the name you defined in the template to retrieve the actual DOM element.</p>
 
-    <coralite-heading level="2" text="Under the Hood: Scoping & Safety"></coralite-heading>
+            <code-block language="html">
+              <script type="module">
+                import { defineComponent } from 'coralite'
 
-    <p>The refs plugin is highly context-aware. Depending on how your component is compiled, it behaves differently to ensure maximum safety:</p>
+                export default defineComponent({
+                  client: ({ refs }) => {
 
-    <ol>
-      <li><strong>Global Queries:</strong> For declarative components, the plugin queries <code>document.querySelector('[ref="..."]')</code> where the generated unique ref ID is assigned.</li>
-      <li><strong>Caching:</strong> The first time you call <code>refs('myEl')</code>, it performs the DOM query. If found, the DOM node is cached locally in the plugin. The next time you call <code>refs('myEl')</code>, it returns immediately without querying the DOM again.</li>
-      <li><strong>Null Safety:</strong> If the element isn't found (perhaps conditionally rendered out), the helper safely returns <code>null</code> without throwing an error.</li>
-    </ol>
+                    // Safe DOM element retrieval
+                    const input = refs('usernameInput')
+                    const button = refs('submitBtn')
 
-    <coralite-heading level="2" text="E2E Testing & Hydration Readiness"></coralite-heading>
+                    // Now use standard DOM APIs
+                    button.addEventListener('click', (e) => {
+                      e.preventDefault()
+                      console.log(`Submitted username: ${input.value}`)
+                    })
+                  }
+                })
+              </script>
+            </code-block>
 
-    <p>To ensure deterministic and flake-free End-to-End (E2E) testing, Coralite provides built-in testing integrations that bridge the gap between Server-Side Rendering and client-side interactivity.</p>
+            <h2 id="under-the-hood-scoping-safety">Under the Hood: Scoping & Safety</h2>
 
-    <coralite-heading level="3" text="1. Waiting for Hydration"></coralite-heading>
-    <p>Because Coralite components execute their <code>client</code> blocks natively in the browser after the initial HTML is parsed, E2E frameworks (like Playwright) might attempt to interact with elements before their event listeners are bound. To prevent this, your tests <strong>must</strong> await the global readiness promise immediately after navigating to a page.</p>
+            <p>The refs plugin is highly context-aware. Depending on how your component is compiled, it behaves differently to ensure maximum safety:</p>
 
-    <coralite-heading level="3" text="2. Testing Selectors (data-testid)"></coralite-heading>
-    <p>In <code>development</code> mode, Coralite's testing plugin automatically duplicates all <code>ref="xyz"</code> attributes into standard <code>data-testid</code> attributes. It assigns a unique, namespaced string using the pattern: <code>&lt;component-id&gt;__&lt;refName&gt;-&lt;index&gt;</code>.</p>
+            <ol>
+              <li><strong>Global Queries:</strong> For declarative components, the plugin queries <code>document.querySelector('[ref="..."]')</code> where the generated unique ref ID is assigned.</li>
+              <li><strong>Caching:</strong> The first time you call <code>refs('myEl')</code>, it performs the DOM query. If found, the DOM node is cached locally in the plugin. The next time you call <code>refs('myEl')</code>, it returns immediately without querying the DOM again.</li>
+              <li><strong>Null Safety:</strong> If the element isn't found (perhaps conditionally rendered out), the helper safely returns <code>null</code> without throwing an error.</li>
+            </ol>
 
-    <p>For example, if you defined <code>&lt;button ref="submitBtn"&gt;</code> in a component named <code>my-form</code>, you should locate it in a Playwright test using <code>getByTestId</code>:</p>
+            <h2 id="e2e-testing-hydration-readiness">E2E Testing & Hydration Readiness</h2>
 
-    <coralite-code-highlight language="javascript">
-    // Wait for Coralite to finish executing all component scripts
-    await page.waitForFunction(() => window.__coralite__.lifecycle.hydrated);
+            <p>To ensure deterministic and flake-free End-to-End (E2E) testing, Coralite provides built-in testing integrations that bridge the gap between Server-Side Rendering and client-side interactivity.</p>
 
-    // Safely interact using the auto-generated test ID
-    await page.getByTestId('my-form__submitBtn-0').click();
-    </coralite-code-highlight>
-  </main>
-  <coralite-footer></coralite-footer>
+            <h3 id="1-waiting-for-hydration">1. Waiting for Hydration</h3>
+            <p>Because Coralite components execute their <code>client</code> blocks natively in the browser after the initial HTML is parsed, E2E frameworks (like Playwright) might attempt to interact with elements before their event listeners are bound. To prevent this, your tests <strong>must</strong> await the global readiness promise immediately after navigating to a page.</p>
+
+            <h3 id="2-testing-selectors-data-testid">2. Testing Selectors (data-testid)</h3>
+            <p>In <code>development</code> mode, Coralite's testing plugin automatically duplicates all <code>ref="xyz"</code> attributes into standard <code>data-testid</code> attributes. It assigns a unique, namespaced string using the pattern: <code>&lt;component-id&gt;__&lt;refName&gt;-&lt;index&gt;</code>.</p>
+
+            <p>For example, if you defined <code>&lt;button ref="submitBtn"&gt;</code> in a component named <code>my-form</code>, you should locate it in a Playwright test using <code>getByTestId</code>:</p>
+
+            <code-block language="javascript">
+            // Wait for Coralite to finish executing all component scripts
+            await page.waitForFunction(() => window.__coralite__.lifecycle.hydrated);
+
+            // Safely interact using the auto-generated test ID
+            await page.getByTestId('my-form__submitBtn-0').click();
+            </code-block>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/guide/components" variant="secondary">← Previous: Components</ui-link>
+        <ui-link href="/docs/guide/page-metadata" variant="primary">Next: Page Metadata →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#why-use-refs-instead-of-queryselector">Why Use Refs Instead of querySelector?</a>
+        <a href="#how-to-use-refs">How to Use Refs</a>
+        <a href="#under-the-hood-scoping-safety">Under the Hood: Scoping & Safety</a>
+        <a href="#e2e-testing-hydration-readiness">E2E Testing & Hydration Readiness</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

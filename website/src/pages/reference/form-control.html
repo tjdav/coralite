@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="formControl"
+    description="Opt-in integration with native HTML &amp;lt;form&amp;gt; submissions and constraint validations."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <div slot="sidebar">
+      <ui-accordion title="Component API" open>
+        <ui-nav-link href="/reference/attributes">attributes</ui-nav-link>
+        <ui-nav-link href="/reference/client">client</ui-nav-link>
+        <ui-nav-link href="/reference/server">server</ui-nav-link>
+        <ui-nav-link href="/reference/getters">getters</ui-nav-link>
+        <ui-nav-link href="/reference/style">style</ui-nav-link>
+        <ui-nav-link href="/reference/slots">slots</ui-nav-link>
+        <ui-nav-link href="/reference/form-control" active>formControl</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Page API">
+        <ui-nav-link href="/reference/page-api">paths & definePage</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Plugin API">
+        <ui-nav-link href="/reference/plugins">definePlugin</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="CLI">
+        <ui-nav-link href="/reference/cli">commands</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Component API</a>
+        <span class="separator">/</span>
+        <span>formControl</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>formControl</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">Opt-in integration with native HTML &lt;form&gt; submissions and constraint validations.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="typescript-signature">TypeScript Signature</h2>
+        <code-block language="typescript" filename="form-control.ts">
+// Opt-in by exporting a boolean
+export const formControl: boolean = true
+        </code-block>
+
+        <h2 id="native-form-association">Native Form Association</h2>
+        <p>Because Coralite uses Light DOM, your custom elements can participate in standard HTML forms. By exporting <code>export const formControl = true</code>, Coralite attaches an <code>ElementInternals</code> object to the custom element, making it a true Form-Associated Custom Element (FACE).</p>
+
+        <h2 id="the-form-hooks">The Form Hooks</h2>
+        <p>When <code>formControl</code> is enabled, the <code>client()</code> context receives additional helpers to synchronize your component's state with the form.</p>
+
+        <code-block language="javascript" filename="hooks.js">
+export async function client ({
+  state,
+  refs,
+  setFormValue,
+  setValidity,
+  onFormReset,
+  onFormDisabled,
+  onFormRestore,
+  signal
+}) {
+  // Sync initial state
+  setFormValue(state.value)
+
+  // Bind input
+  refs('input').addEventListener('input', (e) => {
+    state.value = e.target.value
+    setFormValue(state.value)
+  }, { signal })
+
+  // Handle form reset
+  onFormReset(() => {
+    state.value = ''
+    refs('input').value = ''
+  })
+}
+        </code-block>
+
+        <h2 id="constraint-validation">Constraint Validation</h2>
+        <p>You can use <code>setValidity</code> to integrate your component with the browser's native validation UI (e.g., the red outline or tooltip).</p>
+
+        <code-block language="javascript" filename="validity.js">
+setValidity(
+  { valueMissing: true }, 
+  'This field is required.', 
+  refs('input') // The anchor element for the browser tooltip
+)
+        </code-block>
+
+        <h2 id="complete-example">Complete Example</h2>
+        <p>Here is how a custom input component wires up the full FACE lifecycle.</p>
+
+        <code-block language="html" filename="custom-input.html">
+<template id="custom-input">
+  <input ref="input" type="text" />
+</template>
+
+<script type="module">
+  export const formControl = true
+  export const attributes = { value: { type: String, default: '' } }
+
+  export function client ({ state, refs, setFormValue, onFormReset, signal }) {
+    const input = refs('input')
+    setFormValue(state.value)
+
+    input.addEventListener('input', (e) => {
+      state.value = e.target.value
+      setFormValue(state.value)
+    }, { signal })
+
+    onFormReset(() => {
+      state.value = ''
+      input.value = ''
+    })
+  }
+</script>
+        </code-block>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/slots" variant="secondary">← Previous: slots</ui-link>
+        <ui-link href="/reference/page-api" variant="primary">Next: Page API →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#typescript-signature">TypeScript Signature</a>
+        <a href="#native-form-association">Native Form Association</a>
+        <a href="#the-form-hooks">The Form Hooks</a>
+        <a href="#constraint-validation">Constraint Validation</a>
+        <a href="#complete-example">Complete Example</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

@@ -1,60 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Static Assets Plugin - Coralite Documentation"
-    description="Documentation for the Coralite static asset plugin used to copy files during the build process."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Static Assets Plugin - Coralite Documentation"
+    description="Documentation for the Coralite static asset plugin used to copy files during the build process."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <site-header></site-header>
 
-  <main class="container content">
-    <h1 class="display">Static Assets Plugin</h1>
-    <p>The <code>staticAssetPlugin</code> is a built-in Coralite utility that orchestrates copying raw files directly into the final build directory. It supports both local path resolution and NPM package traversal to pull binary assets (like <code>.wasm</code> files), images, or scripts out of <code>node_modules</code>.</p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="reference/plugins/static-assets"></docs-sidebar>
 
-    <coralite-heading level="2" text="Configuration"></coralite-heading>
-    <p>The plugin is automatically initialized if you provide an <code>assets</code> array to the Coralite configuration. Each object in the array must contain a <code>dest</code> (destination) property.</p>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/plugins/">Built-in Plugins</a>
+        <span class="separator">/</span>
+        <span>Static Assets Plugin</span>
+      </ui-breadcrumb>
 
-    <coralite-heading level="3" text="Local File Resolution"></coralite-heading>
-    <p>If the asset object contains a <code>src</code> property, the plugin copies the file or directory directly from your local file system.</p>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Static Assets Plugin</h1>
+          <ui-badge variant="cyan">Plugin</ui-badge>
+        </div>
+        <p class="subhead">Documentation for the Coralite static asset plugin used to copy files during the build process.</p>
+      </div>
 
-    <coralite-code-highlight language="JavaScript">
-// coralite.config.js
-export default defineConfig({
-  assets: [
-    { src: './src/public/favicon.ico', dest: 'favicon.ico' },
-    { src: './src/docs/pdf', dest: 'assets/pdf' } // Copies whole directory
-  ]
-});
-    </coralite-code-highlight>
+      <div class="lesson-body">
+        <p>The <code>staticAssetPlugin</code> is a built-in Coralite utility that orchestrates copying raw files directly into the final build directory. It supports both local path resolution and NPM package traversal to pull binary assets (like <code>.wasm</code> files), images, or scripts out of <code>node_modules</code>.</p>
 
-    <coralite-heading level="3" text="NPM Package Resolution"></coralite-heading>
-    <p>If <code>src</code> is missing, you must provide <code>pkg</code> and <code>path</code> options. The plugin uses Node's resolution logic to find the package root and then appends the provided path.</p>
+            <h2 id="configuration">Configuration</h2>
+            <p>The plugin is automatically initialized if you provide an <code>assets</code> array to the Coralite configuration. Each object in the array must contain a <code>dest</code> (destination) property.</p>
 
-    <coralite-code-highlight language="JavaScript">
-// coralite.config.js
-export default defineConfig({
-  assets: [
-    { 
-      pkg: '@matrix-org/matrix-sdk-crypto-wasm', 
-      path: 'pkg/matrix_sdk_crypto_wasm_bg.wasm', 
-      dest: 'assets/js/matrix_sdk_crypto_wasm_bg.wasm' 
-    }
-  ]
-});
-    </coralite-code-highlight>
+            <h3 id="local-file-resolution">Local File Resolution</h3>
+            <p>If the asset object contains a <code>src</code> property, the plugin copies the file or directory directly from your local file system.</p>
 
-    <coralite-heading level="2" text="How it Works"></coralite-heading>
-    <ul>
-      <li><strong>Hook</strong>: The plugin triggers during the <code>onBeforeBuild</code> lifecycle hook.</li>
-      <li><strong>Reliability</strong>: It ensures all required binary or static dependencies are physically present in the output directory before Coralite attempts to render pages or start the development server.</li>
-      <li><strong>Automation</strong>: It recursively creates destination directories as needed.</li>
-    </ul>
+            <code-block language="JavaScript">
+        // coralite.config.js
+        export default defineConfig({
+          assets: [
+            { src: './src/public/favicon.ico', dest: 'favicon.ico' },
+            { src: './src/docs/pdf', dest: 'assets/pdf' } // Copies whole directory
+          ]
+        });
+            </code-block>
 
-  </main>
+            <h3 id="npm-package-resolution">NPM Package Resolution</h3>
+            <p>If <code>src</code> is missing, you must provide <code>pkg</code> and <code>path</code> options. The plugin uses Node's resolution logic to find the package root and then appends the provided path.</p>
 
-  <coralite-footer></coralite-footer>
+            <code-block language="JavaScript">
+        // coralite.config.js
+        export default defineConfig({
+          assets: [
+            { 
+              pkg: '@matrix-org/matrix-sdk-crypto-wasm', 
+              path: 'pkg/matrix_sdk_crypto_wasm_bg.wasm', 
+              dest: 'assets/js/matrix_sdk_crypto_wasm_bg.wasm' 
+            }
+          ]
+        });
+            </code-block>
+
+            <h2 id="how-it-works">How it Works</h2>
+            <ul>
+              <li><strong>Hook</strong>: The plugin triggers during the <code>onBeforeBuild</code> lifecycle hook.</li>
+              <li><strong>Reliability</strong>: It ensures all required binary or static dependencies are physically present in the output directory before Coralite attempts to render pages or start the development server.</li>
+              <li><strong>Automation</strong>: It recursively creates destination directories as needed.</li>
+            </ul>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/reference/plugins/metadata" variant="secondary">← Previous: Metadata Plugin</ui-link>
+        <ui-link href="/docs/reference/plugins/testing" variant="primary">Next: Testing Plugin →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#configuration">Configuration</a>
+        <a href="#how-it-works">How it Works</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

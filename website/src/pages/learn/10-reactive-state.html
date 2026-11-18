@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Reactive State"
+    description="Trigger predictable DOM updates with direct state mutations and derived getters."
+    section="Learn"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <!-- Sidebar -->
+        <div slot="sidebar">
+      <ui-accordion title="Module 1: HTML Foundations" open>
+        <ui-nav-link href="/learn/01-the-document">1. The Document</ui-nav-link>
+        <ui-nav-link href="/learn/02-semantic-tags">2. Semantic Tags</ui-nav-link>
+        <ui-nav-link href="/learn/03-attributes-data">3. Attributes & Data</ui-nav-link>
+        <ui-nav-link href="/learn/04-structuring-a-page">4. Structuring a Page</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 2: CSS & Styling" open>
+        <ui-nav-link href="/learn/05-native-css-scoping">1. Native CSS Scoping</ui-nav-link>
+        <ui-nav-link href="/learn/06-cascade-layers">2. Cascade Layers</ui-nav-link>
+        <ui-nav-link href="/learn/07-theming-with-variables">3. Theming with Variables</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 3: JavaScript Behavior" open>
+        <ui-nav-link href="/learn/08-the-client-runtime">1. The Client Runtime</ui-nav-link>
+        <ui-nav-link href="/learn/09-refs-and-event-listeners">2. Refs & Event Listeners</ui-nav-link>
+        <ui-nav-link href="/learn/10-reactive-state" active>3. Reactive State</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 4: The Coralite Ecosystem" open>
+        <ui-nav-link href="/learn/11-server-side-rendering">1. Server-Side Rendering</ui-nav-link>
+        <ui-nav-link href="/learn/13-building-for-production">2. Building for Production</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <!-- Content -->
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/learn/">Learn</a>
+        <span class="separator">/</span>
+        <a href="/learn/">Module 3</a>
+        <span class="separator">/</span>
+        <span>Lesson 3: Reactive State</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <ui-badge variant="cyan">Lesson 10</ui-badge>
+        <h1>Reactive State</h1>
+        <p class="subhead">Trigger predictable DOM updates with direct state mutations and derived getters.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="direct-mutations">Direct Mutations</h2>
+        <p>Coralite uses a reactive proxy to track changes to the <code>state</code> object. You don't need to call <code>setState</code> or <code>useState</code>. Simply mutate the property directly inside your event listener, and Coralite will schedule a batched microtask update.</p>
+
+        <code-block language="html" filename="counter.html">
+<template id="counter">
+  <button ref="btn">Count is {{ count }}</button>
+</template>
+
+<script type="module">
+  export function server () {
+    return { count: 0 }
+  }
+
+  export async function client ({ state, refs, signal }) {
+    refs('btn').addEventListener('click', () => {
+      // Direct mutation triggers a DOM update
+      state.count++
+    }, { signal })
+  }
+</script>
+        </code-block>
+
+        <h2 id="derived-logic-with-getters">Derived Logic with Getters</h2>
+        <p>Coralite templates only allow flat identifiers. You cannot write complex logic inside the HTML. If you need to compute a value based on state, you must use the <code>getters</code> block.</p>
+
+        <code-block language="javascript" filename="getters.html">
+<script type="module">
+  export const getters = {
+    // Derived from state
+    isEven: ({ state }) => state.count % 2 === 0,
+    displayText: ({ state }) => state.count === 1 ? '1 item' : `${state.count} items`
+  }
+</script>
+        </code-block>
+
+        <h2 id="smart-state-dumb-templates">Smart State, Dumb Templates</h2>
+        <p>This strict separation is what makes Coralite so fast and AI-legible. The template remains a simple view layer, while the getters handle the business logic.</p>
+
+        <div class="diagnostic-callout">
+          <strong>CORALITE-E201: Complex Template Expression</strong>
+          <p coralite-ignore>You cannot write expressions like <code>{{ a + b }}</code> or <code>{{ count % 2 === 0 }}</code> inside the template. Coralite will throw this error during the build. Move the logic into a getter and use a flat token like <code>{{ isEven }}</code>.</p>
+        </div>
+
+        <h2 id="batching-and-updatecomplete">Batching and updateComplete</h2>
+        <p>State mutations are batched within a microtask. If you need to wait for the DOM to finish updating, you can await the <code>updateComplete</code> promise provided in the client context.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/learn/09-refs-and-event-listeners" variant="secondary">← Previous</ui-link>
+        <ui-link href="/learn/11-server-side-rendering" variant="primary">Next Module →</ui-link>
+      </div>
+    </div>
+
+    <!-- TOC -->
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#direct-mutations">Direct Mutations</a>
+        <a href="#derived-logic-with-getters">Derived Logic with Getters</a>
+        <a href="#smart-state-dumb-templates">Smart State, Dumb Templates</a>
+        <a href="#batching-and-updatecomplete">Batching and updateComplete</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

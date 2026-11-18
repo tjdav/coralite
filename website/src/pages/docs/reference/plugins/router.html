@@ -1,258 +1,313 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="SPA Router Plugin Reference (coralite/plugins/router) - Coralite Documentation"
-    description="Complete API reference for the opt-in SPA router plugin: registration and config options, outlet and swap-region mechanics, the client router API, navigation guards and events, and the behavior contract."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="SPA Router Plugin Reference (coralite/plugins/router) - Coralite Documentation"
+    description="Complete API reference for the opt-in SPA router plugin: registration and config options, outlet and swap-region mechanics, the client router API, navigation"
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <site-header></site-header>
 
-  <main class="container content">
-    <h1 class="display">Router Plugin</h1>
-    <p>The <code>router</code> plugin (<code>coralite/plugins/router</code>) is an <strong>opt-in</strong> single-page application router layered on Coralite's static output. Without it, navigation is the default progressive-enhanced model: plain <code>&lt;a href&gt;</code> links, static HTML per route, and native Same-Document View Transitions between full page loads. When registered, the plugin intercepts same-origin link clicks and browser-history navigations, fetches the target's pre-built static HTML, and swaps only the <em>outlet</em> region (and head tags) in the live browser — with no full reload, and no client-side routing of arbitrary client state.</p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="reference/plugins/router"></docs-sidebar>
 
-    <nav aria-label="table of contents">
-      <coralite-heading level="2" text="Table of Contents"></coralite-heading>
-      <ul>
-        <li><a href="#registration">Registration (Required)</a></li>
-        <li><a href="#configuration">Configuration Options</a></li>
-        <li><a href="#outlet">Outlet &amp; Swap Region</a></li>
-        <li><a href="#client-api">Client Router API</a></li>
-        <li><a href="#guards">Navigation Guards</a></li>
-        <li><a href="#events">Navigation Events</a></li>
-        <li><a href="#link-interception">Link Interception</a></li>
-        <li><a href="#behavior-contract">Behavior Contract</a></li>
-        <li><a href="#related">Related Pages</a></li>
-      </ul>
-    </nav>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/plugins/">Built-in Plugins</a>
+        <span class="separator">/</span>
+        <span>Router Plugin</span>
+      </ui-breadcrumb>
 
-    <section id="registration">
-      <coralite-heading level="2" text="Registration (Required)"></coralite-heading>
-      <p>Every SPA behavior of the router — link interception, <code>popstate</code> handling, guards, head reconciliation — lives inside the plugin's <code>client:init</code> and <code>server:onBeforePageRender</code> hooks, which only execute when the plugin is registered. A <code>data-router-outlet</code> marker <strong>without plugin registration is inert</strong>: the page behaves as a standard multi-page app.</p>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Router Plugin</h1>
+          <ui-badge variant="cyan">Plugin</ui-badge>
+        </div>
+        <p class="subhead">Complete API reference for the opt-in SPA router plugin: registration and config options, outlet and swap-region mechanics, the client router API, navigation guards and events, and the behavior contract.</p>
+      </div>
 
-      <coralite-code-highlight language="javascript" title="coralite.config.js">
-import { defineConfig } from 'coralite'
-import router from 'coralite/plugins/router'
+      <div class="lesson-body">
+        <p>The <code>router</code> plugin (<code>coralite/plugins/router</code>) is an <strong>opt-in</strong> single-page application router layered on Coralite's static output. Without it, navigation is the default progressive-enhanced model: plain <code>&lt;a href&gt;</code> links, static HTML per route, and native Same-Document View Transitions between full page loads. When registered, the plugin intercepts same-origin link clicks and browser-history navigations, fetches the target's pre-built static HTML, and swaps only the <em>outlet</em> region (and head tags) in the live browser — with no full reload, and no client-side routing of arbitrary client state.</p>
 
-export default defineConfig({
-  plugins: [
-    router({
-      base: '/',                   // String, default '/'
-      outlet: 'data-router-outlet', // String, default 'data-router-outlet'
-      autoWrap: true,               // Boolean, default true
-      outletOnly: false             // Boolean, default false
-    })
-  ]
-})
-      </coralite-code-highlight>
+            <nav aria-label="table of contents">
+              <h2 id="table-of-contents">Table of Contents</h2>
+              <ul>
+                <li><a href="#registration-required">Registration (Required)</a></li>
+                <li><a href="#configuration-options">Configuration Options</a></li>
+                <li><a href="#outlet-swap-region">Outlet &amp; Swap Region</a></li>
+                <li><a href="#client-router-api">Client Router API</a></li>
+                <li><a href="#navigation-guards">Navigation Guards</a></li>
+                <li><a href="#navigation-events">Navigation Events</a></li>
+                <li><a href="#link-interception">Link Interception</a></li>
+                <li><a href="#behavior-contract">Behavior Contract</a></li>
+                <li><a href="#related-pages">Related Pages</a></li>
+              </ul>
+            </nav>
 
-      <p>Invalid config types throw at plugin instantiation (e.g. <code>Invalid config value for "base"</code>).</p>
-    </section>
+            <section id="registration">
+              <h2 id="registration-required">Registration (Required)</h2>
+              <p>Every SPA behavior of the router — link interception, <code>popstate</code> handling, guards, head reconciliation — lives inside the plugin's <code>client:init</code> and <code>server:onBeforePageRender</code> hooks, which only execute when the plugin is registered. A <code>data-router-outlet</code> marker <strong>without plugin registration is inert</strong>: the page behaves as a standard multi-page app.</p>
 
-    <section id="configuration">
-      <coralite-heading level="2" text="Configuration Options"></coralite-heading>
+              <code-block language="javascript" filename="coralite.config.js">
+        import { defineConfig } from 'coralite'
+        import router from 'coralite/plugins/router'
 
-      <coralite-table>
-        <tr slot="head">
-          <th>Option</th>
-          <th>Type</th>
-          <th>Default</th>
-          <th>Description</th>
-        </tr>
-        <tr slot="body">
-          <td><code>base</code></td>
-          <td>String</td>
-          <td><code>'/'</code></td>
-          <td>Declared base path for the router. Declared in the plugin's config schema but currently carries no behavioral wiring in <code>router.js</code>; routing does not perform base-path stripping or prefixing, so a non-<code>'/'</code> base is not honored — do not rely on it today.</td>
-        </tr>
-        <tr slot="body">
-          <td><code>outlet</code></td>
-          <td>String</td>
-          <td><code>'data-router-outlet'</code></td>
-          <td>The attribute name that marks the SPA swap region. Any element carrying this attribute — or the reserved <code>&lt;router-outlet&gt;</code> tag — is an outlet.</td>
-        </tr>
-        <tr slot="body">
-          <td><code>autoWrap</code></td>
-          <td>Boolean</td>
-          <td><code>true</code></td>
-          <td>When <code>false</code>, the server-side render pipeline does not automatically wrap outlet-less pages in a <code>&lt;router-outlet&gt;</code>. The page renders exactly as authored. Fetched documents must still contain an outlet for client-side navigation to succeed.</td>
-        </tr>
-        <tr slot="body">
-          <td><code>outletOnly</code></td>
-          <td>Boolean</td>
-          <td><code>false</code></td>
-          <td>When <code>true</code>, link interception is skipped whenever the current document has no outlet at click time. The click falls through to the browser's native navigation. This guard is evaluated before link detection and does not affect <code>router.navigate()</code>.</td>
-        </tr>
-      </coralite-table>
-    </section>
+        export default defineConfig({
+          plugins: [
+            router({
+              base: '/',                   // String, default '/'
+              outlet: 'data-router-outlet', // String, default 'data-router-outlet'
+              autoWrap: true,               // Boolean, default true
+              outletOnly: false             // Boolean, default false
+            })
+          ]
+        })
+              </code-block>
 
-    <section id="outlet">
-      <coralite-heading level="2" text="Outlet &amp; Swap Region"></coralite-heading>
-      <ul>
-        <li>Any element bearing the configured outlet attribute (<code>[data-router-outlet]</code> by default) — or the reserved <code>&lt;router-outlet&gt;</code> tag name — is an outlet. The plugin registers a virtual <code>&lt;router-outlet&gt;</code> component (<code>virtual:router-outlet/outlet.html</code>, body <code>&lt;slot&gt;&lt;/slot&gt;</code>), so the outlet can be authored directly on a page or inside a layout component. Outlet detection also looks inside component templates, so an outlet living in a layout component satisfies the page and suppresses the automatic wrap.</li>
-        <li>On client navigation, <strong>only the outlet's children are replaced</strong>. Elements outside the outlet — persistent navbars and footers, background audio players, live WebSockets — are never touched by the router.</li>
-        <li>Pages that declare no outlet are <strong>automatically wrapped</strong> at render time: when the router is active, the plugin injects a <code>&lt;router-outlet data-router-outlet&gt;</code> element around the page's entire <code>&lt;body&gt;</code> content. Pages that already contain an outlet are never double-wrapped.</li>
-        <li>Set <code>autoWrap: false</code> to disable the automatic body wrap. With this flag, outlet-less pages render exactly as authored and still resolve page tokens normally. Link interception remains enabled unless <code>outletOnly: true</code> is also set; a fetched document without an outlet still fails the navigation.</li>
-        <li>Set <code>outletOnly: true</code> to make link interception conditional on the live document containing an outlet. This is useful when some routes are intentionally outside the SPA shell: on an outlet-less page, links navigate normally instead of failing inside the router.</li>
-        <li>Both the live document and every fetched document must contain an outlet for a client navigation to succeed; a navigation whose fetched document has none fails with an error. <code>navigate()</code> updates history before fetching, so do not call it from a page that has no outlet unless you handle the resulting rejected navigation.</li>
-      </ul>
-    </section>
+              <p>Invalid config types throw at plugin instantiation (e.g. <code>Invalid config value for "base"</code>).</p>
+            </section>
 
-    <section id="client-api">
-      <coralite-heading level="2" text="Client Router API"></coralite-heading>
-      <p>The router API is injected into component and page <code>client()</code> blocks under the <code>router</code> key — <code>client({ router })</code> — and is also exposed on <code>window.__coralite__.plugins.router</code>:</p>
+            <section id="configuration">
+              <h2 id="configuration-options">Configuration Options</h2>
 
-      <ul>
-        <li>
-          <p><strong><code>router.navigate(path, { replace = false })</code></strong> — performs a client-side navigation: runs guards and the <code>coralite:navigating</code> event, updates the history entry (<code>pushState</code> with state <code>{ coralite: true }</code>, or <code>replaceState</code> when <code>replace: true</code>), fetches the target path as an HTML document with the <code>X-Coralite-Router: true</code> header, reconciles the head, swaps the outlet, re-hydrates the new outlet content, scrolls (unless the path contains a <code>#</code>), and dispatches <code>coralite:navigated</code>. The returned promise resolves after the swap and upgrade settle, and rejects if the fetch returns a non-OK status or no outlet is found.</p>
-        </li>
-        <li>
-          <p><strong><code>router.current()</code></strong> — returns <code>{ path }</code>, the current browser pathname.</p>
-        </li>
-        <li>
-          <p><strong><code>router.beforeEach(guard)</code></strong> — registers a navigation guard and returns an unregister function that removes it. Guards receive <code>({ to: { path }, from: { path }, signal })</code> and may be asynchronous. See <a href="#guards">Navigation Guards</a>.</p>
-        </li>
-        <li>
-          <p><strong><code>router.viewTransitions</code></strong> — read-only getter. Mirrors the project-level <code>viewTransitions</code> flag from the hydration payload. When true, and the browser supports <code>document.startViewTransition</code> with <code>prefers-reduced-motion</code> unset, the outlet swap runs inside a native View Transition.</p>
-        </li>
-      </ul>
+              <div class="docs-table-wrap">
+                <table class="docs-table">
+                <thead>
+                  <tr>
+                  <th>Option</th>
+                  <th>Type</th>
+                  <th>Default</th>
+                  <th>Description</th>
+                </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                  <td><code>base</code></td>
+                  <td>String</td>
+                  <td><code>'/'</code></td>
+                  <td>Declared base path for the router. Declared in the plugin's config schema but currently carries no behavioral wiring in <code>router.js</code>; routing does not perform base-path stripping or prefixing, so a non-<code>'/'</code> base is not honored — do not rely on it today.</td>
+                </tr>
+                  <tr>
+                  <td><code>outlet</code></td>
+                  <td>String</td>
+                  <td><code>'data-router-outlet'</code></td>
+                  <td>The attribute name that marks the SPA swap region. Any element carrying this attribute — or the reserved <code>&lt;router-outlet&gt;</code> tag — is an outlet.</td>
+                </tr>
+                  <tr>
+                  <td><code>autoWrap</code></td>
+                  <td>Boolean</td>
+                  <td><code>true</code></td>
+                  <td>When <code>false</code>, the server-side render pipeline does not automatically wrap outlet-less pages in a <code>&lt;router-outlet&gt;</code>. The page renders exactly as authored. Fetched documents must still contain an outlet for client-side navigation to succeed.</td>
+                </tr>
+                  <tr>
+                  <td><code>outletOnly</code></td>
+                  <td>Boolean</td>
+                  <td><code>false</code></td>
+                  <td>When <code>true</code>, link interception is skipped whenever the current document has no outlet at click time. The click falls through to the browser's native navigation. This guard is evaluated before link detection and does not affect <code>router.navigate()</code>.</td>
+                </tr>
+                </tbody>
+                </table>
+              </div>
+            </section>
 
-      <coralite-code-highlight language="javascript" title="Programmatic Navigation">
-export function client ({ refs, signal, router }) {
-  refs('go').addEventListener('click', () => {
-    // Push a new history entry
-    router.navigate('/app/dashboard')
-  }, { signal })
-}
-      </coralite-code-highlight>
-    </section>
+            <section id="outlet">
+              <h2 id="outlet-swap-region">Outlet &amp; Swap Region</h2>
+              <ul>
+                <li>Any element bearing the configured outlet attribute (<code>[data-router-outlet]</code> by default) — or the reserved <code>&lt;router-outlet&gt;</code> tag name — is an outlet. The plugin registers a virtual <code>&lt;router-outlet&gt;</code> component (<code>virtual:router-outlet/outlet.html</code>, body <code>&lt;slot&gt;&lt;/slot&gt;</code>), so the outlet can be authored directly on a page or inside a layout component. Outlet detection also looks inside component templates, so an outlet living in a layout component satisfies the page and suppresses the automatic wrap.</li>
+                <li>On client navigation, <strong>only the outlet's children are replaced</strong>. Elements outside the outlet — persistent navbars and footers, background audio players, live WebSockets — are never touched by the router.</li>
+                <li>Pages that declare no outlet are <strong>automatically wrapped</strong> at render time: when the router is active, the plugin injects a <code>&lt;router-outlet data-router-outlet&gt;</code> element around the page's entire <code>&lt;body&gt;</code> content. Pages that already contain an outlet are never double-wrapped.</li>
+                <li>Set <code>autoWrap: false</code> to disable the automatic body wrap. With this flag, outlet-less pages render exactly as authored and still resolve page tokens normally. Link interception remains enabled unless <code>outletOnly: true</code> is also set; a fetched document without an outlet still fails the navigation.</li>
+                <li>Set <code>outletOnly: true</code> to make link interception conditional on the live document containing an outlet. This is useful when some routes are intentionally outside the SPA shell: on an outlet-less page, links navigate normally instead of failing inside the router.</li>
+                <li>Both the live document and every fetched document must contain an outlet for a client navigation to succeed; a navigation whose fetched document has none fails with an error. <code>navigate()</code> updates history before fetching, so do not call it from a page that has no outlet unless you handle the resulting rejected navigation.</li>
+              </ul>
+            </section>
 
-    <section id="guards">
-      <coralite-heading level="2" text="Navigation Guards"></coralite-heading>
-      <p>Guards run in registration order before every client navigation. The return value determines what happens next:</p>
+            <section id="client-api">
+              <h2 id="client-router-api">Client Router API</h2>
+              <p>The router API is injected into component and page <code>client()</code> blocks under the <code>router</code> key — <code>client({ router })</code> — and is also exposed on <code>window.__coralite__.plugins.router</code>:</p>
 
-      <coralite-table>
-        <tr slot="head">
-          <th>Return value</th>
-          <th>Effect</th>
-        </tr>
-        <tr slot="body">
-          <td><code>undefined</code> or <code>true</code></td>
-          <td>Allow the navigation to proceed.</td>
-        </tr>
-        <tr slot="body">
-          <td><code>false</code></td>
-          <td>Cancel the navigation (no history update, no fetch).</td>
-        </tr>
-        <tr slot="body">
-          <td>Relative path string (e.g. <code>'/login'</code>)</td>
-          <td>Soft redirect: the router re-navigates client-side with <code>replace: true</code>. Nested guard redirects are capped at a depth of 10; deeper chains are aborted (the dev runtime logs <code>Redirect loop detected</code>).</td>
-        </tr>
-        <tr slot="body">
-          <td>Absolute URL string (<code>http://…</code> / <code>https://…</code>)</td>
-          <td>Hard redirect via <code>window.location.replace(url)</code> — a full document transition to an external (or same-origin) page.</td>
-        </tr>
-      </coralite-table>
+              <ul>
+                <li>
+                  <p><strong><code>router.navigate(path, { replace = false })</code></strong> — performs a client-side navigation: runs guards and the <code>coralite:navigating</code> event, updates the history entry (<code>pushState</code> with state <code>{ coralite: true }</code>, or <code>replaceState</code> when <code>replace: true</code>), fetches the target path as an HTML document with the <code>X-Coralite-Router: true</code> header, reconciles the head, swaps the outlet, re-hydrates the new outlet content, scrolls (unless the path contains a <code>#</code>), and dispatches <code>coralite:navigated</code>. The returned promise resolves after the swap and upgrade settle, and rejects if the fetch returns a non-OK status or no outlet is found.</p>
+                </li>
+                <li>
+                  <p><strong><code>router.current()</code></strong> — returns <code>{ path }</code>, the current browser pathname.</p>
+                </li>
+                <li>
+                  <p><strong><code>router.beforeEach(guard)</code></strong> — registers a navigation guard and returns an unregister function that removes it. Guards receive <code>({ to: { path }, from: { path }, signal })</code> and may be asynchronous. See <a href="#navigation-guards">Navigation Guards</a>.</p>
+                </li>
+                <li>
+                  <p><strong><code>router.viewTransitions</code></strong> — read-only getter. Mirrors the project-level <code>viewTransitions</code> flag from the hydration payload. When true, and the browser supports <code>document.startViewTransition</code> with <code>prefers-reduced-motion</code> unset, the outlet swap runs inside a native View Transition.</p>
+                </li>
+              </ul>
 
-      <p>A guard that throws (other than an <code>AbortError</code>) is logged in dev runtimes and cancels the navigation. Each running navigation exposes an <code>AbortSignal</code> to its guards: a newer navigation aborts the previous one, and an aborted navigation unwinds silently.</p>
+              <code-block language="javascript" filename="Programmatic Navigation">
+        export function client ({ refs, signal, router }) {
+          refs('go').addEventListener('click', () => {
+            // Push a new history entry
+            router.navigate('/app/dashboard')
+          }, { signal })
+        }
+              </code-block>
+            </section>
 
-      <coralite-code-highlight language="javascript" title="Auth Guard with All Four Return Semantics">
-export function client ({ router }) {
-  const unregister = router.beforeEach(async ({ to, from, signal }) => {
-    if (to.path.startsWith('/admin') && !await isAuthenticated()) {
-      return '/login' // soft redirect to /login
-    }
-    if (to.path === '/private-external-origin') {
-      return 'https://external.example.com' // hard redirect, full document load
-    }
-    if (to.path === '/maintenance-hard-block') {
-      return false // cancel: stay on the current route
-    }
-    // undefined / true: proceed
-  })
-  // Call unregister() (e.g. on route-specific teardown) to remove the guard
-}
-      </coralite-code-highlight>
-    </section>
+            <section id="guards">
+              <h2 id="navigation-guards">Navigation Guards</h2>
+              <p>Guards run in registration order before every client navigation. The return value determines what happens next:</p>
 
-    <section id="events">
-      <coralite-heading level="2" text="Navigation Events"></coralite-heading>
-      <p>The router dispatches two <code>CustomEvent</code>s on <code>window</code> (bubbling and composed) with a <code>detail</code> payload of <code>{ from, to }</code>, where both are full path strings (pathname + search + hash):</p>
+              <div class="docs-table-wrap">
+                <table class="docs-table">
+                <thead>
+                  <tr>
+                  <th>Return value</th>
+                  <th>Effect</th>
+                </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                  <td><code>undefined</code> or <code>true</code></td>
+                  <td>Allow the navigation to proceed.</td>
+                </tr>
+                  <tr>
+                  <td><code>false</code></td>
+                  <td>Cancel the navigation (no history update, no fetch).</td>
+                </tr>
+                  <tr>
+                  <td>Relative path string (e.g. <code>'/login'</code>)</td>
+                  <td>Soft redirect: the router re-navigates client-side with <code>replace: true</code>. Nested guard redirects are capped at a depth of 10; deeper chains are aborted (the dev runtime logs <code>Redirect loop detected</code>).</td>
+                </tr>
+                  <tr>
+                  <td>Absolute URL string (<code>http://…</code> / <code>https://…</code>)</td>
+                  <td>Hard redirect via <code>window.location.replace(url)</code> — a full document transition to an external (or same-origin) page.</td>
+                </tr>
+                </tbody>
+                </table>
+              </div>
 
-      <ul>
-        <li><code>coralite:navigating</code> — dispatched before the target page is fetched. It is <strong>cancelable</strong>: calling <code>preventDefault()</code> on the event aborts the navigation.</li>
-        <li><code>coralite:navigated</code> — dispatched after a successful swap (post upgrade, post scroll). It is not cancelable; use it for post-navigation side effects such as analytics and third-party widget sync.</li>
-      </ul>
+              <p>A guard that throws (other than an <code>AbortError</code>) is logged in dev runtimes and cancels the navigation. Each running navigation exposes an <code>AbortSignal</code> to its guards: a newer navigation aborts the previous one, and an aborted navigation unwinds silently.</p>
 
-      <coralite-code-highlight language="javascript" title="Listening on Navigation Events">
-export function client ({ signal }) {
-  window.addEventListener('coralite:navigating', (event) => {
-    // Cancelable: abort the navigation
-    if (hasUnsavedChanges()) {
-      event.preventDefault()
-    }
-  }, { signal })
+              <code-block language="javascript" filename="Auth Guard with All Four Return Semantics">
+        export function client ({ router }) {
+          const unregister = router.beforeEach(async ({ to, from, signal }) => {
+            if (to.path.startsWith('/admin') && !await isAuthenticated()) {
+              return '/login' // soft redirect to /login
+            }
+            if (to.path === '/private-external-origin') {
+              return 'https://external.example.com' // hard redirect, full document load
+            }
+            if (to.path === '/maintenance-hard-block') {
+              return false // cancel: stay on the current route
+            }
+            // undefined / true: proceed
+          })
+          // Call unregister() (e.g. on route-specific teardown) to remove the guard
+        }
+              </code-block>
+            </section>
 
-  window.addEventListener('coralite:navigated', (event) => {
-    const { from, to } = event.detail
-    console.log(`Routed ${from} → ${to}`)
-  }, { signal })
-}
-      </coralite-code-highlight>
-    </section>
+            <section id="events">
+              <h2 id="navigation-events">Navigation Events</h2>
+              <p>The router dispatches two <code>CustomEvent</code>s on <code>window</code> (bubbling and composed) with a <code>detail</code> payload of <code>{ from, to }</code>, where both are full path strings (pathname + search + hash):</p>
 
-    <section id="link-interception">
-      <coralite-heading level="2" text="Link Interception"></coralite-heading>
-      <p>While the router is active, left-clicks on same-origin <code>&lt;a href&gt;</code> links are converted into client-side navigations. Interception is <strong>skipped</strong> — leaving the browser's native behavior intact — in the following cases:</p>
+              <ul>
+                <li><code>coralite:navigating</code> — dispatched before the target page is fetched. It is <strong>cancelable</strong>: calling <code>preventDefault()</code> on the event aborts the navigation.</li>
+                <li><code>coralite:navigated</code> — dispatched after a successful swap (post upgrade, post scroll). It is not cancelable; use it for post-navigation side effects such as analytics and third-party widget sync.</li>
+              </ul>
 
-      <ul>
-        <li><code>outletOnly: true</code> is configured and the live document has no outlet.</li>
-        <li>The click is not the primary button (<code>button !== 0</code>).</li>
-        <li>Any modifier key is held (<code>meta</code> / <code>ctrl</code> / <code>shift</code> / <code>alt</code>).</li>
-        <li>The event has already been <code>preventDefault</code>ed by other code.</li>
-        <li>The link has a <code>target</code> other than <code>_self</code> (e.g. <code>_blank</code>).</li>
-        <li>The link carries a <code>download</code> attribute.</li>
-        <li>The link carries the <code>data-router-ignore</code> attribute — the per-link opt-out that forces a native full document load.</li>
-        <li>The link is cross-origin.</li>
-      </ul>
+              <code-block language="javascript" filename="Listening on Navigation Events">
+        export function client ({ signal }) {
+          window.addEventListener('coralite:navigating', (event) => {
+            // Cancelable: abort the navigation
+            if (hasUnsavedChanges()) {
+              event.preventDefault()
+            }
+          }, { signal })
 
-      <coralite-code-html>
-        <a href="/downloads/report.pdf" download>Report PDF</a>
-        <a href="/legacy/checkout" target="_blank">Legacy Checkout</a>
-        <a href="/reports/export" data-router-ignore>Full-Reload Export</a>
-      </coralite-code-html>
-    </section>
+          window.addEventListener('coralite:navigated', (event) => {
+            const { from, to } = event.detail
+            console.log(`Routed ${from} → ${to}`)
+          }, { signal })
+        }
+              </code-block>
+            </section>
 
-    <section id="behavior-contract">
-      <coralite-heading level="2" text="Behavior Contract"></coralite-heading>
-      <ul>
-        <li><strong>Back/forward (<code>popstate</code>).</strong> Browser history navigation re-fetches and re-renders the current route's static HTML via <code>navigate(currentPath, { replace: true })</code>, so every back/forward step renders the route's canonical pre-built document.</li>
-        <li><strong><code>autoWrap: false</code>.</strong> The server-side <code>onBeforePageRender</code> hook skips the automatic outlet wrapper. Page rendering and token replacement are unchanged; the page simply has no outlet unless authored explicitly. Client navigation to such a page still fails because the fetched document has no outlet.</li>
-        <li><strong><code>outletOnly: true</code>.</strong> The click guard only affects native link interception. It is evaluated before link detection, so on an outlet-less page the click proceeds as a normal full-page navigation. It does not change <code>router.navigate()</code> or <code>popstate</code> handling.</li>
-        <li><strong>Programmatic navigation from outlet-less pages.</strong> <code>router.navigate()</code> pushes or replaces the history entry before fetching the target. If the live document has no outlet, the promise rejects after the URL has already changed. Prefer native links on outlet-less pages, or combine <code>autoWrap: false</code> with <code>outletOnly: true</code> so clicks stay native.</li>
-        <li><strong>Head reconciliation.</strong> After each navigation the live document's <code>&lt;title&gt;</code> and <code>&lt;meta name|property&gt;</code> tags are reconciled against the fetched page: added, updated, and removed tags are the union of both sets keyed by <code>name</code>/<code>property</code>.</li>
-        <li><strong>Hydration-store re-store.</strong> The fetched page's hydration payload (<code>&lt;script data-coralite-hydration&gt;</code>) is parsed and installed into the shared hydration store (<code>runtime.state.replaceHydration()</code>) before the swap, so component state for the new route is current before upgrade.</li>
-        <li><strong>Component re-hydration.</strong> After the swap, the new outlet content is upgraded (<code>runtime.dom.upgrade(outlet)</code>), so every SPA navigation yields fully hydrated component instances; out-of-outlet elements are never re-instantiated.</li>
-        <li><strong>Scroll position.</strong> The window scrolls to the top after each navigation unless the target path contains a <code>#</code> hash fragment (hash-targeted navigation preserves scroll).</li>
-        <li><strong>Fetch contract.</strong> SPA navigation requests carry the header <code>X-Coralite-Router: true</code> so static hosts, service workers, or edge functions can distinguish client route fetches from initial page loads. A non-OK response, or a fetched document without an outlet, fails the navigation with an error.</li>
-        <li><strong>View Transitions interplay.</strong> When the project sets <code>viewTransitions: true</code> in <code>coralite.config.js</code>, the browser supports <code>document.startViewTransition</code>, and the user has not enabled <code>prefers-reduced-motion: reduce</code>, the outlet swap executes inside a native View Transition. Otherwise the swap is a direct DOM replacement. (Distinct from the native MPA crossfades that <code>viewTransitions</code> also drives between full page loads.)</li>
-      </ul>
-    </section>
+            <section id="link-interception">
+              <h2>Link Interception</h2>
+              <p>While the router is active, left-clicks on same-origin <code>&lt;a href&gt;</code> links are converted into client-side navigations. Interception is <strong>skipped</strong> — leaving the browser's native behavior intact — in the following cases:</p>
 
-    <section id="related">
-      <coralite-heading level="2" text="Related Pages"></coralite-heading>
-      <ul>
-        <li><a href="/docs/guide/spa-router.html">SPA Router Guide</a> — patterns for outlet layout, guards, navigation events, state across route swaps, and production pitfalls.</li>
-        <li><a href="/docs/reference/pages.html#13-spa-router-opt-in">Pages &amp; Routing Reference, §13</a> — the SPA router section of the pages reference.</li>
-        <li><a href="/docs/reference/plugins.html">Plugins Reference</a> — the <code>definePlugin</code> contract, context resolvers, and lifecycle hooks.</li>
-      </ul>
-    </section>
+              <ul>
+                <li><code>outletOnly: true</code> is configured and the live document has no outlet.</li>
+                <li>The click is not the primary button (<code>button !== 0</code>).</li>
+                <li>Any modifier key is held (<code>meta</code> / <code>ctrl</code> / <code>shift</code> / <code>alt</code>).</li>
+                <li>The event has already been <code>preventDefault</code>ed by other code.</li>
+                <li>The link has a <code>target</code> other than <code>_self</code> (e.g. <code>_blank</code>).</li>
+                <li>The link carries a <code>download</code> attribute.</li>
+                <li>The link carries the <code>data-router-ignore</code> attribute — the per-link opt-out that forces a native full document load.</li>
+                <li>The link is cross-origin.</li>
+              </ul>
 
-  </main>
+              <code-block language="html">
+                <a href="/downloads/report.pdf" download>Report PDF</a>
+                <a href="/legacy/checkout" target="_blank">Legacy Checkout</a>
+                <a href="/reports/export" data-router-ignore>Full-Reload Export</a>
+              </code-block>
+            </section>
 
-  <coralite-footer></coralite-footer>
+            <section id="behavior-contract">
+              <h2>Behavior Contract</h2>
+              <ul>
+                <li><strong>Back/forward (<code>popstate</code>).</strong> Browser history navigation re-fetches and re-renders the current route's static HTML via <code>navigate(currentPath, { replace: true })</code>, so every back/forward step renders the route's canonical pre-built document.</li>
+                <li><strong><code>autoWrap: false</code>.</strong> The server-side <code>onBeforePageRender</code> hook skips the automatic outlet wrapper. Page rendering and token replacement are unchanged; the page simply has no outlet unless authored explicitly. Client navigation to such a page still fails because the fetched document has no outlet.</li>
+                <li><strong><code>outletOnly: true</code>.</strong> The click guard only affects native link interception. It is evaluated before link detection, so on an outlet-less page the click proceeds as a normal full-page navigation. It does not change <code>router.navigate()</code> or <code>popstate</code> handling.</li>
+                <li><strong>Programmatic navigation from outlet-less pages.</strong> <code>router.navigate()</code> pushes or replaces the history entry before fetching the target. If the live document has no outlet, the promise rejects after the URL has already changed. Prefer native links on outlet-less pages, or combine <code>autoWrap: false</code> with <code>outletOnly: true</code> so clicks stay native.</li>
+                <li><strong>Head reconciliation.</strong> After each navigation the live document's <code>&lt;title&gt;</code> and <code>&lt;meta name|property&gt;</code> tags are reconciled against the fetched page: added, updated, and removed tags are the union of both sets keyed by <code>name</code>/<code>property</code>.</li>
+                <li><strong>Hydration-store re-store.</strong> The fetched page's hydration payload (<code>&lt;script data-coralite-hydration&gt;</code>) is parsed and installed into the shared hydration store (<code>runtime.state.replaceHydration()</code>) before the swap, so component state for the new route is current before upgrade.</li>
+                <li><strong>Component re-hydration.</strong> After the swap, the new outlet content is upgraded (<code>runtime.dom.upgrade(outlet)</code>), so every SPA navigation yields fully hydrated component instances; out-of-outlet elements are never re-instantiated.</li>
+                <li><strong>Scroll position.</strong> The window scrolls to the top after each navigation unless the target path contains a <code>#</code> hash fragment (hash-targeted navigation preserves scroll).</li>
+                <li><strong>Fetch contract.</strong> SPA navigation requests carry the header <code>X-Coralite-Router: true</code> so static hosts, service workers, or edge functions can distinguish client route fetches from initial page loads. A non-OK response, or a fetched document without an outlet, fails the navigation with an error.</li>
+                <li><strong>View Transitions interplay.</strong> When the project sets <code>viewTransitions: true</code> in <code>coralite.config.js</code>, the browser supports <code>document.startViewTransition</code>, and the user has not enabled <code>prefers-reduced-motion: reduce</code>, the outlet swap executes inside a native View Transition. Otherwise the swap is a direct DOM replacement. (Distinct from the native MPA crossfades that <code>viewTransitions</code> also drives between full page loads.)</li>
+              </ul>
+            </section>
+
+            <section id="related">
+              <h2 id="related-pages">Related Pages</h2>
+              <ul>
+                <li><a href="/docs/guide/spa-router">SPA Router Guide</a> — patterns for outlet layout, guards, navigation events, state across route swaps, and production pitfalls.</li>
+                <li><a href="/docs/reference/pages.html#13-spa-router-opt-in">Pages &amp; Routing Reference, §13</a> — the SPA router section of the pages reference.</li>
+                <li><a href="/docs/reference/plugins">Plugins Reference</a> — the <code>definePlugin</code> contract, context resolvers, and lifecycle hooks.</li>
+              </ul>
+            </section>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/reference/plugins/testing" variant="secondary">← Previous: Testing Plugin</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#table-of-contents">Table of Contents</a>
+        <a href="#registration-required">Registration (Required)</a>
+        <a href="#configuration-options">Configuration Options</a>
+        <a href="#outlet-swap-region">Outlet &amp; Swap Region</a>
+        <a href="#client-router-api">Client Router API</a>
+        <a href="#navigation-guards">Navigation Guards</a>
+        <a href="#navigation-events">Navigation Events</a>
+        <a href="#link-interception">Link Interception</a>
+        <a href="#behavior-contract">Behavior Contract</a>
+        <a href="#related-pages">Related Pages</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

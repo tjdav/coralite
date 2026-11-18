@@ -1,0 +1,173 @@
+<template id="docs-sidebar">
+  <nav class="docs-nav">
+    <div class="docs-group docs-group--guide">
+      <h4>Guide</h4>
+      <a href="/docs/guide/getting-started" data-page="guide/getting-started">Getting Started</a>
+      <a href="/docs/guide/authoring" data-page="guide/authoring">Authoring Pattern</a>
+      <a href="/docs/guide/quick-start" data-page="guide/quick-start">Quick Start</a>
+      <a href="/docs/guide/ssr" data-page="guide/ssr">Server-Side Rendering (SSR)</a>
+      <a href="/docs/guide/components" data-page="guide/components">Components</a>
+      <a href="/docs/guide/dom-refs" data-page="guide/dom-refs">Managing the DOM</a>
+      <a href="/docs/guide/page-metadata" data-page="guide/page-metadata">Page Metadata</a>
+      <a href="/docs/guide/page-variables" data-page="guide/page-variables">Built-in Page Variables</a>
+      <a href="/docs/guide/validation" data-page="guide/validation">Self-Healing Code & Diagnostics</a>
+      <a href="/docs/guide/csp" data-page="guide/csp">Content Security Policy (CSP)</a>
+      <a href="/docs/guide/javascript" data-page="guide/javascript">Client-Side JavaScript</a>
+      <a href="/docs/guide/styling" data-page="guide/styling">Component styles</a>
+      <a href="/docs/guide/plugins" data-page="guide/plugins">Authoring Plugins</a>
+      <a href="/docs/guide/i18n" data-page="guide/i18n">Internationalization (i18n)</a>
+      <a href="/docs/guide/seo" data-page="guide/seo">Search Engine Optimization (SEO)</a>
+      <a href="/docs/guide/spa-router" data-page="guide/spa-router">SPA Router Guide</a>
+      <a href="/docs/guide/binary-assets" data-page="guide/binary-assets">Handling Binary Assets</a>
+      <a href="/docs/guide/building" data-page="guide/building">Building Applications</a>
+      <a href="/docs/guide/testing" data-page="guide/testing">Testing & Deployment</a>
+      <a href="/docs/guide/e2e-testing" data-page="guide/e2e-testing">E2E Testing & Hydration Readiness</a>
+      <a href="/docs/guide/core-concepts" data-page="guide/core-concepts">Core Concepts</a>
+    </div>
+
+    <div class="docs-group docs-group--concepts">
+      <h4>Concepts</h4>
+      <a href="/docs/concepts/reactivity" data-page="concepts/reactivity">Reactivity & Context</a>
+      <a href="/docs/concepts/styling" data-page="concepts/styling">Styling & Slots</a>
+    </div>
+
+    <div class="docs-group docs-group--reference">
+      <h4>Reference</h4>
+      <a href="/docs/reference/cli" data-page="reference/cli">Coralite CLI</a>
+      <a href="/docs/reference/config" data-page="reference/config">Configuration Reference</a>
+      <a href="/docs/reference/pages" data-page="reference/pages">Pages & Routing Reference</a>
+      <a href="/docs/reference/components" data-page="reference/components">Components Reference</a>
+      <a href="/docs/reference/define-component" data-page="reference/define-component">Component API Reference</a>
+      <a href="/docs/reference/imperative-components" data-page="reference/imperative-components">Imperative Components</a>
+      <a href="/docs/reference/coralite-ignore" data-page="reference/coralite-ignore">coralite-ignore Reference</a>
+      <a href="/docs/reference/lists" data-page="reference/lists">Lists & Store Reference</a>
+      <a href="/docs/reference/forms" data-page="reference/forms">Forms Reference</a>
+      <a href="/docs/reference/plugins/" data-page="reference/plugins">Plugins Reference</a>
+      <a href="/docs/reference/define-plugin" data-page="reference/define-plugin">definePlugin API</a>
+      <a href="/docs/reference/non-features" data-page="reference/non-features">Non-Features Reference</a>
+      <a href="/docs/reference/e2e-testing" data-page="reference/e2e-testing">Hydration Readiness & E2E Testing</a>
+      <a href="/docs/reference/coralite-scripts" data-page="reference/coralite-scripts">Coralite Scripts (Deprecated)</a>
+      <a href="/docs/reference/dom" data-page="reference/dom">Coralite DOM Structure</a>
+      <a href="/docs/reference/types" data-page="reference/types">Coralite Type Reference</a>
+      <a href="/docs/reference/coralite" data-page="reference/coralite">Coralite Library</a>
+    </div>
+
+    <div class="docs-group docs-group--reference-plugins">
+      <h4>Built-in Plugins</h4>
+      <a href="/docs/reference/plugins/refs" data-page="reference/plugins/refs">refs System</a>
+      <a href="/docs/reference/plugins/metadata" data-page="reference/plugins/metadata">Metadata Plugin</a>
+      <a href="/docs/reference/plugins/static-assets" data-page="reference/plugins/static-assets">Static Assets Plugin</a>
+      <a href="/docs/reference/plugins/testing" data-page="reference/plugins/testing">Testing Plugin</a>
+      <a href="/docs/reference/plugins/router" data-page="reference/plugins/router">Router Plugin</a>
+    </div>
+  </nav>
+</template>
+
+<script type="module">
+  export const attributes = {
+    active: { type: String, default: '' }
+  }
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+
+  .docs-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .docs-group {
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  :host([active^="guide/"]) .docs-group--guide,
+  :host([active^="concepts/"]) .docs-group--concepts,
+  :host([active^="reference/plugins/"]) .docs-group--reference-plugins,
+  :host([active^="reference/"]:not([active^="reference/plugins/"])) .docs-group--reference {
+    display: flex;
+  }
+
+  .docs-group h4 {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin: 0 0 8px 0;
+    padding-left: 12px;
+  }
+
+  .docs-group a {
+    display: block;
+    padding: 8px 12px;
+    border-left: 3px solid transparent;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .docs-group a:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-card);
+  }
+
+  :host([active="guide/getting-started"]) [data-page="guide/getting-started"],
+  :host([active="guide/authoring"]) [data-page="guide/authoring"],
+  :host([active="guide/quick-start"]) [data-page="guide/quick-start"],
+  :host([active="guide/ssr"]) [data-page="guide/ssr"],
+  :host([active="guide/components"]) [data-page="guide/components"],
+  :host([active="guide/dom-refs"]) [data-page="guide/dom-refs"],
+  :host([active="guide/page-metadata"]) [data-page="guide/page-metadata"],
+  :host([active="guide/page-variables"]) [data-page="guide/page-variables"],
+  :host([active="guide/validation"]) [data-page="guide/validation"],
+  :host([active="guide/csp"]) [data-page="guide/csp"],
+  :host([active="guide/javascript"]) [data-page="guide/javascript"],
+  :host([active="guide/styling"]) [data-page="guide/styling"],
+  :host([active="guide/plugins"]) [data-page="guide/plugins"],
+  :host([active="guide/i18n"]) [data-page="guide/i18n"],
+  :host([active="guide/seo"]) [data-page="guide/seo"],
+  :host([active="guide/spa-router"]) [data-page="guide/spa-router"],
+  :host([active="guide/binary-assets"]) [data-page="guide/binary-assets"],
+  :host([active="guide/building"]) [data-page="guide/building"],
+  :host([active="guide/testing"]) [data-page="guide/testing"],
+  :host([active="guide/e2e-testing"]) [data-page="guide/e2e-testing"],
+  :host([active="guide/core-concepts"]) [data-page="guide/core-concepts"],
+  :host([active="concepts/reactivity"]) [data-page="concepts/reactivity"],
+  :host([active="concepts/styling"]) [data-page="concepts/styling"],
+  :host([active="reference/cli"]) [data-page="reference/cli"],
+  :host([active="reference/config"]) [data-page="reference/config"],
+  :host([active="reference/pages"]) [data-page="reference/pages"],
+  :host([active="reference/components"]) [data-page="reference/components"],
+  :host([active="reference/define-component"]) [data-page="reference/define-component"],
+  :host([active="reference/imperative-components"]) [data-page="reference/imperative-components"],
+  :host([active="reference/coralite-ignore"]) [data-page="reference/coralite-ignore"],
+  :host([active="reference/lists"]) [data-page="reference/lists"],
+  :host([active="reference/forms"]) [data-page="reference/forms"],
+  :host([active="reference/plugins"]) [data-page="reference/plugins"],
+  :host([active="reference/define-plugin"]) [data-page="reference/define-plugin"],
+  :host([active="reference/non-features"]) [data-page="reference/non-features"],
+  :host([active="reference/e2e-testing"]) [data-page="reference/e2e-testing"],
+  :host([active="reference/coralite-scripts"]) [data-page="reference/coralite-scripts"],
+  :host([active="reference/dom"]) [data-page="reference/dom"],
+  :host([active="reference/types"]) [data-page="reference/types"],
+  :host([active="reference/coralite"]) [data-page="reference/coralite"],
+  :host([active="reference/plugins/refs"]) [data-page="reference/plugins/refs"],
+  :host([active="reference/plugins/metadata"]) [data-page="reference/plugins/metadata"],
+  :host([active="reference/plugins/static-assets"]) [data-page="reference/plugins/static-assets"],
+  :host([active="reference/plugins/testing"]) [data-page="reference/plugins/testing"],
+  :host([active="reference/plugins/router"]) [data-page="reference/plugins/router"] {
+    background-color: rgba(139, 92, 246, 0.1);
+    color: var(--accent-violet);
+    border-left-color: var(--accent-violet);
+  }
+</style>

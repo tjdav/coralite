@@ -1,0 +1,101 @@
+main.showcase-page.page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  main.showcase-page .hero-section {
+    text-align: center;
+    padding: 96px 0 64px 0;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  main.showcase-page .hero-section h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin: 24px 0;
+    color: var(--text-primary);
+  }
+
+  main.showcase-page .hero-section .subhead {
+    font-size: 20px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  main.showcase-page .showcase-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 880px);
+    justify-content: center;
+    gap: 24px;
+    padding-bottom: 64px;
+  }
+
+  main.showcase-page .showcase-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  main.showcase-page .showcase-image {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 20px;
+  }
+
+  main.showcase-page .showcase-body h2 {
+    font-size: 22px;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+
+  main.showcase-page .showcase-body p {
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  main.showcase-page .showcase-link {
+    color: var(--accent-violet);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  main.showcase-page .showcase-link:hover {
+    text-decoration: underline;
+  }
+
+  main.showcase-page .submit-section {
+    padding-bottom: 96px;
+  }
+
+  main.showcase-page .submit-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+  }
+
+  main.showcase-page .submit-row h2 {
+    font-size: 24px;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  main.showcase-page .submit-row .subhead {
+    color: var(--text-muted);
+    font-size: 15px;
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    main.showcase-page .hero-section h1 { font-size: 36px; }
+    main.showcase-page .submit-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }

@@ -1,46 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.4.2" description="Coralite v0.4.2 introduces documentation improvements, test reliability enhancements, and build tool consistency for the HTML module static site generator (SSG). Explore key features and updates."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-02-03T15:30:51+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.4.2"
+    description="Coralite v0.4.2 introduces documentation improvements, test reliability enhancements, and build tool consistency for the HTML module static site generator"
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-02-03"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.4.2</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.4.2</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-02-03T15:30:51+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.4.2</h1>
+        <p class="subhead">Coralite v0.4.2 introduces documentation improvements, test reliability enhancements, and build tool consistency for the HTML module static site generator (SSG). Explore key features and updates.</p>
 
-    <p>Coralite’s latest release of its HTML module static site generator introduces critical improvements to package compatibility, testing infrastructure, and documentation clarity for developers building component-based websites.</p> 
-    
-    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">February 3, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <ul>  
-      <li><strong>Resolved package.json parsing issues</strong> in older Node.js versions by updating compatibility checks for <code>Dirent</code> usage, ensuring broader environment support.</li>  
-      <li><strong>Added end-to-end (E2E) tests</strong> for aggregate content processing, enhancing reliability and validation of data aggregation workflows.</li>  
-      <li><strong>Updated documentation structure</strong> by renaming the “getting-started” guide to “basic-templating” and introducing a new templating tutorial for improved onboarding.</li>  
-    </ul>  
-    <coralite-heading level="2" text="Code Quality and Style Improvements"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite’s latest release of its HTML module static site generator introduces critical improvements to package compatibility, testing infrastructure, and documentation clarity for developers building component-based websites.</p> 
+            
+            <h2 id="core-functionality">Core Functionality</h2>
 
-    <ul>  
-      <li><strong>Linting updates</strong> standardised test script naming conventions and removed extraneous whitespace across the codebase.</li>  
-      <li><strong>Test fixture updates</strong> improved consistency in test scenarios for module validation.</li>  
-    </ul>  
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <ul>  
+              <li><strong>Resolved package.json parsing issues</strong> in older Node.js versions by updating compatibility checks for <code>Dirent</code> usage, ensuring broader environment support.</li>  
+              <li><strong>Added end-to-end (E2E) tests</strong> for aggregate content processing, enhancing reliability and validation of data aggregation workflows.</li>  
+              <li><strong>Updated documentation structure</strong> by renaming the “getting-started” guide to “basic-templating” and introducing a new templating tutorial for improved onboarding.</li>  
+            </ul>  
+            <h2 id="code-quality-and-style-improvements">Code Quality and Style Improvements</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.4.2</coralite-code-highlight>
+            <ul>  
+              <li><strong>Linting updates</strong> standardised test script naming conventions and removed extraneous whitespace across the codebase.</li>  
+              <li><strong>Test fixture updates</strong> improved consistency in test scenarios for module validation.</li>  
+            </ul>  
+            <h2 id="get-the-release">Get the release</h2>
 
-    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.4.2" target="_blank">git v0.4.2 changelog</a></p>
+            <code-block language="bash">npm install coralite@0.4.2</code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.4.2" target="_blank">git v0.4.2 changelog</a></p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

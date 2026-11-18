@@ -1,0 +1,114 @@
+<template id="site-footer">
+  <footer>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Framework</h4>
+        <a href="/docs/">Documentation</a>
+        <a href="/docs/guide/">Guide</a>
+        <a href="/docs/reference/">API Reference</a>
+        <a href="/changelog/">Changelog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Explore</h4>
+        <a href="/learn/">Learn</a>
+        <a href="/compare/">Compare</a>
+        <a href="/blog/">Blog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Community</h4>
+        <a href="https://github.com/tjdav/coralite" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/tjdav/coralite/issues" target="_blank" rel="noopener">Issues</a>
+        <a href="https://github.com/tjdav/coralite/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://www.npmjs.com/package/coralite" target="_blank" rel="noopener">NPM</a>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Reference</h4>
+        <a href="/reference/">Component API</a>
+        <a href="/reference/cli">CLI</a>
+        <a href="/reference/plugins">Plugins</a>
+        <a href="/why/">Why Coralite</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Coralite. Built with Coralite (<a href="https://github.com/tjdav/coralite" target="_blank" rel="noopener noreferrer">View Source</a>).</span>
+      <span>MIT License · Production Ready</span>
+    </div>
+  </footer>
+</template>
+
+<script type="module">
+  export const attributes = {}
+</script>
+
+<style>
+  :host {
+    display: block;
+    background-color: var(--bg-main);
+    border-top: 1px solid var(--border-subtle);
+    padding: 64px 24px 32px 24px;
+    margin-top: 80px;
+  }
+
+  footer {
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    margin-bottom: 64px;
+  }
+
+  .footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .footer-col h4 {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+    letter-spacing: 0.5px;
+  }
+
+  .footer-col a {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .footer-col a:hover {
+    color: var(--text-primary);
+  }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-subtle);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .footer-bottom a {
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.2s ease;
+  }
+
+  .footer-bottom a:hover,
+  .footer-bottom a:focus-visible {
+    color: var(--text-primary);
+  }
+</style>

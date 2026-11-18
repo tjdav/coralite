@@ -1,0 +1,72 @@
+<template id="ui-toggle">
+  <div class="toggle-group">
+    <button ref="btn-left" class="toggle-btn {{ leftClass }}" type="button">
+      <slot name="left"></slot>
+    </button>
+    <button ref="btn-right" class="toggle-btn {{ rightClass }}" type="button">
+      <slot name="right"></slot>
+    </button>
+  </div>
+</template>
+
+<script type="module">
+  export const attributes = {
+    active: { type: String, default: 'left' }
+  }
+
+  export const getters = {
+    leftClass: ({ state }) => (state.active === 'left' ? 'active' : ''),
+    rightClass: ({ state }) => (state.active === 'right' ? 'active' : '')
+  }
+
+  export function client ({ state, refs, signal, emit }) {
+    const btnLeft = refs('btn-left')
+    const btnRight = refs('btn-right')
+
+    const setActive = (val) => {
+      if (state.active === val) return
+      state.active = val
+      emit('toggle-change', { active: val })
+    }
+
+    btnLeft.addEventListener('click', () => setActive('left'), { signal })
+    btnRight.addEventListener('click', () => setActive('right'), { signal })
+  }
+</script>
+
+<style>
+  :host {
+    display: inline-block;
+  }
+
+  .toggle-group {
+    display: inline-flex;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .toggle-btn {
+    background: transparent;
+    border: none;
+    border-radius: calc(var(--radius-md) - 2px);
+    padding: 6px 16px;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .toggle-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .toggle-btn.active {
+    background-color: var(--accent-violet);
+    color: #FFFFFF;
+  }
+</style>

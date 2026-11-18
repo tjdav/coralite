@@ -1,88 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration 
-    type="article" 
-    title="Coralite v0.20 Released - Major Performance Boost & New APIs" 
-    description="Coralite v0.20 introduces significant performance improvements, a new metadata plugin, enhanced DOM APIs, and removes experimental flag requirements."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-02-09T20:57:36.635Z">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.20 Released: Major Performance Boost & New APIs</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.20 Released - Major Performance Boost &amp; New APIs"
+    description="Coralite v0.20 introduces significant performance improvements, a new metadata plugin, enhanced DOM APIs, and removes experimental flag requirements."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-02-09"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.20 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.20 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-02-09T20:57:36.635Z"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.20 Released</h1>
+        <p class="subhead">Coralite v0.20 introduces significant performance improvements, a new metadata plugin, enhanced DOM APIs, and removes experimental flag requirements.</p>
 
-    <p>I am thrilled to announce the release of <strong>Coralite v0.20.1</strong> and <strong>Coralite Scripts v0.20.0</strong>! This major update focuses on significantly improving build performance, simplifying the development environment, and introducing powerful new APIs for metadata and DOM manipulation.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">February 9, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Major Performance Improvements"></coralite-heading>
+      <div class="post-body">
+        <p>I am thrilled to announce the release of <strong>Coralite v0.20.1</strong> and <strong>Coralite Scripts v0.20.0</strong>! This major update focuses on significantly improving build performance, simplifying the development environment, and introducing powerful new APIs for metadata and DOM manipulation.</p>
 
-    <p>Build times and page generation have been majorly improved in this release. The core compilation process now parallelizes custom element creation, especially for asynchronous operations. In  benchmarks, this resulted in a dramatic speedup (up to 10x faster for complex component trees), reducing build times from seconds to milliseconds.</p>
+            <h2 id="major-performance-improvements">Major Performance Improvements</h2>
 
-    <p>Additionally, the development server now features <strong>in-memory page caching</strong>. This means subsequent requests to unchanged pages are served instantly, and multi-page builds are handled more efficiently, making the developer experience smoother and faster.</p>
+            <p>Build times and page generation have been majorly improved in this release. The core compilation process now parallelizes custom element creation, especially for asynchronous operations. In  benchmarks, this resulted in a dramatic speedup (up to 10x faster for complex component trees), reducing build times from seconds to milliseconds.</p>
 
-    <coralite-heading level="2" text="New Metadata Plugin"></coralite-heading>
+            <p>Additionally, the development server now features <strong>in-memory page caching</strong>. This means subsequent requests to unchanged pages are served instantly, and multi-page builds are handled more efficiently, making the developer experience smoother and faster.</p>
 
-    <p>Managing page metadata is now easier than ever with the new built-in Metadata Plugin. This plugin automatically extracts <code>&lt;meta&gt;</code> tags from your HTML head sections and component slots, making them available as variables in your templates.</p>
+            <h2 id="new-metadata-plugin">New Metadata Plugin</h2>
 
-    <p>Metadata variables are now prefixed with <code>meta_</code> to avoid conflicts and provide a consistent naming convention. For example:</p>
+            <p>Managing page metadata is now easier than ever with the new built-in Metadata Plugin. This plugin automatically extracts <code>&lt;meta&gt;</code> tags from your HTML head sections and component slots, making them available as variables in your templates.</p>
 
-    <coralite-code-html>
-      <!-- In your page HTML -->
-      <meta name="author" content="Thomas">
-      <meta name="description" content="A great post">
+            <p>Metadata variables are now prefixed with <code>meta_</code> to avoid conflicts and provide a consistent naming convention. For example:</p>
 
-      <!-- In your template -->
-      <p>Author: &#123;&#123; meta_author &#125;&#125;</p>
-      <p>Description: &#123;&#123; meta_description &#125;&#125;</p>
-    </coralite-code-html>
+            <code-block language="html">
+              <!-- In your page HTML -->
+              <meta name="author" content="Thomas">
+              <meta name="description" content="A great post">
 
-    <coralite-heading level="2" text="Enhanced DOM API"></coralite-heading>
+              <!-- In your template -->
+              <p>Author: &#123;&#123; meta_author &#125;&#125;</p>
+              <p>Description: &#123;&#123; meta_description &#125;&#125;</p>
+            </code-block>
 
-    <p>This release includes a refactored internal DOM node creation logic designed for greater robustness and type safety. It also introduces the new factory functions <code>createCoraliteElement</code> and <code>createCoraliteTextNode</code>, which provide a standardized approach for programmatically creating nodes in plugins and scripts.
-    
-    <p>The new <code>coralite.build</code> API replaces the older compilation methods, offering better error handling and a callback overload for more flexible build scripts.</p>
+            <h2 id="enhanced-dom-api">Enhanced DOM API</h2>
 
-    <coralite-heading level="2" text="Simplified Environment Setup"></coralite-heading>
+            <p>This release includes a refactored internal DOM node creation logic designed for greater robustness and type safety. It also introduces the new factory functions <code>createCoraliteElement</code> and <code>createCoraliteTextNode</code>, which provide a standardized approach for programmatically creating nodes in plugins and scripts.
+            
+            <p>The new <code>coralite.build</code> API replaces the older compilation methods, offering better error handling and a callback overload for more flexible build scripts.</p>
 
-    <p>The system no longer depends on any experimental Node.js flags! You can now run Coralite without the <code>--experimental-vm-modules</code> flag, simplifying your <code>package.json</code> scripts and CI/CD pipelines.</p>
+            <h2 id="simplified-environment-setup">Simplified Environment Setup</h2>
 
-    <coralite-heading level="2" text="Bug Fixes & Improvements"></coralite-heading>
+            <p>The system no longer depends on any experimental Node.js flags! You can now run Coralite without the <code>--experimental-vm-modules</code> flag, simplifying your <code>package.json</code> scripts and CI/CD pipelines.</p>
 
-    <p>This release also includes numerous bug fixes and quality-of-life improvements:</p>
+            <h2 id="bug-fixes-improvements">Bug Fixes & Improvements</h2>
 
-    <ul>
-      <li><strong>Collection Updates:</strong> Fixed an issue where <code>setItem</code> would not return the updated item correctly.</li>
-      <li><strong>Custom Elements:</strong> Removed noisy console warnings for invalid custom element tag names.</li>
-      <li><strong>Slots:</strong> Default slot values now display correctly when the slot content is empty.</li>
-      <li><strong>Attributes:</strong> Fixed an issue where empty attributes could unexpectedly remove newlines in the output.</li>
-      <li><strong>Dependencies:</strong> Runtime dependencies have been correctly moved from <code>devDependencies</code> to <code>dependencies</code> for better stability.</li>
-    </ul>
+            <p>This release also includes numerous bug fixes and quality-of-life improvements:</p>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <ul>
+              <li><strong>Collection Updates:</strong> Fixed an issue where <code>setItem</code> would not return the updated item correctly.</li>
+              <li><strong>Custom Elements:</strong> Removed noisy console warnings for invalid custom element tag names.</li>
+              <li><strong>Slots:</strong> Default slot values now display correctly when the slot content is empty.</li>
+              <li><strong>Attributes:</strong> Fixed an issue where empty attributes could unexpectedly remove newlines in the output.</li>
+              <li><strong>Dependencies:</strong> Runtime dependencies have been correctly moved from <code>devDependencies</code> to <code>dependencies</code> for better stability.</li>
+            </ul>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite@0.20.1
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite-scripts@0.20.0
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite@0.20.1
+            </code-block>
 
-    <p>Check out the <a href="https://codeberg.org/tjdavid/coralite" target="_blank" rel="noopener">full changelog on Codeberg</a> for a complete list of changes.</p>
+            <code-block language="bash">
+              npm install coralite-scripts@0.20.0
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <p>Check out the <a href="https://codeberg.org/tjdavid/coralite" target="_blank" rel="noopener">full changelog on Codeberg</a> for a complete list of changes.</p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
 </html>

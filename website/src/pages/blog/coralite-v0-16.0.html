@@ -1,78 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration 
-    type="article"
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
     title="Coralite v0.16.0 Release Notes"
-    seotitle="Coralite v0.16.0 Released: DOM Refs, Scripting Enhancements & Improved Tooling"
-    description="Coralite v0.16.0 adds robust DOM reference management, callback support in component scripts, and new CLI tools for project setup and publishing. Explore key updates, bug fixes."
-  ></coralite-meta>
-
-  <meta property="article:published_time" name="published_time" content="2025-09-08T16:49:14.000Z">
-  <meta name="author_id" content="thomas" data-dev="true">
+    description="Coralite v0.16.0 adds robust DOM reference management, callback support in component scripts, and new CLI tools for project setup and publishing."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-09-08"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.16.0</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.16.0</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-09-08T16:49:14.000Z"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.16.0</h1>
+        <p class="subhead">Coralite v0.16.0 adds robust DOM reference management, callback support in component scripts, and new CLI tools for project setup and publishing. Explore key updates, bug fixes.</p>
 
-    <p>Coralite v0.16.0 introduces foundational support for managing DOM references, improves scripting workflows, and enhances tooling for project setup and publishing. This release strengthens the framework’s usability for developers building interactive, component-driven applications.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">September 8, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Key Improvements"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite v0.16.0 introduces foundational support for managing DOM references, improves scripting workflows, and enhances tooling for project setup and publishing. This release strengthens the framework’s usability for developers building interactive, component-driven applications.</p>
 
-    <ul>
-      <li><code>refs</code> plugin now exports core functionality for referencing DOM elements directly in components.</li>
-      <li>Script handling in <code>defineComponent</code> now supports callbacks, enabling lifecycle-aware logic execution.</li>
-      <li>DOM references are collected and managed automatically, with cleanup on unmount to prevent memory leaks.</li>
-      <li>Script execution now includes built-in support for reference management, improving consistency across component lifecycles.</li>
-      <li>A dedicated <code>refs</code> plugin for Coralite provides a clean API for accessing DOM elements via <code>ref="id"</code> attributes.</li>
-      <li>Initial setup script <code>create-coralite</code> is now available, streamlining project initialization.</li>
-      <li>Added <code>publish-scripts</code> command to <code>coralite-scripts</code> for automated publishing workflows.</li>
-    </ul>
+            <h2 id="key-improvements">Key Improvements</h2>
 
-    <coralite-heading level="2" text="Bug Fixes"></coralite-heading>
+            <ul>
+              <li><code>refs</code> plugin now exports core functionality for referencing DOM elements directly in components.</li>
+              <li>Script handling in <code>defineComponent</code> now supports callbacks, enabling lifecycle-aware logic execution.</li>
+              <li>DOM references are collected and managed automatically, with cleanup on unmount to prevent memory leaks.</li>
+              <li>Script execution now includes built-in support for reference management, improving consistency across component lifecycles.</li>
+              <li>A dedicated <code>refs</code> plugin for Coralite provides a clean API for accessing DOM elements via <code>ref="id"</code> attributes.</li>
+              <li>Initial setup script <code>create-coralite</code> is now available, streamlining project initialization.</li>
+              <li>Added <code>publish-scripts</code> command to <code>coralite-scripts</code> for automated publishing workflows.</li>
+            </ul>
 
-    <ul>
-      <li>Fixed SCSS watch trigger condition to ensure proper recompilation on file changes.</li>
-      <li>Updated dependency versions in <code>package.json</code> to ensure compatibility and security.</li>
-    </ul>
+            <h2 id="bug-fixes">Bug Fixes</h2>
 
-    <coralite-heading level="2" text="Documentation & Tooling"></coralite-heading>
+            <ul>
+              <li>Fixed SCSS watch trigger condition to ensure proper recompilation on file changes.</li>
+              <li>Updated dependency versions in <code>package.json</code> to ensure compatibility and security.</li>
+            </ul>
 
-    <p>Documentation has been expanded to support new users and contributors:</p>
+            <h2 id="documentation-tooling">Documentation & Tooling</h2>
 
-    <ul>
-      <li>Added <code>README.md</code> with setup and usage guidance.</li>
-      <li>Updated image paths for the introductory GIF in documentation.</li>
-      <li>Enhanced type definitions for document values, including support for a <code>remove</code> flag in DOM operations.</li>
-      <li>Added detailed READMEs for <code>create-coralite</code> and <code>coralite-release</code> packages.</li>
-      <li>Updated changelog to reflect all changes in this release.</li>
-    </ul>
+            <p>Documentation has been expanded to support new users and contributors:</p>
 
-    <coralite-heading level="2" text="Code Quality & Refactoring"></coralite-heading>
+            <ul>
+              <li>Added <code>README.md</code> with setup and usage guidance.</li>
+              <li>Updated image paths for the introductory GIF in documentation.</li>
+              <li>Enhanced type definitions for document values, including support for a <code>remove</code> flag in DOM operations.</li>
+              <li>Added detailed READMEs for <code>create-coralite</code> and <code>coralite-release</code> packages.</li>
+              <li>Updated changelog to reflect all changes in this release.</li>
+            </ul>
 
-    <ul>
-      <li>Cleaned up internal ref attribute handling to improve consistency and reduce edge-case issues.</li>
-    </ul>
+            <h2 id="code-quality-refactoring">Code Quality & Refactoring</h2>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <ul>
+              <li>Cleaned up internal ref attribute handling to improve consistency and reduce edge-case issues.</li>
+            </ul>
 
-    <p>To upgrade to Coralite v0.16.0, run:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.16.0</coralite-code-highlight>
+            <p>To upgrade to Coralite v0.16.0, run:</p>
 
-    <p>After installation, verify your project’s dependencies and review the updated documentation for any changes in API usage, especially around <code>refs</code> and script execution.</p>
+            <code-block language="bash">npm install coralite@0.16.0</code-block>
 
-    <p>For full details, view the <a href="https://codeberg.org/tjdavid/coralite/compare/v0.15.0...v0.16.0" target="_blank">full changelog</a>.</p>
+            <p>After installation, verify your project’s dependencies and review the updated documentation for any changes in API usage, especially around <code>refs</code> and script execution.</p>
+
+            <p>For full details, view the <a href="https://codeberg.org/tjdavid/coralite/compare/v0.15.0...v0.16.0" target="_blank">full changelog</a>.</p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

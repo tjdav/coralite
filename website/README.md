@@ -1,32 +1,47 @@
-# Website Documentation
+# coralite-website
 
-This package builds the public `coralite.dev` documentation and the machine-readable LLM references.
+A Coralite project.
 
-## Canonical Sources
+## Development
 
-Keep the detailed contract in one place. Other pages should summarize or link to the canonical owner instead of repeating the full rules.
-
-| Topic | Canonical source | Mirrors / summaries |
-|---|---|---|
-| Imperative components | `src/pages/docs/reference/imperative-components.html` | JavaScript guide, plugin guide, E2E guide, plugin reference, `AGENTS.md`, `packages/coralite/AGENT.md`, `packages/coralite/README.md`, `public/llms.txt`, `public/llms/plugins.md` |
-| DOM refs | `src/pages/docs/guide/dom-refs.html` | Imperative-components reference links here for the full ref model |
-| Styling | `src/pages/docs/guide/styling.html` | Imperative-components reference links here for scoped styles and host styling |
-| Runtime DOM types | `src/pages/docs/reference/types.html` | Imperative-components reference links here for runtime type signatures |
-
-`public/llms-full.txt` is an intentionally complete standalone LLM reference. It mirrors canonical details instead of linking, so it must be updated when a canonical contract changes.
-
-## Sync Checklist
-
-1. Update the canonical page first.
-2. Update `public/llms-full.txt` if the contract changed.
-3. Update summaries only when the high-level rule changed.
-4. Run `pnpm website:build` from the repository root.
-5. Check that canonical anchors and summary links still resolve.
-
-## Build
+Start the development server:
 
 ```bash
-pnpm website:build
+pnpm dev
 ```
 
-The site is built with Coralite from `src/pages` and `src/components`.
+> **Note:** `coralite dev` compiles pages in memory and serves compiled assets
+> from `.coralite/`; `coralite build` writes `dist/`. Both also share the
+> incremental cache at `.coralite/manifest.json`. Running a production build
+> while the dev server is active can leave dev referencing an asset hash that is
+> no longer present (the browser then gets `404 text/plain`, which blocks module
+> loading). If that happens, stop the dev server, delete `.coralite/` and
+> `dist/`, and start `pnpm dev` again.
+
+Build for production:
+
+```bash
+pnpm build
+```
+
+Validate project files:
+
+```bash
+pnpm check
+```
+
+Auto-fix validation issues:
+
+```bash
+pnpm fix
+```
+
+## Deploying
+
+The build produces a static site in `dist/`. Deploy `dist/` to any static host.
+
+- Build command: `pnpm build`
+- Output directory: `dist`
+- URLs are clean by default (`/about`, not `/about.html`). Configure your host to serve directory indexes if needed.
+
+Works out of the box on Netlify, Vercel, Cloudflare Pages, and GitHub Pages.

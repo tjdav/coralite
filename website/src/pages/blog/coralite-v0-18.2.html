@@ -1,59 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration 
-    type="article"
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
     title="Coralite v0.18.2 Release Notes"
-    seo-title="Coralite v0.18.2 Released: Improved CLI Testing, Build Scripts & Code Maintainability"
-    description="Coralite v0.18.2 enhances developer experience with a new CLI testing workflow, standardized build scripts via coralite-scripts, and improved type imports. Refactored path aliases and cleaner builds improve maintainability and compatibility"
-  ></coralite-meta>
-
-  <meta property="article:published_time" name="published_time" content="2025-09-16T10:23:21.000Z">
-  <meta name="author_id" content="thomas" data-dev="true">
+    description="Coralite v0.18.2 enhances developer experience with a new CLI testing workflow, standardized build scripts via coralite-scripts, and improved type imports."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-09-16"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.18.2</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.18.2</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-09-16T10:23:21.000Z"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.18.2</h1>
+        <p class="subhead">Coralite v0.18.2 enhances developer experience with a new CLI testing workflow, standardized build scripts via coralite-scripts, and improved type imports. Refactored path aliases and cleaner builds improve maintainability and compatibility</p>
 
-    <p>Coralite v0.18.2 delivers targeted improvements to tooling, build reliability, and code maintainability. This release focuses on the developer experience through refined configuration, better dependency resolution, and cleaner output pipelines.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">September 16, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Key Improvements"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite v0.18.2 delivers targeted improvements to tooling, build reliability, and code maintainability. This release focuses on the developer experience through refined configuration, better dependency resolution, and cleaner output pipelines.</p>
 
-    <ul>
-      <li>Added a dedicated CLI testing workflow to validate command-line behavior across environments.</li>
-      <li>Introduced <code>coralite-scripts</code> with build scripts and standardized <code>dist</code> output support for consistent project scaffolding.</li>
-    </ul>
+            <h2 id="key-improvements">Key Improvements</h2>
 
-    <coralite-heading level="2" text="Bug Fixes"></coralite-heading>
+            <ul>
+              <li>Added a dedicated CLI testing workflow to validate command-line behavior across environments.</li>
+              <li>Introduced <code>coralite-scripts</code> with build scripts and standardized <code>dist</code> output support for consistent project scaffolding.</li>
+            </ul>
 
-    <ul>
-      <li>Replaced the <code>#types</code> path alias with relative imports in type declarations, resolving issues with bundlers and IDEs that do not support custom aliases.</li>
-    </ul>
+            <h2 id="bug-fixes">Bug Fixes</h2>
 
-    <coralite-heading level="2" text="Code Refactoring"></coralite-heading>
+            <ul>
+              <li>Replaced the <code>#types</code> path alias with relative imports in type declarations, resolving issues with bundlers and IDEs that do not support custom aliases.</li>
+            </ul>
 
-    <ul>
-      <li>Added path aliases for <code>lib</code> and <code>plugins</code> modules in the core package, improving readability and reducing import path complexity.</li>
-      <li>Removed <code>minify-whitespace</code> from esbuild configurations to preserve readable output in development builds and reduce unintended side effects during debugging.</li>
-    </ul>
+            <h2 id="code-refactoring">Code Refactoring</h2>
 
-    <coralite-heading level="2" text="What This Means for You"></coralite-heading>
+            <ul>
+              <li>Added path aliases for <code>lib</code> and <code>plugins</code> modules in the core package, improving readability and reducing import path complexity.</li>
+              <li>Removed <code>minify-whitespace</code> from esbuild configurations to preserve readable output in development builds and reduce unintended side effects during debugging.</li>
+            </ul>
 
-    <p>With v0.18.2, Coralite continues to evolve as a lightweight, predictable toolchain for modular application development. The new <code>coralite-scripts</code> setup enables faster project initialization and consistent output structure. Fixing the type import issue ensures compatibility across different build environments, while path aliases and cleaner build configurations make the codebase easier to navigate and extend.</p>
+            <h2 id="what-this-means-for-you">What This Means for You</h2>
 
-    <p>These changes reflect a focus on developer ergonomics and long-term maintainability—key values in open-source sustainability.</p>
+            <p>With v0.18.2, Coralite continues to evolve as a lightweight, predictable toolchain for modular application development. The new <code>coralite-scripts</code> setup enables faster project initialization and consistent output structure. Fixing the type import issue ensures compatibility across different build environments, while path aliases and cleaner build configurations make the codebase easier to navigate and extend.</p>
 
-    <p>For a complete list of changes, <a href="https://codeberg.org/tjdavid/coralite/compare/v0.18.1...v0.18.2" target="_blank" rel="noopener">view the full changelog</a>.</p>
+            <p>These changes reflect a focus on developer ergonomics and long-term maintainability—key values in open-source sustainability.</p>
+
+            <p>For a complete list of changes, <a href="https://codeberg.org/tjdavid/coralite/compare/v0.18.1...v0.18.2" target="_blank" rel="noopener">view the full changelog</a>.</p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

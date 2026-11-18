@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Native CSS Scoping"
+    description="How Coralite encapsulates component styles without the performance and accessibility costs of Shadow DOM."
+    section="Learn"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <!-- Sidebar -->
+        <div slot="sidebar">
+      <ui-accordion title="Module 1: HTML Foundations" open>
+        <ui-nav-link href="/learn/01-the-document">1. The Document</ui-nav-link>
+        <ui-nav-link href="/learn/02-semantic-tags">2. Semantic Tags</ui-nav-link>
+        <ui-nav-link href="/learn/03-attributes-data">3. Attributes & Data</ui-nav-link>
+        <ui-nav-link href="/learn/04-structuring-a-page">4. Structuring a Page</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 2: CSS & Styling" open>
+        <ui-nav-link href="/learn/05-native-css-scoping" active>1. Native CSS Scoping</ui-nav-link>
+        <ui-nav-link href="/learn/06-cascade-layers">2. Cascade Layers</ui-nav-link>
+        <ui-nav-link href="/learn/07-theming-with-variables">3. Theming with Variables</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 3: JavaScript Behavior" open>
+        <ui-nav-link href="/learn/08-the-client-runtime">1. The Client Runtime</ui-nav-link>
+        <ui-nav-link href="/learn/09-refs-and-event-listeners">2. Refs & Event Listeners</ui-nav-link>
+        <ui-nav-link href="/learn/10-reactive-state">3. Reactive State</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 4: The Coralite Ecosystem" open>
+        <ui-nav-link href="/learn/11-server-side-rendering">1. Server-Side Rendering</ui-nav-link>
+        <ui-nav-link href="/learn/13-building-for-production">2. Building for Production</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <!-- Content -->
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/learn/">Learn</a>
+        <span class="separator">/</span>
+        <a href="/learn/">Module 2</a>
+        <span class="separator">/</span>
+        <span>Lesson 1: Native CSS Scoping</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <ui-badge variant="cyan">Lesson 05</ui-badge>
+        <h1>Native CSS Scoping</h1>
+        <p class="subhead">How Coralite encapsulates component styles without the performance and accessibility costs of Shadow DOM.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="the-shadow-dom-trade-off">The Shadow DOM Trade-off</h2>
+        <p>Most Web Component frameworks rely on Shadow DOM for style encapsulation. While effective, Shadow DOM creates a hard boundary that breaks native form association and makes global theming difficult.</p>
+        
+        <p>Coralite uses <strong>Light DOM</strong>. Your component's markup and styles live directly in the main document. To prevent style leakage, Coralite uses a build-time CSS Scoping engine.</p>
+
+        <h2 id="writing-scoped-styles">Writing Scoped Styles</h2>
+        <p>You write standard CSS inside your component's <code>&lt;style&gt;</code> block. You use <code>:host</code> to target the custom element itself, and standard class selectors for the inner elements.</p>
+
+        <code-block language="css" filename="card.css">
+:host {
+  display: block;
+  padding: 16px;
+  background: var(--bg-card);
+}
+
+.card-title {
+  color: var(--text-primary);
+  font-weight: bold;
+}
+        </code-block>
+
+        <h2 id="what-coralite-generates">What Coralite Generates</h2>
+        <p>During the build process, Coralite rewrites your CSS. It wraps your styles in a specific CSS Cascade Layer (<code>@layer components</code>) and scopes your class selectors using <code>:where()</code> to keep specificity low.</p>
+
+        <code-block language="css" filename="compiled.css">
+@layer components {
+  :where(my-card) {
+    display: block;
+    padding: 16px;
+    background: var(--bg-card);
+  }
+  
+  :where(my-card) .card-title {
+    color: var(--text-primary);
+    font-weight: bold;
+  }
+}
+        </code-block>
+
+        <h2 id="why-this-matters">Why this matters</h2>
+        <p>Because the styles live in the Light DOM, you can easily inspect them in DevTools, override them with utility classes (since they are in a low-priority cascade layer), and ensure that native accessibility features work perfectly.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/learn/04-structuring-a-page" variant="secondary">← Previous</ui-link>
+        <ui-link href="/learn/06-cascade-layers" variant="primary">Next: Cascade Layers →</ui-link>
+      </div>
+    </div>
+
+    <!-- TOC -->
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-shadow-dom-trade-off">The Shadow DOM Trade-off</a>
+        <a href="#writing-scoped-styles">Writing Scoped Styles</a>
+        <a href="#what-coralite-generates">What Coralite Generates</a>
+        <a href="#why-this-matters">Why this matters</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

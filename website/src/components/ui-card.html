@@ -1,0 +1,54 @@
+<template id="ui-card">
+  <div class="card">
+    <div class="card-header">
+      <slot name="header"></slot>
+    </div>
+    <div class="card-body">
+      <slot></slot>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  export const attributes = {
+    hoverable: { type: Boolean, default: false }
+  }
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+
+  .card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    transition: border-color 0.2s ease;
+  }
+
+  :host([hoverable]) .card:hover {
+    border-color: var(--accent-violet);
+  }
+
+  .card-header {
+    font-family: var(--font-sans);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+
+  /* Hide header container if slot is empty */
+  .card-header:empty {
+    display: none;
+  }
+
+  .card-body {
+    color: var(--text-body);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+</style>

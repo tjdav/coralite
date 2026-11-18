@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Structuring a Page"
+    description="Pages are not special. They are standard HTML documents that compose the custom elements you have built."
+    section="Learn"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <!-- Sidebar -->
+        <div slot="sidebar">
+      <ui-accordion title="Module 1: HTML Foundations" open>
+        <ui-nav-link href="/learn/01-the-document">1. The Document</ui-nav-link>
+        <ui-nav-link href="/learn/02-semantic-tags">2. Semantic Tags</ui-nav-link>
+        <ui-nav-link href="/learn/03-attributes-data">3. Attributes & Data</ui-nav-link>
+        <ui-nav-link href="/learn/04-structuring-a-page" active>4. Structuring a Page</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 2: CSS & Styling" open>
+        <ui-nav-link href="/learn/05-native-css-scoping">1. Native CSS Scoping</ui-nav-link>
+        <ui-nav-link href="/learn/06-cascade-layers">2. Cascade Layers</ui-nav-link>
+        <ui-nav-link href="/learn/07-theming-with-variables">3. Theming with Variables</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 3: JavaScript Behavior" open>
+        <ui-nav-link href="/learn/08-the-client-runtime">1. The Client Runtime</ui-nav-link>
+        <ui-nav-link href="/learn/09-refs-and-event-listeners">2. Refs & Event Listeners</ui-nav-link>
+        <ui-nav-link href="/learn/10-reactive-state">3. Reactive State</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 4: The Coralite Ecosystem" open>
+        <ui-nav-link href="/learn/11-server-side-rendering">1. Server-Side Rendering</ui-nav-link>
+        <ui-nav-link href="/learn/13-building-for-production">2. Building for Production</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <!-- Content -->
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/learn/">Learn</a>
+        <span class="separator">/</span>
+        <a href="/learn/">Module 1</a>
+        <span class="separator">/</span>
+        <span>Lesson 4: Structuring a Page</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <ui-badge variant="cyan">Lesson 04</ui-badge>
+        <h1>Structuring a Page</h1>
+        <p class="subhead">Pages are not special. They are standard HTML documents that compose the custom elements you have built.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="the-assembly-root">The Assembly Root</h2>
+        <p>In Coralite, a page is just an <code>.html</code> file inside <code>src/pages/</code>. Its job is to assemble your components into a meaningful document structure using standard semantic tags like <code>&lt;main&gt;</code> and <code>&lt;section&gt;</code>.</p>
+        
+        <code-block language="html" filename="index.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>My App</title>
+</head>
+<body>
+  <site-header></site-header>
+  
+  <main>
+    <hero-section></hero-section>
+  </main>
+  
+  <site-footer></site-footer>
+</body>
+</html>
+        </code-block>
+
+        <h2 id="defining-the-components">Defining the Components</h2>
+        <p>The <code>&lt;hero-section&gt;</code> and <code>&lt;site-header&gt;</code> tags are custom elements defined in your <code>src/components/</code> folder. They handle their own internal markup and logic.</p>
+
+        <code-block language="html" filename="hero-section.html">
+<template id="hero-section">
+  <section class="hero">
+    <h1>{{ headline }}</h1>
+    <p>{{ subhead }}</p>
+    <ui-button>Get Started</ui-button>
+  </section>
+</template>
+
+<script type="module">
+  export const attributes = {
+    headline: { type: String, default: 'Welcome' },
+    subhead: { type: String, default: 'Build something great.' }
+  }
+</script>
+        </code-block>
+
+        <h2 id="no-wrappers-required">No Wrappers Required</h2>
+        <p>Notice that the page does not wrap the components in extra <code>&lt;div&gt;</code> tags. Because Coralite renders Light DOM, the <code>&lt;hero-section&gt;</code> custom element acts as the boundary. You can style it directly using CSS.</p>
+        
+        <p>This keeps your DOM tree clean, shallow, and highly performant.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/learn/03-attributes-data" variant="secondary">← Previous</ui-link>
+        <ui-link href="/learn/05-native-css-scoping" variant="primary">Next Module →</ui-link>
+      </div>
+    </div>
+
+    <!-- TOC -->
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-assembly-root">The Assembly Root</a>
+        <a href="#defining-the-components">Defining the Components</a>
+        <a href="#no-wrappers-required">No Wrappers Required</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

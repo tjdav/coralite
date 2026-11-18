@@ -1,48 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.4.0" description="Coralite HTML module v0.4.0 release: Template-driven rendering, E2E tests, and updated CLI options. Explore the latest features!"></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-01-27T20:15:49+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.4.0"
+    description="Coralite HTML module v0.4.0 release: Template-driven rendering, E2E tests, and updated CLI options. Explore the latest features!"
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-01-27"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.4.0</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.4.0</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-01-27T20:15:49+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.4.0</h1>
+        <p class="subhead">Coralite HTML module v0.4.0 release: Template-driven rendering, E2E tests, and updated CLI options. Explore the latest features!</p>
 
-    <p>Coralite’s latest release, **v0.4.0**, introduces foundational updates to its HTML module static site generator, with a focus on improving template handling and End-to-End (E2E) testing infrastructure. This update includes a breaking change that renames the <code>-c/--components</code> option to <code>-t/--templates</code>, reflecting a shift in architecture toward explicit template management.</p> 
-     
-    <coralite-heading level="2" text="Key Changes"></coralite-heading>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">January 27, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <ul>  
-      <li><strong>BREAKING CHANGE:</strong> The <code>-c/--components</code> command-line option has been deprecated in favor of <code>-t/--templates</code>, aligning with a new emphasis on template-driven rendering. Documentation and type definitions have been updated accordingly.</li>  
-      <li>Moved component-related files to the <code>templates</code> directory, improving organisational clarity for project structures.</li>  
-      <li>Updated <code>evalComputedTokens</code> function to ensure compatibility with modern Node.js versions through revised <code>Dirent</code> handling in package.json parsing.</li>  
-      <li>Enhanced TypeScript definitions by adding the <code>CoraliteComment</code> type and updating <code>CoralTypePath</code> for better template-specific metadata extraction.</li>  
-    </ul>  
-    <coralite-heading level="2" text="Infrastructure Improvements"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite’s latest release, **v0.4.0**, introduces foundational updates to its HTML module static site generator, with a focus on improving template handling and End-to-End (E2E) testing infrastructure. This update includes a breaking change that renames the <code>-c/--components</code> option to <code>-t/--templates</code>, reflecting a shift in architecture toward explicit template management.</p> 
+             
+            <h2 id="key-changes">Key Changes</h2>
 
-    <ul>  
-      <li>Integrated Playwright for E2E testing, including a dedicated debug webserver and updated CI/CD pipelines to run tests across one browser per branch event.</li>  
-      <li>Added E2E test coverage for <code>index.html</code>, ensuring core rendering logic is validated during development and deployment workflows.</li>  
-      <li>Refactored CI configurations, including the addition of <code>--experimental-vm-modules</code> to the HTML script for broader compatibility.</li>  
-    </ul>  
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <ul>  
+              <li><strong>BREAKING CHANGE:</strong> The <code>-c/--components</code> command-line option has been deprecated in favor of <code>-t/--templates</code>, aligning with a new emphasis on template-driven rendering. Documentation and type definitions have been updated accordingly.</li>  
+              <li>Moved component-related files to the <code>templates</code> directory, improving organisational clarity for project structures.</li>  
+              <li>Updated <code>evalComputedTokens</code> function to ensure compatibility with modern Node.js versions through revised <code>Dirent</code> handling in package.json parsing.</li>  
+              <li>Enhanced TypeScript definitions by adding the <code>CoraliteComment</code> type and updating <code>CoralTypePath</code> for better template-specific metadata extraction.</li>  
+            </ul>  
+            <h2 id="infrastructure-improvements">Infrastructure Improvements</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.4.0</coralite-code-highlight>
+            <ul>  
+              <li>Integrated Playwright for E2E testing, including a dedicated debug webserver and updated CI/CD pipelines to run tests across one browser per branch event.</li>  
+              <li>Added E2E test coverage for <code>index.html</code>, ensuring core rendering logic is validated during development and deployment workflows.</li>  
+              <li>Refactored CI configurations, including the addition of <code>--experimental-vm-modules</code> to the HTML script for broader compatibility.</li>  
+            </ul>  
+            <h2 id="get-the-release">Get the release</h2>
 
-    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.4.0" target="_blank">git v0.4.0 changelog</a></p>
+            <code-block language="bash">npm install coralite@0.4.0</code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.4.0" target="_blank">git v0.4.0 changelog</a></p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

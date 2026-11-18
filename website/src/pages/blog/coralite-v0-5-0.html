@@ -1,42 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.5.0" description="Discover the latest updates in Coralite v0.5.0, including named slot manipulation for components, improved npm workflow configurations, and expanded test coverage to enhance static site generation capabilities."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-02-06T15:30:19+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.5.0"
+    description="Discover the latest updates in Coralite v0.5.0, including named slot manipulation for components, improved npm workflow configurations, and expanded test"
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-02-06"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.5.0</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.5.0</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-02-06T15:30:19+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.5.0</h1>
+        <p class="subhead">Discover the latest updates in Coralite v0.5.0, including named slot manipulation for components, improved npm workflow configurations, and expanded test coverage to enhance static site generation capabilities.</p>
 
-    <p>Coralite’s latest release introduces enhanced capabilities for manipulating named slot content within components and improved test coverage, reinforcing the stability of its HTML module static site generator.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">February 6, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite’s latest release introduces enhanced capabilities for manipulating named slot content within components and improved test coverage, reinforcing the stability of its HTML module static site generator.</p>
 
-    <ul>  
-      <li>Introduced support for programmatically manipulating named slot content through the <code>defineComponent</code> function, enabling greater flexibility in component composition and rendering logic. </li>
-      <li>Expanded test coverage to include comprehensive testing of slot functions within <code>defineComponent</code>, ensuring robustness in edge cases such as nested or conditional slot usage. </li>
-      <li>Updated build configurations to automatically ignore unused files during npm package generation, improving performance and reducing unnecessary dependencies. </li>  
-      <li>Implemented additional test scenarios for named slot handling within the <code>&lt;body&gt;</code> element, addressing potential rendering inconsistencies in complex layouts. </li>  
-    </ul>
-     
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <h2 id="core-functionality">Core Functionality</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.5.0</coralite-code-highlight>
+            <ul>  
+              <li>Introduced support for programmatically manipulating named slot content through the <code>defineComponent</code> function, enabling greater flexibility in component composition and rendering logic. </li>
+              <li>Expanded test coverage to include comprehensive testing of slot functions within <code>defineComponent</code>, ensuring robustness in edge cases such as nested or conditional slot usage. </li>
+              <li>Updated build configurations to automatically ignore unused files during npm package generation, improving performance and reducing unnecessary dependencies. </li>  
+              <li>Implemented additional test scenarios for named slot handling within the <code>&lt;body&gt;</code> element, addressing potential rendering inconsistencies in complex layouts. </li>  
+            </ul>
+             
+            <h2 id="get-the-release">Get the release</h2>
 
-    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.5.0" target="_blank">git v0.5.0 changelog</a></p>
+            <code-block language="bash">npm install coralite@0.5.0</code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.5.0" target="_blank">git v0.5.0 changelog</a></p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

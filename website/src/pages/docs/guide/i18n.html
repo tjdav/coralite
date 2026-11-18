@@ -1,122 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Internationalization (i18n) — Coralite"
-    description="Learn how to handle internationalization in Coralite including locale routing, message bundles, native Intl formatting, RTL layout support, and framework boundaries."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Internationalization (i18n)"
+    description="Learn how to handle internationalization in Coralite including locale routing, message bundles, native Intl formatting, RTL layout support, and framework boundaries."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main class="container content">
-    <h1 class="display">Internationalization (i18n)</h1>
+  <site-header></site-header>
 
-    <p>Coralite leverages standard Web Platform APIs and explicit dynamic page routing patterns for internationalization. Rather than adding custom framework abstraction layers or proprietary translation utilities, Coralite provides simple building blocks that work seamlessly with native JavaScript features like <code>Intl</code> and JSON imports.</p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="guide/i18n"></docs-sidebar>
 
-    <coralite-heading level="2" text="1. Locale Routing"></coralite-heading>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/guide/">Guide</a>
+        <span class="separator">/</span>
+        <span>Internationalization (i18n)</span>
+      </ui-breadcrumb>
 
-    <p>Organize your localized pages using directory parameters such as <code>pages/[lang]/</code> instead of language-prefixed filenames. This ensures every locale shares the same page template and logic structure while generating discrete localized routes at build time.</p>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Internationalization (i18n)</h1>
+          <ui-badge variant="cyan">Guide</ui-badge>
+        </div>
+        <p class="subhead">Learn how to handle internationalization in Coralite including locale routing, message bundles, native Intl formatting, RTL layout support, and framework boundaries.</p>
+      </div>
 
-    <coralite-code-highlight language="text" title="File Structure">
-pages/
-  [lang]/
-    index.html
-    about.html
-    </coralite-code-highlight>
+      <div class="lesson-body">
+        <p>Coralite leverages standard Web Platform APIs and explicit dynamic page routing patterns for internationalization. Rather than adding custom framework abstraction layers or proprietary translation utilities, Coralite provides simple building blocks that work seamlessly with native JavaScript features like <code>Intl</code> and JSON imports.</p>
 
-    <p>Use flat named exports with the <code>paths</code> function to enumerate supported locales and inject the active locale parameter into the page state via the <code>server</code> block:</p>
+            <h2 id="1-locale-routing">1. Locale Routing</h2>
 
-    <coralite-code-highlight language="javascript" title="pages/[lang]/index.html">
-const locales = ['en', 'fr', 'de', 'ar']
+            <p>Organize your localized pages using directory parameters such as <code>pages/[lang]/</code> instead of language-prefixed filenames. This ensures every locale shares the same page template and logic structure while generating discrete localized routes at build time.</p>
 
-export function paths () {
-  return locales.map(lang => ({ lang }))
-}
+            <code-block language="text" filename="File Structure">
+        pages/
+          [lang]/
+            index.html
+            about.html
+            </code-block>
 
-export function server ({ route }) {
-  return {
-    lang: route.params.lang,
-    supported: locales.includes(route.params.lang)
-  }
-}
-    </coralite-code-highlight>
+            <p>Use flat named exports with the <code>paths</code> function to enumerate supported locales and inject the active locale parameter into the page state via the <code>server</code> block:</p>
 
-    <p>Using <code>pages/[lang]/</code> guarantees that locale paths are statically rendered as separate pages (for example <code>/en/</code>, <code>/fr/</code>, <code>/de/</code>, and <code>/ar/</code>) without duplicating template files.</p>
+            <code-block language="javascript" filename="pages/[lang]/index.html">
+        const locales = ['en', 'fr', 'de', 'ar']
 
-    <coralite-heading level="2" text="2. Message Bundles"></coralite-heading>
+        export function paths () {
+          return locales.map(lang => ({ lang }))
+        }
 
-    <p>Translation bundles can be stored in standard JSON files and imported directly using ESM JSON import attributes. In the page's <code>server()</code> block, select the dictionary matching the active locale route parameter.</p>
+        export function server ({ route }) {
+          return {
+            lang: route.params.lang,
+            supported: locales.includes(route.params.lang)
+          }
+        }
+            </code-block>
 
-    <coralite-code-highlight language="javascript">
-import messages from '../../../content/messages.json' with { type: 'json' }
+            <p>Using <code>pages/[lang]/</code> guarantees that locale paths are statically rendered as separate pages (for example <code>/en/</code>, <code>/fr/</code>, <code>/de/</code>, and <code>/ar/</code>) without duplicating template files.</p>
 
-export function server ({ route }) {
-  return {
-    t: messages[route.params.lang] ?? messages.en
-  }
-}
-    </coralite-code-highlight>
+            <h2 id="2-message-bundles">2. Message Bundles</h2>
 
-    <p>In your HTML template, bind translation strings using flat template tokens:</p>
+            <p>Translation bundles can be stored in standard JSON files and imported directly using ESM JSON import attributes. In the page's <code>server()</code> block, select the dictionary matching the active locale route parameter.</p>
 
-    <coralite-code-html>
-<h1>{{ t.welcome }}</h1>
-    </coralite-code-html>
+            <code-block language="javascript">
+        import messages from '../../../content/messages.json' with { type: 'json' }
 
-    <coralite-alert type="warning">
-      <strong>Flat Template Tokens Requirement</strong>
-      <p>Coralite template tokens must be flat tokens (e.g., <code coralite-ignore>{{ welcome }}</code> or single-level <code coralite-ignore>{{ t.welcome }}</code>). Deep nested access such as <code coralite-ignore>{{ t.home.title }}</code> is not supported in templates. Flatten your JSON translation structure or derive nested strings using a <code>getters</code> block.</p>
-    </coralite-alert>
+        export function server ({ route }) {
+          return {
+            t: messages[route.params.lang] ?? messages.en
+          }
+        }
+            </code-block>
 
-    <coralite-heading level="2" text="3. Formatting"></coralite-heading>
+            <p>In your HTML template, bind translation strings using flat template tokens:</p>
 
-    <p>For formatting dates, numbers, currencies, or lists, rely directly on browser and Node.js native <code>Intl.*</code> APIs inside <code>getters</code> or <code>server()</code>. Do not wrap <code>Intl</code> in framework-specific helper utilities—native platform APIs are already built-in and performant.</p>
+            <code-block language="html">
+        <h1>{{ t.welcome }}</h1>
+            </code-block>
 
-    <coralite-code-highlight language="javascript">
-export const getters = {
-  formattedDate: ({ state }) =>
-    new Intl.DateTimeFormat(state.lang, { dateStyle: 'long' }).format(state.publishedAt),
+            <div class="doc-callout doc-callout--warning">
+              <strong>Flat Template Tokens Requirement</strong>
+              <p>Coralite template tokens must be flat tokens (e.g., <code>{{ welcome }}</code> or single-level <code>{{ t.welcome }}</code>). Deep nested access such as <code>{{ t.home.title }}</code> is not supported in templates. Flatten your JSON translation structure or derive nested strings using a <code>getters</code> block.</p>
+            </div>
 
-  formattedPrice: ({ state }) =>
-    new Intl.NumberFormat(state.lang, { style: 'currency', currency: 'EUR' }).format(state.price)
-}
-    </coralite-code-highlight>
+            <h2 id="3-formatting">3. Formatting</h2>
 
-    <coralite-heading level="2" text="4. Right-to-Left (RTL) Support"></coralite-heading>
+            <p>For formatting dates, numbers, currencies, or lists, rely directly on browser and Node.js native <code>Intl.*</code> APIs inside <code>getters</code> or <code>server()</code>. Do not wrap <code>Intl</code> in framework-specific helper utilities—native platform APIs are already built-in and performant.</p>
 
-    <p>Support right-to-left languages (like Arabic or Hebrew) by determining text direction in your <code>server()</code> function and binding the <code>dir</code> attribute on the <code>&lt;html&gt;</code> element:</p>
+            <code-block language="javascript">
+        export const getters = {
+          formattedDate: ({ state }) =>
+            new Intl.DateTimeFormat(state.lang, { dateStyle: 'long' }).format(state.publishedAt),
 
-    <coralite-code-highlight language="javascript">
-export function server ({ route }) {
-  return {
-    dir: route.params.lang === 'ar' ? 'rtl' : 'ltr'
-  }
-}
-    </coralite-code-highlight>
+          formattedPrice: ({ state }) =>
+            new Intl.NumberFormat(state.lang, { style: 'currency', currency: 'EUR' }).format(state.price)
+        }
+            </code-block>
 
-    <coralite-code-html>
-<html lang="{{ lang }}" dir="{{ dir }}">
-    </coralite-code-html>
+            <h2 id="4-right-to-left-rtl-support">4. Right-to-Left (RTL) Support</h2>
 
-    <p>When writing component styles, use CSS logical properties instead of physical directions. For example, use <code>margin-inline-start</code> instead of <code>margin-left</code>, and <code>padding-inline-end</code> instead of <code>padding-right</code>. This ensures styles adapt automatically when switching between LTR and RTL directions without needing direction-specific CSS overrides.</p>
+            <p>Support right-to-left languages (like Arabic or Hebrew) by determining text direction in your <code>server()</code> function and binding the <code>dir</code> attribute on the <code>&lt;html&gt;</code> element:</p>
 
-    <coralite-heading level="2" text="5. What Coralite Does Not Provide"></coralite-heading>
+            <code-block language="javascript">
+        export function server ({ route }) {
+          return {
+            dir: route.params.lang === 'ar' ? 'rtl' : 'ltr'
+          }
+        }
+            </code-block>
 
-    <p>To remain lightweight, predictable, and standards-compliant, Coralite intentionally does not ship built-in abstractions for several i18n concerns:</p>
+            <code-block language="html">
+        <html lang="{{ lang }}" dir="{{ dir }}">
+            </code-block>
 
-    <ul>
-      <li><strong>No plural rule engine:</strong> Use native <code>Intl.PluralRules</code> directly in your getters or server functions.</li>
-      <li><strong>No Accept-Language detection:</strong> Language detection and initial redirection should be performed by host servers (e.g., Cloudflare Workers, Nginx, Vercel Edge) or lightweight client-side scripts.</li>
-      <li><strong>No message extraction tooling:</strong> Use standard build-time script utilities or external tools if you need to scan source files for missing translation keys.</li>
-      <li><strong>No translation management:</strong> Use external localization services (TMS) or translation platforms to manage dictionary translation workflows.</li>
-    </ul>
+            <p>When writing component styles, use CSS logical properties instead of physical directions. For example, use <code>margin-inline-start</code> instead of <code>margin-left</code>, and <code>padding-inline-end</code> instead of <code>padding-right</code>. This ensures styles adapt automatically when switching between LTR and RTL directions without needing direction-specific CSS overrides.</p>
 
-    <hr>
+            <h2 id="5-what-coralite-does-not-provide">5. What Coralite Does Not Provide</h2>
 
-    <p>Next: Explore <a href="/docs/guide/page-variables.html">Page Variables</a> to learn more about routing context in pages.</p>
+            <p>To remain lightweight, predictable, and standards-compliant, Coralite intentionally does not ship built-in abstractions for several i18n concerns:</p>
 
-  </main>
-  <coralite-footer></coralite-footer>
+            <ul>
+              <li><strong>No plural rule engine:</strong> Use native <code>Intl.PluralRules</code> directly in your getters or server functions.</li>
+              <li><strong>No Accept-Language detection:</strong> Language detection and initial redirection should be performed by host servers (e.g., Cloudflare Workers, Nginx, Vercel Edge) or lightweight client-side scripts.</li>
+              <li><strong>No message extraction tooling:</strong> Use standard build-time script utilities or external tools if you need to scan source files for missing translation keys.</li>
+              <li><strong>No translation management:</strong> Use external localization services (TMS) or translation platforms to manage dictionary translation workflows.</li>
+            </ul>
+
+            <hr>
+
+            <p>Next: Explore <a href="/docs/guide/page-variables">Page Variables</a> to learn more about routing context in pages.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/guide/plugins" variant="secondary">← Previous: Authoring Plugins</ui-link>
+        <ui-link href="/docs/guide/seo" variant="primary">Next: Search Engine Optimization (SEO) →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#1-locale-routing">1. Locale Routing</a>
+        <a href="#2-message-bundles">2. Message Bundles</a>
+        <a href="#3-formatting">3. Formatting</a>
+        <a href="#4-right-to-left-rtl-support">4. Right-to-Left (RTL) Support</a>
+        <a href="#5-what-coralite-does-not-provide">5. What Coralite Does Not Provide</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

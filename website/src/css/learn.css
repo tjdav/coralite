@@ -1,0 +1,159 @@
+main.learn-page.page-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  main.learn-page .hero-section {
+    text-align: center;
+    padding: 96px 0 64px 0;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  main.learn-page .hero-section h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin: 24px 0;
+    color: var(--text-primary);
+  }
+
+  main.learn-page .hero-section .subhead {
+    font-size: 20px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 48px;
+  }
+
+  /* Curriculum */
+  main.learn-page .curriculum-section {
+    padding: 64px 0;
+  }
+
+  main.learn-page .curriculum-section h2 {
+    font-size: 32px;
+    margin-bottom: 48px;
+    text-align: center;
+  }
+
+  main.learn-page .curriculum-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  main.learn-page .module-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  main.learn-page .module-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  main.learn-page .module-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  main.learn-page .module-title h3 {
+    margin: 0;
+    font-size: 20px;
+    color: var(--text-primary);
+  }
+
+  main.learn-page .module-icon {
+    color: var(--accent-violet);
+  }
+
+  main.learn-page .lesson-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 24px 0;
+  }
+
+  main.learn-page .lesson-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 14px;
+  }
+
+  main.learn-page .lesson-list li:last-child {
+    border-bottom: none;
+  }
+
+  main.learn-page .lesson-list a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  main.learn-page .lesson-list a:hover,
+  main.learn-page .lesson-list a:focus-visible {
+    color: var(--text-primary);
+  }
+
+  /* Why Path */
+  main.learn-page .why-path-section {
+    padding: 64px 0 96px 0;
+  }
+
+  main.learn-page .why-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+
+  main.learn-page .why-text h2 {
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+
+  main.learn-page .why-text p {
+    font-size: 16px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* Ensure code blocks stretch fully in the grid */
+  main.learn-page .why-code {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  main.learn-page .why-code code-block {
+    width: 100%;
+  }
+
+  @media (max-width: 768px) {
+    main.learn-page .hero-section h1 { font-size: 36px; }
+    main.learn-page .curriculum-grid, main.learn-page .why-content {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Keep the module CTA pinned to the bottom of equal-height cards. */
+  main.learn-page .module-card .card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  main.learn-page .module-card .card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  main.learn-page .module-card ui-link {
+    margin-top: auto;
+    align-self: flex-start;
+  }

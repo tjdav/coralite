@@ -1,95 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Coralite Page Variables: Built-in Path & URL Context"
-    description="Learn about the built-in context variables automatically injected into your components' state object by Coralite during the build phase."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite Page Variables: Built-in Path &amp; URL Context"
+    description="Learn about the built-in context variables automatically injected into your components' state object by Coralite during the build phase."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main class="container content">
-    <h1 class="display">Built-in Page Variables</h1>
+  <site-header></site-header>
 
-    <p>During the build phase, Coralite automatically injects a <code>page</code> object into the <code>state</code> of your components. This object provides essential information about the current page's URL and file path, making it easy to create dynamic logic like highlighting active navigation links or generating breadcrumbs.</p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="guide/page-variables"></docs-sidebar>
 
-    <p>These core variables are organized into <code>url</code> and <code>file</code> objects within the <code>page</code> context.</p>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/guide/">Guide</a>
+        <span class="separator">/</span>
+        <span>Built-in Page Variables</span>
+      </ui-breadcrumb>
 
-    <p><strong>Build-time versus client hydration:</strong> <code>page.file</code>, page source, and route-building metadata are available during build-time rendering in <code>server()</code>, component <code>server()</code>, and plugin hooks. Client hydration serializes only <code>page.url</code>, <code>page.meta</code>, <code>page.route</code>, and <code>page.is404</code>. To use file metadata in client code, expose it explicitly through <code>server()</code>, as shown below. Page-level state is serialized once per page and shared by hydrated component instances, so treat nested page-state objects as read-only.</p>
-
-    <coralite-heading level="2" text="Available Page Variables"></coralite-heading>
-
-    <ul>
-      <li><strong><code>page.url.pathname</code></strong>: The final URL path that the user navigates to (e.g., <code>/docs/guide/page-variables.html</code>).</li>
-      <li><strong><code>page.url.dirname</code></strong>: The directory component of the URL path (e.g., <code>/docs/guide</code>).</li>
-      <li><strong><code>page.file.pathname</code></strong>: The physical file path name relative to your pages directory (e.g., <code>docs/guide/page-variables.html</code>).</li>
-      <li><strong><code>page.file.dirname</code></strong>: The physical directory name of the source page file (e.g., <code>docs/guide</code>).</li>
-      <li><strong><code>page.file.filename</code></strong>: The filename of the source page file (e.g., <code>page-variables.html</code>).</li>
-    </ul>
-
-    <coralite-heading level="2" text="Metadata Variables"></coralite-heading>
-    
-    <p>In addition to the path-related variables, if you are using the built-in <a href="/docs/guide/page-metadata.html">metadata plugin</a>, it injects metadata from the page's <code>&lt;head&gt;</code> into the <code>page.meta</code> object:</p>
-
-    <ul>
-      <li><strong><code>page.meta.title</code></strong>: Extracted from the page's <code>&lt;title&gt;</code> tag.</li>
-      <li><strong><code>page.meta.lang</code></strong>: Extracted from the <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag.</li>
-    </ul>
-
-    <coralite-heading level="2" text="Example Usage"></coralite-heading>
-
-    <p>Because templates do not support dot notation for tokens (e.g., <code coralite-ignore>{{ page.url.pathname }}</code>), you must map these variables to local properties in your component's <code>state</code> (via the <code>data</code> function) or <code>getters</code>.</p>
-
-    <p>Here is an example of a navigation link component that automatically adds an "active" class if the current URL matches its target URL:</p>
-
-    <coralite-code-highlight language="html">
-      <!-- src/components/nav-link.html -->
-      <template id="nav-link">
-        <a href="{{ href }}" class="link {{ activeClass }}">
-          <slot></slot>
-        </a>
-      </template>
-
-      &lt;script type="module"&gt;
-        import { defineComponent } from 'coralite'
-
-        export default defineComponent({
-          attributes: {
-            href: { type: String }
-          },
-          getters: {
-            // Mapping nested page variable to a flat state property
-            activeClass: ({ state }) => (state.href === state.page.url.pathname ? 'active' : '')
-          }
-        })
-      &lt;/script&gt;
-    </coralite-code-highlight>
-
-    <p>For values rendered during SSR, mapping them in <code>server</code> is the preferred approach:</p>
-
-    <coralite-code-highlight language="html">
-      <!-- src/components/page-info.html -->
-      <template id="page-info">
-        <div class="page-info-box">
-          <p>Current URL: <strong>{{ currentUrl }}</strong></p>
-          <p>Source File: <strong>{{ fileName }}</strong></p>
-          <p>Language: <strong>{{ language }}</strong></p>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Built-in Page Variables</h1>
+          <ui-badge variant="cyan">Guide</ui-badge>
         </div>
-      </template>
+        <p class="subhead">Learn about the built-in context variables automatically injected into your components' state object by Coralite during the build phase.</p>
+      </div>
 
-      &lt;script type="module"&gt;
-        export async function server ({ page }) {
-          return {
-            currentUrl: page.url.pathname,
-            fileName: page.file.filename,
-            language: page.meta.lang
-          }
-        }
-      &lt;/script&gt;
-    </coralite-code-highlight>
+      <div class="lesson-body">
+        <p>During the build phase, Coralite automatically injects a <code>page</code> object into the <code>state</code> of your components. This object provides essential information about the current page's URL and file path, making it easy to create dynamic logic like highlighting active navigation links or generating breadcrumbs.</p>
 
-  </main>
-  <coralite-footer></coralite-footer>
+            <p>These core variables are organized into <code>url</code> and <code>file</code> objects within the <code>page</code> context.</p>
+
+            <h2 id="available-page-variables">Available Page Variables</h2>
+
+            <ul>
+              <li><strong><code>page.url.pathname</code></strong>: The final URL path that the user navigates to (e.g., <code>/docs/guide/page-variables.html</code>).</li>
+              <li><strong><code>page.url.dirname</code></strong>: The directory component of the URL path (e.g., <code>/docs/guide</code>).</li>
+              <li><strong><code>page.file.pathname</code></strong>: The physical file path name relative to your pages directory (e.g., <code>docs/guide/page-variables.html</code>).</li>
+              <li><strong><code>page.file.dirname</code></strong>: The physical directory name of the source page file (e.g., <code>docs/guide</code>).</li>
+              <li><strong><code>page.file.filename</code></strong>: The filename of the source page file (e.g., <code>page-variables.html</code>).</li>
+            </ul>
+
+            <h2 id="metadata-variables">Metadata Variables</h2>
+            
+            <p>In addition to the path-related variables, if you are using the built-in <a href="/docs/guide/page-metadata">metadata plugin</a>, it injects metadata from the page's <code>&lt;head&gt;</code> into the <code>page.meta</code> object:</p>
+
+            <ul>
+              <li><strong><code>page.meta.title</code></strong>: Extracted from the page's <code>&lt;title&gt;</code> tag.</li>
+              <li><strong><code>page.meta.lang</code></strong>: Extracted from the <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag.</li>
+            </ul>
+
+            <h2 id="example-usage">Example Usage</h2>
+
+            <p>Because templates do not support dot notation for tokens (e.g., <code>{{ page.url.pathname }}</code>), you must map these variables to local properties in your component's <code>state</code> (via the <code>data</code> function) or <code>getters</code>.</p>
+
+            <p>Here is an example of a navigation link component that automatically adds an "active" class if the current URL matches its target URL:</p>
+
+            <code-block language="html">
+              <!-- src/components/nav-link.html -->
+              <template id="nav-link">
+                <a href="{{ href }}" class="link {{ activeClass }}">
+                  <slot></slot>
+                </a>
+              </template>
+
+              &lt;script type="module"&gt;
+                import { defineComponent } from 'coralite'
+
+                export default defineComponent({
+                  attributes: {
+                    href: { type: String }
+                  },
+                  getters: {
+                    // Mapping nested page variable to a flat state property
+                    activeClass: ({ state }) => (state.href === state.page.url.pathname ? 'active' : '')
+                  }
+                })
+              &lt;/script&gt;
+            </code-block>
+
+            <p>For values rendered during SSR, mapping them in <code>server</code> is the preferred approach:</p>
+
+            <code-block language="html">
+              <!-- src/components/page-info.html -->
+              <template id="page-info">
+                <div class="page-info-box">
+                  <p>Current URL: <strong>{{ currentUrl }}</strong></p>
+                  <p>Source File: <strong>{{ fileName }}</strong></p>
+                  <p>Language: <strong>{{ language }}</strong></p>
+                </div>
+              </template>
+
+              &lt;script type="module"&gt;
+                export async function server ({ page }) {
+                  return {
+                    currentUrl: page.url.pathname,
+                    fileName: page.file.filename,
+                    language: page.meta.lang
+                  }
+                }
+              &lt;/script&gt;
+            </code-block>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/guide/page-metadata" variant="secondary">← Previous: Page Metadata</ui-link>
+        <ui-link href="/docs/guide/validation" variant="primary">Next: Self-Healing Code & Diagnostics →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#available-page-variables">Available Page Variables</a>
+        <a href="#metadata-variables">Metadata Variables</a>
+        <a href="#example-usage">Example Usage</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

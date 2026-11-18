@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="slots"
+    description="Intercept and transform projected child content on the server before it is rendered."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <div slot="sidebar">
+      <ui-accordion title="Component API" open>
+        <ui-nav-link href="/reference/attributes">attributes</ui-nav-link>
+        <ui-nav-link href="/reference/client">client</ui-nav-link>
+        <ui-nav-link href="/reference/server">server</ui-nav-link>
+        <ui-nav-link href="/reference/getters">getters</ui-nav-link>
+        <ui-nav-link href="/reference/style">style</ui-nav-link>
+        <ui-nav-link href="/reference/slots" active>slots</ui-nav-link>
+        <ui-nav-link href="/reference/form-control">formControl</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Page API">
+        <ui-nav-link href="/reference/page-api">paths & definePage</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Plugin API">
+        <ui-nav-link href="/reference/plugins">definePlugin</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="CLI">
+        <ui-nav-link href="/reference/cli">commands</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Component API</a>
+        <span class="separator">/</span>
+        <span>slots</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>slots</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">Intercept and transform projected child content on the server before it is rendered.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="typescript-signature">TypeScript Signature</h2>
+        <code-block language="typescript" filename="slots.ts">
+export const slots: Record<string, (
+  context: {
+    nodes: any[];
+    state: Record<string, any>;
+    isServer: boolean;
+    isClient: boolean;
+    slots: Record<string, any>;
+  }
+) => any[] | undefined>
+        </code-block>
+
+        <h2 id="server-side-transformation">Server-Side Transformation</h2>
+        <p>The <code>slots</code> export runs exclusively during the SSR build phase. It intercepts the raw DOM nodes projected into a <code>slot</code>, allows you to manipulate them (or extract text), and returns the transformed array of nodes that will be rendered into the final HTML.</p>
+
+        <p>This is how the <code>code-block</code> component applies syntax highlighting to its children.</p>
+
+        <code-block language="javascript" filename="highlight.js">
+export const slots = {
+  default: ({ nodes, state }) => {
+    // Guard against client execution
+    if (typeof window !== 'undefined') return
+
+    // Extract text and highlight it
+    let text = extractText(nodes)
+    const highlighted = hljs.highlight(text, { language: 'html' })
+    
+    // Return new AST nodes
+    return parseHTML(highlighted.value)
+  }
+}
+        </code-block>
+
+        <h2 id="the-code-block-example">The Code-Block Example</h2>
+        <p>The <code>code-block</code> component is the perfect case study for this API. It extracts the raw text from the slot, strips leading indentation, runs it through <code>highlight.js</code>, and replaces the original text nodes with syntax-highlighted HTML nodes.</p>
+
+        <code-block language="javascript" filename="guard.js">
+export const slots = {
+  default: ({ nodes }) => {
+    // 1. Ensure this only runs on the server
+    if (typeof window !== 'undefined') return
+
+    // 2. Process the content...
+    return processedNodes
+  }
+}
+        </code-block>
+
+        <h2 id="checking-slot-presence">Checking Slot Presence</h2>
+        <p>Inside getters or client logic, you can check if a specific slot has content by using the <code>slots.has()</code> method on the context object.</p>
+
+        <code-block language="javascript" filename="has.js">
+export const getters = {
+  hasIcon: ({ slots }) => slots.has('icon')
+}
+        </code-block>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/style" variant="secondary">← Previous: style</ui-link>
+        <ui-link href="/reference/form-control" variant="primary">Next: formControl →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#typescript-signature">TypeScript Signature</a>
+        <a href="#server-side-transformation">Server-Side Transformation</a>
+        <a href="#the-code-block-example">The Code-Block Example</a>
+        <a href="#checking-slot-presence">Checking Slot Presence</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

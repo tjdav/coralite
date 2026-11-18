@@ -1,0 +1,159 @@
+<template id="site-mobile-nav">
+  <button ref="toggleBtn" class="hamburger-btn" type="button" aria-label="Open menu">
+    <ui-icon name="hamburger-menu" size="24"></ui-icon>
+  </button>
+
+  <div class="mobile-overlay {{ overlayClass }}" ref="overlay"></div>
+
+  <div class="mobile-drawer {{ drawerClass }}">
+    <div class="drawer-header">
+      <span class="logo">Coralite</span>
+      <button ref="closeBtn" class="close-btn" type="button" aria-label="Close menu">
+        <ui-icon name="close" size="24"></ui-icon>
+      </button>
+    </div>
+    
+    <div class="drawer-content">
+      <ui-nav-link href="/learn/">Learn</ui-nav-link>
+      <ui-nav-link href="/docs/">Documentation</ui-nav-link>
+      <ui-nav-link href="/docs/guide/">Guide</ui-nav-link>
+      <ui-nav-link href="/docs/reference/">Reference</ui-nav-link>
+      <ui-nav-link href="/reference/">Component API</ui-nav-link>
+      <ui-nav-link href="/blog/">Blog</ui-nav-link>
+      <ui-nav-link href="/changelog/">Changelog</ui-nav-link>
+      <ui-nav-link href="/compare/">Compare</ui-nav-link>
+      <ui-nav-link href="/why/">Why Coralite</ui-nav-link>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  export const attributes = {
+    open: { type: Boolean, default: false }
+  }
+
+  export const getters = {
+    overlayClass: ({ state }) => (state.open ? 'is-open' : ''),
+    drawerClass: ({ state }) => (state.open ? 'is-open' : '')
+  }
+
+  export function client ({ state, refs, signal }) {
+    const toggleBtn = refs('toggleBtn')
+    const closeBtn = refs('closeBtn')
+    const overlay = refs('overlay')
+
+    toggleBtn.addEventListener('click', () => {
+      state.open = true
+    }, { signal })
+
+    closeBtn.addEventListener('click', () => {
+      state.open = false
+    }, { signal })
+
+    overlay.addEventListener('click', () => {
+      state.open = false
+    }, { signal })
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && state.open) {
+        state.open = false
+      }
+    }, { signal })
+  }
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+
+  /* Hamburger Button (Mobile only) */
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 8px;
+  }
+
+  @media (min-width: 1101px) {
+    :host(:not(#test-mobile-nav)) .hamburger-btn {
+      display: none; /* Hide on desktop */
+    }
+  }
+
+  /* Overlay */
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 15, 25, 0.8);
+    backdrop-filter: blur(4px);
+    z-index: 90;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .mobile-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Drawer */
+  .mobile-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 320px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-subtle);
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-drawer.is-open {
+    transform: translateX(0);
+  }
+
+  :host(#test-mobile-nav) .mobile-overlay,
+  :host(#test-mobile-nav) .mobile-drawer {
+    position: absolute;
+  }
+
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .logo {
+    font-family: var(--font-sans);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .drawer-content {
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+</style>

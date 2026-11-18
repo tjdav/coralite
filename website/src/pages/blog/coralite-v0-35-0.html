@@ -1,110 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.35.0 Released: 1M+ Page Scalability and Re-imagined Plugin API"
-    description="Coralite v0.35.0 introduces an overhaul of production memory management, a new two-phase currying plugin exports API, and hardened engine protections."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-05-20T16:19:32+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.35.0 Released: 1M+ Page Scalability and Re-imagined Plugin API</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.35.0 Released: 1M+ Page Scalability and Re-imagined Plugin API"
+    description="Coralite v0.35.0 introduces an overhaul of production memory management, a new two-phase currying plugin exports API, and hardened engine protections."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-05-20"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.35.0 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.35.0 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-05-20T16:19:32+02:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.35.0 Released</h1>
+        <p class="subhead">Coralite v0.35.0 introduces an overhaul of production memory management, a new two-phase currying plugin exports API, and hardened engine protections.</p>
 
-    <p>Coralite v0.35.0 is now available. This release delivers major enhancements for enterprise-scale web builds, introducing an overhauled multi-pass production memory architecture designed to scale to over 1 million pages. It also modernizes our plugin system with a two-phase curried exports API, native context injection via <code>this</code>, and stronger internal engine boundaries.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">May 20, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Production Memory Overhaul for 1M+ Pages"></coralite-heading>
-    <p>To support massive multi-page web deployments, we have overhauled production memory management with a memory-efficient multi-pass build architecture. In production mode, Coralite now performs on-demand parsing rather than retaining heavily nested HTML AST nodes for all pages in memory throughout the build lifecycle.</p>
-    <p>This optimization comprises several core mechanism shifts:</p>
-    <ul>
-      <li><strong>Discovery Phase:</strong> Scans pages to extract metadata while immediately discarding heavy AST nodes.</li>
-      <li><strong>On-Demand Parsing:</strong> Re-parses HTML files just before rendering, garbage collecting the AST tree as soon as the rendering phase completes.</li>
-      <li><strong>Build Streaming:</strong> The <code>build()</code> API now supports streaming results, allowing builders to handle pages sequentially without array accumulation.</li>
-    </ul>
-    <p>Tests verify stable memory consumption at approximately 22MB for 10,000 pages in production mode, laying the foundation for scaling builds to over 1,000,000 pages.</p>
+      <div class="post-body">
+        <p>Coralite v0.35.0 is now available. This release delivers major enhancements for enterprise-scale web builds, introducing an overhauled multi-pass production memory architecture designed to scale to over 1 million pages. It also modernizes our plugin system with a two-phase curried exports API, native context injection via <code>this</code>, and stronger internal engine boundaries.</p>
 
-    <coralite-heading level="2" text="Modernized Plugin Exports and Context Binding"></coralite-heading>
-    <p>We have renamed the plugin <code>method</code> property to <code>exports</code> and re-architected its execution flow. The <code>exports</code> signature has transitioned to an object of two-phase curried functions, allowing for clean context injection and more explicit server-side build lifecycle integration.</p>
-    <p>Plugin context is now bound natively via <code>this</code> instead of being passed as a trailing argument. A recursive traversal mechanism automatically binds context down to nested export structures. This ensures that server-side utilities have direct access to context properties like <code>this.app</code>.</p>
-    <p>Here is an example demonstrating the new two-phase curried export format inside a plugin definition:</p>
+            <h2 id="production-memory-overhaul-for-1m-pages">Production Memory Overhaul for 1M+ Pages</h2>
+            <p>To support massive multi-page web deployments, we have overhauled production memory management with a memory-efficient multi-pass build architecture. In production mode, Coralite now performs on-demand parsing rather than retaining heavily nested HTML AST nodes for all pages in memory throughout the build lifecycle.</p>
+            <p>This optimization comprises several core mechanism shifts:</p>
+            <ul>
+              <li><strong>Discovery Phase:</strong> Scans pages to extract metadata while immediately discarding heavy AST nodes.</li>
+              <li><strong>On-Demand Parsing:</strong> Re-parses HTML files just before rendering, garbage collecting the AST tree as soon as the rendering phase completes.</li>
+              <li><strong>Build Streaming:</strong> The <code>build()</code> API now supports streaming results, allowing builders to handle pages sequentially without array accumulation.</li>
+            </ul>
+            <p>Tests verify stable memory consumption at approximately 22MB for 10,000 pages in production mode, laying the foundation for scaling builds to over 1,000,000 pages.</p>
 
-    <coralite-code-highlight language="javascript">
-definePlugin({
-  name: 'custom-data-fetcher',
-  exports() {
-    // Phase 1: Context injection
-    const ctx = this; 
-    
-    return {
-      // Phase 2: Curried function execution
-      async fetchJson(url) {
-        return ctx.app.fetch(url);
-      }
-    };
-  }
-});
-    </coralite-code-highlight>
+            <h2 id="modernized-plugin-exports-and-context-binding">Modernized Plugin Exports and Context Binding</h2>
+            <p>We have renamed the plugin <code>method</code> property to <code>exports</code> and re-architected its execution flow. The <code>exports</code> signature has transitioned to an object of two-phase curried functions, allowing for clean context injection and more explicit server-side build lifecycle integration.</p>
+            <p>Plugin context is now bound natively via <code>this</code> instead of being passed as a trailing argument. A recursive traversal mechanism automatically binds context down to nested export structures. This ensures that server-side utilities have direct access to context properties like <code>this.app</code>.</p>
+            <p>Here is an example demonstrating the new two-phase curried export format inside a plugin definition:</p>
 
-    <p>These plugin exports are exposed via virtual modules, which can be imported directly into the script sections of your components:</p>
+            <code-block language="javascript">
+        definePlugin({
+          name: 'custom-data-fetcher',
+          exports() {
+            // Phase 1: Context injection
+            const ctx = this; 
+            
+            return {
+              // Phase 2: Curried function execution
+              async fetchJson(url) {
+                return ctx.app.fetch(url);
+              }
+            };
+          }
+        });
+            </code-block>
 
-    <coralite-code-highlight language="html">
-<!-- component.html -->
-<template>
-  <div>{{ data.message }}</div>
-</template>
+            <p>These plugin exports are exposed via virtual modules, which can be imported directly into the script sections of your components:</p>
 
-&lt;script&gt;
-  import { fetchJson } from 'virtual:custom-data-fetcher'
+            <code-block language="html">
+        <!-- component.html -->
+        <template>
+          <div>{{ data.message }}</div>
+        </template>
 
-  export default {
-    async data () {
-      const response = await fetchJson('/api/resource')
-      return { data: response }
-    }
-  }
-&lt;/script&gt;
-    </coralite-code-highlight>
+        &lt;script&gt;
+          import { fetchJson } from 'virtual:custom-data-fetcher'
 
-    <coralite-heading level="2" text="Hardening Internal Engine Boundaries"></coralite-heading>
-    <p>Because the main Coralite instance is exposed to plugins during build phases, we have introduced a safety layer using <code>Object.defineProperties</code>. All internal instance properties (such as <code>_scriptManager</code>, <code>_plugins</code>, and <code>_renderQueues</code>) and prototype methods starting with an underscore (<code>_</code>) are now configured as non-writable, non-configurable, and non-enumerable. This prevents external plugin logic from accidentally mutating or polluting internal engine states.</p>
+          export default {
+            async data () {
+              const response = await fetchJson('/api/resource')
+              return { data: response }
+            }
+          }
+        &lt;/script&gt;
+            </code-block>
 
-    <coralite-heading level="2" text="Benchmark Script CLI Selections"></coralite-heading>
-    <p>To improve developer workflow when profiling performance, the benchmark runner (<code>run-benchmarks.js</code>) has been updated to use <code>commander</code> for argument parsing. You can now execute specific benchmark suites by providing their file names as CLI arguments:</p>
+            <h2 id="hardening-internal-engine-boundaries">Hardening Internal Engine Boundaries</h2>
+            <p>Because the main Coralite instance is exposed to plugins during build phases, we have introduced a safety layer using <code>Object.defineProperties</code>. All internal instance properties (such as <code>_scriptManager</code>, <code>_plugins</code>, and <code>_renderQueues</code>) and prototype methods starting with an underscore (<code>_</code>) are now configured as non-writable, non-configurable, and non-enumerable. This prevents external plugin logic from accidentally mutating or polluting internal engine states.</p>
 
-    <coralite-code-highlight language="bash">
-node run-benchmarks.js memory parsing
-    </coralite-code-highlight>
+            <h2 id="benchmark-script-cli-selections">Benchmark Script CLI Selections</h2>
+            <p>To improve developer workflow when profiling performance, the benchmark runner (<code>run-benchmarks.js</code>) has been updated to use <code>commander</code> for argument parsing. You can now execute specific benchmark suites by providing their file names as CLI arguments:</p>
 
-    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
-    <ul>
-      <li><strong>Plugin Exports Two-Phase Currying:</strong> Plugin <code>exports</code> signature has changed from a single function to an object of two-phase curried functions.</li>
-      <li><strong>Removal of /plugins Subpath:</strong> Imports must be updated, as the <code>/plugins</code> subpath has been removed from core exports.</li>
-      <li><strong>Removal of Deprecated definePlugin Method:</strong> The deprecated <code>definePlugin</code> method on the state plugin has been removed.</li>
-    </ul>
+            <code-block language="bash">
+        node run-benchmarks.js memory parsing
+            </code-block>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="breaking-changes">Breaking Changes</h2>
+            <ul>
+              <li><strong>Plugin Exports Two-Phase Currying:</strong> Plugin <code>exports</code> signature has changed from a single function to an object of two-phase curried functions.</li>
+              <li><strong>Removal of /plugins Subpath:</strong> Imports must be updated, as the <code>/plugins</code> subpath has been removed from core exports.</li>
+              <li><strong>Removal of Deprecated definePlugin Method:</strong> The deprecated <code>definePlugin</code> method on the state plugin has been removed.</li>
+            </ul>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite@0.35.0
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite-scripts@0.35.0
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite@0.35.0
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+              npm install coralite-scripts@0.35.0
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

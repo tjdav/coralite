@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Plugins"
+    description="Extend Coralite with custom build-time behavior and inject context into components and pages."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <div slot="sidebar">
+      <ui-accordion title="Component API">
+        <ui-nav-link href="/reference/attributes">attributes</ui-nav-link>
+        <ui-nav-link href="/reference/client">client</ui-nav-link>
+        <ui-nav-link href="/reference/server">server</ui-nav-link>
+        <ui-nav-link href="/reference/getters">getters</ui-nav-link>
+        <ui-nav-link href="/reference/style">style</ui-nav-link>
+        <ui-nav-link href="/reference/slots">slots</ui-nav-link>
+        <ui-nav-link href="/reference/form-control">formControl</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Page API">
+        <ui-nav-link href="/reference/page-api">paths & definePage</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Plugin API" open>
+        <ui-nav-link href="/reference/plugins" active>definePlugin</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="CLI">
+        <ui-nav-link href="/reference/cli">commands</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Plugin API</a>
+        <span class="separator">/</span>
+        <span>definePlugin</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>definePlugin</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">Extend Coralite with custom build-time behavior and inject context into components and pages.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="plugin-schema">Plugin Schema</h2>
+        <p>A plugin is a standard ES module that exports a configuration object via <code>definePlugin</code>. Plugins are registered in <code>coralite.config.js</code> and injected into the execution context of every component and page.</p>
+
+        <code-block language="javascript" filename="my-plugin.js">
+import { definePlugin } from 'coralite'
+
+export default definePlugin({
+  name: 'my-plugin',
+  context: (pluginContext) => (instanceContext) => ({
+    // Phase 1: Runs once at initialization
+    // Phase 2: Runs per component/page instance
+    $greet: (name) => `Hello, ${name}!`
+  })
+})
+        </code-block>
+
+        <h2 id="the-two-phase-curried-context">The Two-Phase Curried Context</h2>
+        <p>The <code>context</code> function uses a curried signature. This ensures that expensive setup (Phase 1) runs only once, while the instance-specific context (Phase 2) is lazily resolved for each component or page.</p>
+
+        <code-block language="javascript" filename="two-phase.js">
+export default definePlugin({
+  name: 'analytics',
+  context: (pluginCtx) => (instanceCtx) => ({
+    track: (event) => {
+      // instanceCtx gives access to the component's state and route
+      console.log(`[${instanceCtx.route.path}] ${event}`)
+    }
+  })
+})
+        </code-block>
+
+        <h2 id="environment-specific-context">Environment-Specific Context</h2>
+        <p>For context that should only exist on the server or only in the browser, use the <code>server.context</code> and <code>client.context</code> sub-objects. They must use the same curried signature.</p>
+
+        <code-block language="javascript" filename="env-context.js">
+export default definePlugin({
+  name: 'server-only',
+  server: {
+    context: () => () => ({
+      queryDb: async (sql) => { /* ... */ }
+    })
+  },
+  client: {
+    context: () => () => ({
+      trackClick: (el) => { /* ... */ }
+    })
+  }
+})
+        </code-block>
+
+        <div class="diagnostic-callout">
+          <strong>CORALITE-P301: Single-Phase Context</strong>
+          <p>The <code>context</code> function must return a function, not an object. If you return <code>{ $greet: ... }</code> directly, Coralite throws <code>CORALITE-P301</code>. Always use the two-phase curried signature: <code>(pluginCtx) => (instanceCtx) => ({ ... })</code>.</p>
+        </div>
+
+        <h2 id="reserved-keys">Reserved Keys</h2>
+        <p>Coralite reserves several keys on the execution context: <code>state</code>, <code>route</code>, <code>app</code>, <code>session</code>, <code>signal</code>, <code>store</code>, <code>page</code>, <code>refs</code>, <code>emit</code>, <code>observe</code>, <code>updateComplete</code>. If your plugin exports a key with the same name, Coralite will preserve the framework key and emit a warning in development mode.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/page-api" variant="secondary">← Previous: Page API</ui-link>
+        <ui-link href="/reference/cli" variant="primary">Next: CLI →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#plugin-schema">Plugin Schema</a>
+        <a href="#the-two-phase-curried-context">Two-Phase Curried Context</a>
+        <a href="#environment-specific-context" style="text-decoration: none;">Environment-Specific</a>
+        <a href="#reserved-keys">Reserved Keys</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

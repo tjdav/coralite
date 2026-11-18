@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Documentation — Coralite"
+    description="Guides for building applications, concept deep dives, and strict API references. Start with the guide, then reach for the reference when you need the exact contract."></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <main class="docs-page page-container">
+    <section class="hero-section">
+      <ui-badge variant="cyan">Documentation</ui-badge>
+      <h1>Everything the framework does, and why.</h1>
+      <p class="subhead">Guides for building applications, concept deep dives, and strict API references. Start with the guide, then reach for the reference when you need the exact contract.</p>
+    </section>
+
+    <section class="ref-section">
+      <h2>Guide</h2>
+      <p class="section-intro">Task-oriented walkthroughs, from installation to deployment.</p>
+
+      <div class="ref-grid">
+        <a class="ref-card" href="/docs/guide/getting-started">
+          <ui-card hoverable>
+            <h3>Getting Started</h3>
+            <p>Install Coralite, scaffold a project, and author your first component and page.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/guide/quick-start">
+          <ui-card hoverable>
+            <h3>Quick Start</h3>
+            <p>The shortest path from an empty directory to a running development server.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/guide/authoring">
+          <ui-card hoverable>
+            <h3>Authoring Pattern</h3>
+            <p>The unified block structure, context keys, template rules, and serialization boundary.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/guide/ssr">
+          <ui-card hoverable>
+            <h3>Server-Side Rendering</h3>
+            <p>SSR architecture, server blocks, hydration, and performance patterns.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/guide/components">
+          <ui-card hoverable>
+            <h3>Components</h3>
+            <p>Static and dynamic components: templates, attributes, getters, and client logic.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/guide/testing">
+          <ui-card hoverable>
+            <h3>Testing &amp; Deployment</h3>
+            <p>Unit tests, Playwright E2E, static hosting, and CSP configuration.</p>
+          </ui-card>
+        </a>
+      </div>
+
+      <p class="all-link"><a href="/docs/guide/">Browse all 21 guide pages →</a></p>
+    </section>
+
+    <section class="ref-section">
+      <h2>Concepts</h2>
+      <p class="section-intro">The mental model behind the framework.</p>
+
+      <div class="ref-grid">
+        <a class="ref-card" href="/docs/concepts/reactivity">
+          <ui-card hoverable>
+            <h3>Reactivity &amp; Context</h3>
+            <p>Signals, getters, async getters, observe, updateComplete, and context injection.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/concepts/styling">
+          <ui-card hoverable>
+            <h3>Styling &amp; Slots</h3>
+            <p>Light DOM scoping, :host rewrites, reactive custom properties, and slot projection.</p>
+          </ui-card>
+        </a>
+      </div>
+    </section>
+
+    <section class="ref-section">
+      <h2>Reference</h2>
+      <p class="section-intro">Exact signatures and contracts. For the concise API tour, see the <a href="/reference/">quick reference</a>.</p>
+
+      <div class="ref-grid">
+        <a class="ref-card" href="/docs/reference/config">
+          <ui-card hoverable>
+            <h3>Configuration</h3>
+            <p>Every <code>coralite.config.js</code> option: output, plugins, CSP, and build flags.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/reference/components">
+          <ui-card hoverable>
+            <h3>Components</h3>
+            <p>Named exports, component structure, and authoring rules.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/reference/pages">
+          <ui-card hoverable>
+            <h3>Pages &amp; Routing</h3>
+            <p>Page configuration, flat exports, and file-based routing.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/reference/coralite-ignore">
+          <ui-card hoverable>
+            <h3>coralite-ignore</h3>
+            <p>Keep literal regions, slots, scripts, and templates out of the compiler.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/reference/plugins/">
+          <ui-card hoverable>
+            <h3>Built-in Plugins</h3>
+            <p>refs, metadata, static assets, testing, and the opt-in SPA router.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/docs/reference/types">
+          <ui-card hoverable>
+            <h3>Type Reference</h3>
+            <p>Context objects, configuration types, and exported utilities.</p>
+          </ui-card>
+        </a>
+      </div>
+
+      <p class="all-link"><a href="/docs/reference/">Browse all reference pages →</a></p>
+    </section>
+
+    <section class="ref-cta">
+      <ui-card>
+        <div class="cta-row">
+          <div>
+            <h2>Prefer learning by building?</h2>
+            <p class="subhead">The curriculum takes you from plain HTML to server-rendered components.</p>
+          </div>
+          <ui-link href="/learn/" variant="primary">Open the curriculum →</ui-link>
+        </div>
+      </ui-card>
+    </section>
+  </main>
+
+  <site-footer></site-footer>
+</body>
+</html>
+

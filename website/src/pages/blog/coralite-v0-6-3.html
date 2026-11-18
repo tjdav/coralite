@@ -1,41 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.6.3" description="Coralite v0.6.3 introduces attribute-based element filtering, improved test coverage, and enhanced script module error messages for static site generation."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-02-19T11:34:35+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.6.3"
+    description="Coralite v0.6.3 introduces attribute-based element filtering, improved test coverage, and enhanced script module error messages for static site generation."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-02-19"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.6.3</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.6.3</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-02-19T11:34:35+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.6.3</h1>
+        <p class="subhead">Coralite v0.6.3 introduces attribute-based element filtering, improved test coverage, and enhanced script module error messages for static site generation.</p>
 
-    <p>Coralite’s latest release, v0.6.3, introduces enhancements for element filtering and metadata parsing, improving reliability and flexibility in static site generation.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">February 19, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Key Enhancements"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite’s latest release, v0.6.3, introduces enhancements for element filtering and metadata parsing, improving reliability and flexibility in static site generation.</p>
 
-    <ul>
-      <li>Added the ability to ignore elements by attributes within meta and component parsers using the new <code>IgnoreByAttribute</code> type, providing fine-grained control over rendering logic.</li>
-      <li>Improved test coverage with updates to examples and documentation, including consistent path naming conventions and updated usage examples for attribute-based filtering.</li>
-      <li>Enhanced script module error messages by adding template IDs for better debugging and troubleshooting during site generation.</li>
-    </ul>
+            <h2 id="key-enhancements">Key Enhancements</h2>
 
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <ul>
+              <li>Added the ability to ignore elements by attributes within meta and component parsers using the new <code>IgnoreByAttribute</code> type, providing fine-grained control over rendering logic.</li>
+              <li>Improved test coverage with updates to examples and documentation, including consistent path naming conventions and updated usage examples for attribute-based filtering.</li>
+              <li>Enhanced script module error messages by adding template IDs for better debugging and troubleshooting during site generation.</li>
+            </ul>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.6.3</coralite-code-highlight>
+            <h2 id="get-the-release">Get the release</h2>
 
-    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.3" target="_blank">git v0.6.3 changelog</a></p>
+            <code-block language="bash">npm install coralite@0.6.3</code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.3" target="_blank">git v0.6.3 changelog</a></p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

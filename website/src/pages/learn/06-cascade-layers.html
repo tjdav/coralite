@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Cascade Layers"
+    description="How Coralite uses native CSS @layer to eliminate specificity wars and allow utility classes to easily override component styles."
+    section="Learn"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <!-- Sidebar -->
+        <div slot="sidebar">
+      <ui-accordion title="Module 1: HTML Foundations" open>
+        <ui-nav-link href="/learn/01-the-document">1. The Document</ui-nav-link>
+        <ui-nav-link href="/learn/02-semantic-tags">2. Semantic Tags</ui-nav-link>
+        <ui-nav-link href="/learn/03-attributes-data">3. Attributes & Data</ui-nav-link>
+        <ui-nav-link href="/learn/04-structuring-a-page">4. Structuring a Page</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 2: CSS & Styling" open>
+        <ui-nav-link href="/learn/05-native-css-scoping">1. Native CSS Scoping</ui-nav-link>
+        <ui-nav-link href="/learn/06-cascade-layers" active>2. Cascade Layers</ui-nav-link>
+        <ui-nav-link href="/learn/07-theming-with-variables">3. Theming with Variables</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 3: JavaScript Behavior" open>
+        <ui-nav-link href="/learn/08-the-client-runtime">1. The Client Runtime</ui-nav-link>
+        <ui-nav-link href="/learn/09-refs-and-event-listeners">2. Refs & Event Listeners</ui-nav-link>
+        <ui-nav-link href="/learn/10-reactive-state">3. Reactive State</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 4: The Coralite Ecosystem" open>
+        <ui-nav-link href="/learn/11-server-side-rendering">1. Server-Side Rendering</ui-nav-link>
+        <ui-nav-link href="/learn/13-building-for-production">2. Building for Production</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <!-- Content -->
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/learn/">Learn</a>
+        <span class="separator">/</span>
+        <a href="/learn/">Module 2</a>
+        <span class="separator">/</span>
+        <span>Lesson 2: Cascade Layers</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <ui-badge variant="cyan">Lesson 06</ui-badge>
+        <h1>Cascade Layers</h1>
+        <p class="subhead">How Coralite uses native CSS @layer to eliminate specificity wars and allow utility classes to easily override component styles.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="the-specificity-problem">The Specificity Problem</h2>
+        <p>In traditional CSS, if a component defines `.btn { padding: 16px; }` and a developer tries to override it with a utility class `<button class="btn mt-0">`, the specificity is tied. The result depends on source order, often forcing developers to use `!important`.</p>
+        
+        <h2 id="enter-layer">Enter @layer</h2>
+        <p>Coralite wraps all component styles inside the <code>components</code> layer. Unlayered CSS (like your global utility classes) always takes precedence over layered CSS, regardless of specificity.</p>
+
+        <code-block language="css" filename="component.css">
+@layer components {
+  .btn {
+    padding: 16px;
+    background: var(--accent-violet);
+  }
+}
+        </code-block>
+
+        <code-block language="css" filename="utilities.css">
+/* Unlayered CSS wins */
+.mt-0 {
+  padding: 0 !important;
+  /* Actually, no !important needed! */
+  padding: 0;
+}
+        </code-block>
+
+        <h2 id="visual-proof">Visual Proof</h2>
+        <p>Here is a styled button inside the components layer, and a utility class overriding its padding. Notice how the utility class wins without any `!important`.</p>
+        
+        <div class="demo-box">
+          <button class="demo-btn demo-utility">Overridden Padding</button>
+        </div>
+
+        <h2 id="why-this-matters">Why this matters</h2>
+        <p>It means you can ship a component library without worrying about specificity conflicts. Consumers of your components can always override styles using standard CSS classes or inline styles without fighting the cascade.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/learn/05-native-css-scoping" variant="secondary">← Previous</ui-link>
+        <ui-link href="/learn/07-theming-with-variables" variant="primary">Next: Theming →</ui-link>
+      </div>
+    </div>
+
+    <!-- TOC -->
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-specificity-problem">The Specificity Problem</a>
+        <a href="#enter-layer">Enter @layer</a>
+        <a href="#visual-proof">Visual Proof</a>
+        <a href="#why-this-matters">Why this matters</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

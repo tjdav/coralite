@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Learn — Coralite"
+    description="Learn the fundamentals of HTML, CSS, and JavaScript. Then, seamlessly transition into building complex, server-rendered Web Components using the exact same native APIs."></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <main class="learn-page page-container">
+    <ui-icon style="display: none;" aria-hidden="true"></ui-icon>
+    <code-block style="display: none;" aria-hidden="true"></code-block>
+
+    <section class="hero-section">
+      <ui-badge variant="cyan">Zero-Syntax Jump</ui-badge>
+      <h1>Master the Platform. Build the Ecosystem.</h1>
+      <p class="subhead">Learn the fundamentals of HTML, CSS, and JavaScript. Then, seamlessly transition into building complex, server-rendered Web Components using the exact same native APIs.</p>
+    </section>
+
+    <section class="curriculum-section">
+      <h2>The Curriculum</h2>
+      
+      <div class="curriculum-grid">
+        <ui-card hoverable class="module-card">
+          <div slot="header" class="module-header">
+            <div class="module-title">
+              <ui-icon name="doc" size="20" class="module-icon"></ui-icon>
+              <h3>Module 1: HTML Foundations</h3>
+            </div>
+          </div>
+          <p>Semantic structure, native attributes, and the document lifecycle.</p>
+          <ul class="lesson-list">
+            <li><a href="/learn/01-the-document">1. The Document</a></li>
+            <li><a href="/learn/02-semantic-tags">2. Semantic Tags</a></li>
+            <li><a href="/learn/03-attributes-data">3. Attributes &amp; Data</a></li>
+            <li><a href="/learn/04-structuring-a-page">4. Structuring a Page</a></li>
+          </ul>
+          <ui-link href="/learn/01-the-document" variant="secondary">Start Module 1</ui-link>
+        </ui-card>
+
+        <ui-card hoverable class="module-card">
+          <div slot="header" class="module-header">
+            <div class="module-title">
+              <ui-icon name="style" size="20" class="module-icon"></ui-icon>
+              <h3>Module 2: CSS &amp; Styling</h3>
+            </div>
+          </div>
+          <p>Cascade, specificity, and styling components with CSS Scoping.</p>
+          <ul class="lesson-list">
+            <li><a href="/learn/05-native-css-scoping">1. Native CSS Scoping</a></li>
+            <li><a href="/learn/06-cascade-layers">2. Cascade Layers</a></li>
+            <li><a href="/learn/07-theming-with-variables">3. Theming with Variables</a></li>
+          </ul>
+          <ui-link href="/learn/05-native-css-scoping" variant="secondary">Start Module 2</ui-link>
+        </ui-card>
+
+        <ui-card hoverable class="module-card">
+          <div slot="header" class="module-header">
+            <div class="module-title">
+              <ui-icon name="js" size="20" class="module-icon"></ui-icon>
+              <h3>Module 3: JavaScript Behavior</h3>
+            </div>
+          </div>
+          <p>Event listeners, reactive state, and the client runtime.</p>
+          <ul class="lesson-list">
+            <li><a href="/learn/08-the-client-runtime">1. The Client Runtime</a></li>
+            <li><a href="/learn/09-refs-and-event-listeners">2. Refs &amp; Event Listeners</a></li>
+            <li><a href="/learn/10-reactive-state">3. Reactive State</a></li>
+          </ul>
+          <ui-link href="/learn/08-the-client-runtime" variant="secondary">Start Module 3</ui-link>
+        </ui-card>
+
+        <ui-card hoverable class="module-card">
+          <div slot="header" class="module-header">
+            <div class="module-title">
+              <ui-icon name="ecosystem" size="20" class="module-icon"></ui-icon>
+              <h3>Module 4: The Coralite Ecosystem</h3>
+            </div>
+          </div>
+          <p>Server-side rendering, serialization boundaries, and shipping to production.</p>
+          <ul class="lesson-list">
+            <li><a href="/learn/11-server-side-rendering">1. Server-Side Rendering</a></li>
+            <li><a href="/learn/13-building-for-production">2. Building for Production</a></li>
+          </ul>
+          <ui-link href="/learn/11-server-side-rendering" variant="secondary">Start Module 4</ui-link>
+        </ui-card>
+      </div>
+    </section>
+
+    <section class="why-path-section">
+      <ui-card>
+        <div class="why-content">
+          <div class="why-text">
+            <h2>No context switching.</h2>
+            <p>You won't write standard HTML in Module 1, and then suddenly have to learn JSX or a completely new class-based component syntax in Module 4. The platform APIs you learn on day one are exactly what Coralite uses in production.</p>
+          </div>
+          <div class="why-code">
+            <code-block language="javascript" filename="vanilla.js">
+document.querySelector('button').addEventListener('click', () => {
+  console.log('clicked')
+})
+            </code-block>
+            <code-block language="javascript" filename="coralite.html">
+export function client({ refs, signal }) {
+  refs('btn').addEventListener('click', () => {
+    console.log('clicked')
+  }, { signal })
+}
+            </code-block>
+          </div>
+        </div>
+      </ui-card>
+    </section>
+  </main>
+
+  <site-footer></site-footer>
+</body>
+</html>
+

@@ -1,124 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Coralite User Guides: Master Website Development with Native Web Technologies"
-    description="Access detailed Coralite user guides for building websites using standard HTML, CSS, and JavaScript. No special syntax required."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite Guide — Coralite Docs"
+    description="Access detailed Coralite user guides for building websites using standard HTML, CSS, and JavaScript. No special syntax required."></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main class="container content">
-    <h1 class="display">Coralite Guide Overview</h1>
-    <p>Welcome to our guides. We've organized them to help you learn Coralite from the ground up.</p>
+  <site-header></site-header>
 
-    <coralite-heading level="2" text="1. Foundations"></coralite-heading>
-    <ul>
-      <li>
-        <a href="/docs/guide/getting-started.html">Getting Started</a>
-        <p class="mt-0">Learn how to install Coralite, set up a project, author your first component and page, and run core scripts.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/authoring.html">Authoring Pattern</a>
-        <p class="mt-0">Master the unified block structure, context keys, template rules, and serialization boundaries across Coralite.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/quick-start.html">Quick Start (Installation)</a>
-        <p class="mt-0">Learn how to install Coralite and bootstrap a new project quickly.</p>
-      </li>
-    </ul>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="guide/"></docs-sidebar>
 
-    <coralite-heading level="2" text="2. Core Concepts"></coralite-heading>
-    <ul>
-      <li>
-        <a href="/docs/guide/ssr.html">Server-Side Rendering (SSR)</a>
-        <p class="mt-0">Deep dive into Coralite's SSR architecture, server blocks, and performance patterns.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/components.html">Components (Static & Dynamic)</a>
-        <p class="mt-0">Master both static HTML-based components and dynamic components with reactive logic.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/dom-refs.html">Managing the DOM (Refs)</a>
-        <p class="mt-0">Learn how to easily target and manipulate DOM elements without querying.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/page-metadata.html">Page Metadata</a>
-        <p class="mt-0">Manage SEO tags and page-specific metadata securely with the built-in plugin.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/page-variables.html">Page Variables</a>
-        <p class="mt-0">Understand the built-in path and URL context variables automatically injected into your pages.</p>
-      </li>
-      <li>
-        <a href="/docs/concepts/reactivity.html">Reactivity &amp; Context</a>
-        <p class="mt-0">Master fine-grained reactivity, signals, getters, async getters, observe, updateComplete, and context injection.</p>
-      </li>
-      <li>
-        <a href="/docs/concepts/styling.html">Styling &amp; Slots</a>
-        <p class="mt-0">Explore Light DOM CSS scoping, :host rewrites, reactive custom properties, slot projections, and slot transformations.</p>
-      </li>
-      <li>
-        <a href="/docs/reference/coralite-ignore.html">Opting Out with coralite-ignore</a>
-        <p class="mt-0">Keep code samples, third-party widgets, and authored markup literal while skipping tokens, compilation, hydration, validation, and controller extraction.</p>
-      </li>
-    </ul>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <span>Coralite Guide</span>
+      </ui-breadcrumb>
 
-    <coralite-heading level="2" text="3. Advanced Guides"></coralite-heading>
-    <ul>
-      <li>
-        <a href="/docs/guide/validation.html">Self-Healing Code & Diagnostics</a>
-        <p class="mt-0">Leverage static analysis, 1-shot AST auto-fixing, AI pair-programming rules, and strict CI gates.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/csp.html">Content Security Policy (CSP)</a>
-        <p class="mt-0">Harden your applications with nonces, automated SHA-256 hashing, and external script bundling.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/javascript.html">Client-Side JavaScript</a>
-        <p class="mt-0">Dive deep into complex client-side interactions and lifecycle hooks.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/styling.html">Styling & CSS</a>
-        <p class="mt-0">Master techniques for scoping styles and organizing your application's CSS.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/plugins.html">Authoring Plugins</a>
-        <p class="mt-0">Learn how to create powerful custom plugins to extend the Coralite framework.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/i18n.html">Internationalization (i18n)</a>
-        <p class="mt-0">Discover internationalization patterns including locale routing, message bundles, native Intl formatting, and RTL support.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/seo.html">Search Engine Optimization (SEO)</a>
-        <p class="mt-0">Learn about built-in metadata extraction, plugin-driven sitemaps and RSS feeds, robots.txt, and SEO framework boundaries.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/binary-assets.html">Handling Binary Assets</a>
-        <p class="mt-0">Best practices for importing and managing images, fonts, and other static files.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/spa-router.html">SPA Router</a>
-        <p class="mt-0">Build single-page applications on static output: outlets and persistent elements, guards, navigation events, and state that survives route swaps.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/building.html">Building Applications</a>
-        <p class="mt-0">Learn how to architect Coralite apps across Pure SSG, Hybrid data fetching, and SPA modes.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/testing.html">Testing &amp; Deployment</a>
-        <p class="mt-0">Comprehensive guide to unit testing, E2E testing with Playwright, static deployment, and CSP configuration.</p>
-      </li>
-      <li>
-        <a href="/docs/guide/e2e-testing.html">E2E Testing & Hydration</a>
-        <p class="mt-0">Learn how to test Coralite apps using Playwright or Cypress by waiting for hydration.</p>
-      </li>
-    </ul>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Coralite Guide</h1>
+          <ui-badge variant="cyan">Guide</ui-badge>
+        </div>
+        <p class="subhead">Access detailed Coralite user guides for building websites using standard HTML, CSS, and JavaScript. No special syntax required.</p>
+      </div>
 
-  </main>
-  <coralite-footer></coralite-footer>
+      <div class="lesson-body">
+        <p>Welcome to our guides. We've organized them to help you learn Coralite from the ground up.</p>
 
+            <h2 id="1-foundations">1. Foundations</h2>
+            <ul>
+              <li>
+                <a href="/docs/guide/getting-started">Getting Started</a>
+                <p class="mt-0">Learn how to install Coralite, set up a project, author your first component and page, and run core scripts.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/authoring">Authoring Pattern</a>
+                <p class="mt-0">Master the unified block structure, context keys, template rules, and serialization boundaries across Coralite.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/quick-start">Quick Start (Installation)</a>
+                <p class="mt-0">Learn how to install Coralite and bootstrap a new project quickly.</p>
+              </li>
+            </ul>
+
+            <h2 id="2-core-concepts">2. Core Concepts</h2>
+            <ul>
+              <li>
+                <a href="/docs/guide/ssr">Server-Side Rendering (SSR)</a>
+                <p class="mt-0">Deep dive into Coralite's SSR architecture, server blocks, and performance patterns.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/components">Components (Static & Dynamic)</a>
+                <p class="mt-0">Master both static HTML-based components and dynamic components with reactive logic.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/dom-refs">Managing the DOM (Refs)</a>
+                <p class="mt-0">Learn how to easily target and manipulate DOM elements without querying.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/page-metadata">Page Metadata</a>
+                <p class="mt-0">Manage SEO tags and page-specific metadata securely with the built-in plugin.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/page-variables">Page Variables</a>
+                <p class="mt-0">Understand the built-in path and URL context variables automatically injected into your pages.</p>
+              </li>
+              <li>
+                <a href="/docs/concepts/reactivity">Reactivity &amp; Context</a>
+                <p class="mt-0">Master fine-grained reactivity, signals, getters, async getters, observe, updateComplete, and context injection.</p>
+              </li>
+              <li>
+                <a href="/docs/concepts/styling">Styling &amp; Slots</a>
+                <p class="mt-0">Explore Light DOM CSS scoping, :host rewrites, reactive custom properties, slot projections, and slot transformations.</p>
+              </li>
+              <li>
+                <a href="/docs/reference/coralite-ignore">Opting Out with</a>
+                <p class="mt-0">Keep code samples, third-party widgets, and authored markup literal while skipping tokens, compilation, hydration, validation, and controller extraction.</p>
+              </li>
+            </ul>
+
+            <h2 id="3-advanced-guides">3. Advanced Guides</h2>
+            <ul>
+              <li>
+                <a href="/docs/guide/validation">Self-Healing Code & Diagnostics</a>
+                <p class="mt-0">Leverage static analysis, 1-shot AST auto-fixing, AI pair-programming rules, and strict CI gates.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/csp">Content Security Policy (CSP)</a>
+                <p class="mt-0">Harden your applications with nonces, automated SHA-256 hashing, and external script bundling.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/javascript">Client-Side JavaScript</a>
+                <p class="mt-0">Dive deep into complex client-side interactions and lifecycle hooks.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/styling">Styling & CSS</a>
+                <p class="mt-0">Master techniques for scoping styles and organizing your application's CSS.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/plugins">Authoring Plugins</a>
+                <p class="mt-0">Learn how to create powerful custom plugins to extend the Coralite framework.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/i18n">Internationalization (i18n)</a>
+                <p class="mt-0">Discover internationalization patterns including locale routing, message bundles, native Intl formatting, and RTL support.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/seo">Search Engine Optimization (SEO)</a>
+                <p class="mt-0">Learn about built-in metadata extraction, plugin-driven sitemaps and RSS feeds, robots.txt, and SEO framework boundaries.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/binary-assets">Handling Binary Assets</a>
+                <p class="mt-0">Best practices for importing and managing images, fonts, and other static files.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/spa-router">SPA Router</a>
+                <p class="mt-0">Build single-page applications on static output: outlets and persistent elements, guards, navigation events, and state that survives route swaps.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/building">Building Applications</a>
+                <p class="mt-0">Learn how to architect Coralite apps across Pure SSG, Hybrid data fetching, and SPA modes.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/testing">Testing &amp; Deployment</a>
+                <p class="mt-0">Comprehensive guide to unit testing, E2E testing with Playwright, static deployment, and CSP configuration.</p>
+              </li>
+              <li>
+                <a href="/docs/guide/e2e-testing">E2E Testing & Hydration</a>
+                <p class="mt-0">Learn how to test Coralite apps using Playwright or Cypress by waiting for hydration.</p>
+              </li>
+            </ul>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#1-foundations">1. Foundations</a>
+        <a href="#2-core-concepts">2. Core Concepts</a>
+        <a href="#3-advanced-guides">3. Advanced Guides</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

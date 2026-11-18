@@ -1,51 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.8.0" description="Coralite v0.8.0 introduces robust pagination, enhanced metadata handling, and improved HTML parsing for static site generation. Upgrade now with breaking change notes."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-05-11T19:27:38+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.8.0"
+    description="Coralite v0.8.0 introduces robust pagination, enhanced metadata handling, and improved HTML parsing for static site generation. Upgrade now with breaking change notes."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-05-11"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.8.0</h1>
-    <coralite-author name="thomas" date-time="2025-05-11T19:27:38+02:00"></coralite-author>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.8.0</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-01-15T15:14:26+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.8.0</h1>
+        <p class="subhead">Coralite v0.8.0 introduces robust pagination, enhanced metadata handling, and improved HTML parsing for static site generation. Upgrade now with breaking change notes.</p>
 
-    <p>Coralite’s v0.8.0 release introduces robust pagination support, improved HTML parsing, and metadata enhancements while addressing critical type handling and breaking changes to ensure compatibility with modern workflows.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">May 11, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite’s v0.8.0 release introduces robust pagination support, improved HTML parsing, and metadata enhancements while addressing critical type handling and breaking changes to ensure compatibility with modern workflows.</p>
 
-    <ul>
-      <li>Introduced full pagination system with dynamic attribute generation, document handling, and template rendering based on configuration (BREAKING CHANGE: replaces previous sort function logic).</li>
-      <li>Enhanced metadata processing to support filtering via options.filter and updated token prefix from ‘meta_’ to ’$' (BREAKING CHANGE: requires configuration updates for existing metadata tokens).</li>
-      <li>Integrated htmlparser2 and dom-serializer for improved HTML parsing reliability and consistency in document rendering.</li>
-      <li>Refactored aggregation logic with Aggregation typedef, structured data collection, and enhanced type safety through CoraliteFilePath and HTMLData interfaces.</li>
-    </ul>
+            <h2 id="core-functionality">Core Functionality</h2>
 
-    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+            <ul>
+              <li>Introduced full pagination system with dynamic attribute generation, document handling, and template rendering based on configuration (BREAKING CHANGE: replaces previous sort function logic).</li>
+              <li>Enhanced metadata processing to support filtering via options.filter and updated token prefix from ‘meta_’ to ’$' (BREAKING CHANGE: requires configuration updates for existing metadata tokens).</li>
+              <li>Integrated htmlparser2 and dom-serializer for improved HTML parsing reliability and consistency in document rendering.</li>
+              <li>Refactored aggregation logic with Aggregation typedef, structured data collection, and enhanced type safety through CoraliteFilePath and HTMLData interfaces.</li>
+            </ul>
 
-    <ul>
-      <li><strong>Metadata Token Prefix:</strong> All references to metadata tokens must now use the ’$' prefix instead of ‘meta_’.</li>
-      <li><strong>Function Parameter Removal:</strong> The ‘html’ parameter has been removed from parseModule’s interface (BREAKING CHANGE: update dependent code accordingly).</li>
-      <li><strong>Return Type Change:</strong> createComponent now returns a CoraliteComponent object instead of a raw CoraliteElement. Access the element property on the returned object.</li>
-    </ul>
+            <h2 id="breaking-changes">Breaking Changes</h2>
 
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <ul>
+              <li><strong>Metadata Token Prefix:</strong> All references to metadata tokens must now use the ’$' prefix instead of ‘meta_’.</li>
+              <li><strong>Function Parameter Removal:</strong> The ‘html’ parameter has been removed from parseModule’s interface (BREAKING CHANGE: update dependent code accordingly).</li>
+              <li><strong>Return Type Change:</strong> createComponent now returns a CoraliteComponent object instead of a raw CoraliteElement. Access the element property on the returned object.</li>
+            </ul>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.8.0</coralite-code-highlight>
-    
-    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.8.0" target="_blank">git v0.8.0 changelog</a></p>
+            <h2 id="get-the-release">Get the release</h2>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">npm install coralite@0.8.0</code-block>
+            
+            <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.8.0" target="_blank">git v0.8.0 changelog</a></p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

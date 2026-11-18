@@ -1,56 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.33.1 Released: Robust Serialization and LLM Integration"
-    description="Coralite v0.33.1 resolves circular structure errors during serialization, refactors utility modules, and includes llms.txt in package distributions."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-05-13T19:43:41+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.33.1 Released: Robust Serialization and LLM Integration</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.33.1 Released: Robust Serialization and LLM Integration"
+    description="Coralite v0.33.1 resolves circular structure errors during serialization, refactors utility modules, and includes llms.txt in package distributions."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-05-13"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.33.1 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.33.1 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-05-13T19:43:41+02:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.33.1 Released</h1>
+        <p class="subhead">Coralite v0.33.1 resolves circular structure errors during serialization, refactors utility modules, and includes llms.txt in package distributions.</p>
 
-    <p>Coralite version 0.33.1 is now available. This release delivers critical reliability fixes to serialization logic, improves codebase maintainability through key utility refactoring, and packages metadata optimized for LLM integrations.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">May 13, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Serialization Reliability and Utility Refactoring"></coralite-heading>
-    <p>This release addresses an issue causing circular structure errors during object serialization. We resolved this by integrating the AST-to-HTML transformation directly into <code>normalizeObjectFunctions</code> via a new <code>transform</code> callback, and by introducing an <code>astTransformer</code> within <code>utils.js</code> to handle Coralite AST nodes safely.</p>
-    
-    <p>To improve structural cleanlines, the following utilities have been relocated from <code>ScriptManager</code> to <code>utils.js</code>:</p>
-    <ul>
-      <li><code>addComponentAndDependencies</code></li>
-      <li><code>cleanAST</code></li>
-      <li><code>cleanValues</code></li>
-    </ul>
-    
-    <p>In addition, TypeScript type definitions have been refined and strict build blocks bypassed with targeted type annotations to prevent downstream <code>pnpm build</code> failures. Unit tests have also been expanded to verify serialization behavior and coverage for the refactored utilities.</p>
+      <div class="post-body">
+        <p>Coralite version 0.33.1 is now available. This release delivers critical reliability fixes to serialization logic, improves codebase maintainability through key utility refactoring, and packages metadata optimized for LLM integrations.</p>
 
-    <coralite-heading level="2" text="LLM Integrations with llms.txt"></coralite-heading>
-    <p>Following the updates introduced in the v0.33.0 cycle, Coralite now explicitly includes <code>llms.txt</code> in its package distribution. This ensures LLM-powered developer tools can access framework-specific context directly from the package files.</p>
+            <h2 id="serialization-reliability-and-utility-refactoring">Serialization Reliability and Utility Refactoring</h2>
+            <p>This release addresses an issue causing circular structure errors during object serialization. We resolved this by integrating the AST-to-HTML transformation directly into <code>normalizeObjectFunctions</code> via a new <code>transform</code> callback, and by introducing an <code>astTransformer</code> within <code>utils.js</code> to handle Coralite AST nodes safely.</p>
+            
+            <p>To improve structural cleanlines, the following utilities have been relocated from <code>ScriptManager</code> to <code>utils.js</code>:</p>
+            <ul>
+              <li><code>addComponentAndDependencies</code></li>
+              <li><code>cleanAST</code></li>
+              <li><code>cleanValues</code></li>
+            </ul>
+            
+            <p>In addition, TypeScript type definitions have been refined and strict build blocks bypassed with targeted type annotations to prevent downstream <code>pnpm build</code> failures. Unit tests have also been expanded to verify serialization behavior and coverage for the refactored utilities.</p>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="llm-integrations-with-llms-txt">LLM Integrations with llms.txt</h2>
+            <p>Following the updates introduced in the v0.33.0 cycle, Coralite now explicitly includes <code>llms.txt</code> in its package distribution. This ensures LLM-powered developer tools can access framework-specific context directly from the package files.</p>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite@0.33.1
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite-scripts@0.33.1
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite@0.33.1
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+              npm install coralite-scripts@0.33.1
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

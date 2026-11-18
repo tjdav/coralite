@@ -1,0 +1,44 @@
+<template id="ui-badge">
+  <span class="badge">
+    <slot></slot>
+  </span>
+</template>
+
+<script type="module">
+  export const attributes = {
+    variant: { type: String, default: 'violet' }
+  }
+</script>
+
+<style>
+  :host {
+    display: inline-block;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  :host([variant="violet"]) .badge {
+    background-color: rgba(139, 92, 246, 0.15);
+    color: var(--accent-violet);
+  }
+
+  :host([variant="cyan"]) .badge {
+    background-color: rgba(6, 182, 212, 0.15);
+    color: var(--accent-cyan);
+  }
+
+  :host([variant="amber"]) .badge {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: var(--accent-amber);
+  }
+</style>

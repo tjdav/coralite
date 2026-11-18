@@ -1,109 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration no-hydration title="Coralite | HTML modules static site generator"
-    description="Build with HTML Modules. Coralite is static site generator that uses native web technologies. No special syntax, build websites using standard HTML, CSS, and JavaScript."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite — Grow your app. Don't rewrite it."
+    description="The server-rendered Web Component framework that grows with you: start with plain HTML, add CSS and JS, and fail the build before broken code ships."></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main id="content">
-    <section class="hero text-center">
-      <div class="rays rays-animated"></div>
-      <div class="overlay z-2 bg-gradient-light"></div>
-      <picture>
-        <source media="(max-width: 420px)" srcset="/images/hero-bg-sm.avif">
-        <source media="(min-width: 420px)" srcset="/images/hero-bg.avif">
-        <img class="hero-bg" src="/images/hero-bg.avif" alt="" fetchpriority="high">
-      </picture>
+  <site-header></site-header>
 
-      <div class="hero-container">
-        <img class="content-img drop-shadow-neon" width="100" src="/images/logo-icon.svg" alt="Coralite logo"
-          loading="lazy">
-
-        <h1 class="hero-title"><strong>Build</strong> for the <strong>Web</strong>, <em>With</em> the <strong>Web</strong></h1>
-
-        <div class="hero-body bg-glass drop-shadow">
-          <p class="hero-subtitle"><strong>Coralite</strong> is a static site generator built around <strong>HTML
-              modules</strong> and the <strong>Native Web</strong>.</p>
-          <div class="hero-buttons gap">
-            <a href="/docs/guide.html" class="button button-primary">Get Started</a>
-            <a href="https://github.com/tjdav/coralite" target="_blank" class="button button-secondary">
-              Source Code
-            </a>
-          </div>
+  <main class="home-page">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-rays" aria-hidden="true"></div>
+      <div class="hero-content">
+        <ui-badge variant="cyan">From first line of HTML to full-stack ecosystem</ui-badge>
+        <h1>Grow your app. Don't rewrite it.</h1>
+        <p>The server-rendered Web Component framework that scales with you. Start with basic HTML, add CSS, sprinkle in JS, and build complex, solid systems without ever learning a new framework syntax. And if the contract breaks, the build fails before broken code ships.</p>
+        <div class="hero-actions">
+          <ui-link href="/learn/" variant="primary">Start Learning</ui-link>
+          <ui-link href="/docs/" variant="secondary">Read the Docs</ui-link>
         </div>
+        <code-block language="bash">npm create coralite@latest</code-block>
       </div>
-
-      <picture>
-        <source media="(min-width: 768px)" srcset="/images/coral-borders2.avif">
-        <img class="hero-border-bottom left"
-          src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
-      </picture>
-      <img class="hero-border-bottom right" src="/images/coral-borders1.avif" alt="">
-    </section>
-
-    <section class="video-bg py-5">
-      <div class="container">
-        <h2 class="h1 text-center video-title mb-4">How does it work?</h2>
-        <coralite-playground></coralite-playground>
-      </div>
-    </section>
-
-    <section class="py-5 bg-dark border border-top-5 position-relative">
-      <div class="rays rays-static"></div>
-      <div class="overlay z-2 bg-gradient-dark"></div>
-      <div class="container position-relative z-2">
-        <h2 class="h1 text-center mb-4">Features</h2>
-        <div class="grid gap">
-          <div class="column-12 column-md-4 d-flex align-items-center justify-content-center">
-            <img class="content-img" src="/images/progressive_enhancement.avif" alt="Progressive enhancement"
-              loading="lazy">
-          </div>
-
-          <div class="grid gap column-12 column-md-8">
-            <div class="column-12 column-md-6 d-flex">
-              <coralite-card icon="filetype-html" title="Build with HTML Modules">
-                Build your entire website with modular components using only native web technologies. This provides a simple, stable, and maintainable foundation without third-party libraries.
-              </coralite-card>
-            </div>
-
-            <div class="column-12 column-md-6 d-flex">
-              <coralite-card icon="triangle" title="Progressive Enhancement">
-                Ensures that all basic content and functionality are accessible, even on browsers without JavaScript. JavaScript is treated as an optional enhancement, not a requirement.
-              </coralite-card>
-            </div>
-
-            <div class="column-12 column-md-6 d-flex">
-              <coralite-card icon="universal" title="Accessibility and Security First">
-                By leveraging native HTML elements, sites inherit strong accessibility features out-of-the-box. A small footprint with no third-party library dependencies creates a more secure website.
-              </coralite-card>
-            </div>
-
-            <div class="column-12 column-md-6 d-flex">
-              <coralite-card icon="plugin" title="Powerful Plugin System">
-                Extend and customize the build process with a plugin API. Use hooks to manage content, create aggregations like blog posts with pagination, or transform final HTML and CSS output.
-              </coralite-card>
-            </div>
-          </div>
+      <div class="hero-visual">
+        <img src="/images/coral-red.avif" alt="Watercolor coral reef" class="coral-img" />
+        <div class="ast-overlay">
+          <div class="ast-node">+ signal()</div>
+          <div class="ast-node">relay-error</div>
+          <div class="ast-node">+ custom-element</div>
         </div>
       </div>
     </section>
 
-    <section class="container text-center py-5 mb-5">
-      <h2 class="h1">Free &amp; Open Source</h2>
-
-      <p><strong>Coralite</strong> is <a href="https://www.mozilla.org/en-US/MPL/2.0/" target="_blank">MPL-2.0
-          Licensed</a> and will always be free and open source.</p>
-
-      <p>Brought to you by <a href="https://thomasjackdavid.com/" target="_blank">Thomas David</a></p>
-
-      <img class="rounded-circle border border-5" src="/images/photo.avif" alt="Thomas David - Author of Coralite">
+    <!-- Progression Section -->
+    <section class="progression-section">
+      <h2>Evolutionary Progression</h2>
+      <p>The Progression Path. Learn the platform. Build the ecosystem.</p>
+      <div class="progression-grid">
+        <ui-card>
+          <div slot="header" class="progression-header">
+            <ui-badge variant="violet">01 HTML</ui-badge>
+            <h3>The Document</h3>
+          </div>
+          <p>Semantic structure and natively accessible forms. Pure structural baseline without wrapper fatigue.</p>
+        </ui-card>
+        <ui-card>
+          <div slot="header" class="progression-header">
+            <ui-badge variant="cyan">02 CSS</ui-badge>
+            <h3>The Style</h3>
+          </div>
+          <p>Native encapsulation via @layer & CSS scoping. Predictable cascades with zero runtime overhead.</p>
+        </ui-card>
+        <ui-card>
+          <div slot="header" class="progression-header">
+            <ui-badge variant="violet">03 JS</ui-badge>
+            <h3>The Behavior</h3>
+          </div>
+          <p>Standard DOM event lifecycle, reactive signals, and explicit bindings that clean themselves up.</p>
+        </ui-card>
+        <ui-card hoverable>
+          <div slot="header" class="progression-header">
+            <ui-badge variant="violet">04 Coralite</ui-badge>
+            <h3>The Ecosystem</h3>
+          </div>
+          <p>Server-rendered components, zero client leaks, transparent data contracts, and fluid interoperability.</p>
+        </ui-card>
+      </div>
     </section>
 
-    <coralite-footer></coralite-footer>
+    <!-- Proof Section -->
+    <section class="proof-section">
+      <h2>No Magic. Just the Platform.</h2>
+      <p>See exactly how your authored component becomes a compiled, server-rendered Web Component.</p>
+      
+      <div class="code-steps">
+        <div class="code-pane" data-code-pane="authored">
+          <div class="code-pane-header">
+            <ui-badge variant="violet">01 Authored</ui-badge>
+            <span class="code-pane-path">src/components/site-counter.html</span>
+          </div>
+          <code-block language="html" filename="site-counter.html">
+<template id="site-counter">
+  <button ref="count-button" type="button" class="btn">
+    Count is {{ count }}
+  </button>
+</template>
+
+<script type="module">
+  export const attributes = {
+    step: { type: Number, default: 1 }
+  }
+
+  export function server () {
+    return { count: 0 }
+  }
+
+  export async function client ({ state, signal, refs, emit }) {
+    refs('count-button').addEventListener('click', () => {
+      state.count += state.step
+      emit('count-change', { count: state.count })
+    }, { signal })
+  }
+</script>
+          </code-block>
+        </div>
+
+        <div class="code-stack">
+          <div class="code-pane code-pane--usage" data-code-pane="usage">
+            <div class="code-pane-header">
+              <ui-badge variant="violet">02 Used on a page</ui-badge>
+              <span class="code-pane-path">src/pages/index.html</span>
+            </div>
+            <code-block language="html" filename="index.html">
+<site-counter step="1"></site-counter>
+            </code-block>
+            <p class="code-pane-note">That is the whole usage surface: the tag name plus optional attributes. No imports, no registration, no wrapper element.</p>
+          </div>
+
+          <div class="build-connector" aria-hidden="true">compiled at build time</div>
+
+          <div class="code-pane code-pane--compiled" data-code-pane="compiled">
+            <div class="code-pane-header">
+              <ui-badge variant="cyan">03 Compiled output (generated)</ui-badge>
+              <span class="code-pane-path">dist/index.html</span>
+            </div>
+            <code-block language="html" filename="index.html">
+<site-counter step="1" data-cid="site-counter-0" data-coralite-initial>
+  <button ref="site-counter-0__count-button" type="button" class="btn" ...>
+    Count is <c-token>0</c-token>
+  </button>
+</site-counter>
+            </code-block>
+            <p class="code-pane-note">Build artifact — you never author this markup. <code>...</code> marks compiler-emitted hydration bindings; hydration state ships in a module script.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Failure Section -->
+    <section class="failure-section">
+      <div class="failure-copy">
+        <ui-badge variant="amber">Fail-closed by design</ui-badge>
+        <h2>The build is the first test.</h2>
+        <p>Invalid templates, broken component contracts, and server code that leaks into the client stop the build — with an exact location and a suggested fix.</p>
+
+        <ul class="failure-points">
+          <li><strong>Fail closed.</strong> The build aborts with a non-zero exit. No runtime-only surprises.</li>
+          <li><strong>Exact, not approximate.</strong> Code, file:line, source context, why it failed, and a one-shot fix where possible.</li>
+          <li><strong>Machine-readable.</strong> Stable codes and JSON output for CI, scripts, and AI harnesses.</li>
+        </ul>
+
+        <p class="failure-ai"><strong>Built for agents.</strong> Deterministic errors let an agent repair in one pass instead of reverse-engineering a runtime stack trace.</p>
+
+        <ul class="failure-metrics">
+          <li>49 coded diagnostics</li>
+          <li>4 families</li>
+          <li>non-zero exit</li>
+          <li>JSON output</li>
+          <li>1-shot fixes</li>
+        </ul>
+
+        <ui-link href="/docs/guide/validation" variant="secondary">See the guardrails →</ui-link>
+      </div>
+
+      <div class="failure-demo" aria-label="Example Coralite build failure">
+        <div class="failure-demo-bar">
+          <span>coralite build</span>
+          <span class="failure-demo-exit">exit 1</span>
+        </div>
+        <pre class="failure-output" coralite-ignore><code><span class="diag-prompt">$</span> coralite build
+
+<span class="diag-code">┌─ [CORALITE-E201]</span> Inline expression '&#123;&#123; user.name &#125;&#125;' in template must be lifted to a derived getter.
+<span class="diag-muted">│ File: src/pages/index.html:42:18</span>
+<span class="diag-section">├─ Code Context</span>
+<span class="diag-context">│ &gt; 42 |   &lt;span&gt;&#123;&#123; user.name &#125;&#125;&lt;/span&gt;</span>
+<span class="diag-section">├─ Why this failed</span>
+<span class="diag-body">│ Templates accept flat identifiers only. Dot notation is evaluated at
+│ runtime, so it cannot be resolved deterministically at build time.</span>
+<span class="diag-section">├─ Suggested 1-Shot Fix</span>
+<span class="diag-fix">│ displayName: ({ state }) =&gt; state.user.name
+│   &lt;span&gt;&#123;&#123; displayName &#125;&#125;&lt;/span&gt;</span>
+
+<span class="diag-error">✖ 1 error · build aborted (exit code 1)</span></code></pre>
+      </div>
+    </section>
+
+    <!-- Three Opinions -->
+    <section class="opinions-section">
+      <h2>Architectural Decisions</h2>
+      <p>Coralite intentionally leaves out unnecessary abstractions, aligning directly with native browser mechanisms.</p>
+      
+      <div class="opinions-grid">
+        <ui-card>
+          <h3 slot="header">Explicit Boundaries</h3>
+          <p>No <code>class extends HTMLElement</code>. Define behavior with standard top-level <code>export function server()</code> and <code>export const attributes</code>.</p>
+        </ui-card>
+        <ui-card>
+          <h3 slot="header">Clean Separation</h3>
+          <p>Strict flat identifiers in HTML (<code>{{ token }}</code>). Logic is lifted to getters. No inline handlers or complex expressions.</p>
+        </ui-card>
+        <ui-card>
+          <h3 slot="header">Native Foundation</h3>
+          <p>No Shadow DOM. Encapsulation is handled via CSS Scoping and <code>@layer</code>. Preserves native form association and accessible DOM structures.</p>
+        </ui-card>
+      </div>
+    </section>
+
+    <!-- Education CTA -->
+    <section class="education-section">
+      <ui-card>
+        <div class="education-content">
+          <div>
+            <h2>The Ecosystem is for Everyone.</h2>
+            <p>Read our step-by-step lessons. Start with a basic HTML page and build a Netflix-shaped app in one paradigm.</p>
+          </div>
+          <ui-link href="/learn/" variant="primary">Explore the Lessons</ui-link>
+        </div>
+        <img src="/images/coral-blue.avif" alt="Coral decoration" class="cta-coral" />
+      </ui-card>
+    </section>
   </main>
-</body>
 
+  <site-footer></site-footer>
+</body>
 </html>
+

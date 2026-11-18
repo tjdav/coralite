@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Building for Production"
+    description="From local development to a globally distributed static site. Ship with confidence."
+    section="Learn"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <!-- Sidebar Slot -->
+        <div slot="sidebar">
+      <ui-accordion title="Module 1: HTML Foundations" open>
+        <ui-nav-link href="/learn/01-the-document">1. The Document</ui-nav-link>
+        <ui-nav-link href="/learn/02-semantic-tags">2. Semantic Tags</ui-nav-link>
+        <ui-nav-link href="/learn/03-attributes-data">3. Attributes & Data</ui-nav-link>
+        <ui-nav-link href="/learn/04-structuring-a-page">4. Structuring a Page</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 2: CSS & Styling" open>
+        <ui-nav-link href="/learn/05-native-css-scoping">1. Native CSS Scoping</ui-nav-link>
+        <ui-nav-link href="/learn/06-cascade-layers">2. Cascade Layers</ui-nav-link>
+        <ui-nav-link href="/learn/07-theming-with-variables">3. Theming with Variables</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 3: JavaScript Behavior" open>
+        <ui-nav-link href="/learn/08-the-client-runtime">1. The Client Runtime</ui-nav-link>
+        <ui-nav-link href="/learn/09-refs-and-event-listeners">2. Refs & Event Listeners</ui-nav-link>
+        <ui-nav-link href="/learn/10-reactive-state">3. Reactive State</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 4: The Coralite Ecosystem" open>
+        <ui-nav-link href="/learn/11-server-side-rendering">1. Server-Side Rendering</ui-nav-link>
+        <ui-nav-link href="/learn/13-building-for-production" active>2. Building for Production</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <!-- Content Slot -->
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/learn/">Learn</a>
+        <span class="separator">/</span>
+        <a href="/learn/">Module 4</a>
+        <span class="separator">/</span>
+        <span>Lesson 3: Building for Production</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <ui-badge variant="cyan">Lesson 13</ui-badge>
+        <h1>Building for Production</h1>
+        <p class="subhead">From local development to a globally distributed static site. Ship with confidence.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="the-pre-flight-check">The Pre-Flight Check</h2>
+        <p>Before every production build, you should run the validator. It scans every component, page, and plugin for AST violations, unused refs, and dead CSS.</p>
+
+        <code-block language="bash" filename="preflight.sh">
+$ pnpm check
+
+✔ 24 components validated
+✔ 18 pages validated
+✖ 2 warnings found (CORALITE-W402)
+
+$ pnpm fix
+✔ Auto-fixed 2 warnings
+</code-block>
+
+        <h2 id="the-build-engine">The Build Engine</h2>
+        <p>The <code>pnpm build</code> command orchestrates the entire pipeline: SSR evaluation, asset hashing, CSS scoping, and hydration JSON injection. It's built on top of an incremental manifest, so subsequent builds only recompile what changed.</p>
+
+        <code-block language="bash" filename="build.sh">
+$ pnpm build
+
+▲ Building 18 pages...
+✔ Compiling components...
+✔ Scoping CSS...
+✔ Generating hydration manifests...
+
+✔ Build complete in 2.4s (incremental)
+</code-block>
+
+        <h2 id="the-dist-output">The dist/ Output</h2>
+        <p>When the build completes, your entire site is placed in the <code>dist/</code> directory. It is a flat folder of static files ready for any hosting provider.</p>
+
+        <code-block language="text" filename="dist-tree">
+dist/
+├── index.html
+├── learn/
+│   └── 01-the-document.html
+├── assets/
+│   ├── css/
+│   │   └── main-a1b2c3d4.css
+│   └── js/
+│       └── site-counter-9f8e7d6c.js
+└── .coralite/
+    └── manifest.json
+</code-block>
+
+        <p>Notice that assets are hashed (e.g., <code>main-a1b2c3d4.css</code>). This allows you to set infinite cache headers on your CDN without worrying about stale files.</p>
+
+        <h2 id="deployment">Deployment</h2>
+        <p>Because the output is static HTML, CSS, and JS, you can host Coralite on any static host: Netlify, Vercel, Cloudflare Pages, GitHub Pages, or a simple S3 bucket. There is no Node.js server required at runtime.</p>
+
+        <code-block language="bash" filename="deploy.sh">
+$ npx wrangler pages deploy dist/
+</code-block>
+
+        <h2 id="congratulations">Congratulations</h2>
+        <p>You've completed the entire Coralite curriculum. You now know how to build server-rendered, memory-safe, native Web Components without ever leaving the platform. The ecosystem is yours.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/learn/11-server-side-rendering" variant="secondary">← Previous: Server-Side Rendering</ui-link>
+        <ui-link href="/learn/" variant="primary">Back to Learning Hub →</ui-link>
+      </div>
+    </div>
+
+    <!-- TOC Slot -->
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-pre-flight-check">The Pre-Flight Check</a>
+        <a href="#the-build-engine">The Build Engine</a>
+        <a href="#the-dist-output">The dist/ Output</a>
+        <a href="#deployment">Deployment</a>
+        <a href="#congratulations">Congratulations</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<template id="ui-terminal">
+  <div class="terminal-window">
+    <div class="terminal-header">
+      <div class="window-controls">
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+      </div>
+    </div>
+    <pre class="terminal-body"><code><slot></slot></code></pre>
+  </div>
+</template>
+
+<script type="module">
+  export const attributes = {}
+</script>
+
+<style>
+  :host {
+    display: block;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    background-color: var(--bg-code);
+  }
+
+  .terminal-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .window-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .dot.red { background-color: #EF4444; }
+  .dot.yellow { background-color: #F59E0B; }
+  .dot.green { background-color: #10B981; }
+
+  .terminal-body {
+    margin: 0;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    text-align: left;
+  }
+
+  .prompt {
+    color: var(--accent-violet);
+    font-weight: 700;
+  }
+
+  .success {
+    color: #10B981;
+  }
+
+  .warning {
+    color: var(--accent-amber);
+  }
+</style>
