@@ -1,41 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.11.1" description="Coralite v0.11.1 update enhances Node.js compatibility, introduces experimental import meta resolution support, fixes script path handling, and improves documentation clarity for developers. Learn more"></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-06-05T12:03:32+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.11.1"
+    description="Coralite v0.11.1 update enhances Node.js compatibility, introduces experimental import meta resolution support, fixes script path handling, and improves"
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-06-05"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.11.1</h1>
-    <coralite-author name="thomas" date-time="2025-06-05T12:03:32+02:00"></coralite-author>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.11.1</span>
+    </ui-breadcrumb>
 
-    <p>Coralite v0.11.1 introduces foundational improvements focused on Node.js compatibility, documentation clarity, and build process refinements.</p>  
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.11.1</h1>
+        <p class="subhead">Coralite v0.11.1 update enhances Node.js compatibility, introduces experimental import meta resolution support, fixes script path handling, and improves documentation clarity for developers. Learn more</p>
 
-    <coralite-heading level="2" text="Key Updates"></coralite-heading>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">June 5, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <ul>  
-      <li>Introduced an experimental flag (<code>--experimental-import-meta-resolve</code>) for Node.js runtime options to support advanced module resolution in future features.</li>  
-      <li>Updated the minimum required Node.js version to ensure compatibility with modern APIs and performance improvements.</li>  
-      <li>Fixed script identifier path handling to resolve inconsistencies during build workflows.</li>  
-      <li>Enhanced documentation examples in the README, including updated command syntax and visual references (e.g., logo.png integration).</li>  
-    </ul>  
+      <div class="post-body">
+        <p>Coralite v0.11.1 introduces foundational improvements focused on Node.js compatibility, documentation clarity, and build process refinements.</p>  
 
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <h2 id="key-updates">Key Updates</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.11.1</coralite-code-highlight>
+            <ul>  
+              <li>Introduced an experimental flag (<code>--experimental-import-meta-resolve</code>) for Node.js runtime options to support advanced module resolution in future features.</li>  
+              <li>Updated the minimum required Node.js version to ensure compatibility with modern APIs and performance improvements.</li>  
+              <li>Fixed script identifier path handling to resolve inconsistencies during build workflows.</li>  
+              <li>Enhanced documentation examples in the README, including updated command syntax and visual references (e.g., logo.png integration).</li>  
+            </ul>  
 
-    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.11.1" target="_blank">git v0.11.1 changelog</a></p>
+            <h2 id="get-the-release">Get the release</h2>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">npm install coralite@0.11.1</code-block>
+
+            <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.11.1" target="_blank">git v0.11.1 changelog</a></p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

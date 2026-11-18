@@ -1,211 +1,253 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Building Applications — Coralite"
-    description="Learn how to architect Coralite applications across Pure SSG, Hybrid client-side data fetching, and Single Page Application (SPA) router modes."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Building Applications"
+    description="Learn how to architect Coralite applications across Pure SSG, Hybrid client-side data fetching, and Single Page Application (SPA) router modes."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main class="container content">
-    <h1 class="display">Building Applications</h1>
+  <site-header></site-header>
 
-    <p>Coralite provides a flexible, platform-native application architecture that scales from pure static content to highly dynamic, interactive single-page applications. Rather than forcing a single rendering model, Coralite allows you to choose the right strategy for your use case—or blend strategies across different sections of the same site.</p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="guide/building"></docs-sidebar>
 
-    <coralite-heading level="2" text="1. Pure SSG (Default)"></coralite-heading>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/guide/">Guide</a>
+        <span class="separator">/</span>
+        <span>Building Applications</span>
+      </ui-breadcrumb>
 
-    <p>By default, Coralite operates as a zero-JS Static Site Generator (SSG). During <code>coralite build</code>, every page in your <code>src/pages</code> directory is rendered to a static HTML file in <code>dist/</code>.</p>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Building Applications</h1>
+          <ui-badge variant="cyan">Guide</ui-badge>
+        </div>
+        <p class="subhead">Learn how to architect Coralite applications across Pure SSG, Hybrid client-side data fetching, and Single Page Application (SPA) router modes.</p>
+      </div>
 
-    <p><strong>Best for:</strong> Blogs, documentation portals, marketing websites, content-driven publications, and e-commerce catalogs.</p>
+      <div class="lesson-body">
+        <p>Coralite provides a flexible, platform-native application architecture that scales from pure static content to highly dynamic, interactive single-page applications. Rather than forcing a single rendering model, Coralite allows you to choose the right strategy for your use case—or blend strategies across different sections of the same site.</p>
 
-    <coralite-heading level="3" text="Key Characteristics"></coralite-heading>
+            <h2 id="1-pure-ssg-default">1. Pure SSG (Default)</h2>
 
-    <ul>
-      <li><strong>Zero Client JavaScript by Default:</strong> Unless a component explicitly includes a <code>client()</code> block, Coralite strips hydration markers and outputs pure, standard HTML and CSS.</li>
-      <li><strong>Native View Transitions:</strong> Smooth page-to-page transitions are enabled by default via standard browser View Transitions API, giving standard multi-page applications (MPAs) an app-like feel without SPA overhead.</li>
-      <li><strong>Optimal Performance &amp; SEO:</strong> Search engines receive fully rendered HTML documents instantly, resulting in superior Core Web Vitals and zero cumulative layout shift (CLS).</li>
-    </ul>
+            <p>By default, Coralite operates as a zero-JS Static Site Generator (SSG). During <code>coralite build</code>, every page in your <code>src/pages</code> directory is rendered to a static HTML file in <code>dist/</code>.</p>
 
-    <coralite-heading level="3" text="Example: Navigation with View Transitions"></coralite-heading>
+            <p><strong>Best for:</strong> Blogs, documentation portals, marketing websites, content-driven publications, and e-commerce catalogs.</p>
 
-    <p>In Pure SSG mode, navigation relies on standard HTML links. Coralite automatically handles View Transition crossfades across page changes when enabled in <code>coralite.config.js</code>.</p>
+            <h3 id="key-characteristics">Key Characteristics</h3>
 
-    <coralite-code-html>
-      <!-- src/components/nav-header.html -->
-      &lt;template id="nav-header"&gt;
-        &lt;header class="site-header"&gt;
-          &lt;nav&gt;
-            &lt;a href="/"&gt;Home&lt;/a&gt;
-            &lt;a href="/docs/guide.html"&gt;Documentation&lt;/a&gt;
-            &lt;a href="/blog.html"&gt;Blog&lt;/a&gt;
-          &lt;/nav&gt;
-        &lt;/header&gt;
-      &lt;/template&gt;
-    </coralite-code-html>
+            <ul>
+              <li><strong>Zero Client JavaScript by Default:</strong> Unless a component explicitly includes a <code>client()</code> block, Coralite strips hydration markers and outputs pure, standard HTML and CSS.</li>
+              <li><strong>Native View Transitions:</strong> Smooth page-to-page transitions are enabled by default via standard browser View Transitions API, giving standard multi-page applications (MPAs) an app-like feel without SPA overhead.</li>
+              <li><strong>Optimal Performance &amp; SEO:</strong> Search engines receive fully rendered HTML documents instantly, resulting in superior Core Web Vitals and zero cumulative layout shift (CLS).</li>
+            </ul>
 
-    <coralite-heading level="2" text="2. Hybrid Mode (Client-Side Data &amp; Auth)"></coralite-heading>
+            <h3 id="example-navigation-with-view-transitions">Example: Navigation with View Transitions</h3>
 
-    <p>Hybrid mode combines static HTML page shells with dynamic, client-side data fetching. The page structure is generated statically at build time, while user-specific, real-time, or authenticated widget data is fetched on the client after hydration.</p>
+            <p>In Pure SSG mode, navigation relies on standard HTML links. Coralite automatically handles View Transition crossfades across page changes when enabled in <code>coralite.config.js</code>.</p>
 
-    <p><strong>Best for:</strong> User dashboards, account settings, live analytics widgets, authenticated web apps, and personal portals.</p>
+            <code-block language="html">
+              <!-- src/components/nav-header.html -->
+              &lt;template id="nav-header"&gt;
+                &lt;header class="site-header"&gt;
+                  &lt;nav&gt;
+                    &lt;a href="/"&gt;Home&lt;/a&gt;
+                    &lt;a href="/docs/guide.html"&gt;Documentation&lt;/a&gt;
+                    &lt;a href="/blog.html"&gt;Blog&lt;/a&gt;
+                  &lt;/nav&gt;
+                &lt;/header&gt;
+              &lt;/template&gt;
+            </code-block>
 
-    <coralite-heading level="3" text="How Authentication &amp; Client Fetching Work"></coralite-heading>
+            <h2 id="2-hybrid-mode-client-side-data-auth">2. Hybrid Mode (Client-Side Data &amp; Auth)</h2>
 
-    <p>Because Coralite is an SSG with zero server runtime at request time, there are no server-side HTTP request sessions or cookies available during page compilation. Authentication in Coralite is handled entirely on the client after hydration using standard browser APIs (such as session cookies, bearer tokens in <code>localStorage</code>, or HTTP-only cookies sent via <code>fetch</code>).</p>
+            <p>Hybrid mode combines static HTML page shells with dynamic, client-side data fetching. The page structure is generated statically at build time, while user-specific, real-time, or authenticated widget data is fetched on the client after hydration.</p>
 
-    <coralite-heading level="3" text="Example: User Profile Widget"></coralite-heading>
+            <p><strong>Best for:</strong> User dashboards, account settings, live analytics widgets, authenticated web apps, and personal portals.</p>
 
-    <p>In this example, the user profile component renders an initial static loading state during SSR. Once hydrated in the browser, its <code>client()</code> block fetches the current user session from an API endpoint and updates state reactively.</p>
+            <h3 id="how-authentication-client-fetching-work">How Authentication &amp; Client Fetching Work</h3>
 
-    <coralite-code-html>
-      &lt;template id="user-profile"&gt;
-        &lt;div class="profile-card"&gt;
-          &lt;span ref="status" class="status-badge"&gt;Loading session...&lt;/span&gt;
-          &lt;h3&gt;{{ userName }}&lt;/h3&gt;
-          &lt;p&gt;{{ userEmail }}&lt;/p&gt;
-        &lt;/div&gt;
-      &lt;/template&gt;
+            <p>Because Coralite is an SSG with zero server runtime at request time, there are no server-side HTTP request sessions or cookies available during page compilation. Authentication in Coralite is handled entirely on the client after hydration using standard browser APIs (such as session cookies, bearer tokens in <code>localStorage</code>, or HTTP-only cookies sent via <code>fetch</code>).</p>
 
-      &lt;script type="module"&gt;
-        import { defineComponent } from 'coralite'
+            <h3 id="example-user-profile-widget">Example: User Profile Widget</h3>
 
-        export default defineComponent({
-          getters: {
-            userName: ({ state }) => state.user ? state.user.name : 'Guest',
-            userEmail: ({ state }) => state.user ? state.user.email : 'Not signed in'
-          },
-          async client ({ state, refs, signal }) {
-            const statusEl = refs('status')
-            try {
-              const res = await fetch('/api/user', { signal })
-              if (res.ok) {
-                state.user = await res.json()
-                statusEl.textContent = 'Authenticated'
-                statusEl.classList.add('active')
-              } else {
-                statusEl.textContent = 'Unauthenticated'
-              }
-            } catch (err) {
-              if (err.name !== 'AbortError') {
-                statusEl.textContent = 'Failed to load user'
-              }
-            }
-          }
+            <p>In this example, the user profile component renders an initial static loading state during SSR. Once hydrated in the browser, its <code>client()</code> block fetches the current user session from an API endpoint and updates state reactively.</p>
+
+            <code-block language="html">
+              &lt;template id="user-profile"&gt;
+                &lt;div class="profile-card"&gt;
+                  &lt;span ref="status" class="status-badge"&gt;Loading session...&lt;/span&gt;
+                  &lt;h3&gt;{{ userName }}&lt;/h3&gt;
+                  &lt;p&gt;{{ userEmail }}&lt;/p&gt;
+                &lt;/div&gt;
+              &lt;/template&gt;
+
+              &lt;script type="module"&gt;
+                import { defineComponent } from 'coralite'
+
+                export default defineComponent({
+                  getters: {
+                    userName: ({ state }) => state.user ? state.user.name : 'Guest',
+                    userEmail: ({ state }) => state.user ? state.user.email : 'Not signed in'
+                  },
+                  async client ({ state, refs, signal }) {
+                    const statusEl = refs('status')
+                    try {
+                      const res = await fetch('/api/user', { signal })
+                      if (res.ok) {
+                        state.user = await res.json()
+                        statusEl.textContent = 'Authenticated'
+                        statusEl.classList.add('active')
+                      } else {
+                        statusEl.textContent = 'Unauthenticated'
+                      }
+                    } catch (err) {
+                      if (err.name !== 'AbortError') {
+                        statusEl.textContent = 'Failed to load user'
+                      }
+                    }
+                  }
+                })
+              &lt;/script&gt;
+            </code-block>
+
+            <h2 id="3-single-page-application-spa-mode">3. Single-Page Application (SPA) Mode</h2>
+
+            <p>For applications that require persistent client state, background audio playback, persistent WebSockets, or zero full-page reloads across navigation, Coralite offers an opt-in client-side router plugin.</p>
+
+            <p><strong>Best for:</strong> Audio/video streaming apps, complex step-by-step wizards, live chat tools, and media production dashboards.</p>
+
+            <p>For the router's complete API and configuration options, see the <a href="/docs/reference/plugins/router">Router Plugin Reference</a>; for worked patterns — outlet and persistent-element layout, guards, navigation events, and state that survives route swaps — see the <a href="/docs/guide/spa-router">SPA Router Guide</a>.</p>
+
+            <h3 id="setting-up-spa-mode">Setting Up SPA Mode</h3>
+
+            <p>The SPA router is a core router plugin, and it is opt-in: it must be registered in <code>coralite.config.js</code> before any client-side routing behavior (link interception, history handling, guards) activates.</p>
+
+            <code-block language="javascript" filename="Registering the SPA Router Plugin">
+        import { defineConfig } from 'coralite'
+        import router from 'coralite/plugins/router'
+
+        export default defineConfig({
+          plugins: [
+            router({
+              base: '/',
+              outlet: 'data-router-outlet'
+            })
+          ]
         })
-      &lt;/script&gt;
-    </coralite-code-html>
+            </code-block>
 
-    <coralite-heading level="2" text="3. Single-Page Application (SPA) Mode"></coralite-heading>
+            <p>Once the plugin is registered, any element carrying the <code>data-router-outlet</code> attribute (or the <code>&lt;router-outlet&gt;</code> component provided by the plugin) marks the SPA swap region. On each navigation only the outlet content is replaced, so elements outside it — a persistent navbar, a background audio player, connected WebSockets — survive every route change. Pages that declare no outlet of their own are automatically wrapped in a <code>&lt;router-outlet&gt;</code> element around their full body content at render time.</p>
 
-    <p>For applications that require persistent client state, background audio playback, persistent WebSockets, or zero full-page reloads across navigation, Coralite offers an opt-in client-side router plugin.</p>
+            <p><em>Note: A <code>data-router-outlet</code> element without the registered plugin is inert — it does not change navigation behavior on its own.</em></p>
 
-    <p><strong>Best for:</strong> Audio/video streaming apps, complex step-by-step wizards, live chat tools, and media production dashboards.</p>
+            <code-block language="html">
+              <!-- src/pages/app/dashboard.html -->
+              &lt;!DOCTYPE html&gt;
+              &lt;html lang="en"&gt;
+              &lt;head&gt;
+                &lt;coralite-meta title="App Dashboard"&gt;&lt;/coralite-meta&gt;
+              &lt;/head&gt;
+              &lt;body&gt;
+                &lt;coralite-navbar&gt;&lt;/coralite-navbar&gt;
 
-    <p>For the router's complete API and configuration options, see the <a href="/docs/reference/plugins/router.html">Router Plugin Reference</a>; for worked patterns — outlet and persistent-element layout, guards, navigation events, and state that survives route swaps — see the <a href="/docs/guide/spa-router.html">SPA Router Guide</a>.</p>
+                &lt;!-- Persistent audio player outside the router outlet --&gt;
+                &lt;audio-player&gt;&lt;/audio-player&gt;
 
-    <coralite-heading level="3" text="Setting Up SPA Mode"></coralite-heading>
+                &lt;!-- SPA Router Outlet: Navigation swaps content inside here --&gt;
+                &lt;div data-router-outlet&gt;
+                  &lt;h1 class="display"&gt;Dashboard&lt;/h1&gt;
+                  &lt;p&gt;Welcome to your application workspace.&lt;/p&gt;
+                &lt;/div&gt;
 
-    <p>The SPA router is a core router plugin, and it is opt-in: it must be registered in <code>coralite.config.js</code> before any client-side routing behavior (link interception, history handling, guards) activates.</p>
+                &lt;coralite-footer&gt;&lt;/coralite-footer&gt;
+              &lt;/body&gt;
+              &lt;/html&gt;
+            </code-block>
 
-    <coralite-code-highlight language="javascript" title="Registering the SPA Router Plugin">
-import { defineConfig } from 'coralite'
-import router from 'coralite/plugins/router'
+            <h3 id="navigation-guards-with-beforeeach">Navigation Guards with beforeEach</h3>
 
-export default defineConfig({
-  plugins: [
-    router({
-      base: '/',
-      outlet: 'data-router-outlet'
-    })
-  ]
-})
-    </coralite-code-highlight>
+            <p>You can register navigation guards via <code>router.beforeEach</code> in a client block or plugin to validate permissions, cancel unwanted transitions, or redirect unauthenticated users before client-side navigation occurs.</p>
 
-    <p>Once the plugin is registered, any element carrying the <code>data-router-outlet</code> attribute (or the <code>&lt;router-outlet&gt;</code> component provided by the plugin) marks the SPA swap region. On each navigation only the outlet content is replaced, so elements outside it — a persistent navbar, a background audio player, connected WebSockets — survive every route change. Pages that declare no outlet of their own are automatically wrapped in a <code>&lt;router-outlet&gt;</code> element around their full body content at render time.</p>
+            <code-block language="javascript" filename="Registering Router Guards">
+        client ({ router }) {
+          router.beforeEach(({ to, from }) => {
+            // Check auth status before entering protected app routes
+            if (to.path.startsWith('/app') && !localStorage.getItem('auth_token')) {
+              // Return a redirect path
+              return '/login.html'
+            }
+            // Return true or undefined to allow navigation
+            return true
+          })
+        }
+            </code-block>
 
-    <p><em>Note: A <code>data-router-outlet</code> element without the registered plugin is inert — it does not change navigation behavior on its own.</em></p>
+            <h3 id="spa-architecture-trade-offs">SPA Architecture Trade-Offs</h3>
 
-    <coralite-code-html>
-      <!-- src/pages/app/dashboard.html -->
-      &lt;!DOCTYPE html&gt;
-      &lt;html lang="en"&gt;
-      &lt;head&gt;
-        &lt;coralite-meta title="App Dashboard"&gt;&lt;/coralite-meta&gt;
-      &lt;/head&gt;
-      &lt;body&gt;
-        &lt;coralite-navbar&gt;&lt;/coralite-navbar&gt;
+            <p>While SPA mode enables persistent client-side state across navigation, it introduces architectural trade-offs:</p>
 
-        &lt;!-- Persistent audio player outside the router outlet --&gt;
-        &lt;audio-player&gt;&lt;/audio-player&gt;
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                <thead>
+                  <tr>
+                <th>Metric / Aspect</th>
+                <th>Pure SSG / Hybrid</th>
+                <th>SPA Mode</th>
+              </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                <td><strong>Client State</strong></td>
+                <td>Resets on page transition</td>
+                <td>Persists across route changes</td>
+              </tr>
+                  <tr>
+                <td><strong>Navigation Model</strong></td>
+                <td>Native browser multi-page load (View Transitions)</td>
+                <td>Client-side fetch + outlet DOM replacement</td>
+              </tr>
+                  <tr>
+                <td><strong>Component Hydration</strong></td>
+                <td>Per-page initial hydration</td>
+                <td>Re-hydrates upgraded components in outlet per transition</td>
+              </tr>
+                  <tr>
+                <td><strong>SEO Indexability</strong></td>
+                <td>100% pre-rendered static HTML</td>
+                <td>Requires pre-built static HTML per route for crawlers</td>
+              </tr>
+                </tbody>
+                </table>
+              </div>
 
-        &lt;!-- SPA Router Outlet: Navigation swaps content inside here --&gt;
-        &lt;div data-router-outlet&gt;
-          &lt;h1 class="display"&gt;Dashboard&lt;/h1&gt;
-          &lt;p&gt;Welcome to your application workspace.&lt;/p&gt;
-        &lt;/div&gt;
+            <hr>
 
-        &lt;coralite-footer&gt;&lt;/coralite-footer&gt;
-      &lt;/body&gt;
-      &lt;/html&gt;
-    </coralite-code-html>
+            <p>Next: Learn about unit testing, E2E testing, deployment, and CSP configuration in the <a href="/docs/guide/testing">Testing &amp; Deployment Guide</a>.</p>
+      </div>
 
-    <coralite-heading level="3" text="Navigation Guards with beforeEach"></coralite-heading>
+      <div class="lesson-navigation">
+        <ui-link href="/docs/guide/binary-assets" variant="secondary">← Previous: Handling Binary Assets</ui-link>
+        <ui-link href="/docs/guide/testing" variant="primary">Next: Testing & Deployment →</ui-link>
+      </div>
+    </div>
 
-    <p>You can register navigation guards via <code>router.beforeEach</code> in a client block or plugin to validate permissions, cancel unwanted transitions, or redirect unauthenticated users before client-side navigation occurs.</p>
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#1-pure-ssg-default">1. Pure SSG (Default)</a>
+        <a href="#2-hybrid-mode-client-side-data-auth">2. Hybrid Mode (Client-Side Data &amp; Auth)</a>
+        <a href="#3-single-page-application-spa-mode">3. Single-Page Application (SPA) Mode</a>
+      </div>
+    </div>
+  </docs-layout>
 
-    <coralite-code-highlight language="javascript" title="Registering Router Guards">
-client ({ router }) {
-  router.beforeEach(({ to, from }) => {
-    // Check auth status before entering protected app routes
-    if (to.path.startsWith('/app') && !localStorage.getItem('auth_token')) {
-      // Return a redirect path
-      return '/login.html'
-    }
-    // Return true or undefined to allow navigation
-    return true
-  })
-}
-    </coralite-code-highlight>
-
-    <coralite-heading level="3" text="SPA Architecture Trade-Offs"></coralite-heading>
-
-    <p>While SPA mode enables persistent client-side state across navigation, it introduces architectural trade-offs:</p>
-
-    <coralite-table>
-      <tr slot="head">
-        <th>Metric / Aspect</th>
-        <th>Pure SSG / Hybrid</th>
-        <th>SPA Mode</th>
-      </tr>
-      <tr slot="body">
-        <td><strong>Client State</strong></td>
-        <td>Resets on page transition</td>
-        <td>Persists across route changes</td>
-      </tr>
-      <tr slot="body">
-        <td><strong>Navigation Model</strong></td>
-        <td>Native browser multi-page load (View Transitions)</td>
-        <td>Client-side fetch + outlet DOM replacement</td>
-      </tr>
-      <tr slot="body">
-        <td><strong>Component Hydration</strong></td>
-        <td>Per-page initial hydration</td>
-        <td>Re-hydrates upgraded components in outlet per transition</td>
-      </tr>
-      <tr slot="body">
-        <td><strong>SEO Indexability</strong></td>
-        <td>100% pre-rendered static HTML</td>
-        <td>Requires pre-built static HTML per route for crawlers</td>
-      </tr>
-    </coralite-table>
-
-    <hr>
-
-    <p>Next: Learn about unit testing, E2E testing, deployment, and CSP configuration in the <a href="/docs/guide/testing.html">Testing &amp; Deployment Guide</a>.</p>
-
-  </main>
-  <coralite-footer></coralite-footer>
+  <site-footer></site-footer>
 </body>
-
 </html>

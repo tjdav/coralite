@@ -1,0 +1,14 @@
+<template id="article-meta">
+  <meta property="article:published_time" content="{{ published }}">
+  <meta property="article:author" content="{{ author }}">
+  <meta property="article:section" content="{{ section }}">
+  <meta name="published_time" content="{{ published }}">
+</template>
+
+<script type="module">
+  export const attributes = {
+    published: { type: String, required: true },
+    author: { type: String, default: 'Thomas David' },
+    section: { type: String, default: 'Release' }
+  }
+</script>

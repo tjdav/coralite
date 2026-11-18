@@ -1,48 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.31.6 Released: Lifecycle Stability and Build Deadlock Fixes"
-    description="Coralite v0.31.6 addresses a premature disconnectedCallback issue in Light DOM slots, resolves a recursive p-limit deadlock in the build process, and introduces E2E test suites for lifecycle race conditions."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-04-11T13:48:30+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.31.6 Released: Lifecycle Stability and Build Deadlock Fixes</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.31.6 Released: Lifecycle Stability and Build Deadlock Fixes"
+    description="Coralite v0.31.6 addresses a premature disconnectedCallback issue in Light DOM slots, resolves a recursive p-limit deadlock in the build process"
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-04-11"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.31.6 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.31.6 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-04-11T13:48:30+02:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.31.6 Released</h1>
+        <p class="subhead">Coralite v0.31.6 addresses a premature disconnectedCallback issue in Light DOM slots, resolves a recursive p-limit deadlock in the build process, and introduces E2E test suites for lifecycle race conditions.</p>
 
-    <p>Coralite v0.31.6 has been released. This version focuses on improving custom element lifecycle robustness, eliminating recursive concurrency deadlocks during HTML building, and establishing stronger end-to-end framework synchronization tests.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">April 11, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Preventing Premature Disconnection in Light DOM Slots"></coralite-heading>
-    <p>In prior releases, the framework avoided Flash of Unstyled Content (FOUC) by clearing Light DOM slot contents using <code>this.innerHTML = ''</code> inside the <code>connectedCallback</code> phase. However, this action prematurely triggered <code>disconnectedCallback</code> on nested child custom elements, destroying vital state management helpers like <code>_abortController</code> before asynchronous initialization could run to completion.</p>
-    <p>To resolve this, v0.31.6 preserves child element attachments. Instead of emptying the inner HTML, the framework now visually conceals slot children using <code>style.display = 'none'</code> and clears raw text nodes. The original styling and text configurations are then restored immediately before projection inside <code>_render()</code>. This keeps nested declarative or imperatively injected elements fully intact throughout their setup.</p>
+      <div class="post-body">
+        <p>Coralite v0.31.6 has been released. This version focuses on improving custom element lifecycle robustness, eliminating recursive concurrency deadlocks during HTML building, and establishing stronger end-to-end framework synchronization tests.</p>
 
-    <coralite-heading level="2" text="Resolving Recursive HTML Build Deadlocks"></coralite-heading>
-    <p>Under resource-restricted environments, such as low-concurrency continuous integration setups, the compiler pipeline could deadlock when resolving templates. This was caused by wrapping the recursive <code>getHtmlFiles</code> process in <code>packages/coralite/lib/html.js</code> with a <code>p-limit</code> queue wrapper, resulting in internal queue exhaustion.</p>
-    <p>The concurrency limit around the recursive file tree traversal has been removed in this version. Concurrency controls remain safely applied to individual file system reads, ensuring stable and faster build executions.</p>
+            <h2 id="preventing-premature-disconnection-in-light-dom-slots">Preventing Premature Disconnection in Light DOM Slots</h2>
+            <p>In prior releases, the framework avoided Flash of Unstyled Content (FOUC) by clearing Light DOM slot contents using <code>this.innerHTML = ''</code> inside the <code>connectedCallback</code> phase. However, this action prematurely triggered <code>disconnectedCallback</code> on nested child custom elements, destroying vital state management helpers like <code>_abortController</code> before asynchronous initialization could run to completion.</p>
+            <p>To resolve this, v0.31.6 preserves child element attachments. Instead of emptying the inner HTML, the framework now visually conceals slot children using <code>style.display = 'none'</code> and clears raw text nodes. The original styling and text configurations are then restored immediately before projection inside <code>_render()</code>. This keeps nested declarative or imperatively injected elements fully intact throughout their setup.</p>
 
-    <coralite-heading level="2" text="E2E Lifecycle Synchronization Tests"></coralite-heading>
-    <p>To ensure nested custom elements initialize reliably under async conditions, a new E2E test suite has been added. The suite utilizes Playwright to test lifecycle race conditions, verifying that component setups synchronize correctly through the internal <code>__coralite_ready__</code> hook before executing the parent render loops.</p>
+            <h2 id="resolving-recursive-html-build-deadlocks">Resolving Recursive HTML Build Deadlocks</h2>
+            <p>Under resource-restricted environments, such as low-concurrency continuous integration setups, the compiler pipeline could deadlock when resolving templates. This was caused by wrapping the recursive <code>getHtmlFiles</code> process in <code>packages/coralite/lib/html.js</code> with a <code>p-limit</code> queue wrapper, resulting in internal queue exhaustion.</p>
+            <p>The concurrency limit around the recursive file tree traversal has been removed in this version. Concurrency controls remain safely applied to individual file system reads, ensuring stable and faster build executions.</p>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="e2e-lifecycle-synchronization-tests">E2E Lifecycle Synchronization Tests</h2>
+            <p>To ensure nested custom elements initialize reliably under async conditions, a new E2E test suite has been added. The suite utilizes Playwright to test lifecycle race conditions, verifying that component setups synchronize correctly through the internal <code>__coralite_ready__</code> hook before executing the parent render loops.</p>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.31.6</coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">npm install coralite-scripts@0.31.6</coralite-code-highlight>
+            <code-block language="bash">npm install coralite@0.31.6</code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">npm install coralite-scripts@0.31.6</code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

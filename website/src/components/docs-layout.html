@@ -1,0 +1,135 @@
+<template id="docs-layout">
+  <div class="layout-grid">
+    <aside class="sidebar-wrapper">
+      <slot name="sidebar"></slot>
+    </aside>
+    <main class="content-wrapper">
+      <slot name="content"></slot>
+    </main>
+    <aside class="toc-wrapper">
+      <slot name="toc"></slot>
+    </aside>
+  </div>
+</template>
+
+<script type="module">
+  export const attributes = {}
+
+  export function client ({ root, signal }) {
+    const links = [...root.querySelectorAll('.docs-toc a[href^="#"]')]
+    if (!links.length) return
+
+    const entries = links
+      .map(link => {
+        const id = decodeURIComponent(link.getAttribute('href').slice(1))
+        const heading = document.getElementById(id)
+        return heading ? { link, heading } : null
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.heading.getBoundingClientRect().top - b.heading.getBoundingClientRect().top)
+
+    if (!entries.length) return
+
+    let frame = 0
+
+    const update = () => {
+      frame = 0
+      if (signal.aborted) return
+
+      const offset = 120
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
+      let current = entries[0]
+
+      if (atBottom) {
+        current = entries[entries.length - 1]
+      } else {
+        for (const entry of entries) {
+          if (entry.heading.getBoundingClientRect().top <= offset) current = entry
+          else break
+        }
+      }
+
+      for (const entry of entries) {
+        const active = entry === current
+        entry.link.classList.toggle('active', active)
+        if (active) {
+          entry.link.setAttribute('aria-current', 'location')
+        } else {
+          entry.link.removeAttribute('aria-current')
+        }
+      }
+    }
+
+    const schedule = () => {
+      if (frame || signal.aborted) return
+      frame = requestAnimationFrame(update)
+    }
+
+    // The client runtime intercepts internal link clicks, including same-page
+    // hash links, so anchor clicks do not scroll by default. Handle TOC and
+    // in-page anchors ourselves.
+    root.addEventListener('click', (event) => {
+      const anchor = event.target.closest('a[href^="#"]')
+      if (!anchor || !root.contains(anchor)) return
+
+      const id = decodeURIComponent(anchor.getAttribute('href').slice(1))
+      const target = document.getElementById(id)
+      if (!target) return
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      if (window.location.hash !== `#${id}`) {
+        history.pushState(null, '', `#${id}`)
+      }
+
+      target.scrollIntoView({ block: 'start' })
+      update()
+    }, { signal })
+
+    document.addEventListener('scroll', schedule, { passive: true, signal })
+    window.addEventListener('resize', schedule, { signal })
+    update()
+  }
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+
+  .layout-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr 240px;
+    gap: 48px;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 48px 24px;
+    align-items: start;
+  }
+
+  .sidebar-wrapper, .toc-wrapper {
+    position: sticky;
+    top: 88px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+
+  .layout-grid > * {
+    min-width: 0;
+  }
+
+  .content-wrapper {
+    max-width: 800px;
+  }
+
+  @media (max-width: 1100px) {
+    .layout-grid {
+      grid-template-columns: 1fr;
+      padding: 24px;
+    }
+    .sidebar-wrapper, .toc-wrapper {
+      display: none;
+    }
+  }
+</style>

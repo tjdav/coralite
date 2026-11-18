@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="The Document"
+    description="Every application starts with a single HTML file. Before we add components or server logic, we must understand the platform."
+    section="Learn"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <!-- Sidebar -->
+        <div slot="sidebar">
+      <ui-accordion title="Module 1: HTML Foundations" open>
+        <ui-nav-link href="/learn/01-the-document" active>1. The Document</ui-nav-link>
+        <ui-nav-link href="/learn/02-semantic-tags">2. Semantic Tags</ui-nav-link>
+        <ui-nav-link href="/learn/03-attributes-data">3. Attributes & Data</ui-nav-link>
+        <ui-nav-link href="/learn/04-structuring-a-page">4. Structuring a Page</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 2: CSS & Styling" open>
+        <ui-nav-link href="/learn/05-native-css-scoping">1. Native CSS Scoping</ui-nav-link>
+        <ui-nav-link href="/learn/06-cascade-layers">2. Cascade Layers</ui-nav-link>
+        <ui-nav-link href="/learn/07-theming-with-variables">3. Theming with Variables</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 3: JavaScript Behavior" open>
+        <ui-nav-link href="/learn/08-the-client-runtime">1. The Client Runtime</ui-nav-link>
+        <ui-nav-link href="/learn/09-refs-and-event-listeners">2. Refs & Event Listeners</ui-nav-link>
+        <ui-nav-link href="/learn/10-reactive-state">3. Reactive State</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 4: The Coralite Ecosystem" open>
+        <ui-nav-link href="/learn/11-server-side-rendering">1. Server-Side Rendering</ui-nav-link>
+        <ui-nav-link href="/learn/13-building-for-production">2. Building for Production</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <!-- Content -->
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/learn/">Learn</a>
+        <span class="separator">/</span>
+        <a href="/learn/">Module 1</a>
+        <span class="separator">/</span>
+        <span>Lesson 1: The Document</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <ui-badge variant="cyan">Lesson 01</ui-badge>
+        <h1>The Document</h1>
+        <p class="subhead">Every application starts with a single HTML file. Before we add components or server logic, we must understand the platform.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="the-boilerplate">The Boilerplate</h2>
+        <p>The browser runtime is inherently a streaming document processor. All component boundaries in Coralite resolve down to standard semantic HTML, starting with the foundational <code>&lt;!DOCTYPE html&gt;</code> directive.</p>
+        
+        <code-block language="html" filename="index.html">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Coralite App</title>
+</head>
+<body>
+  <h1>Hello, Platform.</h1>
+</body>
+</html>
+        </code-block>
+
+        <div class="pro-tip">
+          <strong>Pro Tip:</strong> Native HTML is forgiving, but Coralite is strict. We validate your structure at build time to prevent hydration mismatches.
+        </div>
+
+        <h2 id="the-head-tag">The &lt;head&gt; Tag</h2>
+        <p>The <code>&lt;head&gt;</code> element is reserved for metadata, external style dependencies, and critical resource preloading.</p>
+
+        <h2 id="the-body-tag">The &lt;body&gt; Tag</h2>
+        <p>The <code>&lt;body&gt;</code> acts as the root host for custom elements and progressive hydration targets.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/learn/" variant="secondary">← Previous</ui-link>
+        <ui-link href="/learn/02-semantic-tags" variant="primary">Next: Semantic Tags →</ui-link>
+      </div>
+    </div>
+
+    <!-- TOC -->
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-boilerplate">The Boilerplate</a>
+        <a href="#the-head-tag">The &lt;head&gt; tag</a>
+        <a href="#the-body-tag">The &lt;body&gt; tag</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

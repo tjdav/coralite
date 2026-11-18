@@ -1,55 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration 
-    type="article"
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
     title="Coralite v0.14.0 Release Notes"
-    seo-title="Coralite v0.14.0 Released: Improved Plugin Stability & Code Refactoring"
-    description="Coralite v0.14.0 ships with critical bug fixes and internal refactoring to enhance plugin reliability and code clarity. Learn how this release improves stability, prevents runtime crashes, and strengthens plugin integration. Upgrade today."
-  ></coralite-meta>
-
-  <meta property="article:published_time" name="published_time" content="2025-07-26T01:00:18.000Z">
-  <meta name="author_id" content="thomas" data-dev="true">
+    description="Coralite v0.14.0 ships with critical bug fixes and internal refactoring to enhance plugin reliability and code clarity."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-07-26"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.14.0</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.14.0</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-07-26T01:00:18.000Z"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.14.0</h1>
+        <p class="subhead">Coralite v0.14.0 ships with critical bug fixes and internal refactoring to enhance plugin reliability and code clarity. Learn how this release improves stability, prevents runtime crashes, and strengthens plugin integration. Upgrade today.</p>
 
-    <p>Coralite v0.14.0 delivers a focused set of improvements centered on stability, code clarity, and internal consistency. This release includes minor bug fixes and targeted refactoring that strengthen plugin behavior and reduce edge-case failures.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">July 26, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Key Improvements"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite v0.14.0 delivers a focused set of improvements centered on stability, code clarity, and internal consistency. This release includes minor bug fixes and targeted refactoring that strengthen plugin behavior and reduce edge-case failures.</p>
 
-    <ul>
-      <li>Fixed a critical null-check issue in plugin method validation, preventing crashes when a plugin method is undefined or null.</li>
-      <li>Refactored internal plugin access to use <code>_plugins</code> instead of <code>options.plugins</code>, improving encapsulation and reducing reliance on mutable configuration.</li>
-      <li>Updated references to <code>options</code> and <code>source context</code> to ensure consistent data flow across the core engine.</li>
-      <li>Added conditional checks before invoking plugin methods, ensuring safe execution even when methods are missing or improperly defined.</li>
-    </ul>
+            <h2 id="key-improvements">Key Improvements</h2>
 
-    <coralite-heading level="2" text="Impact and Stability"></coralite-heading>
+            <ul>
+              <li>Fixed a critical null-check issue in plugin method validation, preventing crashes when a plugin method is undefined or null.</li>
+              <li>Refactored internal plugin access to use <code>_plugins</code> instead of <code>options.plugins</code>, improving encapsulation and reducing reliance on mutable configuration.</li>
+              <li>Updated references to <code>options</code> and <code>source context</code> to ensure consistent data flow across the core engine.</li>
+              <li>Added conditional checks before invoking plugin methods, ensuring safe execution even when methods are missing or improperly defined.</li>
+            </ul>
 
-    <p>These changes collectively improve reliability, especially in complex plugin workflows. By enforcing null safety and improving internal structure, Coralite now handles edge cases more gracefully, reducing the risk of runtime errors during builds or deployments.</p>
+            <h2 id="impact-and-stability">Impact and Stability</h2>
 
-    <p>For developers using custom plugins, the updated method checks and refactored access patterns mean fewer surprises and more predictable behavior.</p>
+            <p>These changes collectively improve reliability, especially in complex plugin workflows. By enforcing null safety and improving internal structure, Coralite now handles edge cases more gracefully, reducing the risk of runtime errors during builds or deployments.</p>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <p>For developers using custom plugins, the updated method checks and refactored access patterns mean fewer surprises and more predictable behavior.</p>
 
-    <p>To update to Coralite v0.14.0, run:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.14.0</coralite-code-highlight>
+            <p>To update to Coralite v0.14.0, run:</p>
 
-    <p>For a full list of changes, including commit details and API behavior updates, <a href="https://codeberg.org/tjdavid/coralite/compare/v0.13.0...v0.14.0" target="_blank">view the full changelog</a>.</p>
+            <code-block language="bash">npm install coralite@0.14.0</code-block>
 
+            <p>For a full list of changes, including commit details and API behavior updates, <a href="https://codeberg.org/tjdavid/coralite/compare/v0.13.0...v0.14.0" target="_blank">view the full changelog</a>.</p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

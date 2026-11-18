@@ -1,28 +1,85 @@
 import { defineConfig } from 'coralite'
-import aggregation from './src/plugins/aggregation.js'
-import searchPlugin from './src/plugins/search-plugin.js'
-import sitemapPlugin from './src/plugins/sitemap-plugin.js'
 import postcssImport from 'postcss-import'
 import autoprefixer from 'autoprefixer'
+import floatingPlugin from './src/plugins/floating-ui.js'
+import sitemapPlugin from './src/plugins/sitemap.js'
+import searchPlugin from './src/plugins/search.js'
+import changelogPlugin from './src/plugins/changelog.js'
+
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3333
+
+const llmsFiles = [
+  {
+    file: 'llms.txt',
+    priority: '0.7'
+  },
+  {
+    file: 'llms-full.txt',
+    priority: '0.5'
+  },
+  {
+    file: 'llms/components.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/serialization.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/face.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/css.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/plugins.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/diagnostics.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/config.md',
+    priority: '0.6'
+  },
+  {
+    file: 'llms/testing.md',
+    priority: '0.6'
+  }
+]
 
 export default defineConfig({
-  cleanUrls: false,
   public: 'public',
   output: 'dist',
   pages: 'src/pages',
   components: 'src/components',
+  plugins: [
+    floatingPlugin,
+    changelogPlugin,
+    sitemapPlugin({ customFiles: llmsFiles }),
+    searchPlugin
+  ],
   csp: {
     enabled: true,
     injectMeta: true,
     hashAlgorithm: 'sha256',
+    externalStyles: true,
     directives: {
       'default-src': ["'self'"],
-      'script-src': ["'self'", 'https://esm.sh'],
-      'style-src': ["'self'"],
-      'img-src': ["'self'", 'data:', 'https:'],
+      // The Coralite client runtime revives serialized page controller
+      // functions with new Function(), which requires 'unsafe-eval'.
+      'script-src': ["'self'", "'unsafe-eval'"],
+      'style-src': ["'self'", "'unsafe-inline'"],
+      'img-src': ["'self'", 'data:'],
       'font-src': ["'self'"],
       'connect-src': ["'self'"]
     }
+  },
+  server: {
+    port
   },
   styles: {
     input: ['src/css/styles.css'],
@@ -34,115 +91,5 @@ export default defineConfig({
         ]
       }
     }
-  },
-  plugins: [
-    sitemapPlugin({
-      customFiles: [
-        {
-          file: 'llms.txt',
-          changefreq: 'weekly',
-          priority: '0.7'
-        },
-        {
-          file: 'llms-full.txt',
-          changefreq: 'weekly',
-          priority: '0.5'
-        },
-        {
-          file: 'llms/components.md',
-          changefreq: 'weekly',
-          priority: '0.6'
-        },
-        {
-          file: 'llms/serialization.md',
-          changefreq: 'weekly',
-          priority: '0.6'
-        },
-        {
-          file: 'llms/face.md',
-          changefreq: 'weekly',
-          priority: '0.6'
-        },
-        {
-          file: 'llms/css.md',
-          changefreq: 'weekly',
-          priority: '0.6'
-        },
-        {
-          file: 'llms/plugins.md',
-          changefreq: 'weekly',
-          priority: '0.6'
-        },
-        {
-          file: 'llms/diagnostics.md',
-          changefreq: 'weekly',
-          priority: '0.6'
-        },
-        {
-          file: 'llms/config.md',
-          changefreq: 'weekly',
-          priority: '0.6'
-        },
-        {
-          file: 'llms/testing.md',
-          changefreq: 'weekly',
-          priority: '0.6'
-        }
-      ]
-    }),
-    aggregation([
-      {
-        name: 'blog-posts',
-        path: ['blog'],
-        page: 'blog.html',
-        component: 'coralite-post',
-        limit: 15,
-        sort (a, b) {
-          let dateA = 0
-          let dateB = 0
-
-          if (a && a.page && a.page.meta) {
-            dateA = a.page.meta.published_time
-          }
-
-          if (b && b.page && b.page.meta) {
-            dateB = b.page.meta.published_time
-          }
-
-          return new Date(dateB).getTime() - new Date(dateA).getTime()
-        },
-        pagination: {
-          maxVisible: 3
-        }
-      },
-      {
-        name: 'related-posts',
-        path: ['blog'],
-        component: 'coralite-related-post',
-        limit: 3,
-        filter (state, context) {
-          if (!context || !context.page) {
-            return true
-          }
-
-          return state.page.url.pathname !== context.page.url.pathname
-        },
-        sort (a, b) {
-          let dateA = 0
-          let dateB = 0
-
-          if (a && a.page && a.page.meta) {
-            dateA = a.page.meta.published_time
-          }
-
-          if (b && b.page && b.page.meta) {
-            dateB = b.page.meta.published_time
-          }
-
-          return new Date(dateB).getTime() - new Date(dateA).getTime()
-        }
-      }
-    ]),
-    searchPlugin
-  ]
+  }
 })

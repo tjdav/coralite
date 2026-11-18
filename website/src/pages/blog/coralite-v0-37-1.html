@@ -1,62 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.37.1 Released: Reliable Development Cache and Robust Asset Pipeline"
-    description="Coralite v0.37.1 introduces reliable script caching during HMR component changes and robust filesystem operations with concurrency serialization in the static asset plugin."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-06-09T10:10:26+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.37.1 Released: Reliable Development Cache and Robust Asset Pipeline</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.37.1 Released: Reliable Development Cache and Robust Asset Pipeline"
+    description="Coralite v0.37.1 introduces reliable script caching during HMR component changes and robust filesystem operations with concurrency serialization"
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-06-09"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.37.1 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.37.1 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-06-09T10:10:26+02:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.37.1 Released</h1>
+        <p class="subhead">Coralite v0.37.1 introduces reliable script caching during HMR component changes and robust filesystem operations with concurrency serialization in the static asset plugin.</p>
 
-    <p>Coralite v0.37.1 is now available, bringing key stability improvements to the development server and the asset pipeline. This release focuses on addressing cache consistency during hot module replacement (HMR) and enhancing the robustness of filesystem operations within the static asset plugin.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">June 9, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Reliable Script Caching on Component Changes"></coralite-heading>
-    <p>To ensure developer updates are instantly and reliably rendered, we have introduced a cache invalidation mechanism in the development server. The renderer now implements a <code>clearCache</code> method to purge compiled scripts, which is also exposed directly on the Coralite instance. Under the hood, <code>coralite-scripts</code> has been updated to trigger this cache clearing during HMR. Additionally, we have converted <code>outputFiles</code> on the Coralite instance to a getter to improve consistency across component recompilations.</p>
+      <div class="post-body">
+        <p>Coralite v0.37.1 is now available, bringing key stability improvements to the development server and the asset pipeline. This release focuses on addressing cache consistency during hot module replacement (HMR) and enhancing the robustness of filesystem operations within the static asset plugin.</p>
 
-    <coralite-code-highlight language="javascript">
-// Programmatically clearing the script cache on a Coralite instance
-instance.clearCache();
+            <h2 id="reliable-script-caching-on-component-changes">Reliable Script Caching on Component Changes</h2>
+            <p>To ensure developer updates are instantly and reliably rendered, we have introduced a cache invalidation mechanism in the development server. The renderer now implements a <code>clearCache</code> method to purge compiled scripts, which is also exposed directly on the Coralite instance. Under the hood, <code>coralite-scripts</code> has been updated to trigger this cache clearing during HMR. Additionally, we have converted <code>outputFiles</code> on the Coralite instance to a getter to improve consistency across component recompilations.</p>
 
-// Consistent access to compiled outputs via the getter
-const files = instance.outputFiles;
-    </coralite-code-highlight>
+            <code-block language="javascript">
+        // Programmatically clearing the script cache on a Coralite instance
+        instance.clearCache();
 
-    <coralite-heading level="2" text="Robust Filesystem Operations in staticAssetPlugin"></coralite-heading>
-    <p>The static asset plugin has been updated with several reliability fixes to handle parallel filesystems operations safely:</p>
-    <ul>
-      <li><strong>In-flight promise tracking:</strong> Serializes concurrent file copy operations to prevent race conditions.</li>
-      <li><strong>Incremental build optimization:</strong> Compares file timestamps using floor-rounded values (<code>Math.floor(mtimeMs)</code>) for stable comparison.</li>
-      <li><strong>Deep change detection:</strong> Disables incremental skipping for directories to ensure nested changes are captured.</li>
-      <li><strong>Safety warnings:</strong> Added warnings for destination file collisions and missing source files.</li>
-      <li><strong>Timestamp preservation:</strong> Ensures target files retain the original source modification times.</li>
-    </ul>
+        // Consistent access to compiled outputs via the getter
+        const files = instance.outputFiles;
+            </code-block>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="robust-filesystem-operations-in-staticassetplugin">Robust Filesystem Operations in staticAssetPlugin</h2>
+            <p>The static asset plugin has been updated with several reliability fixes to handle parallel filesystems operations safely:</p>
+            <ul>
+              <li><strong>In-flight promise tracking:</strong> Serializes concurrent file copy operations to prevent race conditions.</li>
+              <li><strong>Incremental build optimization:</strong> Compares file timestamps using floor-rounded values (<code>Math.floor(mtimeMs)</code>) for stable comparison.</li>
+              <li><strong>Deep change detection:</strong> Disables incremental skipping for directories to ensure nested changes are captured.</li>
+              <li><strong>Safety warnings:</strong> Added warnings for destination file collisions and missing source files.</li>
+              <li><strong>Timestamp preservation:</strong> Ensures target files retain the original source modification times.</li>
+            </ul>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-npm install coralite@0.37.1
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-npm install coralite-scripts@0.37.1
-    </coralite-code-highlight>
+            <code-block language="bash">
+        npm install coralite@0.37.1
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+        npm install coralite-scripts@0.37.1
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

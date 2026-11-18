@@ -1,0 +1,73 @@
+<template id="ui-link">
+  <a href="{{ href }}" class="c-link {{ variantClass }}" target="{{ target }}" rel="{{ rel }}">
+    <slot></slot>
+  </a>
+</template>
+
+<script type="module">
+  export const attributes = {
+    href: { type: String, required: true },
+    variant: { type: String, default: 'primary' },
+    external: { type: Boolean, default: false }
+  }
+
+  export const getters = {
+    variantClass: ({ state }) => `c-link--${state.variant === 'outline' ? 'secondary' : state.variant}`,
+    target: ({ state }) => (state.external ? '_blank' : '_self'),
+    rel: ({ state }) => (state.external ? 'noopener noreferrer' : '')
+  }
+</script>
+
+<style>
+  :host {
+    display: inline-block;
+  }
+
+  .c-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .c-link:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+  }
+
+  /* Primary Variant */
+  .c-link--primary {
+    background-color: var(--accent-violet);
+    color: #FFFFFF;
+  }
+  .c-link--primary:hover {
+    opacity: 0.9;
+  }
+
+  /* Secondary Variant (outline) */
+  .c-link--secondary {
+    background-color: transparent;
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+  .c-link--secondary:hover {
+    background-color: var(--bg-card);
+  }
+
+  /* Danger Variant */
+  .c-link--danger {
+    background-color: var(--accent-red);
+    color: #FFFFFF;
+  }
+  .c-link--danger:hover {
+    opacity: 0.9;
+  }
+</style>

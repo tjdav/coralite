@@ -1,0 +1,244 @@
+<template id="code-block">
+  <div class="code">
+    <div class="code-toolbar">
+      <span class="code-language">{{ language }}</span>
+      <button ref="popoverBtn" type="button" class="button button-icon">
+        Copy to clipboard
+      </button>
+      <div ref="popoverTarget" popover>Code copied!</div>
+    </div>
+    <pre ref="code" class="code-body"><code class="language-{{ languageClass }}"><slot coralite-ignore></slot></code></pre>
+  </div>
+</template>
+
+<script type="module">
+  import { parseHTML } from 'coralite/utils/server'
+  import render from 'dom-serializer'
+  import hljs from 'highlight.js/lib/core'
+  import javascript from 'highlight.js/lib/languages/javascript'
+  import xml from 'highlight.js/lib/languages/xml'
+  import typescript from 'highlight.js/lib/languages/typescript'
+  import css from 'highlight.js/lib/languages/css'
+  import bash from 'highlight.js/lib/languages/bash'
+  import diff from 'highlight.js/lib/languages/diff'
+  import { indent, dedent } from '../utils/format.js'
+
+  hljs.registerLanguage('javascript', javascript)
+  hljs.registerLanguage('xml', xml)
+  hljs.registerLanguage('typescript', typescript)
+  hljs.registerLanguage('css', css)
+  hljs.registerLanguage('bash', bash)
+  hljs.registerLanguage('diff', diff)
+  hljs.configure({ classPrefix: 'code-' })
+
+  const allowedCustomTags = ['coralite-version']
+
+  function decodeEntities (str) {
+    return str
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, '&')
+  }
+
+  function replacePlaceholders (nodes, placeholders) {
+    const result = []
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i]
+      if (node.type === 'text') {
+        const parts = node.data.split(/(__CORALITE_TAG_\d+__)/g)
+        for (let j = 0; j < parts.length; j++) {
+          const part = parts[j]
+          if (part.startsWith('__CORALITE_TAG_') && placeholders[part]) {
+            const originalNode = placeholders[part]
+            originalNode.parent = node.parent
+            result.push(originalNode)
+          } else if (part) {
+            result.push({ type: 'text', data: part, parent: node.parent })
+          }
+        }
+      } else if (node.children) {
+        node.children = replacePlaceholders(node.children, placeholders)
+        result.push(node)
+      } else {
+        result.push(node)
+      }
+    }
+    return result
+  }
+
+  export const attributes = {
+    language: { type: String, default: 'text' }
+  }
+
+  export const getters = {
+    languageClass: ({ state }) => state.language.toLowerCase()
+  }
+
+  export const slots = {
+    default: ({ nodes, state }) => {
+      // Slots are also revived in the browser, but highlight.js and the server
+      // HTML utilities are not part of the client bundle: bail out there.
+      if (globalThis.document) {
+        return
+      }
+
+      let fullText = ''
+      const placeholders = Object.create(null)
+      let placeholderIndex = 0
+
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i]
+        if (node.type === 'text') {
+          fullText += decodeEntities(node.data)
+        } else if (node.type === 'comment') {
+          fullText += `<!--${node.data}-->`
+        } else if (node.type === 'directive') {
+          fullText += `<!${node.data}>`
+        } else if (node.type === 'tag') {
+          if (allowedCustomTags.includes(node.name)) {
+            const placeholder = `__CORALITE_TAG_${placeholderIndex++}__`
+            placeholders[placeholder] = node
+            fullText += placeholder
+          } else if (node.name === 'script') {
+            // Manually serialize script tags to avoid dom-serializer escaping
+            const attrs = node.attribs
+              ? Object.entries(node.attribs).map(([k, v]) => ` ${k}="${v}"`).join('')
+              : ''
+            fullText += `<script${attrs}>`
+            for (const child of node.children) {
+              if (child.type === 'text') {
+                fullText += child.data
+              }
+            }
+            fullText += '<\/script>'
+          } else {
+            fullText += decodeEntities(render(node))
+          }
+        }
+      }
+
+      const dedented = dedent(fullText).trim()
+      const indentedContent = indent(dedented, '  ')
+  
+      try {
+        const lang = state.language.toLowerCase()
+        if (!hljs.getLanguage(lang)) {
+          return [{ type: 'text', data: dedented }]
+        }
+        const highlightCode = hljs.highlight(indentedContent, { language: lang })
+        const highlightedNodes = parseHTML(highlightCode.value.trimEnd())
+        return replacePlaceholders(highlightedNodes.root.children, placeholders)
+      } catch (err) {
+        console.error('Highlight.js failed:', err)
+        return [{ type: 'text', data: dedented }]
+      }
+    }
+  }
+
+  export async function client ({ refs, signal, state }) {
+    const popoverButton = refs('popoverBtn')
+    const popoverTarget = refs('popoverTarget')
+    const codeBody = refs('code')
+    const popoverId = 'copy-' + Math.random().toString(16).substring(2)
+
+    popoverTarget.setAttribute('id', popoverId)
+    popoverButton.setAttribute('popovertarget', popoverId)
+
+    popoverButton.addEventListener('click', () => {
+      navigator.clipboard.writeText(codeBody.textContent)
+    }, { signal })
+
+    const codeEl = codeBody.querySelector('code') || codeBody
+    if (codeEl && !codeEl.querySelector('.code-keyword, .code-string, .code-tag')) {
+      const { default: hljsLib } = await import('highlight.js/lib/core')
+      const { default: javascriptLang } = await import('highlight.js/lib/languages/javascript')
+      const { default: xmlLang } = await import('highlight.js/lib/languages/xml')
+      const { default: typescriptLang } = await import('highlight.js/lib/languages/typescript')
+      const { default: cssLang } = await import('highlight.js/lib/languages/css')
+      const { default: bashLang } = await import('highlight.js/lib/languages/bash')
+      const { default: diffLang } = await import('highlight.js/lib/languages/diff')
+      if (!hljsLib.getLanguage('javascript')) {
+        hljsLib.registerLanguage('javascript', javascriptLang)
+      }
+      if (!hljsLib.getLanguage('xml')) {
+        hljsLib.registerLanguage('xml', xmlLang)
+      }
+      if (!hljsLib.getLanguage('typescript')) {
+        hljsLib.registerLanguage('typescript', typescriptLang)
+      }
+      if (!hljsLib.getLanguage('css')) {
+        hljsLib.registerLanguage('css', cssLang)
+      }
+      if (!hljsLib.getLanguage('bash')) {
+        hljsLib.registerLanguage('bash', bashLang)
+      }
+      if (!hljsLib.getLanguage('diff')) {
+        hljsLib.registerLanguage('diff', diffLang)
+      }
+      hljsLib.configure({ classPrefix: 'code-' })
+
+      const lang = (state.language || 'text').toLowerCase()
+      if (hljsLib.getLanguage(lang)) {
+        const rawCode = codeEl.textContent.trim()
+        const highlighted = hljsLib.highlight(rawCode, { language: lang })
+        codeEl.innerHTML = highlighted.value
+      }
+    }
+  }
+</script>
+
+<style>
+  :host {
+    display: block;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    background-color: var(--bg-code);
+    overflow: hidden;
+  }
+
+  .code-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .code-language {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .button-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .button-icon:hover {
+    background-color: var(--border-subtle);
+    color: var(--text-primary);
+  }
+
+  .code-body,
+  .ide-body {
+    margin: 0;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    text-align: left;
+    white-space: pre;
+  }
+</style>

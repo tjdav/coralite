@@ -1,71 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.29.2 Released: Async Client Helpers and Architectural Updates"
-    description="Coralite v0.29.2 introduces support for asynchronous operations in plugin client helpers and refines the architectural guidelines in llms.txt."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-03-24T14:56:26+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.29.2 Released: Async Client Helpers and Architectural Updates</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.29.2 Released: Async Client Helpers and Architectural Updates"
+    description="Coralite v0.29.2 introduces support for asynchronous operations in plugin client helpers and refines the architectural guidelines in llms.txt."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-03-24"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.29.2 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.29.2 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-03-24T14:56:26+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.29.2 Released</h1>
+        <p class="subhead">Coralite v0.29.2 introduces support for asynchronous operations in plugin client helpers and refines the architectural guidelines in llms.txt.</p>
 
-    <p>Coralite v0.29.2 is now available. This release introduces support for asynchronous execution in plugin client helpers, refactors the script manager to enable these operations, and refines our framework architecture documentation with strict development directives.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">March 24, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Asynchronous Plugin Client Helpers"></coralite-heading>
-    <p>Plugins can now perform asynchronous operations during the initial phase of client helper execution. The <code>ScriptManager</code> (specifically <code>getHelpersContent</code> and <code>getHelpers</code>) has been updated to handle cases where <code>phase1</code> returns a Promise. The compilation process awaits these helper promises internally, mapping the resolved values back into a synchronous execution structure during <code>phase2</code> (such as <code>helpers.refs()</code>) to maintain backwards compatibility.</p>
+      <div class="post-body">
+        <p>Coralite v0.29.2 is now available. This release introduces support for asynchronous execution in plugin client helpers, refactors the script manager to enable these operations, and refines our framework architecture documentation with strict development directives.</p>
 
-    <coralite-code-highlight language="javascript">
-// Example of an asynchronous plugin helper configuration
-const myAsyncHelper = {
-  phase1: async (instance) => {
-    const config = await fetchConfiguration(instance);
-    return { config };
-  },
-  phase2: (helpers) => {
-    // helpers.config is resolved and available synchronously here
-    return `console.log("Config loaded:", ${JSON.stringify(helpers.config)});`;
-  }
-};
-    </coralite-code-highlight>
+            <h2 id="asynchronous-plugin-client-helpers">Asynchronous Plugin Client Helpers</h2>
+            <p>Plugins can now perform asynchronous operations during the initial phase of client helper execution. The <code>ScriptManager</code> (specifically <code>getHelpersContent</code> and <code>getHelpers</code>) has been updated to handle cases where <code>phase1</code> returns a Promise. The compilation process awaits these helper promises internally, mapping the resolved values back into a synchronous execution structure during <code>phase2</code> (such as <code>helpers.refs()</code>) to maintain backwards compatibility.</p>
 
-    <coralite-heading level="2" text="Refined Architectural Documentation"></coralite-heading>
-    <p>We have updated the <code>llms.txt</code> file to clarify Coralite's hybrid model and enforce development directives for AI-assisted tools:</p>
-    <ul>
-      <li><strong>No Hydration Patterns:</strong> Prohibits React, Vue, Lit, or vanilla boilerplate hydration techniques, strictly enforcing the use of <code>defineComponent</code> and SSR-only logic.</li>
-      <li><strong>Imperative Mounting:</strong> Explicitly documents requirements for instantiating client-side Web Components via <code>document.createElement()</code> within the <code>client.script</code> scope.</li>
-      <li><strong>Architecture Docs Refinement:</strong> Removes references to legacy standalone components and clarifies the hybrid boundaries between declarative SSR elements and imperative Web Components.</li>
-    </ul>
+            <code-block language="javascript">
+        // Example of an asynchronous plugin helper configuration
+        const myAsyncHelper = {
+          phase1: async (instance) => {
+            const config = await fetchConfiguration(instance);
+            return { config };
+          },
+          phase2: (helpers) => {
+            // helpers.config is resolved and available synchronously here
+            return `console.log("Config loaded:", ${JSON.stringify(helpers.config)});`;
+          }
+        };
+            </code-block>
 
-    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
-    <ul>
-      <li><strong>CLI Flag Update:</strong> The short flag for the components directory argument in the CLI has been corrected from <code>-t</code> to <code>-c</code>.</li>
-    </ul>
+            <h2 id="refined-architectural-documentation">Refined Architectural Documentation</h2>
+            <p>We have updated the <code>llms.txt</code> file to clarify Coralite's hybrid model and enforce development directives for AI-assisted tools:</p>
+            <ul>
+              <li><strong>No Hydration Patterns:</strong> Prohibits React, Vue, Lit, or vanilla boilerplate hydration techniques, strictly enforcing the use of <code>defineComponent</code> and SSR-only logic.</li>
+              <li><strong>Imperative Mounting:</strong> Explicitly documents requirements for instantiating client-side Web Components via <code>document.createElement()</code> within the <code>client.script</code> scope.</li>
+              <li><strong>Architecture Docs Refinement:</strong> Removes references to legacy standalone components and clarifies the hybrid boundaries between declarative SSR elements and imperative Web Components.</li>
+            </ul>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="breaking-changes">Breaking Changes</h2>
+            <ul>
+              <li><strong>CLI Flag Update:</strong> The short flag for the components directory argument in the CLI has been corrected from <code>-t</code> to <code>-c</code>.</li>
+            </ul>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-npm install coralite@0.29.2
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-npm install coralite-scripts@0.29.2
-    </coralite-code-highlight>
+            <code-block language="bash">
+        npm install coralite@0.29.2
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+        npm install coralite-scripts@0.29.2
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

@@ -1,71 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.29.3 Released: Native Module Resolution and Faster Pipelines"
-    description="Coralite v0.29.3 introduces native browser module resolution, deterministic asset hashing, an in-memory page resolution cache, and dynamic chunk lazy loading."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-03-28T16:14:03+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.29.3 Released: Native Module Resolution and Faster Pipelines</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.29.3 Released: Native Module Resolution and Faster Pipelines"
+    description="Coralite v0.29.3 introduces native browser module resolution, deterministic asset hashing, an in-memory page resolution cache, and dynamic chunk lazy loading."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-03-28"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.29.3 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.29.3 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-03-28T16:14:03+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.29.3 Released</h1>
+        <p class="subhead">Coralite v0.29.3 introduces native browser module resolution, deterministic asset hashing, an in-memory page resolution cache, and dynamic chunk lazy loading.</p>
 
-    <p>Coralite v0.29.3 has been released, introducing key fixes and performance enhancements to the framework's script manager, dependency resolution, and asset build pipeline. This version focuses on bringing native browser module resolution to esbuild, enforcing deterministic asset hashing, implementing an in-memory page resolution cache to speed up rebuilds, and adopting a dynamic MutationObserver-based chunk loader.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">March 28, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Native Module Resolution and Polyfills"></coralite-heading>
-    <p>To prevent <code>ENOENT</code> filesystem crashes and backend-related <code>ReferenceError</code> occurrences, the import resolver now defers to esbuild's native resolution strategy rather than forcing CommonJS files via Node's <code>require.resolve()</code>. This allows esbuild to favor browser-compatible entries in dependency <code>package.json</code> manifests, resolving compatibility crashes with packages like <code>matrix-sdk-crypto-wasm</code>.</p>
-    <p>Additionally, the deprecated <code>esbuild-plugin-polyfill-node</code> library has been replaced with the actively maintained <code>esbuild-plugins-node-modules-polyfill</code> in the <code>ScriptManager</code>. Local dependencies are also resolved first through the consumer's local packages before falling back to external CDN URLs, and Node.js built-ins are marked as external to prevent build-time crashes.</p>
+      <div class="post-body">
+        <p>Coralite v0.29.3 has been released, introducing key fixes and performance enhancements to the framework's script manager, dependency resolution, and asset build pipeline. This version focuses on bringing native browser module resolution to esbuild, enforcing deterministic asset hashing, implementing an in-memory page resolution cache to speed up rebuilds, and adopting a dynamic MutationObserver-based chunk loader.</p>
 
-    <coralite-heading level="2" text="Deterministic Hashing and Deduplicated Build Pipelines"></coralite-heading>
-    <p>To improve build output consistency and optimize caching, the <code>ScriptManager</code> now alphabetically sorts <code>processedComponentKeys</code> during compilation. This ensures that assets mapping to the same group of components consistently generate the same output block hash.</p>
-    <p>A new local in-memory page resolution cache checks DOM element trees across build cycles. If a page maps to a component dependency list that has already been processed, the pipeline bypasses the execution of <code>compileAllInstances</code>, reducing CPU overhead and build times. Furthermore, CLI modes now map directly to environmental variables, enabling production-only minification, tree-shaking, and external sourcemaps automatically.</p>
+            <h2 id="native-module-resolution-and-polyfills">Native Module Resolution and Polyfills</h2>
+            <p>To prevent <code>ENOENT</code> filesystem crashes and backend-related <code>ReferenceError</code> occurrences, the import resolver now defers to esbuild's native resolution strategy rather than forcing CommonJS files via Node's <code>require.resolve()</code>. This allows esbuild to favor browser-compatible entries in dependency <code>package.json</code> manifests, resolving compatibility crashes with packages like <code>matrix-sdk-crypto-wasm</code>.</p>
+            <p>Additionally, the deprecated <code>esbuild-plugin-polyfill-node</code> library has been replaced with the actively maintained <code>esbuild-plugins-node-modules-polyfill</code> in the <code>ScriptManager</code>. Local dependencies are also resolved first through the consumer's local packages before falling back to external CDN URLs, and Node.js built-ins are marked as external to prevent build-time crashes.</p>
 
-    <coralite-heading level="2" text="Absolute Base URLs and Asset Separation"></coralite-heading>
-    <p>To ensure asset paths resolve correctly on deeply nested pages (such as <code>/docs/guide/</code>), a <code>baseURL</code> configuration option has been introduced. Dynamically generated orchestrator script tags and imports now resolve as absolute paths using this base URL prefix.</p>
-    <p>As part of this configuration change, static asset output directories have been organized. CSS is now built to <code>.coralite/assets/css/</code> and JavaScript chunks to <code>.coralite/assets/js/</code>, keeping compiled static files isolated and easy to manage.</p>
+            <h2 id="deterministic-hashing-and-deduplicated-build-pipelines">Deterministic Hashing and Deduplicated Build Pipelines</h2>
+            <p>To improve build output consistency and optimize caching, the <code>ScriptManager</code> now alphabetically sorts <code>processedComponentKeys</code> during compilation. This ensures that assets mapping to the same group of components consistently generate the same output block hash.</p>
+            <p>A new local in-memory page resolution cache checks DOM element trees across build cycles. If a page maps to a component dependency list that has already been processed, the pipeline bypasses the execution of <code>compileAllInstances</code>, reducing CPU overhead and build times. Furthermore, CLI modes now map directly to environmental variables, enabling production-only minification, tree-shaking, and external sourcemaps automatically.</p>
 
-    <coralite-code-highlight language="javascript">
-// coralite.config.js
-export default {
-  baseURL: '/docs/',
-};
-    </coralite-code-highlight>
+            <h2 id="absolute-base-urls-and-asset-separation">Absolute Base URLs and Asset Separation</h2>
+            <p>To ensure asset paths resolve correctly on deeply nested pages (such as <code>/docs/guide/</code>), a <code>baseURL</code> configuration option has been introduced. Dynamically generated orchestrator script tags and imports now resolve as absolute paths using this base URL prefix.</p>
+            <p>As part of this configuration change, static asset output directories have been organized. CSS is now built to <code>.coralite/assets/css/</code> and JavaScript chunks to <code>.coralite/assets/js/</code>, keeping compiled static files isolated and easy to manage.</p>
 
-    <p>We have also resolved asset discovery issues by updating the static asset plugin to look up packages relative to the current working directory (<code>process.cwd()</code>) instead of the module's file location, fixing module resolution errors for local and linked packages.</p>
+            <code-block language="javascript">
+        // coralite.config.js
+        export default {
+          baseURL: '/docs/',
+        };
+            </code-block>
 
-    <coralite-heading level="2" text="Dynamic Component Mount Orchestration"></coralite-heading>
-    <p>Within the browser orchestrator, the legacy query checking mechanism has been replaced with a dynamic <code>MutationObserver</code> on <code>document.body</code>. This allows the client-side runtime to monitor the DOM and lazily load required JavaScript chunks asynchronously as custom component elements (e.g. dynamically created elements) are mounted into the document.</p>
+            <p>We have also resolved asset discovery issues by updating the static asset plugin to look up packages relative to the current working directory (<code>process.cwd()</code>) instead of the module's file location, fixing module resolution errors for local and linked packages.</p>
 
-    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
-    <ul>
-      <li><strong>Reorganized Asset Subdirectories:</strong> Compiled assets are now structured within <code>.coralite/assets/css/</code> and <code>.coralite/assets/js/</code>. If you run custom scripts or servers targeting the old output paths, these must be updated to refer to the new directories.</li>
-      <li><strong>Absolute URL Paths:</strong> Orchestrator script tags and dynamic bundle imports now resolve as absolute paths utilizing the configured <code>baseURL</code> (defaulting to <code>/</code>).</li>
-    </ul>
+            <h2 id="dynamic-component-mount-orchestration">Dynamic Component Mount Orchestration</h2>
+            <p>Within the browser orchestrator, the legacy query checking mechanism has been replaced with a dynamic <code>MutationObserver</code> on <code>document.body</code>. This allows the client-side runtime to monitor the DOM and lazily load required JavaScript chunks asynchronously as custom component elements (e.g. dynamically created elements) are mounted into the document.</p>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="breaking-changes">Breaking Changes</h2>
+            <ul>
+              <li><strong>Reorganized Asset Subdirectories:</strong> Compiled assets are now structured within <code>.coralite/assets/css/</code> and <code>.coralite/assets/js/</code>. If you run custom scripts or servers targeting the old output paths, these must be updated to refer to the new directories.</li>
+              <li><strong>Absolute URL Paths:</strong> Orchestrator script tags and dynamic bundle imports now resolve as absolute paths utilizing the configured <code>baseURL</code> (defaulting to <code>/</code>).</li>
+            </ul>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-npm install coralite@0.29.3
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-npm install coralite-scripts@0.29.3
-    </coralite-code-highlight>
+            <code-block language="bash">
+        npm install coralite@0.29.3
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+        npm install coralite-scripts@0.29.3
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

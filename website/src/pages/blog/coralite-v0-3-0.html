@@ -1,42 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.3.0" description="Coralite v0.3.0 enhances HTML module static site generation with improved slot handling, refactored naming for clarity, and updated documentation."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-01-27T10:53:33+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.3.0"
+    description="Coralite v0.3.0 enhances HTML module static site generation with improved slot handling, refactored naming for clarity, and updated documentation."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-01-27"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.3.0</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.3.0</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-01-27T10:53:33+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.3.0</h1>
+        <p class="subhead">Coralite v0.3.0 enhances HTML module static site generation with improved slot handling, refactored naming for clarity, and updated documentation.</p>
 
-    <p>Coralite’s latest release of its HTML module static site generator introduces critical refinements to component handling, metadata parsing, and developer tooling, with a focus on improving consistency and extensibility in custom element workflows.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">January 27, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite’s latest release of its HTML module static site generator introduces critical refinements to component handling, metadata parsing, and developer tooling, with a focus on improving consistency and extensibility in custom element workflows.</p>
 
-    <ul>  
-      <li>Rename core module references from <code>components</code> to <code>coraliteModules</code> for clearer naming conventions and reduced ambiguity in large-scale projects.</li>  
-      <li>Add support for default slots and dynamic content insertion in custom elements, enabling more flexible template rendering through enhanced attribute parsing logic.</li>  
-      <li>Update JSDoc documentation across key files (e.g., <code>parse.js</code>) to improve clarity and maintainability of the codebase for contributors.</li>  
-      <li>Refactor <code>parseModule()</code> function signature to use a <code>element</code> parameter, replacing deprecated <code>customElementSlots</code> for backward compatibility with modern HTML module standards.</li>  
-    </ul>
-    
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <h2 id="core-functionality">Core Functionality</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.3.0</coralite-code-highlight>
+            <ul>  
+              <li>Rename core module references from <code>components</code> to <code>coraliteModules</code> for clearer naming conventions and reduced ambiguity in large-scale projects.</li>  
+              <li>Add support for default slots and dynamic content insertion in custom elements, enabling more flexible template rendering through enhanced attribute parsing logic.</li>  
+              <li>Update JSDoc documentation across key files (e.g., <code>parse.js</code>) to improve clarity and maintainability of the codebase for contributors.</li>  
+              <li>Refactor <code>parseModule()</code> function signature to use a <code>element</code> parameter, replacing deprecated <code>customElementSlots</code> for backward compatibility with modern HTML module standards.</li>  
+            </ul>
+            
+            <h2 id="get-the-release">Get the release</h2>
 
-    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.3.0" target="_blank">git v0.3.0 changelog</a></p>
+            <code-block language="bash">npm install coralite@0.3.0</code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.3.0" target="_blank">git v0.3.0 changelog</a></p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

@@ -92,6 +92,22 @@ You can run the following workspace-wide scripts from the root directory:
   ```bash
   pnpm run website:build
   ```
+  Builds the static site into `website/dist`.
+* **Check the Official Website**:
+  ```bash
+  pnpm run website:check
+  ```
+  Validates the website's components, pages, and plugins.
+* **Test the Official Website**:
+  ```bash
+  pnpm run website:test
+  ```
+  Runs the redirect audit and the Playwright visual suite (Chromium required).
+* **Lint Website CSS**:
+  ```bash
+  pnpm run website:lint:css
+  ```
+  Runs stylelint over `website/src/css`.
 
 ---
 

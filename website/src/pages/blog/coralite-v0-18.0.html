@@ -1,68 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration 
-    type="article"
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
     title="Coralite v0.18.0 Release Notes"
-    seo-title="Coralite v0.18.0 Released: Improved Type Safety, Module Structure & Bug Fixes"
-    description="Coralite v0.18.0 enhances developer experience with better TypeScript support, consistent imports, and corrected rendering issues. Upgrade now for improved stability, performance, and maintainability."
-  ></coralite-meta>
-
-  <meta property="article:published_time" name="published_time" content="2025-09-14T13:25:56.000Z">
-  <meta name="author_id" content="thomas" data-dev="true">
+    description="Coralite v0.18.0 enhances developer experience with better TypeScript support, consistent imports, and corrected rendering issues."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-09-14"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.18.0</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.18.0</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-09-14T13:25:56.000Z"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.18.0</h1>
+        <p class="subhead">Coralite v0.18.0 enhances developer experience with better TypeScript support, consistent imports, and corrected rendering issues. Upgrade now for improved stability, performance, and maintainability.</p>
 
-    <p>Coralite v0.18.0 delivers a focused update to improve module structure, type safety, and consistency across the project. This release centers on internal refactoring for better developer experience, with clear improvements in how libraries are imported and typed.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">September 14, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Key Improvements"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite v0.18.0 delivers a focused update to improve module structure, type safety, and consistency across the project. This release centers on internal refactoring for better developer experience, with clear improvements in how libraries are imported and typed.</p>
 
-    <p>The primary changes in this release aim to streamline how developers interact with Coralite’s core functionality. By reorganizing exports and aligning import paths, we reduce friction when building and maintaining applications.</p>
+            <h2 id="key-improvements">Key Improvements</h2>
 
-    <ul>
-      <li><code>core</code> modules are now properly exported, enabling direct access to foundational utilities without needing to reference plugins.</li>
-      <li>Type exports have been added to the core package, improving TypeScript support and reducing type inference errors in IDEs.</li>
-      <li>A default export has been added for <code>Coralite</code>, simplifying usage in common scenarios where a single entry point is preferred.</li>
-      <li>A <code>tsconfig.json</code> file has been introduced to the <code>coralite</code> package, ensuring consistent TypeScript compilation across projects.</li>
-    </ul>
+            <p>The primary changes in this release aim to streamline how developers interact with Coralite’s core functionality. By reorganizing exports and aligning import paths, we reduce friction when building and maintaining applications.</p>
 
-    <coralite-heading level="2" text="Bug Fixes"></coralite-heading>
+            <ul>
+              <li><code>core</code> modules are now properly exported, enabling direct access to foundational utilities without needing to reference plugins.</li>
+              <li>Type exports have been added to the core package, improving TypeScript support and reducing type inference errors in IDEs.</li>
+              <li>A default export has been added for <code>Coralite</code>, simplifying usage in common scenarios where a single entry point is preferred.</li>
+              <li>A <code>tsconfig.json</code> file has been introduced to the <code>coralite</code> package, ensuring consistent TypeScript compilation across projects.</li>
+            </ul>
 
-    <p>Several fixes ensure consistency in rendering, imports, and performance. These updates address subtle but impactful issues that could affect development workflows.</p>
+            <h2 id="bug-fixes">Bug Fixes</h2>
 
-    <ul>
-      <li>The banner structure in test environments has been corrected to render properly and avoid layout inconsistencies.</li>
-      <li>Imports within the codebase now consistently use the <code>coralite</code> core package instead of outdated plugin references.</li>
-      <li>The code highlight component now imports from the correct path: <code>coralite/utils</code> instead of <code>corallite/utils</code>.</li>
-      <li>Fixed a typo in the <code>nested-components</code> fixture: <code>corallite-header</code> has been renamed to <code>coralite-title</code> for consistency.</li>
-      <li>Reduced image sizes in CSS templates to improve load performance and reduce bundle size.</li>
-    </ul>
+            <p>Several fixes ensure consistency in rendering, imports, and performance. These updates address subtle but impactful issues that could affect development workflows.</p>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <ul>
+              <li>The banner structure in test environments has been corrected to render properly and avoid layout inconsistencies.</li>
+              <li>Imports within the codebase now consistently use the <code>coralite</code> core package instead of outdated plugin references.</li>
+              <li>The code highlight component now imports from the correct path: <code>coralite/utils</code> instead of <code>corallite/utils</code>.</li>
+              <li>Fixed a typo in the <code>nested-components</code> fixture: <code>corallite-header</code> has been renamed to <code>coralite-title</code> for consistency.</li>
+              <li>Reduced image sizes in CSS templates to improve load performance and reduce bundle size.</li>
+            </ul>
 
-    <p>Upgrading to v0.18.0 is straightforward. Depending on your project setup, you’ll need to update one or both of the following packages:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.18.1</coralite-code-highlight>
+            <p>Upgrading to v0.18.0 is straightforward. Depending on your project setup, you’ll need to update one or both of the following packages:</p>
 
-    <p>If you’re using <code>coralite-scripts</code> for scaffolding, update that as well:</p>
+            <code-block language="bash">npm install coralite@0.18.1</code-block>
 
-    <coralite-code-highlight language="bash">npm install coralite-scripts@0.18.1</coralite-code-highlight>
+            <p>If you’re using <code>coralite-scripts</code> for scaffolding, update that as well:</p>
 
-    <p>After upgrading, review any import paths in your code. The changes to core exports and module structure may require minor adjustments to ensure compatibility.</p>
+            <code-block language="bash">npm install coralite-scripts@0.18.1</code-block>
 
-    <p>For a full list of changes, including detailed commit messages, <a href="https://codeberg.org/tjdavid/coralite/compare/v0.17.0...v0.18.0" target="_blank">view the full changelog</a>.</p>
+            <p>After upgrading, review any import paths in your code. The changes to core exports and module structure may require minor adjustments to ensure compatibility.</p>
+
+            <p>For a full list of changes, including detailed commit messages, <a href="https://codeberg.org/tjdavid/coralite/compare/v0.17.0...v0.18.0" target="_blank">view the full changelog</a>.</p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

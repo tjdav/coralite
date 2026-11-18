@@ -1,0 +1,43 @@
+<template id="ui-breadcrumb">
+  <nav aria-label="Breadcrumb" class="c-breadcrumb">
+    <slot></slot>
+  </nav>
+</template>
+
+<script type="module">
+  export const attributes = {}
+</script>
+
+<style>
+  :host {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .c-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--text-primary);
+  }
+
+  span {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .separator {
+    color: var(--border-strong);
+    font-weight: normal;
+  }
+</style>

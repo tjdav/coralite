@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Theming with Variables"
+    description="Build components that are infinitely customizable by consumers using CSS Custom Properties and Coralite's reactive style export."
+    section="Learn"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <!-- Sidebar -->
+        <div slot="sidebar">
+      <ui-accordion title="Module 1: HTML Foundations" open>
+        <ui-nav-link href="/learn/01-the-document">1. The Document</ui-nav-link>
+        <ui-nav-link href="/learn/02-semantic-tags">2. Semantic Tags</ui-nav-link>
+        <ui-nav-link href="/learn/03-attributes-data">3. Attributes & Data</ui-nav-link>
+        <ui-nav-link href="/learn/04-structuring-a-page">4. Structuring a Page</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 2: CSS & Styling" open>
+        <ui-nav-link href="/learn/05-native-css-scoping">1. Native CSS Scoping</ui-nav-link>
+        <ui-nav-link href="/learn/06-cascade-layers">2. Cascade Layers</ui-nav-link>
+        <ui-nav-link href="/learn/07-theming-with-variables" active>3. Theming with Variables</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 3: JavaScript Behavior" open>
+        <ui-nav-link href="/learn/08-the-client-runtime">1. The Client Runtime</ui-nav-link>
+        <ui-nav-link href="/learn/09-refs-and-event-listeners">2. Refs & Event Listeners</ui-nav-link>
+        <ui-nav-link href="/learn/10-reactive-state">3. Reactive State</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 4: The Coralite Ecosystem" open>
+        <ui-nav-link href="/learn/11-server-side-rendering">1. Server-Side Rendering</ui-nav-link>
+        <ui-nav-link href="/learn/13-building-for-production">2. Building for Production</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <!-- Content -->
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/learn/">Learn</a>
+        <span class="separator">/</span>
+        <a href="/learn/">Module 2</a>
+        <span class="separator">/</span>
+        <span>Lesson 3: Theming with Variables</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <ui-badge variant="cyan">Lesson 07</ui-badge>
+        <h1>Theming with Variables</h1>
+        <p class="subhead">Build components that are infinitely customizable by consumers using CSS Custom Properties and Coralite's reactive style export.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="exposing-theme-tokens">Exposing Theme Tokens</h2>
+        <p>Instead of hardcoding colors directly into your component's CSS, you should expose them as CSS custom properties (variables) with sensible fallbacks. This allows consumers to theme your component without rewriting your CSS.</p>
+        
+        <code-block language="css" filename="card.css">
+:host {
+  /* Expose variables with fallbacks */
+  --card-bg: var(--bg-card, #111827);
+  --card-text: var(--text-primary, #F8FAFC);
+  --card-border: var(--border-subtle, #1F2937);
+}
+
+.card {
+  background: var(--card-bg);
+  color: var(--card-text);
+  border: 1px solid var(--card-border);
+  padding: 24px;
+  border-radius: 8px;
+}
+        </code-block>
+
+        <h2 id="overriding-from-the-parent">Overriding from the Parent</h2>
+        <p>Consumers can now override these variables directly on the host element, or from any parent container, using standard CSS.</p>
+
+        <code-block language="html" filename="usage.html">
+<!-- Override the variables inline -->
+<my-card style="--card-bg: #8B5CF6; --card-text: #FFFFFF;">
+  <h2>Custom Theme</h2>
+</my-card>
+        </code-block>
+
+        <h2 id="reactive-theming-with-the-style-export">Reactive Theming with the style Export</h2>
+        <p>Coralite takes this a step further with the <code>style</code> export. It allows you to reactively compute CSS variables based on the component's internal state.</p>
+
+        <code-block language="javascript" filename="alert-card.html">
+<script type="module">
+  export const attributes = {
+    status: { type: String, default: 'info' }
+  }
+
+  export const style = {
+    // Reactively compute the background based on the status attribute
+    '--card-bg': ({ state }) => {
+      if (state.status === 'error') return '#EF4444'
+      if (state.status === 'success') return '#10B981'
+      return 'var(--bg-card)'
+    }
+  }
+</script>
+        </code-block>
+
+        <h2 id="why-this-matters">Why this matters</h2>
+        <p>This pattern eliminates the need for complex JavaScript theme providers or Context APIs. The browser's native CSS engine handles the styling, while Coralite handles the reactive state.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/learn/06-cascade-layers" variant="secondary">← Previous</ui-link>
+        <ui-link href="/learn/08-the-client-runtime" variant="primary">Next Module →</ui-link>
+      </div>
+    </div>
+
+    <!-- TOC -->
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#exposing-theme-tokens">Exposing Theme Tokens</a>
+        <a href="#overriding-from-the-parent">Overriding from the Parent</a>
+        <a href="#reactive-theming-with-the-style-export">Reactive Theming</a>
+        <a href="#why-this-matters">Why this matters</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

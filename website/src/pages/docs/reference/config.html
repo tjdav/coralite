@@ -1,219 +1,262 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Configuration Reference — Coralite"
-    description="Complete reference for coralite.config.js configuration options, including required directories, core options, extended state, CSP rules, and static asset injection."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Configuration Reference"
+    description="Complete reference for coralite.config.js configuration options, including required directories, core options, extended state, CSP rules, and static asset injection."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <site-header></site-header>
 
-  <main class="container content">
-    <h1 class="display">Configuration Reference</h1>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="reference/config"></docs-sidebar>
 
-    <p>Coralite projects are configured using a <code>coralite.config.js</code> file placed at the root directory of your project.</p>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/">Reference</a>
+        <span class="separator">/</span>
+        <span>Configuration Reference</span>
+      </ui-breadcrumb>
 
-    <coralite-heading level="2" text="1. The coralite.config.js File"></coralite-heading>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Configuration Reference</h1>
+          <ui-badge variant="cyan">Reference</ui-badge>
+        </div>
+        <p class="subhead">Complete reference for coralite.config.js configuration options, including required directories, core options, extended state, CSP rules, and static asset injection.</p>
+      </div>
 
-    <p>Use the <code>defineConfig</code> helper exported from <code>coralite</code> to construct and validate your project configuration:</p>
+      <div class="lesson-body">
+        <p>Coralite projects are configured using a <code>coralite.config.js</code> file placed at the root directory of your project.</p>
 
-    <coralite-code-highlight language="javascript" title="coralite.config.js">
-import { defineConfig } from 'coralite'
+            <h2 id="1-the-coralite-config-js-file">1. The coralite.config.js File</h2>
 
-export default defineConfig({
-  output: 'dist',
-  components: 'src/components',
-  pages: 'src/pages',
-  public: 'public',
-  cleanUrls: true,
-  viewTransitions: true,
-  mode: 'production'
-})
-    </coralite-code-highlight>
+            <p>Use the <code>defineConfig</code> helper exported from <code>coralite</code> to construct and validate your project configuration:</p>
 
-    <coralite-heading level="2" text="2. Required Keys"></coralite-heading>
+            <code-block language="javascript" filename="coralite.config.js">
+        import { defineConfig } from 'coralite'
 
-    <p>Every Coralite application requires three path configuration keys:</p>
+        export default defineConfig({
+          output: 'dist',
+          components: 'src/components',
+          pages: 'src/pages',
+          public: 'public',
+          cleanUrls: true,
+          viewTransitions: true,
+          mode: 'production'
+        })
+            </code-block>
 
-    <coralite-table>
-      <tr slot="head">
-        <th>Key</th>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-      <tr slot="body">
-        <td><code>output</code></td>
-        <td><code>string</code></td>
-        <td>Path to the destination directory where compiled static files are emitted (e.g. <code>'dist'</code>).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>components</code></td>
-        <td><code>string</code></td>
-        <td>Path to the directory containing Coralite Web Components (e.g. <code>'src/components'</code>).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>pages</code></td>
-        <td><code>string</code></td>
-        <td>Path to the directory containing application pages (e.g. <code>'src/pages'</code>).</td>
-      </tr>
-    </coralite-table>
+            <h2 id="2-required-keys">2. Required Keys</h2>
 
-    <coralite-heading level="2" text="3. Core Options"></coralite-heading>
+            <p>Every Coralite application requires three path configuration keys:</p>
 
-    <p>Core options control asset delivery, URL routing formats, view transitions, and build modes:</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                <thead>
+                  <tr>
+                <th>Key</th>
+                <th>Type</th>
+                <th>Description</th>
+              </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                <td><code>output</code></td>
+                <td><code>string</code></td>
+                <td>Path to the destination directory where compiled static files are emitted (e.g. <code>'dist'</code>).</td>
+              </tr>
+                  <tr>
+                <td><code>components</code></td>
+                <td><code>string</code></td>
+                <td>Path to the directory containing Coralite Web Components (e.g. <code>'src/components'</code>).</td>
+              </tr>
+                  <tr>
+                <td><code>pages</code></td>
+                <td><code>string</code></td>
+                <td>Path to the directory containing application pages (e.g. <code>'src/pages'</code>).</td>
+              </tr>
+                </tbody>
+                </table>
+              </div>
 
-    <coralite-table>
-      <tr slot="head">
-        <th>Option</th>
-        <th>Type</th>
-        <th>Default</th>
-        <th>Description</th>
-      </tr>
-      <tr slot="body">
-        <td><code>public</code></td>
-        <td><code>string</code></td>
-        <td><code>'public'</code></td>
-        <td>Directory containing static assets copied directly to the build root.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>cleanUrls</code></td>
-        <td><code>boolean</code></td>
-        <td><code>true</code></td>
-        <td>When <code>true</code>, outputs directory-style clean URLs (e.g. <code>/about/index.html</code> at route <code>/about</code>). When <code>false</code>, outputs file-style URLs (e.g. <code>/about.html</code>).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>viewTransitions</code></td>
-        <td><code>boolean</code></td>
-        <td><code>true</code></td>
-        <td>Enables native Same-Document View Transitions for client navigation.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>mode</code></td>
-        <td><code>'production' | 'development' | 'testing'</code></td>
-        <td><code>'production'</code></td>
-        <td>Build and execution environment mode.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>cacheDir</code></td>
-        <td><code>string</code></td>
-        <td><code>&lt;projectRoot&gt;/.coralite</code></td>
-        <td>Directory used to persist the incremental build manifest. The CLI scopes this per mode (<code>.coralite/dev</code>, <code>.coralite/test</code>, <code>.coralite/build</code>) so concurrent commands do not overwrite each other's state.</td>
-      </tr>
-    </coralite-table>
+            <h2 id="3-core-options">3. Core Options</h2>
 
-    <coralite-heading level="2" text="4. Extended Options"></coralite-heading>
+            <p>Core options control asset delivery, URL routing formats, view transitions, and build modes:</p>
 
-    <p>Extended configuration options allow declaring global store state, injecting stylesheets, registering plugins, and setting Content Security Policies:</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                <thead>
+                  <tr>
+                <th>Option</th>
+                <th>Type</th>
+                <th>Default</th>
+                <th>Description</th>
+              </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                <td><code>public</code></td>
+                <td><code>string</code></td>
+                <td><code>'public'</code></td>
+                <td>Directory containing static assets copied directly to the build root.</td>
+              </tr>
+                  <tr>
+                <td><code>cleanUrls</code></td>
+                <td><code>boolean</code></td>
+                <td><code>true</code></td>
+                <td>When <code>true</code>, outputs directory-style clean URLs (e.g. <code>/about/index.html</code> at route <code>/about</code>). When <code>false</code>, outputs file-style URLs (e.g. <code>/about.html</code>).</td>
+              </tr>
+                  <tr>
+                <td><code>viewTransitions</code></td>
+                <td><code>boolean</code></td>
+                <td><code>true</code></td>
+                <td>Enables native Same-Document View Transitions for client navigation.</td>
+              </tr>
+                  <tr>
+                <td><code>mode</code></td>
+                <td><code>'production' | 'development' | 'testing'</code></td>
+                <td><code>'production'</code></td>
+                <td>Build and execution environment mode.</td>
+              </tr>
+                </tbody>
+                </table>
+              </div>
 
-    <ul>
-      <li><code>store</code> — Object declaring initial default values for the signal-backed global store.
-        <coralite-code-highlight language="javascript">
-store: {
-  theme: 'dark',
-  user: { name: 'Alex' }
-}
-        </coralite-code-highlight>
-      </li>
-      <li><code>externalStyles</code> — Array of external stylesheet URLs or paths injected into every page.
-        <coralite-code-highlight language="javascript">
-externalStyles: [
-  'https://cdn.example.com/styles.css',
-  '/css/theme.css'
-]
-        </coralite-code-highlight>
-      </li>
-      <li><code>plugins</code> — Array of configured plugin instances created via <code>definePlugin</code>. Contexts defined in <code>server.context</code> and <code>client.context</code> are automatically injected into Component and Page handlers (<code>server()</code> and <code>client()</code>). Plugin context is never injected into isomorphic getters.
-        <coralite-code-highlight language="javascript">
-plugins: [
-  myPlugin({ apiKey: 'secret-key' })
-]
-        </coralite-code-highlight>
-      </li>
-      <li><code>csp</code> — Content Security Policy rules and options.
-        <coralite-code-highlight language="javascript">
-csp: {
-  enabled: true,
-  hashAlgorithm: 'sha256',
-  injectMeta: true,
-  directives: {
-    'default-src': ["'self'"],
-    'script-src': ["'self'"]
-  }
-}
-        </coralite-code-highlight>
-      </li>
-    </ul>
+            <h2 id="4-extended-options">4. Extended Options</h2>
 
-    <coralite-heading level="2" text="5. Asset Injection"></coralite-heading>
+            <p>Extended configuration options allow declaring global store state, injecting stylesheets, registering plugins, and setting Content Security Policies:</p>
 
-    <p>The <code>assets</code> configuration array manages third-party library assets, copying files to the output directory and optionally injecting <code>&lt;script&gt;</code>, <code>&lt;link&gt;</code>, or <code>&lt;meta&gt;</code> tags with Subresource Integrity (SRI) hashes:</p>
+            <ul>
+              <li><code>store</code> — Object declaring initial default values for the signal-backed global store.
+                <code-block language="javascript">
+        store: {
+          theme: 'dark',
+          user: { name: 'Alex' }
+        }
+                </code-block>
+              </li>
+              <li><code>externalStyles</code> — Array of external stylesheet URLs or paths injected into every page.
+                <code-block language="javascript">
+        externalStyles: [
+          'https://cdn.example.com/styles.css',
+          '/css/theme.css'
+        ]
+                </code-block>
+              </li>
+              <li><code>plugins</code> — Array of configured plugin instances created via <code>definePlugin</code>. Contexts defined in <code>server.context</code> and <code>client.context</code> are automatically injected into Component and Page handlers (<code>server()</code> and <code>client()</code>). Plugin context is never injected into isomorphic getters.
+                <code-block language="javascript">
+        plugins: [
+          myPlugin({ apiKey: 'secret-key' })
+        ]
+                </code-block>
+              </li>
+              <li><code>csp</code> — Content Security Policy rules and options.
+                <code-block language="javascript">
+        csp: {
+          enabled: true,
+          hashAlgorithm: 'sha256',
+          injectMeta: true,
+          directives: {
+            'default-src': ["'self'"],
+            'script-src': ["'self'"]
+          }
+        }
+                </code-block>
+              </li>
+            </ul>
 
-    <coralite-code-highlight language="javascript" title="Asset Injection Example">
-import { defineConfig } from 'coralite'
+            <h2 id="5-asset-injection">5. Asset Injection</h2>
 
-export default defineConfig({
-  output: 'dist',
-  components: 'src/components',
-  pages: 'src/pages',
-  assets: [
-    {
-      src: 'node_modules/lib/dist/lib.js',
-      dest: 'assets/js/lib.js',
-      inject: {
-        type: 'script',
-        placement: 'head-end',
-        sri: true
-      }
-    }
-  ]
-})
-    </coralite-code-highlight>
+            <p>The <code>assets</code> configuration array manages third-party library assets, copying files to the output directory and optionally injecting <code>&lt;script&gt;</code>, <code>&lt;link&gt;</code>, or <code>&lt;meta&gt;</code> tags with Subresource Integrity (SRI) hashes:</p>
 
-    <p>The <code>inject</code> option object supports configuration properties:</p>
+            <code-block language="javascript" filename="Asset Injection Example">
+        import { defineConfig } from 'coralite'
 
-    <ul>
-      <li><code>type</code> — <code>'script'</code>, <code>'link'</code>, or <code>'meta'</code>.</li>
-      <li><code>placement</code> — <code>'head-start'</code>, <code>'head-end'</code>, <code>'body-start'</code>, or <code>'body-end'</code>.</li>
-      <li><code>sri</code> — Boolean or hash algorithm (<code>'sha256'</code>, <code>'sha384'</code>, <code>'sha512'</code>) to calculate and attach Subresource Integrity attributes.</li>
-    </ul>
+        export default defineConfig({
+          output: 'dist',
+          components: 'src/components',
+          pages: 'src/pages',
+          assets: [
+            {
+              src: 'node_modules/lib/dist/lib.js',
+              dest: 'assets/js/lib.js',
+              inject: {
+                type: 'script',
+                placement: 'head-end',
+                sri: true
+              }
+            }
+          ]
+        })
+            </code-block>
 
-    <coralite-heading level="2" text="6. Test Fixtures &amp; Page Exclusions"></coralite-heading>
+            <p>The <code>inject</code> option object supports configuration properties:</p>
 
-    <p>To prevent test fixture pages from polluting your <code>pages</code> directory or ending up in production builds, configure the <code>fixtures</code> and <code>exclude</code> options:</p>
+            <ul>
+              <li><code>type</code> — <code>'script'</code>, <code>'link'</code>, or <code>'meta'</code>.</li>
+              <li><code>placement</code> — <code>'head-start'</code>, <code>'head-end'</code>, <code>'body-start'</code>, or <code>'body-end'</code>.</li>
+              <li><code>sri</code> — Boolean or hash algorithm (<code>'sha256'</code>, <code>'sha384'</code>, <code>'sha512'</code>) to calculate and attach Subresource Integrity attributes.</li>
+            </ul>
 
-    <coralite-code-highlight language="javascript" title="Fixtures &amp; Exclusions in coralite.config.js">
-import { defineConfig } from 'coralite'
+            <h2 id="6-test-fixtures-page-exclusions">6. Test Fixtures &amp; Page Exclusions</h2>
 
-export default defineConfig({
-  output: 'dist',
-  components: 'src/components',
-  pages: 'src/pages',
+            <p>To prevent test fixture pages from polluting your <code>pages</code> directory or ending up in production builds, configure the <code>fixtures</code> and <code>exclude</code> options:</p>
 
-  // Directory containing component test fixture pages:
-  fixtures: 'tests/fixtures',
+            <code-block language="javascript" filename="Fixtures &amp; Exclusions in coralite.config.js">
+        import { defineConfig } from 'coralite'
 
-  // Or advanced configuration with fixture-only components and route prefix:
-  // fixtures: {
-  //   pages: 'tests/fixtures/pages',
-  //   components: 'tests/fixtures/components',
-  //   prefix: '/__fixtures__'
-  // },
+        export default defineConfig({
+          output: 'dist',
+          components: 'src/components',
+          pages: 'src/pages',
 
-  // Optional glob patterns to exclude from page discovery:
-  exclude: ['**/drafts/**']
-})
-    </coralite-code-highlight>
+          // Directory containing component test fixture pages:
+          fixtures: 'tests/fixtures',
 
-    <p>Key behaviors:</p>
-    <ul>
-      <li><strong>Production build isolation</strong>: During <code>coralite build</code>, fixture pages and common test patterns (<code>__test__</code>, <code>__tests__</code>, <code>*.test.html</code>, <code>*.spec.html</code>, <code>*.fixture.html</code>) are automatically excluded and never emitted to <code>dist</code>.</li>
-      <li><strong>Dev and test servers</strong>: Running <code>coralite dev</code> or <code>coralite test</code> mounts your test fixtures under <code>/__fixtures__/&lt;fixture-name&gt;</code> with full component SSR, scoping, and live reload.</li>
-    </ul>
+          // Or advanced configuration with fixture-only components and route prefix:
+          // fixtures: {
+          //   pages: 'tests/fixtures/pages',
+          //   components: 'tests/fixtures/components',
+          //   prefix: '/__fixtures__'
+          // },
 
-  </main>
+          // Optional glob patterns to exclude from page discovery:
+          exclude: ['**/drafts/**']
+        })
+            </code-block>
 
-  <coralite-footer></coralite-footer>
+            <p>Key behaviors:</p>
+            <ul>
+              <li><strong>Production build isolation</strong>: During <code>coralite build</code>, fixture pages and common test patterns (<code>__test__</code>, <code>__tests__</code>, <code>*.test.html</code>, <code>*.spec.html</code>, <code>*.fixture.html</code>) are automatically excluded and never emitted to <code>dist</code>.</li>
+              <li><strong>Dev and test servers</strong>: Running <code>coralite dev</code> or <code>coralite test</code> mounts your test fixtures under <code>/__fixtures__/&lt;fixture-name&gt;</code> with full component SSR, scoping, and live reload.</li>
+            </ul>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/reference/cli" variant="secondary">← Previous: Coralite CLI</ui-link>
+        <ui-link href="/docs/reference/pages" variant="primary">Next: Pages & Routing Reference →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#1-the-coralite-config-js-file">1. The coralite.config.js File</a>
+        <a href="#2-required-keys">2. Required Keys</a>
+        <a href="#3-core-options">3. Core Options</a>
+        <a href="#4-extended-options">4. Extended Options</a>
+        <a href="#5-asset-injection">5. Asset Injection</a>
+        <a href="#6-test-fixtures-page-exclusions">6. Test Fixtures &amp; Page Exclusions</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

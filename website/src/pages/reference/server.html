@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="server"
+    description="The build-time execution block. Fetch data in Node.js, then hydrate the component state."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <div slot="sidebar">
+      <ui-accordion title="Component API" open>
+        <ui-nav-link href="/reference/attributes">attributes</ui-nav-link>
+        <ui-nav-link href="/reference/client">client</ui-nav-link>
+        <ui-nav-link href="/reference/server" active>server</ui-nav-link>
+        <ui-nav-link href="/reference/getters">getters</ui-nav-link>
+        <ui-nav-link href="/reference/style">style</ui-nav-link>
+        <ui-nav-link href="/reference/slots">slots</ui-nav-link>
+        <ui-nav-link href="/reference/form-control">formControl</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Page API">
+        <ui-nav-link href="/reference/page-api">paths & definePage</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Plugin API">
+        <ui-nav-link href="/reference/plugins">definePlugin</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="CLI">
+        <ui-nav-link href="/reference/cli">commands</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Component API</a>
+        <span class="separator">/</span>
+        <span>server</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>server</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">The build-time execution block. Fetch data in Node.js, then hydrate the component state.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="typescript-signature">TypeScript Signature</h2>
+        <code-block language="typescript" filename="server.ts">
+export async function server (context: {
+  state: Record<string, any>;
+  route: CoraliteRoute;
+  page?: CoralitePage;
+  store?: CoraliteStore;
+  signal: AbortSignal;
+  // plus any ubiquitous plugin context
+}): Promise<Record<string, any> | void>
+        </code-block>
+
+        <h2 id="build-time-only">Build-Time Only</h2>
+        <p>The <code>server()</code> block runs in Node.js while the page is being generated. The compiler physically strips it from the module that ships to the browser, so credentials, database clients, and file paths never reach the client bundle.</p>
+
+        <p>The object you return is shallow-merged into <code>state</code> on top of the values produced by <code>attributes</code>. Anything returned here is available as a flat <code>{{ token }}</code> in the template and inside <code>getters</code>.</p>
+
+        <code-block language="javascript" filename="data.js">
+export function server ({ page }) {
+  return {
+    title: page.title,
+    posts: page.posts
+  }
+}
+        </code-block>
+
+        <h2 id="fetching-data">Fetching Data</h2>
+        <p>Because <code>server()</code> is asynchronous, you can await filesystem reads, database queries, or HTTP requests. Modules used only inside the block must be imported dynamically so they are never bundled for the browser.</p>
+
+        <code-block language="javascript" filename="fetch-posts.js">
+export async function server ({ state }) {
+  const fs = await import('node:fs/promises')
+  const raw = await fs.readFile('src/data/posts.json', 'utf8')
+  const posts = JSON.parse(raw)
+
+  return {
+    posts: posts.slice(0, state.limit)
+  }
+}
+        </code-block>
+
+        <h2 id="the-serialization-boundary">The Serialization Boundary</h2>
+        <p>Everything returned from <code>server()</code> crosses a JSON boundary into the hydration script. Return plain, serializable data: strings, numbers, booleans, arrays, and plain objects. Class instances, functions, <code>Date</code> objects, and cyclic references cannot be serialized.</p>
+
+        <code-block language="javascript" filename="serialization.js">
+// ✅ Plain data
+return { published: post.publishedAt.toISOString() }
+
+// ❌ Not serializable
+return { published: post.publishedAt }
+        </code-block>
+
+        <div class="diagnostic-callout">
+          <strong>CORALITE-E301: Static Build-Only Import</strong>
+          <p>A top-level <code>import</code> inside <code>server()</code> is rejected. Load Node-only modules with <code>await import('node:fs/promises')</code> inside the block so the bundler can exclude them from the client output.</p>
+        </div>
+
+        <h2 id="deterministic-output">Deterministic Output</h2>
+        <p>The build must be reproducible. Do not read wall-clock time, random values, or mutable global state directly in <code>server()</code>; feed that data in through the page context, a plugin, or the global <code>store</code> instead. The same inputs must always produce the same HTML.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/client" variant="secondary">← Previous: client</ui-link>
+        <ui-link href="/reference/getters" variant="primary">Next: getters →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#typescript-signature">TypeScript Signature</a>
+        <a href="#build-time-only">Build-Time Only</a>
+        <a href="#fetching-data">Fetching Data</a>
+        <a href="#the-serialization-boundary">The Serialization Boundary</a>
+        <a href="#deterministic-output">Deterministic Output</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

@@ -1,47 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.36.2 Released: Build Optimization and Import Improvements"
-    description="Coralite v0.36.2 introduces build optimization and resolution fixes, alongside refactored test setup scripts to improve import modularity."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-05-27T16:13:44+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.36.2 Released: Build Optimization and Import Improvements</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.36.2 Released: Build Optimization and Import Improvements"
+    description="Coralite v0.36.2 introduces build optimization and resolution fixes, alongside refactored test setup scripts to improve import modularity."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-05-27"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.36.2 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.36.2 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-05-27T16:13:44+02:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.36.2 Released</h1>
+        <p class="subhead">Coralite v0.36.2 introduces build optimization and resolution fixes, alongside refactored test setup scripts to improve import modularity.</p>
 
-    <p>Coralite v0.36.2 is now available, delivering stability and modularity enhancements. This release addresses key build optimization issues and refactors test setup configurations to streamline plugin imports.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">May 27, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Build Optimization and Resolution Fix"></coralite-heading>
-    <p>This update resolves a build optimization and dependency resolution issue. By refining how internal modules are resolved during the build pipeline, the build output is now more reliable and performs more efficiently.</p>
+      <div class="post-body">
+        <p>Coralite v0.36.2 is now available, delivering stability and modularity enhancements. This release addresses key build optimization issues and refactors test setup configurations to streamline plugin imports.</p>
 
-    <coralite-heading level="2" text="Modular Test Configuration"></coralite-heading>
-    <p>To improve codebase clarity and maintainability, the test build scripts have been refactored. The <code>staticAssetPlugin</code> import has been relocated to its dedicated location, separating concerns and preventing unnecessary import overhead within the test setup scripts.</p>
+            <h2 id="build-optimization-and-resolution-fix">Build Optimization and Resolution Fix</h2>
+            <p>This update resolves a build optimization and dependency resolution issue. By refining how internal modules are resolved during the build pipeline, the build output is now more reliable and performs more efficiently.</p>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="modular-test-configuration">Modular Test Configuration</h2>
+            <p>To improve codebase clarity and maintainability, the test build scripts have been refactored. The <code>staticAssetPlugin</code> import has been relocated to its dedicated location, separating concerns and preventing unnecessary import overhead within the test setup scripts.</p>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite@0.36.2
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite-scripts@0.36.2
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite@0.36.2
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+              npm install coralite-scripts@0.36.2
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

@@ -1,64 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.28.4 Released: Robust Static Asset Resolution"
-    description="Coralite v0.28.4 improves static asset handling with support for explicit source paths and a fallback directory traversal resolution strategy."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-03-16T20:48:48+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.28.4 Released: Robust Static Asset Resolution</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.28.4 Released: Robust Static Asset Resolution"
+    description="Coralite v0.28.4 improves static asset handling with support for explicit source paths and a fallback directory traversal resolution strategy."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-03-16"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.28.4 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.28.4 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-03-16T20:48:48+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.28.4 Released</h1>
+        <p class="subhead">Coralite v0.28.4 improves static asset handling with support for explicit source paths and a fallback directory traversal resolution strategy.</p>
 
-    <p>Coralite v0.28.4 is now available. This release addresses static asset copying issues, adding flexible configuration options and fallback resolution paths to ensure seamless module integration.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">March 16, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Robust Static Asset Resolution"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite v0.28.4 is now available. This release addresses static asset copying issues, adding flexible configuration options and fallback resolution paths to ensure seamless module integration.</p>
 
-    <p>In modern Node.js environments, dependency packages may restrict access to internal file paths, causing module resolution to fail with errors such as <code>ERR_PACKAGE_PATH_NOT_EXPORTED</code> when resolving files like <code>package.json</code>. This release updates the <code>staticAssetPlugin</code> to support packages with non-exported paths through two key enhancements:</p>
+            <h2 id="robust-static-asset-resolution">Robust Static Asset Resolution</h2>
 
-    <p>First, we have introduced an optional <code>src</code> property to the <code>CoraliteStaticAsset</code> definition. This allows developers to bypass module resolution entirely by specifying an explicit, absolute file path to the asset source.</p>
+            <p>In modern Node.js environments, dependency packages may restrict access to internal file paths, causing module resolution to fail with errors such as <code>ERR_PACKAGE_PATH_NOT_EXPORTED</code> when resolving files like <code>package.json</code>. This release updates the <code>staticAssetPlugin</code> to support packages with non-exported paths through two key enhancements:</p>
 
-    <coralite-code-highlight language="javascript">
-// coralite.config.js
-export default {
-  staticAssets: [
-    {
-      name: "custom-package",
-      src: "/absolute/path/to/source/assets", // Bypasses module resolution entirely
-      dest: "public/assets"
-    }
-  ]
-};
-    </coralite-code-highlight>
+            <p>First, we have introduced an optional <code>src</code> property to the <code>CoraliteStaticAsset</code> definition. This allows developers to bypass module resolution entirely by specifying an explicit, absolute file path to the asset source.</p>
 
-    <p>Second, if module resolution is utilized and fails during <code>require.resolve()</code>, the plugin now utilizes a directory traversal fallback strategy to find the asset folder and copy resources gracefully.</p>
+            <code-block language="javascript">
+        // coralite.config.js
+        export default {
+          staticAssets: [
+            {
+              name: "custom-package",
+              src: "/absolute/path/to/source/assets", // Bypasses module resolution entirely
+              dest: "public/assets"
+            }
+          ]
+        };
+            </code-block>
 
-    <p>This update includes updated reference documentation and complete unit and end-to-end tests validating the fallback resolution behavior.</p>
+            <p>Second, if module resolution is utilized and fails during <code>require.resolve()</code>, the plugin now utilizes a directory traversal fallback strategy to find the asset folder and copy resources gracefully.</p>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <p>This update includes updated reference documentation and complete unit and end-to-end tests validating the fallback resolution behavior.</p>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite@0.28.4
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite-scripts@0.28.4
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite@0.28.4
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+              npm install coralite-scripts@0.28.4
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

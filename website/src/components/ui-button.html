@@ -1,0 +1,75 @@
+<template id="ui-button">
+  <button type="{{ type }}" class="c-btn {{ variantClass }}" disabled="{{ disabled }}">
+    <slot></slot>
+  </button>
+</template>
+
+<script type="module">
+  export const attributes = {
+    variant: { type: String, default: 'primary' },
+    type: { type: String, default: 'button' },
+    disabled: { type: Boolean, default: false }
+  }
+
+  export const getters = {
+    variantClass: ({ state }) => `c-btn--${state.variant === 'outline' ? 'secondary' : state.variant}`
+  }
+</script>
+
+<style>
+  :host {
+    display: inline-block;
+  }
+
+  .c-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px; /* Standard button padding */
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .c-btn:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+  }
+
+  .c-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Primary Variant */
+  .c-btn--primary {
+    background-color: var(--accent-violet);
+    color: #FFFFFF;
+  }
+  .c-btn--primary:hover {
+    opacity: 0.9;
+  }
+
+  /* Secondary Variant (outline). "outline" is kept as an alias. */
+  .c-btn--secondary {
+    background-color: transparent;
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+  .c-btn--secondary:hover {
+    background-color: var(--bg-card);
+  }
+
+  /* Danger Variant */
+  .c-btn--danger {
+    background-color: var(--accent-red);
+    color: #FFFFFF;
+  }
+  .c-btn--danger:hover {
+    opacity: 0.9;
+  }
+</style>

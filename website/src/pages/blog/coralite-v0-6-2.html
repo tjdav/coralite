@@ -1,41 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.6.2" description="Coralite v0.6.2 introduces Node.js v18 compatibility fixes, version bumps, and dependency updates to ensure stable builds."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-02-16T15:32:17+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.6.2"
+    description="Coralite v0.6.2 introduces Node.js v18 compatibility fixes, version bumps, and dependency updates to ensure stable builds."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-02-16"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.6.2</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.6.2</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-02-16T15:32:17+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.6.2</h1>
+        <p class="subhead">Coralite v0.6.2 introduces Node.js v18 compatibility fixes, version bumps, and dependency updates to ensure stable builds.</p>
 
-    <p>Coralite’s latest release, <strong>v0.6.2</strong>, introduces critical stability improvements and compatibility fixes to enhance reliability across environments. This update addresses dependency management, version alignment, and Node.js v18-specific requirements.</p>  
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">February 16, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite’s latest release, <strong>v0.6.2</strong>, introduces critical stability improvements and compatibility fixes to enhance reliability across environments. This update addresses dependency management, version alignment, and Node.js v18-specific requirements.</p>  
 
-    <ul>  
-      <li><strong>Lock file updates</strong>: Resolved inconsistencies in dependency resolution by updating lock files to ensure deterministic builds across platforms. </li>  
-      <li><strong>Version bump</strong>: Updated package version to align with internal release tracking and external expectations for v0.6.2.</li>  
-      <li><strong>Node.js v18 compatibility</strong>: Fixed runtime errors in environments using Node.js v18 by explicitly referencing <code>globalThis</code> for the <code>crypto</code> module, ensuring consistent behaviour across versions.</li>  
-    </ul> 
-     
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <h2 id="core-functionality">Core Functionality</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.6.2</coralite-code-highlight>
+            <ul>  
+              <li><strong>Lock file updates</strong>: Resolved inconsistencies in dependency resolution by updating lock files to ensure deterministic builds across platforms. </li>  
+              <li><strong>Version bump</strong>: Updated package version to align with internal release tracking and external expectations for v0.6.2.</li>  
+              <li><strong>Node.js v18 compatibility</strong>: Fixed runtime errors in environments using Node.js v18 by explicitly referencing <code>globalThis</code> for the <code>crypto</code> module, ensuring consistent behaviour across versions.</li>  
+            </ul> 
+             
+            <h2 id="get-the-release">Get the release</h2>
 
-    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.2" target="_blank">git v0.6.2 changelog</a></p>
+            <code-block language="bash">npm install coralite@0.6.2</code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.2" target="_blank">git v0.6.2 changelog</a></p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

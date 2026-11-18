@@ -1,45 +1,15 @@
-
 /**
- * Remove common leading whitespace from a string.
- * @param {string} text - The text to dedent
- * @returns {string} The dedented text
+ *
  */
-export function dedent (text) {
-  const lines = text.split('\n')
-  let minIndent = Infinity
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    if (line.trim()) {
-      const match = line.match(/^ */)
-      const currentIndent = match ? match[0].length : 0
-      if (currentIndent < minIndent) {
-        minIndent = currentIndent
-      }
-    }
-  }
-
-  if (minIndent === Infinity) {
-    return text
-  }
-
-  return lines.reduce((previousValue, currentValue) => {
-    let newValue = currentValue
-
-    if (currentValue.length >= minIndent) {
-      newValue = currentValue.substring(minIndent)
-    }
-
-    return previousValue + newValue + '\n'
-  }, '')
+export function dedent (str) {
+  const lines = str.split('\n')
+  const minIndent = Math.min(...lines.filter(l => l.trim().length > 0).map(l => l.match(/^(\s*)/)[0].length))
+  return lines.map(l => l.slice(minIndent)).join('\n')
 }
 
 /**
- * Add indentation to a string.
- * @param {string} text - The text to indent
- * @param {string} [spacer='  '] - The string to use for indentation
- * @returns {string} The indented text
+ *
  */
-export function indent (text, spacer = '  ') {
-  return text.split('\n').reduce((previousValue, currentValue) => previousValue + spacer + currentValue + '\n', '') + '\n'
+export function indent (str, prefix) {
+  return str.split('\n').map(l => prefix + l).join('\n')
 }

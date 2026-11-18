@@ -1,148 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Getting Started — Coralite"
-    description="Learn how to install Coralite, set up a project, author your first component and page, and use essential framework scripts."></coralite-meta>
-</head>
-
-<body>
-  <coralite-navbar></coralite-navbar>
-  <main class="container content">
-    <h1 class="display">Getting Started</h1>
-
-    <p>Coralite is an HTML-first framework designed for building fast, static, and server-rendered web applications using native Web Platform standards. This guide covers project setup, directory structure, authoring your first component and page, and running core commands.</p>
-
-    <coralite-heading level="2" text="1. Installation"></coralite-heading>
-
-    <p>Coralite ships as a single <code>coralite</code> package: framework runtime and engine, the <code>coralite</code> CLI (development server, build, and testing commands), the <code>defineConfig</code> configuration helper, and the plugin system. You can scaffold a new project using the official <code>create-coralite</code> initializer:</p>
-
-    <coralite-code-highlight language="bash" title="Scaffold a New Project">
-npm create coralite@latest my-app
-cd my-app
-npm install
-npm run dev
-    </coralite-code-highlight>
-
-    <coralite-heading level="2" text="2. Project Structure"></coralite-heading>
-
-    <p>A standard Coralite application uses a simple, predictable directory layout:</p>
-
-    <coralite-code-highlight language="text" title="Directory Layout">
-my-app/
-  components/
-    site-header.html
-    site-footer.html
-  pages/
-    index.html
-  public/
-    favicon.svg
-  coralite.config.js
-  package.json
-    </coralite-code-highlight>
-
-    <ul>
-      <li><code>components/</code> — Reusable HTML web components that can contain static markup, styles, and dynamic script blocks.</li>
-      <li><code>pages/</code> — Application routes rendered as HTML pages based on directory structure and file names.</li>
-      <li><code>public/</code> — Static assets (such as favicons, images, and fonts) served directly at the output root.</li>
-      <li><code>coralite.config.js</code> — Framework configuration file for output directories, plugins, CSP, and build options.</li>
-      <li><code>package.json</code> — Node package manifest declaring dependencies and framework lifecycle scripts.</li>
-    </ul>
-
-    <coralite-heading level="2" text="3. First Component"></coralite-heading>
-
-    <p>Components in Coralite are authored as HTML files containing a <code>&lt;template&gt;</code> element, an optional <code>&lt;script type="module"&gt;</code> block with top-level named exports (<code>export const attributes</code>, <code>export function server</code>, <code>export function client</code>), and an optional <code>&lt;style&gt;</code> element.</p>
-
-    <coralite-code-highlight language="javascript" title="components/greeting-card.html">
-<template id="greeting-card">
-  <div class="card">
-    <h3>{{ title }}</h3>
-    <p>{{ message }}</p>
-  </div>
-</template>
-
-&lt;script type="module">
-  export const attributes = {
-    title: {
-      type: String,
-      default: 'Hello'
-    },
-    message: {
-      type: String,
-      default: 'Welcome to Coralite!'
-    }
-  }
-&lt;/script&gt;
-
-<style>
-  .card {
-    padding: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-</style>
-    </coralite-code-highlight>
-
-    <p>You can use this component inside any page or other component using its tag name:</p>
-
-    <coralite-code-html>
-<greeting-card title="Welcome" message="Enjoy building with Coralite!"></greeting-card>
-    </coralite-code-html>
-
-    <coralite-heading level="2" text="4. First Page"></coralite-heading>
-
-    <p>Pages are authored inside the <code>pages/</code> directory. Pages can include a <code>&lt;script type="module"&gt;</code> with flat named exports such as <code>export function server</code> to manage build-time data loading via <code>server()</code>.</p>
-
-    <coralite-code-highlight language="javascript" title="pages/index.html">
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>{{ pageTitle }}</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Getting Started"
+    description="Learn how to install Coralite, set up a project, author your first component and page, and use essential framework scripts."
+    section="Docs"></page-meta>
 </head>
 <body>
-  <h1>{{ headline }}</h1>
-  <p>{{ description }}</p>
+  <site-header></site-header>
+
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="guide/getting-started"></docs-sidebar>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/guide/">Guide</a>
+        <span class="separator">/</span>
+        <span>Getting Started</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Getting Started</h1>
+          <ui-badge variant="cyan">Guide</ui-badge>
+        </div>
+        <p class="subhead">Learn how to install Coralite, set up a project, author your first component and page, and use essential framework scripts.</p>
+      </div>
+
+      <div class="lesson-body">
+        <p>Coralite is an HTML-first framework designed for building fast, static, and server-rendered web applications using native Web Platform standards. This guide covers project setup, directory structure, authoring your first component and page, and running core commands.</p>
+
+            <h2 id="1-installation">1. Installation</h2>
+
+            <p>Coralite ships as a single <code>coralite</code> package: framework runtime and engine, the <code>coralite</code> CLI (development server, build, and testing commands), the <code>defineConfig</code> configuration helper, and the plugin system. You can scaffold a new project using the official <code>create-coralite</code> initializer:</p>
+
+            <code-block language="bash" filename="Scaffold a New Project">
+        npm create coralite@latest my-app
+        cd my-app
+        npm install
+        npm run dev
+            </code-block>
+
+            <h2 id="2-project-structure">2. Project Structure</h2>
+
+            <p>A standard Coralite application uses a simple, predictable directory layout:</p>
+
+            <code-block language="text" filename="Directory Layout">
+        my-app/
+          components/
+            site-header.html
+            site-footer.html
+          pages/
+            index.html
+          public/
+            favicon.svg
+          coralite.config.js
+          package.json
+            </code-block>
+
+            <ul>
+              <li><code>components/</code> — Reusable HTML web components that can contain static markup, styles, and dynamic script blocks.</li>
+              <li><code>pages/</code> — Application routes rendered as HTML pages based on directory structure and file names.</li>
+              <li><code>public/</code> — Static assets (such as favicons, images, and fonts) served directly at the output root.</li>
+              <li><code>coralite.config.js</code> — Framework configuration file for output directories, plugins, CSP, and build options.</li>
+              <li><code>package.json</code> — Node package manifest declaring dependencies and framework lifecycle scripts.</li>
+            </ul>
+
+            <h2 id="3-first-component">3. First Component</h2>
+
+            <p>Components in Coralite are authored as HTML files containing a <code>&lt;template&gt;</code> element, an optional <code>&lt;script type="module"&gt;</code> block with top-level named exports (<code>export const attributes</code>, <code>export function server</code>, <code>export function client</code>), and an optional <code>&lt;style&gt;</code> element.</p>
+
+            <code-block language="javascript" filename="components/greeting-card.html">
+        <template id="greeting-card">
+          <div class="card">
+            <h3>{{ title }}</h3>
+            <p>{{ message }}</p>
+          </div>
+        </template>
+
+        &lt;script type="module">
+          export const attributes = {
+            title: {
+              type: String,
+              default: 'Hello'
+            },
+            message: {
+              type: String,
+              default: 'Welcome to Coralite!'
+            }
+          }
+        &lt;/script&gt;
+
+        <style>
+          .card {
+            padding: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+          }
+        </style>
+            </code-block>
+
+            <p>You can use this component inside any page or other component using its tag name:</p>
+
+            <code-block language="html">
+        <greeting-card title="Welcome" message="Enjoy building with Coralite!"></greeting-card>
+            </code-block>
+
+            <h2 id="4-first-page">4. First Page</h2>
+
+            <p>Pages are authored inside the <code>pages/</code> directory. Pages can include a <code>&lt;script type="module"&gt;</code> with flat named exports such as <code>export function server</code> to manage build-time data loading via <code>server()</code>.</p>
+
+            <code-block language="javascript" filename="pages/index.html">
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <title>{{ pageTitle }}</title>
+        </head>
+        <body>
+          <h1>{{ headline }}</h1>
+          <p>{{ description }}</p>
+        </body>
+        </html>
+
+        &lt;script type="module">
+          export function server () {
+            return {
+              pageTitle: 'Home — My Coralite Site',
+              headline: 'Build Fast Static & SSR Websites',
+              description: 'Coralite combines native Web Components with build-time SSR.'
+            }
+          }
+        &lt;/script&gt;
+            </code-block>
+
+            <h2 id="5-scripts">5. Scripts</h2>
+
+            <p>The <code>create-coralite</code> scaffolder configures five core lifecycle scripts in <code>package.json</code>:</p>
+
+            <ul>
+              <li><code>dev</code> — Starts the local development server with live preview and instant reloading.</li>
+              <li><code>test</code> — Executes the test suite across components and application logic.</li>
+              <li><code>build</code> — Compiles pages, components, and static assets into optimized SSG output.</li>
+              <li><code>check</code> — Runs static AST validation and type-checking across all templates and scripts.</li>
+              <li><code>fix</code> — Applies automated AST codemods and fixers for diagnostic warnings.</li>
+            </ul>
+
+            <h2 id="6-where-next">6. Where Next</h2>
+
+            <p>Continue exploring the Coralite documentation:</p>
+
+            <ul>
+              <li><a href="/docs/guide/authoring">Authoring Pattern</a> — Learn the unified block structure and execution rules for components, pages, and plugins.</li>
+              <li><a href="/docs/guide/components">Components</a> — Deep dive into static and dynamic web components, reactivity, and slots.</li>
+            </ul>
+
+            <hr>
+
+            <p>Next: Explore the <a href="/docs/guide/authoring">Authoring Pattern</a> to master Coralite's unified structure.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/guide/authoring" variant="primary">Next: Authoring Pattern →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#1-installation">1. Installation</a>
+        <a href="#2-project-structure">2. Project Structure</a>
+        <a href="#3-first-component">3. First Component</a>
+        <a href="#4-first-page">4. First Page</a>
+        <a href="#5-scripts">5. Scripts</a>
+        <a href="#6-where-next">6. Where Next</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-</html>
-
-&lt;script type="module">
-  export function server () {
-    return {
-      pageTitle: 'Home — My Coralite Site',
-      headline: 'Build Fast Static & SSR Websites',
-      description: 'Coralite combines native Web Components with build-time SSR.'
-    }
-  }
-&lt;/script&gt;
-    </coralite-code-highlight>
-
-    <coralite-heading level="2" text="5. Scripts"></coralite-heading>
-
-    <p>The <code>create-coralite</code> scaffolder configures five core lifecycle scripts in <code>package.json</code>:</p>
-
-    <ul>
-      <li><code>dev</code> — Starts the local development server with live preview and instant reloading.</li>
-      <li><code>test</code> — Executes the test suite across components and application logic.</li>
-      <li><code>build</code> — Compiles pages, components, and static assets into optimized SSG output.</li>
-      <li><code>check</code> — Runs static AST validation and type-checking across all templates and scripts.</li>
-      <li><code>fix</code> — Applies automated AST codemods and fixers for diagnostic warnings.</li>
-    </ul>
-
-    <coralite-heading level="2" text="6. Where Next"></coralite-heading>
-
-    <p>Continue exploring the Coralite documentation:</p>
-
-    <ul>
-      <li><a href="/docs/guide/authoring.html">Authoring Pattern</a> — Learn the unified block structure and execution rules for components, pages, and plugins.</li>
-      <li><a href="/docs/guide/components.html">Components</a> — Deep dive into static and dynamic web components, reactivity, and slots.</li>
-    </ul>
-
-    <hr>
-
-    <p>Next: Explore the <a href="/docs/guide/authoring.html">Authoring Pattern</a> to master Coralite's unified structure.</p>
-
-  </main>
-  <coralite-footer></coralite-footer>
-</body>
-
 </html>

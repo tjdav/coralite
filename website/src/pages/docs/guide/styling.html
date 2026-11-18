@@ -1,444 +1,488 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Styles in Coralite: Mastering Scoped CSS & Nesting"
-    description="Learn how to leverage Coralite's powerful component styling features. Master scoped CSS, selector nesting, and advanced style management for modular web development."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Styles in Coralite: Mastering Scoped CSS &amp; Nesting"
+    description="Learn how to leverage Coralite's powerful component styling features. Master scoped CSS, selector nesting, and advanced style management for modular web development."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main class="container content">
-    <h1 class="display">Component styles</h1>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-    <p>
-      Coralite provides a powerful styling system that allows you to write scoped CSS directly within your components.
-      This guide explores advanced styling techniques, including how scoping works and how to use modern CSS features like nesting.
-    </p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="guide/styling"></docs-sidebar>
 
-    <coralite-heading level="2" text="Scoped Styles"></coralite-heading>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/guide/">Guide</a>
+        <span class="separator">/</span>
+        <span>Component styles</span>
+      </ui-breadcrumb>
 
-    <p>
-      When you define styles inside a Coralite component template, they are automatically scoped to that component.
-      This prevents styles from leaking out and affecting other parts of your application.
-    </p>
-
-    <p>
-      Coralite achieves this at build time by wrapping component styles in the <code>components</code> CSS cascade layer (<code>@layer components</code>) and leveraging modern CSS <code>@scope</code> with dual-scope partitioning:
-    </p>
-
-    <ul>
-      <li><strong>Standard Component Scope:</strong> Uses a "donut boundary" (<code>to (slot, :scope [data-cid], :is([is], c-token))</code>) to strictly encapsulate standard component rules (like <code>p</code>, <code>.btn</code>, <code>img</code>), preventing them from leaking into nested child components or slotted consumer content.</li>
-      <li><strong>Slotted Scope:</strong> Emitted only when <code>::slotted()</code> rules are present. Omits <code>slot</code> from the scope limit (<code>to (:scope [data-cid], :is([is], c-token))</code>) so transformed <code>::slotted()</code> Light DOM slot projections can target projected consumer elements while keeping child components encapsulated.</li>
-    </ul>
-
-    <coralite-code-html>
-      <!-- Source Component (my-card.html) -->
-      <template id="my-card">
-        <div class="card">
-          <h2 class="title">{{ title }}</h2>
-          <div class="body"><slot></slot></div>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Component styles</h1>
+          <ui-badge variant="cyan">Guide</ui-badge>
         </div>
-      </template>
+        <p class="subhead">Learn how to leverage Coralite's powerful component styling features. Master scoped CSS, selector nesting, and advanced style management for modular web development.</p>
+      </div>
 
-      <style>
-        :host {
-          display: block;
-        }
+      <div class="lesson-body">
+        <p>
+              Coralite provides a powerful styling system that allows you to write scoped CSS directly within your components.
+              This guide explores advanced styling techniques, including how scoping works and how to use modern CSS features like nesting.
+            </p>
 
-        /* Standard rule: will NOT affect slotted <p> elements */
-        p {
-          color: #64748b;
-        }
+            <h2 id="scoped-styles">Scoped Styles</h2>
 
-        /* Slotted rule: explicitly styles projected consumer <p> elements */
-        ::slotted(p) {
-          font-size: 1rem;
-          line-height: 1.5;
-        }
-      </style>
-    </coralite-code-html>
+            <p>
+              When you define styles inside a Coralite component template, they are automatically scoped to that component.
+              This prevents styles from leaking out and affecting other parts of your application.
+            </p>
 
-    <p>
-      During the build process, the component's styles are transformed into dual <code>@scope</code> blocks:
-    </p>
+            <p>
+              Coralite achieves this at build time by wrapping component styles in the <code>components</code> CSS cascade layer (<code>@layer components</code>) and leveraging modern CSS <code>@scope</code> with dual-scope partitioning:
+            </p>
 
-    <coralite-code-highlight language="css">
-slot, c-token { display: contents; }
+            <ul>
+              <li><strong>Standard Component Scope:</strong> Uses a "donut boundary" (<code>to (slot, :scope [data-cid], :is([is], c-token))</code>) to strictly encapsulate standard component rules (like <code>p</code>, <code>.btn</code>, <code>img</code>), preventing them from leaking into nested child components or slotted consumer content.</li>
+              <li><strong>Slotted Scope:</strong> Emitted only when <code>::slotted()</code> rules are present. Omits <code>slot</code> from the scope limit (<code>to (:scope [data-cid], :is([is], c-token))</code>) so transformed <code>::slotted()</code> Light DOM slot projections can target projected consumer elements while keeping child components encapsulated.</li>
+            </ul>
 
-@layer components {
-  @supports (@scope) {
-    /* Standard component scope: donut hole prevents styles from leaking into slots or child components */
-    @scope (:where(my-card)) to (slot, :scope [data-cid], :is([is], c-token)) {
-      :scope {
-        display: block;
-      }
-      p {
-        color: #64748b;
-      }
-    }
+            <code-block language="html">
+              <!-- Source Component (my-card.html) -->
+              <template id="my-card">
+                <div class="card">
+                  <h2 class="title">{{ title }}</h2>
+                  <div class="body"><slot></slot></div>
+                </div>
+              </template>
 
-    /* Slotted scope: allows explicit ::slotted() transforms to target projected children while encapsulating child components */
-    @scope (:where(my-card)) to (:scope [data-cid], :is([is], c-token)) {
-      :scope > slot > p, :scope > p[slot] {
-        font-size: 1rem;
-        line-height: 1.5;
-      }
-    }
-  }
+              <style>
+                :host {
+                  display: block;
+                }
 
-  @supports not (@scope) {
-    /* Fallback using zero-specificity :where() and CSS nesting */
-    :where(my-card) {
-      display: block;
-      p, :where(& > slot > p, & > p[slot]) {
-        color: #64748b;
-      }
-    }
-  }
-}
-    </coralite-code-highlight>
+                /* Standard rule: will NOT affect slotted <p> elements */
+                p {
+                  color: #64748b;
+                }
 
-    <coralite-heading level="2" text="Cascade Layers (@layer components) & Specificity"></coralite-heading>
+                /* Slotted rule: explicitly styles projected consumer <p> elements */
+                ::slotted(p) {
+                  font-size: 1rem;
+                  line-height: 1.5;
+                }
+              </style>
+            </code-block>
 
-    <p>
-      By wrapping component styles inside <code>@layer components</code> and using <code>:where()</code> for tag selectors, Coralite solves two of the most common styling challenges in web component development:
-    </p>
+            <p>
+              During the build process, the component's styles are transformed into dual <code>@scope</code> blocks:
+            </p>
 
-    <coralite-heading level="3" text="1. Specificity Taming with :where()"></coralite-heading>
+            <code-block language="css">
+        slot, c-token { display: contents; }
 
-    <p>
-      The <code>:where()</code> pseudo-class has <strong>0 specificity</strong> (<code>0, 0, 0</code>). Wrapping the custom element selector in <code>:where(my-button)</code> ensures that component encapsulation never artificially inflates selector specificity.
-      An internal rule like <code>.btn { ... }</code> retains its normal single-class specificity (<code>0, 1, 0</code>) instead of being inflated to (<code>0, 1, 1</code>), keeping your CSS easy to override and predict.
-    </p>
-
-    <coralite-heading level="3" text="2. Cascade Layer Priority (@layer components)"></coralite-heading>
-
-    <p>
-      According to the CSS Cascade Layers specification, <strong>unlayered CSS rules always take precedence over layered CSS rules</strong>, regardless of selector specificity.
-      Because Coralite places component styles into <code>@layer components</code>:
-    </p>
-
-    <ul>
-      <li><strong>Utility Classes Win:</strong> Unlayered utility classes (like Tailwind, Bootstrap, or custom utility classes such as <code>.hidden</code> or <code>.p-4</code>) naturally override component styles without needing <code>!important</code>.</li>
-      <li><strong>Page-Level Overrides:</strong> Ad-hoc styles defined in page-level stylesheets or <code>&lt;style&gt;</code> blocks apply over component styles cleanly.</li>
-    </ul>
-
-    <coralite-heading level="3" text="3. Establishing Explicit Cascade Order"></coralite-heading>
-
-    <p>
-      You can explicitly control the layer evaluation order across your entire application by declaring a layer hierarchy at the top of your global CSS (e.g., in <code>src/css/main.css</code>):
-    </p>
-
-    <coralite-code-highlight language="css">
-/* Define explicit cascade order at the top of your global stylesheet */
-@layer reset, base, components, utilities;
-
-@layer reset {
-  * {
-    box-sizing: border-box;
-    margin: 0;
-  }
-}
-
-@layer utilities {
-  .hidden {
-    display: none;
-  }
-  .flex {
-    display: flex;
-  }
-  .text-center {
-    text-align: center;
-  }
-}
-    </coralite-code-highlight>
-
-    <p>
-      In this hierarchy:
-    </p>
-
-    <ul>
-      <li><code>reset</code> and <code>base</code> provide low-priority defaults that component styles can effortlessly override.</li>
-      <li><code>components</code> automatically receives all Coralite component styles.</li>
-      <li><code>utilities</code> (and any unlayered styles) cleanly override component styles without specificity battles.</li>
-    </ul>
-
-    <coralite-heading level="3" text="4. Root Tokens & Slot Projections"></coralite-heading>
-
-    <ul>
-      <li><strong>Root <code>slot, c-token</code> Inertia:</strong> The rule <code>slot, c-token { display: contents; }</code> is emitted outside the component layer at the root of the stylesheet. This ensures reactive DOM markers and light DOM slots remain layout-transparent and inert across all layers.</li>
-      <li><strong>Light DOM Slot Projections (<code>::slotted()</code>):</strong> When you style slotted content using <code>::slotted(selector)</code>, Coralite transforms the selector into dual Light DOM branches (<code>:scope > slot > selector, :scope > selector[slot]</code>), keeping slot styles encapsulated within the <code>components</code> layer.</li>
-    </ul>
-
-    <coralite-heading level="2" text="Styling the Root Custom Element (:host & :host-context)"></coralite-heading>
-
-    <p>
-      The <strong>preferred and canonical method</strong> for styling and modifying the root custom element container itself (e.g. <code>&lt;my-button&gt;</code> or <code>&lt;user-card&gt;</code>) is using standard CSS <code>:host</code> and <code>:host-context()</code> pseudo-class selectors.
-    </p>
-
-    <p>
-      Using <code>:host</code> eliminates the need for redundant inner wrapper <code>&lt;div&gt;</code> elements just to control display modes, borders, margins, or padding.
-    </p>
-
-    <coralite-code-html>
-      <template id="user-profile">
-        <div class="header">
-          <h2 class="name">{{ name }}</h2>
-        </div>
-        <div class="bio"><slot></slot></div>
-      </template>
-
-      <style>
-        /* 1. Preferred: Style the root custom element container itself */
-        :host {
-          display: block;
-          border: 1px solid #e2e8f0;
-          border-radius: 0.5rem;
-          margin-bottom: 1rem;
-        }
-
-        /* Parameterized variants based on host classes or attributes */
-        :host(.featured) {
-          border-color: #3b82f6;
-          box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
-        }
-
-        :host([disabled]) {
-          opacity: 0.6;
-          pointer-events: none;
-        }
-
-        /* Hover & focus states on the root element */
-        :host:hover {
-          border-color: #cbd5e1;
-        }
-
-        /* Contextual styling based on ancestor theme */
-        :host-context(.dark) {
-          background-color: #1e293b;
-          color: #f8fafc;
-        }
-
-        /* 2. Styling internal elements: :host is NOT required */
-        .header {
-          padding: 1rem;
-          background: #f1f5f9;
-        }
-
-        .name {
-          font-size: 1.25rem;
-          font-weight: bold;
-        }
-      </style>
-    </coralite-code-html>
-
-    <coralite-heading level="3" text="When :host is NOT Required"></coralite-heading>
-
-    <p>
-      <strong>Important:</strong> To style scoped classes, elements, or children <em>within</em> the component template (such as <code>.header</code> or <code>.name</code> in the example above), <strong><code>:host</code> is not required</strong>.
-    </p>
-
-    <p>
-      Coralite's compiler automatically scopes all standard descendant selectors (like <code>.header { ... }</code> or <code>button { ... }</code>) under the custom element's tag name during build time. You do not need to prefix internal classes with <code>:host</code>.
-    </p>
-
-    <coralite-heading level="2" text="CSS Nesting"></coralite-heading>
-
-    <p>
-      Coralite supports CSS nesting syntax out of the box, allowing you to write cleaner and more hierarchical styles.
-      You can use the <code>&</code> selector to reference the parent selector.
-    </p>
-
-    <coralite-heading level="3" text="The Parent Selector (&)"></coralite-heading>
-
-    <p>
-      The ampersand (<code>&</code>) refers to the parent rule's selector. It's particularly useful for pseudo-classes,
-      pseudo-elements, and modifiers.
-    </p>
-
-    <coralite-code-html>
-      <template id="styled-card">
-        <div class="card">
-          <div class="title">{{ title }}</div>
-          <slot></slot>
-        </div>
-      </template>
-      
-      <style>
-        .card {
-          background: #fff;
-          padding: 1rem;
-          border: 1px solid #ddd;
-
-          /* Hover state */
-          &:hover {
-            border-color: #aaa;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          }
-
-          /* Dark theme modifier (if applying a class to the component) */
-          &.dark {
-            background: #333;
-            color: #fff;
-          }
-
-          /* Nested element */
-          & .title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-          }
-        }
-      </style>
-    </coralite-code-html>
-
-    <p>
-      This nesting capability makes it easy to encapsulate all styles related to a component within a readable structure.
-    </p>
-
-    <coralite-heading level="2" text="Reactive Styling with the style Block"></coralite-heading>
-
-    <p>
-      In addition to static <code>&lt;style&gt;</code> tags, Coralite components can drive dynamic CSS variables and inline host styles reactively via the top-level <code>style</code> block in <code>defineComponent</code>.
-    </p>
-
-    <p>
-      The <code>style</code> block allows you to define getters that return CSS custom properties (prefixed with <code>--</code>) or standard CSS properties based on component state. These CSS variables naturally cascade down through your component's template.
-    </p>
-
-    <coralite-code-html>
-      <template id="theme-button">
-        <button class="btn">Click me</button>
-      </template>
-
-      <style>
-        .btn {
-          background-color: var(--btn-bg, #0284c7);
-          color: var(--btn-color, #ffffff);
-          padding: 0.5rem 1rem;
-          border-radius: 0.375rem;
-        }
-      </style>
-
-      <script type="module">
-        import { defineComponent } from 'coralite'
-
-        export default defineComponent({
-          attributes: {
-            variant: {
-              type: String,
-              default: 'primary',
-              values: ['primary', 'dark', 'outline']
+        @layer components {
+          @supports (@scope) {
+            /* Standard component scope: donut hole prevents styles from leaking into slots or child components */
+            @scope (:where(my-card)) to (slot, :scope [data-cid], :is([is], c-token)) {
+              :scope {
+                display: block;
+              }
+              p {
+                color: #64748b;
+              }
             }
-          },
-          style: {
-            // Dynamically drive CSS variables on the custom element host
-            '--btn-bg': (state) => {
-              if (state.variant === 'dark') {
-                return '#0f172a'
+
+            /* Slotted scope: allows explicit ::slotted() transforms to target projected children while encapsulating child components */
+            @scope (:where(my-card)) to (:scope [data-cid], :is([is], c-token)) {
+              :scope > slot > p, :scope > p[slot] {
+                font-size: 1rem;
+                line-height: 1.5;
               }
-              if (state.variant === 'outline') {
-                return 'transparent'
-              }
-              return '#0284c7'
-            },
-            '--btn-color': (state) => {
-              if (state.variant === 'outline') {
-                return '#0284c7'
-              }
-              return '#ffffff'
             }
           }
-        })
-      </script>
-    </coralite-code-html>
 
-    <coralite-heading level="3" text="Style Removal & Normalization Rules"></coralite-heading>
-
-    <ul>
-      <li><strong>CSS Custom Properties:</strong> Property names starting with <code>--</code> (e.g. <code>'--btn-bg'</code>) are preserved exactly as-is.</li>
-      <li><strong>Standard CSS Properties:</strong> Standard camelCase properties (e.g. <code>backgroundColor</code>) are automatically normalized to kebab-case (e.g. <code>background-color</code>).</li>
-      <li><strong>Property Removal:</strong> Returning <code>null</code>, <code>undefined</code>, <code>false</code>, or an empty string <code>''</code> dynamically removes the inline property from the host tag.</li>
-      <li><strong>Numeric Zero:</strong> The numeric value <code>0</code> is strictly preserved as valid CSS (e.g. <code>opacity: 0</code>).</li>
-    </ul>
-
-    <coralite-heading level="2" text="Global vs. Component Styles"></coralite-heading>
-
-    <p>
-      While component styles are scoped, you often need global styles for things like typography, resets, and utility classes.
-    </p>
-
-    <ul>
-      <li><strong>Global Styles:</strong> Define these in your main CSS/SCSS files (e.g., <code>src/scss/main.scss</code>) and include them in your layout or page templates. These styles apply to the entire document.</li>
-      <li><strong>Component Styles:</strong> Define these within the <code>&lt;template&gt;</code> tag using a <code>&lt;style&gt;</code> block. These are specific to the component and are automatically scoped.</li>
-    </ul>
-
-    <p>
-      You can use global utility classes (like Bootstrap or Tailwind) within your components alongside your scoped styles. Because component styles are automatically placed in <code>@layer components</code>, global utility classes and unlayered styles take precedence naturally without specificity conflicts.
-    </p>
-
-    <coralite-heading level="2" text="Lazy Dependency Stylesheets"></coralite-heading>
-
-    <p>
-      Third-party JavaScript libraries often ship CSS that must be present when the library initialises. Declaring that CSS in the global
-      <code>styles.input</code> makes it eager on every route, while copying it into <code>public/</code> requires hardcoded output paths and
-      manual link management. Coralite lets you lazily load dependency CSS directly inside <code>client()</code> using standard ECMAScript dynamic
-      <code>await import()</code>.
-    </p>
-
-    <coralite-code-html>
-      <template id="venue-map">
-        <div class="leaflet-container" ref="map"></div>
-      </template>
-
-      <script type="module">
-        export async function client ({ refs, signal }) {
-          try {
-            const [, L] = await Promise.all([
-              import('leaflet/dist/leaflet.css', { signal }),
-              import('leaflet')
-            ])
-            L.map(refs('map'))
-          } catch (error) {
-            if (error.name !== 'AbortError') {
-              // render a fallback
+          @supports not (@scope) {
+            /* Fallback using zero-specificity :where() and CSS nesting */
+            :where(my-card) {
+              display: block;
+              p, :where(& > slot > p, & > p[slot]) {
+                color: #64748b;
+              }
             }
           }
         }
-      </script>
-    </coralite-code-html>
+            </code-block>
 
-    <p>
-      Specifiers resolve from the declaring component, page, or client helper module. Bare package paths, relative files, and absolute files are supported.
-      At build time, Coralite discovers dynamic <code>import('*.css')</code> expressions and bundles each stylesheet with esbuild (plus configured PostCSS plugins)
-      so <code>@import</code> rules and relative <code>url()</code> references are resolved and emitted as hashed assets under <code>assets/css/</code>.
-      The CSS is never added to the component's eager CSS bundle and no <code>&lt;link&gt;</code> is emitted during SSR.
-    </p>
+            <h2 id="cascade-layers-layer-components-specificity">Cascade Layers (@layer components) & Specificity</h2>
 
-    <p>
-      Dependency CSS is intentionally <strong>global and unscoped</strong>: third-party libraries expect selectors such as
-      <code>.leaflet-container</code> to apply at document level. Multiple components or pages importing the same resolved stylesheet share a single
-      bundled asset and a single injected <code>&lt;link rel="stylesheet"&gt;</code> in <code>&lt;head&gt;</code>. Lazy stylesheets are inserted in
-      deterministic manifest order, independent of network completion timing, and persist for the lifetime of the document.
-    </p>
+            <p>
+              By wrapping component styles inside <code>@layer components</code> and using <code>:where()</code> for tag selectors, Coralite solves two of the most common styling challenges in web component development:
+            </p>
 
-    <p>
-      Dynamic CSS imports resolve to <code>{ default: link.sheet, link }</code> once the browser fires <code>load</code>, reject on <code>error</code> or abort,
-      and deduplicate concurrent callers. The optional second argument supports both flat options (<code>{ media, nonce, crossorigin, referrerPolicy, signal, force }</code>)
-      and standard Import Attributes (<code>{ with: { type: 'css', media, nonce, crossorigin, referrerPolicy }, signal, force }</code>).
-      Pass <code>{ force: true }</code> to retry a previously failed load. When CSP is enabled, provide a <code>nonce</code> that satisfies your <code>style-src</code> policy.
-    </p>
+            <h3 id="1-specificity-taming-with-where">1. Specificity Taming with :where()</h3>
 
-    <coralite-heading level="2" text="Using Preprocessors"></coralite-heading>
+            <p>
+              The <code>:where()</code> pseudo-class has <strong>0 specificity</strong> (<code>0, 0, 0</code>). Wrapping the custom element selector in <code>:where(my-button)</code> ensures that component encapsulation never artificially inflates selector specificity.
+              An internal rule like <code>.btn { ... }</code> retains its normal single-class specificity (<code>0, 1, 0</code>) instead of being inflated to (<code>0, 1, 1</code>), keeping your CSS easy to override and predict.
+            </p>
 
-    <p>
-      If your project is configured to use Sass or PostCSS (via the <code>styles.processors</code> option in <code>coralite.config.js</code>), these transformations occur before the component styles are scoped.
-      This means you can use variables, mixins, and other preprocessor features directly within your component's <code>&lt;style&gt;</code> block.
-    </p>
+            <h3 id="2-cascade-layer-priority-layer-components">2. Cascade Layer Priority (@layer components)</h3>
 
-  </main>
-  <coralite-footer></coralite-footer>
+            <p>
+              According to the CSS Cascade Layers specification, <strong>unlayered CSS rules always take precedence over layered CSS rules</strong>, regardless of selector specificity.
+              Because Coralite places component styles into <code>@layer components</code>:
+            </p>
+
+            <ul>
+              <li><strong>Utility Classes Win:</strong> Unlayered utility classes (like Tailwind, Bootstrap, or custom utility classes such as <code>.hidden</code> or <code>.p-4</code>) naturally override component styles without needing <code>!important</code>.</li>
+              <li><strong>Page-Level Overrides:</strong> Ad-hoc styles defined in page-level stylesheets or <code>&lt;style&gt;</code> blocks apply over component styles cleanly.</li>
+            </ul>
+
+            <h3 id="3-establishing-explicit-cascade-order">3. Establishing Explicit Cascade Order</h3>
+
+            <p>
+              You can explicitly control the layer evaluation order across your entire application by declaring a layer hierarchy at the top of your global CSS (e.g., in <code>src/css/main.css</code>):
+            </p>
+
+            <code-block language="css">
+        /* Define explicit cascade order at the top of your global stylesheet */
+        @layer reset, base, components, utilities;
+
+        @layer reset {
+          * {
+            box-sizing: border-box;
+            margin: 0;
+          }
+        }
+
+        @layer utilities {
+          .hidden {
+            display: none;
+          }
+          .flex {
+            display: flex;
+          }
+          .text-center {
+            text-align: center;
+          }
+        }
+            </code-block>
+
+            <p>
+              In this hierarchy:
+            </p>
+
+            <ul>
+              <li><code>reset</code> and <code>base</code> provide low-priority defaults that component styles can effortlessly override.</li>
+              <li><code>components</code> automatically receives all Coralite component styles.</li>
+              <li><code>utilities</code> (and any unlayered styles) cleanly override component styles without specificity battles.</li>
+            </ul>
+
+            <h3 id="4-root-tokens-slot-projections">4. Root Tokens & Slot Projections</h3>
+
+            <ul>
+              <li><strong>Root <code>slot, c-token</code> Inertia:</strong> The rule <code>slot, c-token { display: contents; }</code> is emitted outside the component layer at the root of the stylesheet. This ensures reactive DOM markers and light DOM slots remain layout-transparent and inert across all layers.</li>
+              <li><strong>Light DOM Slot Projections (<code>::slotted()</code>):</strong> When you style slotted content using <code>::slotted(selector)</code>, Coralite transforms the selector into dual Light DOM branches (<code>:scope > slot > selector, :scope > selector[slot]</code>), keeping slot styles encapsulated within the <code>components</code> layer.</li>
+            </ul>
+
+            <h2 id="styling-the-root-custom-element-host-host-context">Styling the Root Custom Element (:host & :host-context)</h2>
+
+            <p>
+              The <strong>preferred and canonical method</strong> for styling and modifying the root custom element container itself (e.g. <code>&lt;my-button&gt;</code> or <code>&lt;user-card&gt;</code>) is using standard CSS <code>:host</code> and <code>:host-context()</code> pseudo-class selectors.
+            </p>
+
+            <p>
+              Using <code>:host</code> eliminates the need for redundant inner wrapper <code>&lt;div&gt;</code> elements just to control display modes, borders, margins, or padding.
+            </p>
+
+            <code-block language="html">
+              <template id="user-profile">
+                <div class="header">
+                  <h2 class="name">{{ name }}</h2>
+                </div>
+                <div class="bio"><slot></slot></div>
+              </template>
+
+              <style>
+                /* 1. Preferred: Style the root custom element container itself */
+                :host {
+                  display: block;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 0.5rem;
+                  margin-bottom: 1rem;
+                }
+
+                /* Parameterized variants based on host classes or attributes */
+                :host(.featured) {
+                  border-color: #3b82f6;
+                  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+                }
+
+                :host([disabled]) {
+                  opacity: 0.6;
+                  pointer-events: none;
+                }
+
+                /* Hover & focus states on the root element */
+                :host:hover {
+                  border-color: #cbd5e1;
+                }
+
+                /* Contextual styling based on ancestor theme */
+                :host-context(.dark) {
+                  background-color: #1e293b;
+                  color: #f8fafc;
+                }
+
+                /* 2. Styling internal elements: :host is NOT required */
+                .header {
+                  padding: 1rem;
+                  background: #f1f5f9;
+                }
+
+                .name {
+                  font-size: 1.25rem;
+                  font-weight: bold;
+                }
+              </style>
+            </code-block>
+
+            <h3 id="when-host-is-not-required">When :host is NOT Required</h3>
+
+            <p>
+              <strong>Important:</strong> To style scoped classes, elements, or children <em>within</em> the component template (such as <code>.header</code> or <code>.name</code> in the example above), <strong><code>:host</code> is not required</strong>.
+            </p>
+
+            <p>
+              Coralite's compiler automatically scopes all standard descendant selectors (like <code>.header { ... }</code> or <code>button { ... }</code>) under the custom element's tag name during build time. You do not need to prefix internal classes with <code>:host</code>.
+            </p>
+
+            <h2 id="css-nesting">CSS Nesting</h2>
+
+            <p>
+              Coralite supports CSS nesting syntax out of the box, allowing you to write cleaner and more hierarchical styles.
+              You can use the <code>&</code> selector to reference the parent selector.
+            </p>
+
+            <h3 id="the-parent-selector">The Parent Selector (&)</h3>
+
+            <p>
+              The ampersand (<code>&</code>) refers to the parent rule's selector. It's particularly useful for pseudo-classes,
+              pseudo-elements, and modifiers.
+            </p>
+
+            <code-block language="html">
+              <template id="styled-card">
+                <div class="card">
+                  <div class="title">{{ title }}</div>
+                  <slot></slot>
+                </div>
+              </template>
+              
+              <style>
+                .card {
+                  background: #fff;
+                  padding: 1rem;
+                  border: 1px solid #ddd;
+
+                  /* Hover state */
+                  &:hover {
+                    border-color: #aaa;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                  }
+
+                  /* Dark theme modifier (if applying a class to the component) */
+                  &.dark {
+                    background: #333;
+                    color: #fff;
+                  }
+
+                  /* Nested element */
+                  & .title {
+                    font-size: 1.25rem;
+                    font-weight: bold;
+                    margin-bottom: 0.5rem;
+                  }
+                }
+              </style>
+            </code-block>
+
+            <p>
+              This nesting capability makes it easy to encapsulate all styles related to a component within a readable structure.
+            </p>
+
+            <h2 id="reactive-styling-with-the-style-block">Reactive Styling with the style Block</h2>
+
+            <p>
+              In addition to static <code>&lt;style&gt;</code> tags, Coralite components can drive dynamic CSS variables and inline host styles reactively via the top-level <code>style</code> block in <code>defineComponent</code>.
+            </p>
+
+            <p>
+              The <code>style</code> block allows you to define getters that return CSS custom properties (prefixed with <code>--</code>) or standard CSS properties based on component state. These CSS variables naturally cascade down through your component's template.
+            </p>
+
+            <code-block language="html">
+              <template id="theme-button">
+                <button class="btn">Click me</button>
+              </template>
+
+              <style>
+                .btn {
+                  background-color: var(--btn-bg, #0284c7);
+                  color: var(--btn-color, #ffffff);
+                  padding: 0.5rem 1rem;
+                  border-radius: 0.375rem;
+                }
+              </style>
+
+              <script type="module">
+                import { defineComponent } from 'coralite'
+
+                export default defineComponent({
+                  attributes: {
+                    variant: {
+                      type: String,
+                      default: 'primary',
+                      values: ['primary', 'dark', 'outline']
+                    }
+                  },
+                  style: {
+                    // Dynamically drive CSS variables on the custom element host
+                    '--btn-bg': (state) => {
+                      if (state.variant === 'dark') {
+                        return '#0f172a'
+                      }
+                      if (state.variant === 'outline') {
+                        return 'transparent'
+                      }
+                      return '#0284c7'
+                    },
+                    '--btn-color': (state) => {
+                      if (state.variant === 'outline') {
+                        return '#0284c7'
+                      }
+                      return '#ffffff'
+                    }
+                  }
+                })
+              </script>
+            </code-block>
+
+            <h3 id="style-removal-normalization-rules">Style Removal & Normalization Rules</h3>
+
+            <ul>
+              <li><strong>CSS Custom Properties:</strong> Property names starting with <code>--</code> (e.g. <code>'--btn-bg'</code>) are preserved exactly as-is.</li>
+              <li><strong>Standard CSS Properties:</strong> Standard camelCase properties (e.g. <code>backgroundColor</code>) are automatically normalized to kebab-case (e.g. <code>background-color</code>).</li>
+              <li><strong>Property Removal:</strong> Returning <code>null</code>, <code>undefined</code>, <code>false</code>, or an empty string <code>''</code> dynamically removes the inline property from the host tag.</li>
+              <li><strong>Numeric Zero:</strong> The numeric value <code>0</code> is strictly preserved as valid CSS (e.g. <code>opacity: 0</code>).</li>
+            </ul>
+
+            <h2 id="global-vs-component-styles">Global vs. Component Styles</h2>
+
+            <p>
+              While component styles are scoped, you often need global styles for things like typography, resets, and utility classes.
+            </p>
+
+            <ul>
+              <li><strong>Global Styles:</strong> Define these in your main CSS/SCSS files (e.g., <code>src/scss/main.scss</code>) and include them in your layout or page templates. These styles apply to the entire document.</li>
+              <li><strong>Component Styles:</strong> Define these within the <code>&lt;template&gt;</code> tag using a <code>&lt;style&gt;</code> block. These are specific to the component and are automatically scoped.</li>
+            </ul>
+
+            <p>
+              You can use global utility classes (like Bootstrap or Tailwind) within your components alongside your scoped styles. Because component styles are automatically placed in <code>@layer components</code>, global utility classes and unlayered styles take precedence naturally without specificity conflicts.
+            </p>
+
+            <h2 id="lazy-dependency-stylesheets">Lazy Dependency Stylesheets</h2>
+
+            <p>
+              Third-party JavaScript libraries often ship CSS that must be present when the library initialises. Declaring that CSS in the global
+              <code>styles.input</code> makes it eager on every route, while copying it into <code>public/</code> requires hardcoded output paths and
+              manual link management. Coralite lets you lazily load dependency CSS directly inside <code>client()</code> using standard ECMAScript dynamic
+              <code>await import()</code>.
+            </p>
+
+            <code-block language="html">
+              <template id="venue-map">
+                <div class="leaflet-container" ref="map"></div>
+              </template>
+
+              <script type="module">
+                export async function client ({ refs, signal }) {
+                  try {
+                    const [, L] = await Promise.all([
+                      import('leaflet/dist/leaflet.css', { signal }),
+                      import('leaflet')
+                    ])
+                    L.map(refs('map'))
+                  } catch (error) {
+                    if (error.name !== 'AbortError') {
+                      // render a fallback
+                    }
+                  }
+                }
+              </script>
+            </code-block>
+
+            <p>
+              Specifiers resolve from the declaring component, page, or client helper module. Bare package paths, relative files, and absolute files are supported.
+              At build time, Coralite discovers dynamic <code>import('*.css')</code> expressions and bundles each stylesheet with esbuild (plus configured PostCSS plugins)
+              so <code>@import</code> rules and relative <code>url()</code> references are resolved and emitted as hashed assets under <code>assets/css/</code>.
+              The CSS is never added to the component's eager CSS bundle and no <code>&lt;link&gt;</code> is emitted during SSR.
+            </p>
+
+            <p>
+              Dependency CSS is intentionally <strong>global and unscoped</strong>: third-party libraries expect selectors such as
+              <code>.leaflet-container</code> to apply at document level. Multiple components or pages importing the same resolved stylesheet share a single
+              bundled asset and a single injected <code>&lt;link rel="stylesheet"&gt;</code> in <code>&lt;head&gt;</code>. Lazy stylesheets are inserted in
+              deterministic manifest order, independent of network completion timing, and persist for the lifetime of the document.
+            </p>
+
+            <p>
+              Dynamic CSS imports resolve to <code>{ default: link.sheet, link }</code> once the browser fires <code>load</code>, reject on <code>error</code> or abort,
+              and deduplicate concurrent callers. The optional second argument supports both flat options (<code>{ media, nonce, crossorigin, referrerPolicy, signal, force }</code>)
+              and standard Import Attributes (<code>{ with: { type: 'css', media, nonce, crossorigin, referrerPolicy }, signal, force }</code>).
+              Pass <code>{ force: true }</code> to retry a previously failed load. When CSP is enabled, provide a <code>nonce</code> that satisfies your <code>style-src</code> policy.
+            </p>
+
+            <h2 id="using-preprocessors">Using Preprocessors</h2>
+
+            <p>
+              If your project is configured to use Sass or PostCSS (via the <code>styles.processors</code> option in <code>coralite.config.js</code>), these transformations occur before the component styles are scoped.
+              This means you can use variables, mixins, and other preprocessor features directly within your component's <code>&lt;style&gt;</code> block.
+            </p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/guide/javascript" variant="secondary">← Previous: Client-Side JavaScript</ui-link>
+        <ui-link href="/docs/guide/plugins" variant="primary">Next: Authoring Plugins →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#scoped-styles">Scoped Styles</a>
+        <a href="#cascade-layers-layer-components-specificity">Cascade Layers (@layer components) & Specificity</a>
+        <a href="#styling-the-root-custom-element-host-host-context">Styling the Root Custom Element (:host & :host-context)</a>
+        <a href="#css-nesting">CSS Nesting</a>
+        <a href="#reactive-styling-with-the-style-block">Reactive Styling with the style Block</a>
+        <a href="#global-vs-component-styles">Global vs. Component Styles</a>
+        <a href="#lazy-dependency-stylesheets">Lazy Dependency Stylesheets</a>
+        <a href="#using-preprocessors">Using Preprocessors</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

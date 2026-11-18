@@ -40,7 +40,10 @@
     "bench:external": "node benchmarks/external/runner.js",
     "changelog": "coralite-changelog",
     "website:build": "pnpm --filter='./website' run build",
-    "website:dev": "pnpm --filter='./website' run start"
+    "website:dev": "pnpm --filter='./website' run start",
+    "website:check": "pnpm --filter='./website' run check",
+    "website:test": "pnpm --filter='./website' run check:redirects && pnpm --filter='./website' run test:visual",
+    "website:lint:css": "pnpm --filter='./website' run lint:css"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",

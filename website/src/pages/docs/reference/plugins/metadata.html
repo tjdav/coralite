@@ -1,141 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Metadata Plugin - Coralite Documentation"
-    description="Complete guide to the metadata plugin for accessing page metadata in Coralite templates."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Metadata Plugin - Coralite Documentation"
+    description="Complete guide to the metadata plugin for accessing page metadata in Coralite templates."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <site-header></site-header>
 
-  <main class="container content">
-    <!-- Introduction -->
-    <h1 class="display">Metadata Plugin</h1>
-    <p>The <code>metadata</code> plugin is a built-in Coralite tool that extracts metadata from <code>&lt;title&gt;</code> and <code>&lt;meta&gt;</code> tags in your page's <code>&lt;head&gt;</code> and makes them available in the <code>context.page.meta</code> object.</p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="reference/plugins/metadata"></docs-sidebar>
 
-    <!-- Table of Contents -->
-    <nav aria-label="table of contents">
-      <coralite-heading level="2" text="Table of Contents"></coralite-heading>
-      <ul>
-        <li><a href="#basic-usage">Basic Usage</a></li>
-        <li><a href="#dynamic-metadata">Dynamic Metadata</a></li>
-        <li><a href="#accessing-in-templates">Accessing in Templates</a></li>
-        <li><a href="#key-points">Key Points</a></li>
-      </ul>
-    </nav>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/plugins/">Built-in Plugins</a>
+        <span class="separator">/</span>
+        <span>Metadata Plugin</span>
+      </ui-breadcrumb>
 
-    <!-- Basic Usage -->
-    <section id="basic-usage">
-      <coralite-heading level="2" text="Basic Usage"></coralite-heading>
-      <p>The plugin automatically scans the <code>&lt;head&gt;</code> section of your pages for <code>&lt;title&gt;</code> and <code>&lt;meta&gt;</code> tags. These state are exposed to your component scripts via <code>context.page.meta</code>.</p>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Metadata Plugin</h1>
+          <ui-badge variant="cyan">Plugin</ui-badge>
+        </div>
+        <p class="subhead">Complete guide to the metadata plugin for accessing page metadata in Coralite templates.</p>
+      </div>
 
-      <coralite-heading level="3" text="Defining Metadata"></coralite-heading>
-      <p>Define your metadata in the page HTML:</p>
+      <div class="lesson-body">
+        <!-- Introduction -->
+            <p>The <code>metadata</code> plugin is a built-in Coralite tool that extracts metadata from <code>&lt;title&gt;</code> and <code>&lt;meta&gt;</code> tags in your page's <code>&lt;head&gt;</code> and makes them available in the <code>context.page.meta</code> object.</p>
 
-      <coralite-code-html>
-        <!-- index.html -->
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <title>My Awesome Page</title>
-          <meta name="description" content="This is a description of my page.">
-          <meta name="author" content="Coralite Team">
-        </head>
-        <body>
-          <page-header></page-header>
-          <!-- ... -->
-        </body>
-        </html>
-      </coralite-code-html>
+            <!-- Table of Contents -->
+            <nav aria-label="table of contents">
+              <h2 id="table-of-contents">Table of Contents</h2>
+              <ul>
+                <li><a href="#basic-usage">Basic Usage</a></li>
+                <li><a href="#dynamic-metadata">Dynamic Metadata</a></li>
+                <li><a href="#accessing-in-templates">Accessing in Templates</a></li>
+                <li><a href="#key-points">Key Points</a></li>
+              </ul>
+            </nav>
 
-      <coralite-heading level="3" text="Accessing Metadata in Scripts"></coralite-heading>
-      <p>Access the metadata in your component's <code>server</code> block:</p>
+            <!-- Basic Usage -->
+            <section id="basic-usage">
+              <h2>Basic Usage</h2>
+              <p>The plugin automatically scans the <code>&lt;head&gt;</code> section of your pages for <code>&lt;title&gt;</code> and <code>&lt;meta&gt;</code> tags. These state are exposed to your component scripts via <code>context.page.meta</code>.</p>
 
-      <coralite-code-highlight language="JavaScript">
-        export default defineComponent({
-          server (context) {
-            console.log('Page Title:', context.page.meta.title);
-            console.log('Description:', context.page.meta.description);
-            return {};
-          }
-        })
-      </coralite-code-highlight>
+              <h3 id="defining-metadata">Defining Metadata</h3>
+              <p>Define your metadata in the page HTML:</p>
 
-      <p>In this example:</p>
-      <ul>
-        <li><code>&lt;title&gt;</code> becomes <code>page.meta.title</code></li>
-        <li><code>name="author"</code> becomes <code>page.meta.author</code></li>
-        <li><code>name="description"</code> becomes <code>page.meta.description</code></li>
-      </ul>
-    </section>
+              <code-block language="html">
+                <!-- index.html -->
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                  <title>My Awesome Page</title>
+                  <meta name="description" content="This is a description of my page.">
+                  <meta name="author" content="Coralite Team">
+                </head>
+                <body>
+                  <page-header></page-header>
+                  <!-- ... -->
+                </body>
+                </html>
+              </code-block>
 
-    <!-- Dynamic Metadata -->
-    <section id="dynamic-metadata">
-      <coralite-heading level="2" text="Dynamic Metadata"></coralite-heading>
-      <p>The metadata plugin can also process components placed inside the <code>&lt;head&gt;</code>. This is useful for creating reusable SEO components or dynamic metadata bundles.</p>
+              <h3 id="accessing-metadata-in-scripts">Accessing Metadata in Scripts</h3>
+              <p>Access the metadata in your component's <code>server</code> block:</p>
 
-      <coralite-code-html>
-        <!-- seo-bundle component -->
-        <template id="seo-bundle">
-          <meta name="robots" content="index, follow">
-          <meta name="theme-color" content="#ffffff">
-          <meta name="generator" content="Coralite">
-        </template>
+              <code-block language="JavaScript">
+                export default defineComponent({
+                  server (context) {
+                    console.log('Page Title:', context.page.meta.title);
+                    console.log('Description:', context.page.meta.description);
+                    return {};
+                  }
+                })
+              </code-block>
 
-        <!-- Page usage -->
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <seo-bundle></seo-bundle>
-          <meta name="page-specific" content="value">
-        </head>
-        <body>
-          <!-- ... -->
-        </body>
-        </html>
-      </coralite-code-html>
+              <p>In this example:</p>
+              <ul>
+                <li><code>&lt;title&gt;</code> becomes <code>page.meta.title</code></li>
+                <li><code>name="author"</code> becomes <code>page.meta.author</code></li>
+                <li><code>name="description"</code> becomes <code>page.meta.description</code></li>
+              </ul>
+            </section>
 
-      <p>The plugin will render the <code>&lt;seo-bundle&gt;</code> component and extract any <code>&lt;meta&gt;</code> tags it produces.</p>
-    </section>
+            <!-- Dynamic Metadata -->
+            <section id="dynamic-metadata">
+              <h2>Dynamic Metadata</h2>
+              <p>The metadata plugin can also process components placed inside the <code>&lt;head&gt;</code>. This is useful for creating reusable SEO components or dynamic metadata bundles.</p>
 
-    <!-- Accessing in Templates -->
-    <section id="accessing-in-templates">
-      <coralite-heading level="2" text="Accessing in Templates"></coralite-heading>
-      <p>Coralite templates are "dumb" and cannot access the <code>page</code> object directly. To render metadata in your HTML template, you must explicitly map it to your component's <code>state</code> using the <code>server</code> block:</p>
+              <code-block language="html">
+                <!-- seo-bundle component -->
+                <template id="seo-bundle">
+                  <meta name="robots" content="index, follow">
+                  <meta name="theme-color" content="#ffffff">
+                  <meta name="generator" content="Coralite">
+                </template>
 
-      <coralite-code-highlight language="JavaScript">
-        export default defineComponent({
-          async server(context) {
-            return {
-              // Map the page meta title to a flat state key
-              pageTitle: context.page.meta.title
-            }
-          }
-        })
-      </coralite-code-highlight>
+                <!-- Page usage -->
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <seo-bundle></seo-bundle>
+                  <meta name="page-specific" content="value">
+                </head>
+                <body>
+                  <!-- ... -->
+                </body>
+                </html>
+              </code-block>
 
-      <coralite-code-html>
-        <template id="page-header">
-          <h1>{{ pageTitle }}</h1>
-        </template>
-      </coralite-code-html>
-    </section>
+              <p>The plugin will render the <code>&lt;seo-bundle&gt;</code> component and extract any <code>&lt;meta&gt;</code> tags it produces.</p>
+            </section>
 
-    <!-- Key Points -->
-    <section id="key-points">
-      <coralite-heading level="2" text="Key Points"></coralite-heading>
-      <ul>
-        <li><strong>Built-in</strong>: Included by default in Coralite.</li>
-        <li><strong>Namespace</strong>: All state are stored in <code>context.page.meta</code>.</li>
-        <li><strong>Extraction</strong>: Processes <code>&lt;title&gt;</code> and <code>&lt;meta name="..." content="..."&gt;</code>.</li>
-        <li><strong>Execution</strong>: Runs at build time during the <code>onPageSet</code> and <code>onPageUpdate</code> lifecycle hooks.</li>
-      </ul>
-    </section>
+            <!-- Accessing in Templates -->
+            <section id="accessing-in-templates">
+              <h2>Accessing in Templates</h2>
+              <p>Coralite templates are "dumb" and cannot access the <code>page</code> object directly. To render metadata in your HTML template, you must explicitly map it to your component's <code>state</code> using the <code>server</code> block:</p>
 
-  </main>
+              <code-block language="JavaScript">
+                export default defineComponent({
+                  async server(context) {
+                    return {
+                      // Map the page meta title to a flat state key
+                      pageTitle: context.page.meta.title
+                    }
+                  }
+                })
+              </code-block>
 
-  <coralite-footer></coralite-footer>
+              <code-block language="html">
+                <template id="page-header">
+                  <h1>{{ pageTitle }}</h1>
+                </template>
+              </code-block>
+            </section>
+
+            <!-- Key Points -->
+            <section id="key-points">
+              <h2>Key Points</h2>
+              <ul>
+                <li><strong>Built-in</strong>: Included by default in Coralite.</li>
+                <li><strong>Namespace</strong>: All state are stored in <code>context.page.meta</code>.</li>
+                <li><strong>Extraction</strong>: Processes <code>&lt;title&gt;</code> and <code>&lt;meta name="..." content="..."&gt;</code>.</li>
+                <li><strong>Execution</strong>: Runs at build time during the <code>onPageSet</code> and <code>onPageUpdate</code> lifecycle hooks.</li>
+              </ul>
+            </section>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/reference/plugins/refs" variant="secondary">← Previous: refs System</ui-link>
+        <ui-link href="/docs/reference/plugins/static-assets" variant="primary">Next: Static Assets Plugin →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#table-of-contents">Table of Contents</a>
+        <a href="#basic-usage">Basic Usage</a>
+        <a href="#dynamic-metadata">Dynamic Metadata</a>
+        <a href="#accessing-in-templates">Accessing in Templates</a>
+        <a href="#key-points">Key Points</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

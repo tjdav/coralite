@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Reference — Coralite"
+    description="The complete contract for components, pages, plugins, and the CLI. Each page documents one export, its TypeScript signature, and the diagnostics that guard it."></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <main class="reference-page page-container">
+    <section class="hero-section">
+      <ui-badge variant="cyan">API Reference</ui-badge>
+      <h1>Every export, precisely specified.</h1>
+      <p class="subhead">The complete contract for components, pages, plugins, and the CLI. Each page documents one export, its TypeScript signature, and the diagnostics that guard it.</p>
+    </section>
+
+    <section class="ref-section">
+      <h2>Component API</h2>
+      <p class="section-intro">Top-level named exports in <code>src/components/&lt;tag-name&gt;.html</code>.</p>
+
+      <div class="ref-grid">
+        <a class="ref-card" href="/reference/attributes">
+          <ui-card hoverable>
+            <h3>attributes</h3>
+            <p>Declare, coerce, and validate host HTML attributes into reactive state.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/client">
+          <ui-card hoverable>
+            <h3>client</h3>
+            <p>The browser runtime block: refs, events, observation, and cleanup.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/server">
+          <ui-card hoverable>
+            <h3>server</h3>
+            <p>Fetch data in Node.js at build time, then hydrate component state.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/getters">
+          <ui-card hoverable>
+            <h3>getters</h3>
+            <p>Pure, synchronous derivations shared by the server and the browser.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/style">
+          <ui-card hoverable>
+            <h3>style</h3>
+            <p>Map reactive state onto host CSS custom properties.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/slots">
+          <ui-card hoverable>
+            <h3>slots</h3>
+            <p>Intercept and transform projected child content before rendering.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/form-control">
+          <ui-card hoverable>
+            <h3>formControl</h3>
+            <p>Opt into native form association and constraint validation.</p>
+          </ui-card>
+        </a>
+      </div>
+    </section>
+
+    <section class="ref-section">
+      <h2>Page & Plugin API</h2>
+      <p class="section-intro">Entry points and build-time extensions.</p>
+
+      <div class="ref-grid">
+        <a class="ref-card" href="/reference/page-api">
+          <ui-card hoverable>
+            <h3>paths & definePage</h3>
+            <p>Pages are thin orchestrators that compose components and define routes.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/plugins">
+          <ui-card hoverable>
+            <h3>definePlugin</h3>
+            <p>Inject context and extend behavior with the two-phase curried signature.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/cli">
+          <ui-card hoverable>
+            <h3>CLI</h3>
+            <p>Develop, build, validate, and auto-fix with the <code>coralite</code> binary.</p>
+          </ui-card>
+        </a>
+      </div>
+    </section>
+
+    <section class="ref-cta">
+      <ui-card>
+        <div class="cta-row">
+          <div>
+            <h2>New to Coralite?</h2>
+            <p class="subhead">Start with the fundamentals before diving into the API surface.</p>
+          </div>
+          <ui-link href="/learn/" variant="primary">Open the curriculum →</ui-link>
+        </div>
+      </ui-card>
+    </section>
+  </main>
+
+  <site-footer></site-footer>
+</body>
+</html>
+

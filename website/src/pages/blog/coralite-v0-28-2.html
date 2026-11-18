@@ -1,91 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.28.2 Released: Static Assets Plugin and Client-Side Script Improvements"
-    description="Coralite v0.28.2 introduces the static asset plugin for copying binary dependencies, unifies client-side script execution contexts, and refactors internal save options."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-03-16T10:14:52+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.28.2 Released: Static Assets Plugin and Client-Side Script Improvements</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.28.2 Released: Static Assets Plugin and Client-Side Script Improvements"
+    description="Coralite v0.28.2 introduces the static asset plugin for copying binary dependencies, unifies client-side script execution contexts, and refactors internal save options."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-03-16"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.28.2 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.28.2 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-03-16T10:14:52+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.28.2 Released</h1>
+        <p class="subhead">Coralite v0.28.2 introduces the static asset plugin for copying binary dependencies, unifies client-side script execution contexts, and refactors internal save options.</p>
 
-    <p>Coralite v0.28.2 is now available. This release introduces a static assets plugin to handle binary dependencies like WebAssembly, refactors client-side script execution parameters, updates the DOM generation behavior for the Refs plugin, and refines programmatic APIs.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">March 16, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Static Assets Plugin for Binary Dependencies"></coralite-heading>
-    <p>To support components that rely on compiled assets, we have introduced <code>staticAssetPlugin</code>. The plugin copies binary dependencies (such as <code>.wasm</code> files) from package directories directly into the build output folder during compilation.</p>
+      <div class="post-body">
+        <p>Coralite v0.28.2 is now available. This release introduces a static assets plugin to handle binary dependencies like WebAssembly, refactors client-side script execution parameters, updates the DOM generation behavior for the Refs plugin, and refines programmatic APIs.</p>
 
-    <coralite-heading level="2" text="Unified Client-Side Script Context"></coralite-heading>
-    <p>We have refined the JSDoc comments and TypeScript definitions to clearly differentiate between server-side <code>setup</code> functions and client-side <code>script</code> execution within Coralite modules. In addition, the signature of the client-side <code>script</code> callback has been updated to accept a unified context object instead of separate values and refs parameters. This context includes a <code>helpers</code> property to expose plugin helper methods within scripts.</p>
+            <h2 id="static-assets-plugin-for-binary-dependencies">Static Assets Plugin for Binary Dependencies</h2>
+            <p>To support components that rely on compiled assets, we have introduced <code>staticAssetPlugin</code>. The plugin copies binary dependencies (such as <code>.wasm</code> files) from package directories directly into the build output folder during compilation.</p>
 
-    <coralite-code-highlight language="javascript">
-import { defineComponent } from 'coralite';
+            <h2 id="unified-client-side-script-context">Unified Client-Side Script Context</h2>
+            <p>We have refined the JSDoc comments and TypeScript definitions to clearly differentiate between server-side <code>setup</code> functions and client-side <code>script</code> execution within Coralite modules. In addition, the signature of the client-side <code>script</code> callback has been updated to accept a unified context object instead of separate values and refs parameters. This context includes a <code>helpers</code> property to expose plugin helper methods within scripts.</p>
 
-export default defineComponent({
-  setup(props) {
-    // Runs on the server during rendering
-    return { userId: props.id };
-  },
-  script(context) {
-    // Runs on the client
-    const { values, refs, helpers } = context;
-    console.log('Client-side script initialized with values:', values);
-  }
-});
-    </coralite-code-highlight>
+            <code-block language="javascript">
+        import { defineComponent } from 'coralite';
 
-    <coralite-heading level="2" text="Internal Options for Coralite Save Method"></coralite-heading>
-    <p>The <code>Coralite.prototype.save</code> method has been refactored to read configuration options internally. The builder now checks <code>this.options.output</code> and throws an error if it is missing. This eliminates the need to pass arguments directly to the <code>save</code> function, simplifying CLI usage and test scripts.</p>
+        export default defineComponent({
+          setup(props) {
+            // Runs on the server during rendering
+            return { userId: props.id };
+          },
+          script(context) {
+            // Runs on the client
+            const { values, refs, helpers } = context;
+            console.log('Client-side script initialized with values:', values);
+          }
+        });
+            </code-block>
 
-    <coralite-code-highlight language="javascript">
-import Coralite from 'coralite';
+            <h2 id="internal-options-for-coralite-save-method">Internal Options for Coralite Save Method</h2>
+            <p>The <code>Coralite.prototype.save</code> method has been refactored to read configuration options internally. The builder now checks <code>this.options.output</code> and throws an error if it is missing. This eliminates the need to pass arguments directly to the <code>save</code> function, simplifying CLI usage and test scripts.</p>
 
-const coralite = new Coralite({
-  output: './dist'
-});
+            <code-block language="javascript">
+        import Coralite from 'coralite';
 
-// No arguments required; output path is read from initialization options
-await coralite.save();
-    </coralite-code-highlight>
+        const coralite = new Coralite({
+          output: './dist'
+        });
 
-    <coralite-heading level="2" text="Refs Plugin Output and Testing Patterns"></coralite-heading>
-    <p>To improve browser delivery, the Refs plugin now removes <code>ref</code> attributes from the final DOM output during SSR builds in favor of auto-generated IDs. If you are targeting these components in end-to-end testing suites like Playwright or Cypress, avoid using <code>[ref="name"]</code> selectors. Instead, target elements using the structured ID pattern:</p>
+        // No arguments required; output path is read from initialization options
+        await coralite.save();
+            </code-block>
 
-    <coralite-code-highlight language="text">
-<component-id>__<ref-name>-<instance-index>
-    </coralite-code-highlight>
+            <h2 id="refs-plugin-output-and-testing-patterns">Refs Plugin Output and Testing Patterns</h2>
+            <p>To improve browser delivery, the Refs plugin now removes <code>ref</code> attributes from the final DOM output during SSR builds in favor of auto-generated IDs. If you are targeting these components in end-to-end testing suites like Playwright or Cypress, avoid using <code>[ref="name"]</code> selectors. Instead, target elements using the structured ID pattern:</p>
 
-    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
-    <ul>
-      <li><strong>Unified Script Parameters:</strong> The client-side <code>script</code> function now receives a single context object rather than separate <code>values</code> and <code>refs</code> arguments. Existing scripts must be updated to use the new unified parameter format.</li>
-      <li><strong>Coralite Save Signature:</strong> <code>Coralite.prototype.save()</code> now requires the output directory to be specified when initializing the Coralite instance. Calling <code>save</code> without configuration options pre-defined will throw an error.</li>
-      <li><strong>SSR Ref Attribute Removal:</strong> <code>ref</code> attributes are no longer emitted in the final DOM output. External testing suites must select elements via generated IDs rather than <code>ref</code> selectors.</li>
-    </ul>
+            <code-block language="text">
+        <component-id>__<ref-name>-<instance-index>
+            </code-block>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="breaking-changes">Breaking Changes</h2>
+            <ul>
+              <li><strong>Unified Script Parameters:</strong> The client-side <code>script</code> function now receives a single context object rather than separate <code>values</code> and <code>refs</code> arguments. Existing scripts must be updated to use the new unified parameter format.</li>
+              <li><strong>Coralite Save Signature:</strong> <code>Coralite.prototype.save()</code> now requires the output directory to be specified when initializing the Coralite instance. Calling <code>save</code> without configuration options pre-defined will throw an error.</li>
+              <li><strong>SSR Ref Attribute Removal:</strong> <code>ref</code> attributes are no longer emitted in the final DOM output. External testing suites must select elements via generated IDs rather than <code>ref</code> selectors.</li>
+            </ul>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite@0.28.2
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite-scripts@0.28.2
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite@0.28.2
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+              npm install coralite-scripts@0.28.2
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

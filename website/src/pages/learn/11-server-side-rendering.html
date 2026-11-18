@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Server-Side Rendering"
+    description="How Coralite fetches data at build time and hydrates components without shipping server code to the browser."
+    section="Learn"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <!-- Sidebar -->
+        <div slot="sidebar">
+      <ui-accordion title="Module 1: HTML Foundations" open>
+        <ui-nav-link href="/learn/01-the-document">1. The Document</ui-nav-link>
+        <ui-nav-link href="/learn/02-semantic-tags">2. Semantic Tags</ui-nav-link>
+        <ui-nav-link href="/learn/03-attributes-data">3. Attributes & Data</ui-nav-link>
+        <ui-nav-link href="/learn/04-structuring-a-page">4. Structuring a Page</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 2: CSS & Styling" open>
+        <ui-nav-link href="/learn/05-native-css-scoping">1. Native CSS Scoping</ui-nav-link>
+        <ui-nav-link href="/learn/06-cascade-layers">2. Cascade Layers</ui-nav-link>
+        <ui-nav-link href="/learn/07-theming-with-variables">3. Theming with Variables</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 3: JavaScript Behavior" open>
+        <ui-nav-link href="/learn/08-the-client-runtime">1. The Client Runtime</ui-nav-link>
+        <ui-nav-link href="/learn/09-refs-and-event-listeners">2. Refs & Event Listeners</ui-nav-link>
+        <ui-nav-link href="/learn/10-reactive-state">3. Reactive State</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Module 4: The Coralite Ecosystem" open>
+        <ui-nav-link href="/learn/11-server-side-rendering" active>1. Server-Side Rendering</ui-nav-link>
+        <ui-nav-link href="/learn/13-building-for-production">2. Building for Production</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <!-- Content -->
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/learn/">Learn</a>
+        <span class="separator">/</span>
+        <a href="/learn/">Module 4</a>
+        <span class="separator">/</span>
+        <span>Lesson 1: Server-Side Rendering</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <ui-badge variant="cyan">Lesson 11</ui-badge>
+        <h1>Server-Side Rendering</h1>
+        <p class="subhead">How Coralite fetches data at build time and hydrates components without shipping server code to the browser.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="the-server-block">The server() Block</h2>
+        <p>The <code>server()</code> block is an asynchronous function that runs exclusively in Node.js during the build phase. It is the perfect place to fetch data from a database, read files, or call external APIs.</p>
+
+        <code-block language="html" filename="user-profile.html">
+<template id="user-profile">
+  <div class="profile">
+    <h2>{{ name }}</h2>
+    <p>{{ role }}</p>
+  </div>
+</template>
+
+<script type="module">
+  export async function server () {
+    // This code runs ONLY during the build
+    const fs = await import('node:fs/promises')
+    const raw = await fs.readFile('data/user.json', 'utf8')
+    const user = JSON.parse(raw)
+  
+    // Return data to hydrate state
+    return {
+      name: user.name,
+      role: user.role
+    }
+  }
+</script>
+        </code-block>
+
+        <h2 id="the-serialization-bridge">The Serialization Bridge</h2>
+        <p>Once the <code>server()</code> block returns its data, Coralite renders the component's HTML and injects a JSON hydration script into the page. This allows the client to resume with the exact same state.</p>
+
+        <code-block language="html" filename="compiled.html">
+<user-profile data-cid="user-profile-0">
+  <div class="profile">
+    <h2>Alice</h2>
+    <p>Administrator</p>
+  </div>
+</user-profile>
+
+<script type="application/json" data-coralite-hydration>
+  {"name":"Alice","role":"Administrator"}
+</script>
+        </code-block>
+
+        <h2 id="the-stripping-phase">The Stripping Phase</h2>
+        <p>After the HTML is generated, the Coralite compiler physically removes the <code>server()</code> block from the component module. When the JavaScript is shipped to the browser, all server-side logic—including any secrets, database credentials, or file paths—is gone.</p>
+
+        <p>This is the <strong>Structural Guarantee</strong> of Coralite: server code cannot leak to the client.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/learn/10-reactive-state" variant="secondary">← Previous</ui-link>
+        <ui-link href="/learn/13-building-for-production" variant="primary">Next: Building for Production →</ui-link>
+      </div>
+    </div>
+
+    <!-- TOC -->
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-server-block">The server() Block</a>
+        <a href="#the-serialization-bridge">The Serialization Bridge</a>
+        <a href="#the-stripping-phase">The Stripping Phase</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

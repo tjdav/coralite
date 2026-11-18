@@ -1,0 +1,40 @@
+/* Coralite Syntax Highlight Theme */
+:root {
+  --accent-green: #10b981;
+}
+
+/* HTML Tokens */
+.code-tag { color: var(--accent-cyan); }
+.code-name { color: var(--accent-cyan); }
+.code-attr { color: var(--accent-violet); }
+.code-string { color: var(--accent-green); }
+
+/* JavaScript Tokens */
+.code-keyword { color: var(--accent-pink); }
+.code-built_in { color: var(--accent-cyan); }
+.code-title { color: var(--accent-violet); }
+.code-function { color: var(--accent-violet); }
+.code-params { color: var(--text-primary); }
+.code-variable { color: var(--text-primary); }
+.code-literal { color: var(--accent-pink); }
+.code-number { color: var(--accent-amber); }
+
+/* General */
+.code-comment { font-style: italic; color: var(--text-muted); }
+
+/* CSS Tokens */
+.code-selector-class,
+.code-selector-id { color: var(--accent-cyan); }
+.code-selector-tag { color: var(--accent-pink); }
+.code-selector-pseudo { color: var(--accent-pink); }
+.code-selector-attr { color: var(--accent-violet); }
+.code-attribute { color: var(--accent-violet); }
+.code-property { color: var(--accent-cyan); }
+
+/* Shell Tokens */
+.code-meta { color: var(--accent-amber); }
+.code-symbol { color: var(--accent-amber); }
+
+/* Diff Tokens */
+.code-addition { color: var(--accent-green); }
+.code-deletion { color: var(--accent-red); }

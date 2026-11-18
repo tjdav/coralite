@@ -1,76 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.39.0 Released: Faster Builds and Rich Hydration Serialization"
-    description="Coralite v0.39.0 introduces incremental production builds for faster deploy cycles, and switches to serialize-javascript for hydration and plugin configurations to support complex data types."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-06-24T20:23:36+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.39.0 Released: Faster Builds and Rich Hydration Serialization</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.39.0 Released: Faster Builds and Rich Hydration Serialization"
+    description="Coralite v0.39.0 introduces incremental production builds for faster deploy cycles, and switches to serialize-javascript for hydration and plugin"
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-06-24"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.39.0 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.39.0 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-06-24T20:23:36+02:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.39.0 Released</h1>
+        <p class="subhead">Coralite v0.39.0 introduces incremental production builds for faster deploy cycles, and switches to serialize-javascript for hydration and plugin configurations to support complex data types.</p>
 
-    <p>Coralite version v0.39.0 has been released. This update focuses on enhancing developer experience and build performance by introducing incremental production builds and replacing standard JSON serialization with <code>serialize-javascript</code> for component hydration and plugin configurations.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">June 24, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Incremental Production Builds"></coralite-heading>
-    <p>To reduce build times on large-scale applications, Coralite now supports incremental production builds. Instead of rebuilding the entire site on every run, the build system analyzes changes, preserves unchanged files in the output directory, and executes stale file cleanup at the end of the build process. The build manifest is preserved throughout the cleanup phase.</p>
-    <p>If a previously built page's output is missing from the disk, the build runner forces a rebuild for that page regardless of whether its source file has changed. A new <code>--clean</code> flag has also been added to support full rebuilds when necessary.</p>
+      <div class="post-body">
+        <p>Coralite version v0.39.0 has been released. This update focuses on enhancing developer experience and build performance by introducing incremental production builds and replacing standard JSON serialization with <code>serialize-javascript</code> for component hydration and plugin configurations.</p>
 
-    <coralite-code-highlight language="bash">
-coralite-scripts build --clean
-    </coralite-code-highlight>
+            <h2 id="incremental-production-builds">Incremental Production Builds</h2>
+            <p>To reduce build times on large-scale applications, Coralite now supports incremental production builds. Instead of rebuilding the entire site on every run, the build system analyzes changes, preserves unchanged files in the output directory, and executes stale file cleanup at the end of the build process. The build manifest is preserved throughout the cleanup phase.</p>
+            <p>If a previously built page's output is missing from the disk, the build runner forces a rebuild for that page regardless of whether its source file has changed. A new <code>--clean</code> flag has also been added to support full rebuilds when necessary.</p>
 
-    <coralite-heading level="2" text="Rich Serialization with serialize-javascript"></coralite-heading>
-    <p>Previously, component hydration data and plugin configurations were serialized using standard <code>JSON.stringify</code>. In v0.39.0, both systems transition to <code>serialize-javascript</code>. This allows plugin configurations within the <code>ScriptManager</code> to support non-JSON types such as regular expressions, dates, custom functions, maps, and sets.</p>
-    <p>Hydration data is now passed directly to the client-side runtime using an inline module script, which the <code>CoraliteElement</code> runtime consumes. This change expands the expressiveness of plugin configurations and local hydration states:</p>
+            <code-block language="bash">
+        coralite-scripts build --clean
+            </code-block>
 
-    <coralite-code-highlight language="javascript">
-// Plugins can now configure complex non-JSON types
-export default {
-  plugins: [
-    {
-      name: 'analytics-plugin',
-      client: {
-        config: {
-          filterPattern: /^\/api\//,
-          timestamp: new Date(),
-          onInit: () => console.log('Analytics loaded')
-        }
-      }
-    }
-  ]
-};
-    </coralite-code-highlight>
+            <h2 id="rich-serialization-with-serialize-javascript">Rich Serialization with serialize-javascript</h2>
+            <p>Previously, component hydration data and plugin configurations were serialized using standard <code>JSON.stringify</code>. In v0.39.0, both systems transition to <code>serialize-javascript</code>. This allows plugin configurations within the <code>ScriptManager</code> to support non-JSON types such as regular expressions, dates, custom functions, maps, and sets.</p>
+            <p>Hydration data is now passed directly to the client-side runtime using an inline module script, which the <code>CoraliteElement</code> runtime consumes. This change expands the expressiveness of plugin configurations and local hydration states:</p>
 
-    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
-    <ul>
-      <li><strong>Strict server() Validation:</strong> To ensure serialization safety, functions are now strictly blocked in return values from <code>server()</code> methods. A path-based error reporting system has been introduced to help developers identify where validation failures occur in their hydration data.</li>
-    </ul>
+            <code-block language="javascript">
+        // Plugins can now configure complex non-JSON types
+        export default {
+          plugins: [
+            {
+              name: 'analytics-plugin',
+              client: {
+                config: {
+                  filterPattern: /^\/api\//,
+                  timestamp: new Date(),
+                  onInit: () => console.log('Analytics loaded')
+                }
+              }
+            }
+          ]
+        };
+            </code-block>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="breaking-changes">Breaking Changes</h2>
+            <ul>
+              <li><strong>Strict server() Validation:</strong> To ensure serialization safety, functions are now strictly blocked in return values from <code>server()</code> methods. A path-based error reporting system has been introduced to help developers identify where validation failures occur in their hydration data.</li>
+            </ul>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite@0.39.0
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite-scripts@0.39.0
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite@0.39.0
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+              npm install coralite-scripts@0.39.0
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

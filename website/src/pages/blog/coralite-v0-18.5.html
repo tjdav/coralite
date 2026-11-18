@@ -1,52 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration 
-    type="article"
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
     title="Coralite v0.18.5 Release Notes"
-    description="Coralite v0.18.5 resolves a critical CSS build issue in coralite-scripts, ensuring proper compilation of type: 'css' files with plugin support. Upgrade now for stable, predictable stylesheet output in your static site builds."
-    seo-title="Coralite v0.18.5 Release: Fixed CSS Build Pipeline for Reliable Styling"
-    seo-description="Coralite v0.18.5 resolves a critical CSS build issue in coralite-scripts, ensuring proper compilation of type: 'css' files with plugin support. Upgrade now for stable, predictable stylesheet output in your static site builds."
-  ></coralite-meta>
-
-  <meta property="article:published_time" name="published_time" content="2025-09-18T08:32:53.000Z">
-  <meta name="author_id" content="thomas" data-dev="true">
+    description="Coralite v0.18.5 resolves a critical CSS build issue in coralite-scripts, ensuring proper compilation of type: 'css' files with plugin support."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-09-18"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.18.5</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.18.5</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-09-18T08:32:53.000Z"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.18.5</h1>
+        <p class="subhead">Coralite v0.18.5 resolves a critical CSS build issue in coralite-scripts, ensuring proper compilation of type: 'css' files with plugin support. Upgrade now for stable, predictable stylesheet output in your static site builds.</p>
 
-    <p>Coralite v0.18.5 is a maintenance release focused on fixing a critical CSS build issue in <code>coralite-scripts</code>, ensuring consistent output during the build process.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">September 18, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Bug Fixes"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite v0.18.5 is a maintenance release focused on fixing a critical CSS build issue in <code>coralite-scripts</code>, ensuring consistent output during the build process.</p>
 
-    <ul>
-      <li>Fixed a bug in the <code>coralite-scripts</code> build system that prevented correct processing of <code>type: 'css'</code> stylesheets. Prior to this fix, CSS files were not being compiled or output correctly, even when configured in the build settings.</li>
-      <li>The fix introduces a dedicated <code>buildCSS</code> function from <code>../libs/build-css.js</code> to handle raw CSS files, including support for plugins via the <code>cssPlugins</code> configuration option.</li>
-      <li>Build logic now properly distinguishes between Sass/SCSS and plain CSS inputs, ensuring that each is processed with the appropriate compiler—Sass for <code>sass</code> or <code>scss</code> types, and the new <code>buildCSS</code> function for <code>css</code> type.</li>
-    </ul>
+            <h2 id="bug-fixes">Bug Fixes</h2>
 
-    <coralite-heading level="2" text="Chores"></coralite-heading>
+            <ul>
+              <li>Fixed a bug in the <code>coralite-scripts</code> build system that prevented correct processing of <code>type: 'css'</code> stylesheets. Prior to this fix, CSS files were not being compiled or output correctly, even when configured in the build settings.</li>
+              <li>The fix introduces a dedicated <code>buildCSS</code> function from <code>../libs/build-css.js</code> to handle raw CSS files, including support for plugins via the <code>cssPlugins</code> configuration option.</li>
+              <li>Build logic now properly distinguishes between Sass/SCSS and plain CSS inputs, ensuring that each is processed with the appropriate compiler—Sass for <code>sass</code> or <code>scss</code> types, and the new <code>buildCSS</code> function for <code>css</code> type.</li>
+            </ul>
 
-    <ul>
-      <li>Upgraded <code>coralite-scripts</code> to version 0.18.5 to include recent improvements and bug fixes.</li>
-    </ul>
+            <h2 id="chores">Chores</h2>
 
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <ul>
+              <li>Upgraded <code>coralite-scripts</code> to version 0.18.5 to include recent improvements and bug fixes.</li>
+            </ul>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.18.5</coralite-code-highlight>
+            <h2 id="get-the-release">Get the release</h2>
 
-    <p>For a full list of changes, view the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.18.5" target="_blank">v0.18.5 changelog on Codeberg</a>.</p>
+            <code-block language="bash">npm install coralite@0.18.5</code-block>
+
+            <p>For a full list of changes, view the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.18.5" target="_blank">v0.18.5 changelog on Codeberg</a>.</p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="client"
+    description="The browser runtime execution block. Handles DOM lifecycle, event listeners, and form association."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <div slot="sidebar">
+      <ui-accordion title="Component API" open>
+        <ui-nav-link href="/reference/attributes">attributes</ui-nav-link>
+        <ui-nav-link href="/reference/client" active>client</ui-nav-link>
+        <ui-nav-link href="/reference/server">server</ui-nav-link>
+        <ui-nav-link href="/reference/getters">getters</ui-nav-link>
+        <ui-nav-link href="/reference/style">style</ui-nav-link>
+        <ui-nav-link href="/reference/slots">slots</ui-nav-link>
+        <ui-nav-link href="/reference/form-control">formControl</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Page API">
+        <ui-nav-link href="/reference/page-api">paths & definePage</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Plugin API">
+        <ui-nav-link href="/reference/plugins">definePlugin</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="CLI">
+        <ui-nav-link href="/reference/cli">commands</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Component API</a>
+        <span class="separator">/</span>
+        <span>client</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>client</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">The browser runtime execution block. Handles DOM lifecycle, event listeners, and form association.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="typescript-signature">TypeScript Signature</h2>
+        <p>The <code>CoraliteClientContext</code> parameter signature:</p>
+        <code-block language="typescript" filename="client.ts">
+export async function client (context: {
+  state: Record<string, any>;
+  refs: (name: string) => HTMLElement | null;
+  signal: AbortSignal;
+  emit: (name: string, detail?: any) => boolean;
+  observe: (key: string, cb: (newVal: any, oldVal: any) => void) => () => void;
+  updateComplete: Promise<boolean>;
+  setFormValue?: (value: any) => void;
+  setValidity?: (flags: ValidityStateFlags, message: string, anchor: HTMLElement) => void;
+}): Promise<void>
+        </code-block>
+
+        <h2 id="lifecycle-cleanup">Lifecycle &amp; Cleanup</h2>
+        <p>The <code>signal</code> provided in the context is an <code>AbortSignal</code> that fires when the component disconnects from the DOM. Passing it to <code>addEventListener</code> ensures zero memory leaks.</p>
+
+        <code-block language="javascript" filename="cleanup.js">
+export async function client ({ refs, signal }) {
+  refs('btn').addEventListener('click', () => {
+    console.log('clicked')
+  }, { signal }) // Auto-cleanup on disconnect
+}
+        </code-block>
+
+        <h2 id="observing-state">Observing State</h2>
+        <p>Use <code>observe()</code> to react to specific state changes. This is exclusively for side-effects (like third-party canvas rendering). Never mutate state inside the observer.</p>
+
+        <code-block language="javascript" filename="observe.js">
+export async function client ({ state, observe }) {
+  observe('count', (newVal) => {
+    console.log('Count changed to:', newVal)
+  })
+}
+        </code-block>
+
+        <h2 id="form-associated-custom-elements-face">Form-Associated Custom Elements (FACE)</h2>
+        <p>If the component exports <code>export const formControl = true</code>, the <code>client()</code> context provides form helpers to integrate with native <code>&lt;form&gt;</code> elements.</p>
+
+        <code-block language="javascript" filename="face.js">
+export async function client ({ setFormValue, setValidity }) {
+  setFormValue('initial-value')
+  setValidity({ valueMissing: true }, 'This field is required', anchorEl)
+}
+        </code-block>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/attributes" variant="secondary">← Previous: attributes</ui-link>
+        <ui-link href="/reference/server" variant="primary">Next: server →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#typescript-signature">TypeScript Signature</a>
+        <a href="#lifecycle-cleanup">Lifecycle &amp; Cleanup</a>
+        <a href="#observing-state">Observing State</a>
+        <a href="#form-associated-custom-elements-face">Form-Associated</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

@@ -1,89 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Handling Binary Assets - Coralite User Guide"
-    description="Learn how to handle static and binary assets like .wasm files in your Coralite projects."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Handling Binary Assets - Coralite User Guide"
+    description="Learn how to handle static and binary assets like .wasm files in your Coralite projects."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main class="container content">
-    <h1 class="display">Handling Binary Assets</h1>
-    <p>Some libraries, like the Matrix JS SDK, require loading external binary dependencies like `.wasm` files. Coralite provides a seamless way to handle these files during both development and production builds.</p>
+  <site-header></site-header>
 
-    <coralite-heading level="2" text="The `assets` Configuration"></coralite-heading>
-    <p>In your `coralite.config.js` file, you can specify an `assets` array. This array tells Coralite to copy specific files from an NPM package into your project's build output.</p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="guide/binary-assets"></docs-sidebar>
 
-    <p>Each object in the `assets` array must define a <code>dest</code> (the destination path relative to your output directory). To determine the source file, you must provide either:</p>
-    <ul>
-      <li><code>pkg</code> (the NPM package name) and <code>path</code> (the relative path to the asset within the package).</li>
-      <li><strong>OR</strong> <code>src</code> (a relative or absolute local path to the source file or directory, which completely bypasses package resolution). Relative paths are resolved against the project root.</li>
-    </ul>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/guide/">Guide</a>
+        <span class="separator">/</span>
+        <span>Handling Binary Assets</span>
+      </ui-breadcrumb>
 
-    <coralite-heading level="2" text="Example: Matrix JS SDK"></coralite-heading>
-    <p>Here is an example of configuring your project to include the WebAssembly files required by the Matrix SDK.</p>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Handling Binary Assets</h1>
+          <ui-badge variant="cyan">Guide</ui-badge>
+        </div>
+        <p class="subhead">Learn how to handle static and binary assets like .wasm files in your Coralite projects.</p>
+      </div>
 
-    <coralite-code-highlight language="JavaScript" title="coralite.config.js">
-      // coralite.config.js
-      export default defineConfig({
-        output: './dist',
-        components: './src/components',
-        pages: './src/pages',
-        public: './public',
-        assets: [
-          {
-            pkg: 'matrix-js-sdk',
-            path: 'lib/matrix.wasm',
-            dest: 'wasm/matrix.wasm'
-          }
-        ]
-      })
-    </coralite-code-highlight>
+      <div class="lesson-body">
+        <p>Some libraries, like the Matrix JS SDK, require loading external binary dependencies like `.wasm` files. Coralite provides a seamless way to handle these files during both development and production builds.</p>
 
-    <p>When you run the development server (`pnpm run dev`) or build your project (`pnpm run build`), Coralite will automatically extract `matrix.wasm` from your `node_modules` and place it in your configured output folder under `wasm/matrix.wasm`.</p>
-    <p>You can then point your library configuration to fetch the file from `/wasm/matrix.wasm`.</p>
+            <h2 id="the-assets-configuration">The `assets` Configuration</h2>
+            <p>In your `coralite.config.js` file, you can specify an `assets` array. This array tells Coralite to copy specific files from an NPM package into your project's build output.</p>
 
-    <coralite-heading level="2" text="Bypassing Package Resolution"></coralite-heading>
-    <p>If a package does not explicitly export its <code>package.json</code>, the plugin will attempt an upward directory traversal. However, if you need to bypass package resolution entirely, you can provide an absolute path via the <code>src</code> property.</p>
+            <p>Each object in the `assets` array must define a <code>dest</code> (the destination path relative to your output directory). To determine the source file, you must provide either:</p>
+            <ul>
+              <li><code>pkg</code> (the NPM package name) and <code>path</code> (the relative path to the asset within the package).</li>
+              <li><strong>OR</strong> <code>src</code> (a relative or absolute local path to the source file or directory, which completely bypasses package resolution). Relative paths are resolved against the project root.</li>
+            </ul>
 
-    <coralite-code-highlight language="JavaScript" title="coralite.config.js">
-      // coralite.config.js
-      import { createRequire } from 'node:module';
-      const require = createRequire(import.meta.url);
-      const wasmPath = require.resolve('@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm');
+            <h2 id="example-matrix-js-sdk">Example: Matrix JS SDK</h2>
+            <p>Here is an example of configuring your project to include the WebAssembly files required by the Matrix SDK.</p>
 
-      export default defineConfig({
-        assets: [{ src: wasmPath, dest: 'matrix_sdk_crypto_wasm_bg.wasm' }]
-      });
-    </coralite-code-highlight>
+            <code-block language="JavaScript" filename="coralite.config.js">
+              // coralite.config.js
+              export default defineConfig({
+                output: './dist',
+                components: './src/components',
+                pages: './src/pages',
+                public: './public',
+                assets: [
+                  {
+                    pkg: 'matrix-js-sdk',
+                    path: 'lib/matrix.wasm',
+                    dest: 'wasm/matrix.wasm'
+                  }
+                ]
+              })
+            </code-block>
 
-    <coralite-heading level="2" text="Automated Asset Injection & SRI"></coralite-heading>
-    <p>Coralite also supports declarative asset injection and Subresource Integrity (SRI) digest computation. By passing an <code>inject</code> object on an asset entry, Coralite will copy the asset and automatically inject corresponding <code>&lt;script&gt;</code> or <code>&lt;link&gt;</code> HTML tags into rendered pages.</p>
+            <p>When you run the development server (`pnpm run dev`) or build your project (`pnpm run build`), Coralite will automatically extract `matrix.wasm` from your `node_modules` and place it in your configured output folder under `wasm/matrix.wasm`.</p>
+            <p>You can then point your library configuration to fetch the file from `/wasm/matrix.wasm`.</p>
 
-    <coralite-code-highlight language="JavaScript" title="coralite.config.js">
-      export default defineConfig({
-        assets: [
-          {
-            pkg: 'altcha',
-            path: 'dist/altcha.js',
-            dest: 'assets/js/altcha.js',
-            inject: {
-              type: 'script',
-              placement: 'body-end', // 'head-start' | 'head-end' | 'body-start' | 'body-end'
-              sri: true,             // Generates sha384 integrity & adds crossorigin="anonymous"
-              pages: ['*']           // Page glob or pathname patterns
-            }
-          }
-        ]
-      });
-    </coralite-code-highlight>
+            <h2 id="bypassing-package-resolution">Bypassing Package Resolution</h2>
+            <p>If a package does not explicitly export its <code>package.json</code>, the plugin will attempt an upward directory traversal. However, if you need to bypass package resolution entirely, you can provide an absolute path via the <code>src</code> property.</p>
 
-    <coralite-heading level="2" text="MIME Type Support"></coralite-heading>
-    <p>To ensure `.wasm` files execute correctly for streaming compilation, the Coralite development server automatically configures the appropriate `application/wasm` MIME type headers for any files ending in `.wasm`.</p>
+            <code-block language="JavaScript" filename="coralite.config.js">
+              // coralite.config.js
+              import { createRequire } from 'node:module';
+              const require = createRequire(import.meta.url);
+              const wasmPath = require.resolve('@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm');
 
-  </main>
-  <coralite-footer></coralite-footer>
+              export default defineConfig({
+                assets: [{ src: wasmPath, dest: 'matrix_sdk_crypto_wasm_bg.wasm' }]
+              });
+            </code-block>
+
+            <h2 id="automated-asset-injection-sri">Automated Asset Injection & SRI</h2>
+            <p>Coralite also supports declarative asset injection and Subresource Integrity (SRI) digest computation. By passing an <code>inject</code> object on an asset entry, Coralite will copy the asset and automatically inject corresponding <code>&lt;script&gt;</code> or <code>&lt;link&gt;</code> HTML tags into rendered pages.</p>
+
+            <code-block language="JavaScript" filename="coralite.config.js">
+              export default defineConfig({
+                assets: [
+                  {
+                    pkg: 'altcha',
+                    path: 'dist/altcha.js',
+                    dest: 'assets/js/altcha.js',
+                    inject: {
+                      type: 'script',
+                      placement: 'body-end', // 'head-start' | 'head-end' | 'body-start' | 'body-end'
+                      sri: true,             // Generates sha384 integrity & adds crossorigin="anonymous"
+                      pages: ['*']           // Page glob or pathname patterns
+                    }
+                  }
+                ]
+              });
+            </code-block>
+
+            <h2 id="mime-type-support">MIME Type Support</h2>
+            <p>To ensure `.wasm` files execute correctly for streaming compilation, the Coralite development server automatically configures the appropriate `application/wasm` MIME type headers for any files ending in `.wasm`.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/guide/spa-router" variant="secondary">← Previous: SPA Router Guide</ui-link>
+        <ui-link href="/docs/guide/building" variant="primary">Next: Building Applications →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-assets-configuration">The `assets` Configuration</a>
+        <a href="#example-matrix-js-sdk">Example: Matrix JS SDK</a>
+        <a href="#bypassing-package-resolution">Bypassing Package Resolution</a>
+        <a href="#automated-asset-injection-sri">Automated Asset Injection & SRI</a>
+        <a href="#mime-type-support">MIME Type Support</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

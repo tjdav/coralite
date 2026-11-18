@@ -1,0 +1,41 @@
+<template id="ui-icon">
+  <span ref="wrapper" class="icon-wrapper"></span>
+</template>
+
+<script type="module">
+  export const attributes = {
+    name: { type: String, default: 'search' },
+    active: { type: Boolean, default: false },
+    size: { type: Number, default: 16 }
+  }
+
+  export function client ({ state, refs, observe }) {
+    const wrapper = refs('wrapper')
+  
+    const updateIcon = async () => {
+      const { renderIcon } = await import('../utils/icon-registry.js')
+      renderIcon(wrapper, {
+        name: state.name,
+        active: state.active,
+        size: state.size
+      })
+    }
+
+    updateIcon()
+
+    observe('name', updateIcon)
+    observe('active', updateIcon)
+    observe('size', updateIcon)
+  }
+</script>
+
+<style>
+  :host {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-wrapper {
+    display: inline-flex;
+  }
+</style>

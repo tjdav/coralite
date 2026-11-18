@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "checkJs": true,
-    "module": "NodeNext",
+    "module": "nodenext",
     "target": "ES2022",
     "moduleResolution": "nodenext",
     "resolveJsonModule": true

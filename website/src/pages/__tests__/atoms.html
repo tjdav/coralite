@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Atoms Test Fixture"
+    description="Component fixture page used by the Coralite visual test suite. Not part of the documentation."
+    noindex></page-meta>
+  <!-- Link to global CSS here. Check how index.html does it. -->
+  <link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body style="background-color: var(--bg-main);">
+  <site-header></site-header>
+
+  <div id="button-test-container" style="padding: 20px; display: flex; gap: 10px;">
+    <ui-button variant="primary">Primary</ui-button>
+    <ui-button variant="secondary">Secondary</ui-button>
+    <ui-button variant="danger">Danger</ui-button>
+  </div>
+
+  <div id="link-test-container" style="padding: 20px; display: flex; gap: 10px;">
+    <ui-link href="/learn/" variant="primary">Primary link</ui-link>
+    <ui-link href="/docs/" variant="secondary">Secondary link</ui-link>
+    <ui-link href="/compare/" variant="danger">Danger link</ui-link>
+    <ui-link href="https://example.com" variant="secondary" external>External link</ui-link>
+  </div>
+
+  <div id="card-test-container" style="padding: 20px; display: flex; gap: 20px; background: var(--bg-main);">
+    <ui-card style="width: 300px;">
+      <h3 slot="header">Standard Card</h3>
+      <p>This is the standard card body text.</p>
+    </ui-card>
+    
+    <ui-card hoverable style="width: 300px;">
+      <h3 slot="header">Hoverable Card</h3>
+      <p>This card has a glowing border on hover.</p>
+    </ui-card>
+  </div>
+
+  <div id="badge-test-container" style="padding: 20px; display: flex; gap: 10px; background: var(--bg-main);">
+    <ui-badge variant="violet">Lesson 04</ui-badge>
+    <ui-badge variant="cyan">Reference API</ui-badge>
+    <ui-badge variant="amber">RC Testing</ui-badge>
+  </div>
+
+  <div id="input-test-container" style="padding: 20px; width: 350px; background: var(--bg-main);">
+    <ui-input placeholder="Search documentation...">
+      <ui-icon slot="icon-left" name="search"></ui-icon>
+      <kbd slot="icon-right">Ctrl K</kbd>
+    </ui-input>
+  </div>
+
+  <div id="toggle-test-container" style="padding: 20px; background: var(--bg-main);">
+    <ui-toggle active="left">
+      <span slot="left">Authored</span>
+      <span slot="right">Compiled</span>
+    </ui-toggle>
+  </div>
+
+  <div id="nav-link-test-container" style="padding: 20px; width: 300px; background: var(--bg-sidebar);">
+    <ui-nav-link href="#" active>1. The Document</ui-nav-link>
+    <ui-nav-link href="#">2. Semantic Tags</ui-nav-link>
+  </div>
+
+  <div id="accordion-test-container" style="padding: 20px; width: 300px; background: var(--bg-sidebar);">
+    <ui-accordion title="Module 1: HTML Foundations" open>
+      <ui-nav-link href="#" active>1. The Document</ui-nav-link>
+      <ui-nav-link href="#">2. Semantic Tags</ui-nav-link>
+    </ui-accordion>
+  </div>
+
+  <div id="breadcrumb-test-container" style="padding: 20px; background: var(--bg-main);">
+    <ui-breadcrumb>
+      <a href="#">Learn</a>
+      <span class="separator">/</span>
+      <a href="#">Module 1</a>
+      <span class="separator">/</span>
+      <span>Lesson 1: The Document</span>
+    </ui-breadcrumb>
+  </div>
+
+  <div id="tooltip-test-container" style="padding: 40px 40px 60px 40px; background: var(--bg-main);">
+    <ui-tooltip placement="bottom">
+      <ui-button slot="reference" variant="secondary">Hover me</ui-button>
+      <span>Tree-shaken server code</span>
+    </ui-tooltip>
+  </div>
+
+  <div id="avatar-test-container" style="padding: 20px; display: flex; gap: 20px; align-items: center; background: var(--bg-main);">
+    <ui-avatar initials="AH" size="sm"></ui-avatar>
+    <ui-avatar initials="DH" size="md"></ui-avatar>
+    <ui-avatar initials="AC" size="lg"></ui-avatar>
+  </div>
+
+  <div id="terminal-test-container" style="padding: 20px; background: var(--bg-main);">
+    <ui-terminal>
+<span class="prompt">$</span> coralite build
+<span class="success">✔</span> Successfully compiled 24 components. (1.2s)
+<span class="warning">✖</span> Warning: Unused ref 'button' in ui-button.html (CORALITE-W402)
+    </ui-terminal>
+  </div>
+
+  <div id="code-test-container" style="padding: 20px; background: var(--bg-main);">
+    <code-block language="html">
+<div class="container">
+  <h1>Hello, Platform.</h1>
+</div>
+    </code-block>
+  </div>
+
+  <div id="mobile-nav-test-container" style="height: 600px; position: relative; overflow: hidden; background: var(--bg-main);">
+    <site-mobile-nav id="test-mobile-nav"></site-mobile-nav>
+  </div>
+
+  <ui-command-palette id="test-cp"></ui-command-palette>
+
+  <site-footer></site-footer>
+</body>
+</html>

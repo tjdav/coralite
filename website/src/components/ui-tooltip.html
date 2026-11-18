@@ -1,0 +1,113 @@
+<template id="ui-tooltip">
+  <span ref="reference" class="tooltip-reference">
+    <slot name="reference"></slot>
+  </span>
+  <div ref="floating" class="tooltip-floating" role="tooltip" aria-hidden="true">
+    <slot></slot>
+  </div>
+</template>
+
+<script type="module">
+  export const attributes = {
+    placement: { type: String, default: 'bottom' }
+  }
+
+  export function client ({ state, refs, signal, $floating: { createFloating } }) {
+    const reference = refs('reference')
+    const floating = refs('floating')
+
+    let cleanup
+
+    const show = () => {
+      floating.setAttribute('aria-hidden', 'false')
+      createFloating({
+        reference,
+        floating,
+        placement: state.placement,
+        onCleanup: (c) => {
+          cleanup = c
+        }
+      })
+    }
+
+    const hide = () => {
+      floating.setAttribute('aria-hidden', 'true')
+      if (cleanup) {
+        cleanup()
+      }
+    }
+
+    reference.addEventListener('mouseenter', show, { signal })
+    reference.addEventListener('mouseleave', hide, { signal })
+    reference.addEventListener('focus', show, { signal })
+    reference.addEventListener('blur', hide, { signal })
+    reference.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hide()
+      }
+    }, { signal })
+  }
+</script>
+
+<style>
+  :host {
+    display: inline-block;
+    position: relative;
+  }
+
+  .tooltip-reference {
+    display: inline-block;
+    cursor: pointer;
+    color: var(--text-primary);
+  }
+
+  .tooltip-floating {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 50;
+  }
+
+  .tooltip-floating[aria-hidden="false"] {
+    opacity: 1;
+  }
+
+  .tooltip-floating[data-placement^="top"] {
+    --arrow-bottom: -4px;
+    --arrow-border-bottom: 1px solid var(--border-strong);
+    --arrow-border-right: 1px solid var(--border-strong);
+  }
+
+  .tooltip-floating[data-placement^="bottom"] {
+    --arrow-top: -4px;
+    --arrow-border-top: 1px solid var(--border-strong);
+    --arrow-border-left: 1px solid var(--border-strong);
+  }
+
+  .tooltip-floating::after {
+    content: '';
+    position: absolute;
+    top: var(--arrow-top, auto);
+    bottom: var(--arrow-bottom, auto);
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 8px;
+    height: 8px;
+    background: var(--bg-card);
+    border-top: var(--arrow-border-top, none);
+    border-left: var(--arrow-border-left, none);
+    border-bottom: var(--arrow-border-bottom, none);
+    border-right: var(--arrow-border-right, none);
+  }
+</style>

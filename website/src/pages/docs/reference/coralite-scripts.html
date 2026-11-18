@@ -1,113 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Coralite Scripts (Deprecated) - Coralite Documentation"
-    description="The coralite-scripts package is deprecated. Migration guide to the unified coralite package: the coralite dev and build commands, and defineConfig imported from coralite."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite Scripts (Deprecated) - Coralite Documentation"
+    description="The coralite-scripts package is deprecated. Migration guide to the unified coralite package: the coralite dev and build commands, and defineConfig imported from coralite."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <site-header></site-header>
 
-  <main class="container content">
-    <h1 class="display">Coralite Scripts (Deprecated)</h1>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="reference/coralite-scripts"></docs-sidebar>
 
-    <p>The <code>coralite-scripts</code> package is <strong>deprecated</strong>. Its responsibilities — the development server, the production build pipeline, project configuration, and the <code>coralite</code> CLI — have been consolidated into the primary <code>coralite</code> package. Remove <code>coralite-scripts</code> from your <code>package.json</code> and adopt the unified <code>coralite</code> commands instead.</p>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/">Reference</a>
+        <span class="separator">/</span>
+        <span>Coralite Scripts (Deprecated)</span>
+      </ui-breadcrumb>
 
-    <coralite-heading level="2" text="Migration Mapping"></coralite-heading>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Coralite Scripts (Deprecated)</h1>
+          <ui-badge variant="cyan">Reference</ui-badge>
+        </div>
+        <p class="subhead">The coralite-scripts package is deprecated. Migration guide to the unified coralite package: the coralite dev and build commands, and defineConfig imported from coralite.</p>
+      </div>
 
-    <p>Every notion documented on this page maps onto the current <code>coralite</code> API:</p>
+      <div class="lesson-body">
+        <p>The <code>coralite-scripts</code> package is <strong>deprecated</strong>. Its responsibilities — the development server, the production build pipeline, project configuration, and the <code>coralite</code> CLI — have been consolidated into the primary <code>coralite</code> package. Remove <code>coralite-scripts</code> from your <code>package.json</code> and adopt the unified <code>coralite</code> commands instead.</p>
 
-    <coralite-table>
-      <tr slot="head">
-        <th>coralite-scripts (deprecated)</th>
-        <th>coralite (current)</th>
-      </tr>
-      <tr slot="body">
-        <td><code>npm install --save-dev coralite-scripts</code></td>
-        <td><code>npm install coralite</code></td>
-      </tr>
-      <tr slot="body">
-        <td><code>coralite-scripts dev</code></td>
-        <td><code>coralite dev</code></td>
-      </tr>
-      <tr slot="body">
-        <td><code>coralite-scripts build</code></td>
-        <td><code>coralite build</code></td>
-      </tr>
-      <tr slot="body">
-        <td><code>import { defineConfig } from 'coralite-scripts'</code></td>
-        <td><code>import { defineConfig } from 'coralite'</code></td>
-      </tr>
-      <tr slot="body">
-        <td><code>templates</code> directory key</td>
-        <td><code>components</code> directory key</td>
-      </tr>
-      <tr slot="body">
-        <td><code>styles.type: 'scss'</code> + <code>styles.input</code> (string)</td>
-        <td><code>styles: { input: [...], processors: { scss, postcss } }</code></td>
-      </tr>
-    </coralite-table>
+            <h2 id="migration-mapping">Migration Mapping</h2>
 
-    <coralite-heading level="2" text="Before and After"></coralite-heading>
+            <p>Every notion documented on this page maps onto the current <code>coralite</code> API:</p>
 
-    <p>Legacy <code>coralite-scripts</code> configuration:</p>
+            <div class="docs-table-wrap">
+                <table class="docs-table">
+                <thead>
+                  <tr>
+                <th>coralite-scripts (deprecated)</th>
+                <th>coralite (current)</th>
+              </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                <td><code>npm install --save-dev coralite-scripts</code></td>
+                <td><code>npm install coralite</code></td>
+              </tr>
+                  <tr>
+                <td><code>coralite-scripts dev</code></td>
+                <td><code>coralite dev</code></td>
+              </tr>
+                  <tr>
+                <td><code>coralite-scripts build</code></td>
+                <td><code>coralite build</code></td>
+              </tr>
+                  <tr>
+                <td><code>import { defineConfig } from 'coralite-scripts'</code></td>
+                <td><code>import { defineConfig } from 'coralite'</code></td>
+              </tr>
+                  <tr>
+                <td><code>templates</code> directory key</td>
+                <td><code>components</code> directory key</td>
+              </tr>
+                  <tr>
+                <td><code>styles.type: 'scss'</code> + <code>styles.input</code> (string)</td>
+                <td><code>styles: { input: [...], processors: { scss, postcss } }</code></td>
+              </tr>
+                </tbody>
+                </table>
+              </div>
 
-    <coralite-code-highlight language="javascript" title="Legacy (store for reference only)">
-import { defineConfig } from 'coralite-scripts'
+            <h2 id="before-and-after">Before and After</h2>
 
-export default defineConfig({
-  output: 'dist',
-  public: 'public',
-  pages: 'src/pages',
-  templates: 'src/components',
-  styles: {
-    type: 'scss',
-    input: './src/scss'
-  }
-})
-    </coralite-code-highlight>
+            <p>Legacy <code>coralite-scripts</code> configuration:</p>
 
-    <p>Equivalent current <code>coralite</code> configuration:</p>
+            <code-block language="javascript" filename="Legacy (store for reference only)">
+        import { defineConfig } from 'coralite-scripts'
 
-    <coralite-code-highlight language="javascript" title="Current coralite configuration">
-import { defineConfig } from 'coralite'
+        export default defineConfig({
+          output: 'dist',
+          public: 'public',
+          pages: 'src/pages',
+          templates: 'src/components',
+          styles: {
+            type: 'scss',
+            input: './src/scss'
+          }
+        })
+            </code-block>
 
-export default defineConfig({
-  output: 'dist',
-  public: 'public',
-  pages: 'src/pages',
-  components: 'src/components',
-  styles: {
-    input: ['src/scss'],
-    processors: {
-      postcss: {
-        plugins: []
-      }
-    }
-  }
-})
-    </coralite-code-highlight>
+            <p>Equivalent current <code>coralite</code> configuration:</p>
 
-    <coralite-heading level="2" text="Where This Documentation Moved"></coralite-heading>
+            <code-block language="javascript" filename="Current coralite configuration">
+        import { defineConfig } from 'coralite'
 
-    <ul>
-      <li>
-        <strong>CLI commands</strong> — <code>coralite dev</code>, <code>coralite build</code>, <code>coralite test</code>, and the <code>validate-*</code> / <code>check</code> / <code>fix</code> commands are documented in the <a href="/docs/reference/cli.html">Coralite CLI reference</a>.
-      </li>
-      <li>
-        <strong>Configuration</strong> — the complete <code>coralite.config.js</code> option reference lives in the <a href="/docs/reference/config.html">Configuration reference</a>.
-      </li>
-      <li>
-        <strong>Project setup</strong> — scaffolding with <code>create-coralite</code> and manual installation are covered in the <a href="/docs/guide/quick-start.html">Quick Start</a>.
-      </li>
-      <li>
-        <strong>Build modes</strong> — SSG, hybrid, and SPA build modes are covered in the <a href="/docs/guide/building.html">Building Applications</a> guide.
-      </li>
-    </ul>
+        export default defineConfig({
+          output: 'dist',
+          public: 'public',
+          pages: 'src/pages',
+          components: 'src/components',
+          styles: {
+            input: ['src/scss'],
+            processors: {
+              postcss: {
+                plugins: []
+              }
+            }
+          }
+        })
+            </code-block>
 
-  </main>
-  <coralite-footer></coralite-footer>
+            <h2 id="where-this-documentation-moved">Where This Documentation Moved</h2>
+
+            <ul>
+              <li>
+                <strong>CLI commands</strong> — <code>coralite dev</code>, <code>coralite build</code>, <code>coralite test</code>, and the <code>validate-*</code> / <code>check</code> / <code>fix</code> commands are documented in the <a href="/docs/reference/cli">Coralite CLI reference</a>.
+              </li>
+              <li>
+                <strong>Configuration</strong> — the complete <code>coralite.config.js</code> option reference lives in the <a href="/docs/reference/config">Configuration reference</a>.
+              </li>
+              <li>
+                <strong>Project setup</strong> — scaffolding with <code>create-coralite</code> and manual installation are covered in the <a href="/docs/guide/quick-start">Quick Start</a>.
+              </li>
+              <li>
+                <strong>Build modes</strong> — SSG, hybrid, and SPA build modes are covered in the <a href="/docs/guide/building">Building Applications</a> guide.
+              </li>
+            </ul>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/reference/e2e-testing" variant="secondary">← Previous: Hydration Readiness & E2E Testing</ui-link>
+        <ui-link href="/docs/reference/dom" variant="primary">Next: Coralite DOM Structure →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#migration-mapping">Migration Mapping</a>
+        <a href="#before-and-after">Before and After</a>
+        <a href="#where-this-documentation-moved">Where This Documentation Moved</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

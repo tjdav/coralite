@@ -1,61 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.29.5 Released: Unified AbortSignal Context"
-    description="Coralite v0.29.5 introduces unified AbortSignal support within the component context to streamline resource cleanup and maintain consistent API signatures."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-04-05T20:45:41+02:00">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.29.5 Released: Unified AbortSignal Context</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.29.5 Released: Unified AbortSignal Context"
+    description="Coralite v0.29.5 introduces unified AbortSignal support within the component context to streamline resource cleanup and maintain consistent API signatures."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-04-05"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.29.5 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.29.5 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-04-05T20:45:41+02:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.29.5 Released</h1>
+        <p class="subhead">Coralite v0.29.5 introduces unified AbortSignal support within the component context to streamline resource cleanup and maintain consistent API signatures.</p>
 
-    <p>Coralite v0.29.5 is now available. This release refines the component context API, introducing unified AbortSignal handling across component types to simplify resource cleanup and improve signature consistency.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">April 5, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Unified AbortSignal in Component Context"></coralite-heading>
-    <p>With this update, imperative Web Components receive a valid, automatically unmounting <code>AbortSignal</code> in their context object. This signal allows you to easily clean up event listeners, terminate fetch requests, and free resources when a component unmounts. To ensure a consistent API signature across all component types, declarative components now populate the <code>signal</code> context field with <code>null</code>.</p>
+      <div class="post-body">
+        <p>Coralite v0.29.5 is now available. This release refines the component context API, introducing unified AbortSignal handling across component types to simplify resource cleanup and improve signature consistency.</p>
 
-    <coralite-code-highlight language="javascript">
-export class UserProfile extends HTMLElement {
-  connectedCallback() {
-    const { signal } = this.context;
+            <h2 id="unified-abortsignal-in-component-context">Unified AbortSignal in Component Context</h2>
+            <p>With this update, imperative Web Components receive a valid, automatically unmounting <code>AbortSignal</code> in their context object. This signal allows you to easily clean up event listeners, terminate fetch requests, and free resources when a component unmounts. To ensure a consistent API signature across all component types, declarative components now populate the <code>signal</code> context field with <code>null</code>.</p>
 
-    fetch('/api/user', { signal })
-      .then(res => res.json())
-      .then(data => this.render(data))
-      .catch(err => {
-        if (err.name !== 'AbortError') {
-          console.error('Fetch failed:', err);
+            <code-block language="javascript">
+        export class UserProfile extends HTMLElement {
+          connectedCallback() {
+            const { signal } = this.context;
+
+            fetch('/api/user', { signal })
+              .then(res => res.json())
+              .then(data => this.render(data))
+              .catch(err => {
+                if (err.name !== 'AbortError') {
+                  console.error('Fetch failed:', err);
+                }
+              });
+          }
         }
-      });
-  }
-}
-    </coralite-code-highlight>
+            </code-block>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite@0.29.5
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite@0.29.5
+            </code-block>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite-scripts@0.29.5
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite-scripts@0.29.5
+            </code-block>
+      </div>
 
-    <coralite-related-posts></coralite-related-posts>
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

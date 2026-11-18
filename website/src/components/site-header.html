@@ -1,0 +1,226 @@
+<template id="site-header">
+  <header>
+    <div class="logo">
+      <site-mobile-nav></site-mobile-nav>
+      <a href="/" class="logo-link">
+        <img src="/images/logo-icon.svg" alt="" class="logo-icon" aria-hidden="true" />
+        <span class="logo-text">Coralite</span>
+      </a>
+    </div>
+    <nav class="desktop-nav">
+      <a href="/learn/">Learn</a>
+      <a href="/docs/">Docs</a>
+      <a href="/reference/">Reference</a>
+      <a href="/why/">Why Coralite</a>
+      <a href="/compare/">Compare</a>
+      <a href="/blog/">Blog</a>
+      <a href="/changelog/">Changelog</a>
+    </nav>
+    <div class="actions desktop-actions">
+      <button ref="searchBtn" class="search-btn" type="button">
+        Search... <kbd>Ctrl K</kbd>
+      </button>
+      <a href="https://github.com/tjdav/coralite" class="github-link">GitHub</a>
+      <ui-badge variant="violet">v1.3.0</ui-badge>
+    </div>
+  </header>
+  <ui-command-palette></ui-command-palette>
+</template>
+
+<script type="module">
+  export const attributes = {}
+
+  export function client ({ refs, signal }) {
+    const searchBtn = refs('searchBtn')
+
+    searchBtn.addEventListener('click', () => {
+      // Dispatch a custom event to open the palette
+      document.dispatchEvent(new CustomEvent('coralite:open-command-palette'))
+    }, { signal })
+  }
+</script>
+
+<style>
+  :host {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background-color: transparent;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  /* Glass layer: a pseudo-element keeps backdrop-filter off the host so it
+     does not become the containing block for the fixed palette/drawer. */
+  :host::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: rgba(11, 15, 25, 0.68);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :host::before {
+      background-color: var(--bg-main);
+    }
+  }
+
+  :host(:has(.is-open))::before {
+    display: none;
+  }
+
+  :host(:has(.is-open)) {
+    position: fixed;
+    inset: 0;
+    height: 100vh;
+    z-index: 100;
+    background-color: transparent;
+    border-bottom: none;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 64px;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .logo-icon {
+    display: block;
+    height: 28px;
+    width: auto;
+  }
+
+  .logo-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: inherit;
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: opacity 0.2s ease;
+  }
+
+  .logo-link:hover {
+    opacity: 0.85;
+  }
+
+  .logo-link:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 4px;
+  }
+
+  .logo-text {
+    font-family: var(--font-sans);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+  }
+
+  .desktop-nav {
+    display: flex;
+    gap: 24px;
+    flex-wrap: nowrap;
+  }
+
+  .desktop-nav a {
+    text-decoration: none;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+
+  .desktop-nav a:hover {
+    color: var(--text-primary);
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .search-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 6px 12px;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+  }
+
+  .search-btn:hover {
+    border-color: var(--border-strong);
+  }
+
+  kbd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    background-color: var(--bg-card);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .github-link {
+    text-decoration: none;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+
+  .github-link:hover {
+    color: var(--text-primary);
+  }
+
+  @media (max-width: 1280px) {
+    .desktop-nav {
+      gap: 16px;
+    }
+
+    .actions {
+      gap: 10px;
+    }
+
+    .search-btn {
+      padding: 6px 8px;
+    }
+
+    .actions ui-badge {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1100px) {
+    .desktop-nav,
+    .desktop-actions {
+      display: none;
+    }
+  }
+</style>

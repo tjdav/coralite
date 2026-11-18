@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Changelog — Coralite"
+    description="Every release across the Coralite ecosystem, newest first, with links to the longer write-ups on the blog."></page-meta>
+</head>
+<body>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
+
+  <main class="page-container changelog-page">
+    <ui-breadcrumb>
+      <a href="/">Home</a>
+      <span class="separator">/</span>
+      <span>Changelog</span>
+    </ui-breadcrumb>
+
+    <div class="lesson-header">
+      <div class="title-row">
+        <h1>Changelog</h1>
+        <ui-badge variant="cyan">Releases</ui-badge>
+      </div>
+      <p class="subhead">Every release across the Coralite ecosystem, newest first.</p>
+    </div>
+
+    <p class="changelog-lead">Looking for longer release write-ups? The <a href="/blog/">blog archive</a> has a post for every notable release.</p>
+
+    <div class="changelog-timeline" data-changelog></div>
+  </main>
+
+  <site-footer></site-footer>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Why Coralite — The Manifesto"
+    description="Coralite's manifesto: a server-rendered Web Component framework that keeps the platform's own vocabulary instead of charging a framework tax."></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <main class="why-page page-container">
+
+    <!-- Editorial Hero -->
+    <section class="hero-section">
+      <ui-badge variant="cyan">The Philosophy</ui-badge>
+      <h1>The framework that doesn't rename the platform.</h1>
+      <p class="subhead">We built Coralite because modern meta-frameworks have introduced a "Vocabulary Tax"—forcing you to learn proprietary abstractions for things the browser already does perfectly.</p>
+    </section>
+
+    <!-- Manifesto Text -->
+    <article class="manifesto-content">
+      <p class="lead">The web platform is incredibly powerful. But we've spent a decade wrapping it in heavier and heavier abstractions. We replaced native state with reactivity proxies, native forms with controlled inputs, and native DOM with virtual trees. Coralite takes a step back.</p>
+
+      <blockquote class="pull-quote">
+        HTML, CSS, and JavaScript. Server-rendered, componentized, validated at build time.
+      </blockquote>
+
+      <h2>The Non-Negotiables</h2>
+      <ul class="check-list">
+        <li><strong>Named exports over classes:</strong> No <code>class extends HTMLElement</code>.</li>
+        <li><strong>Tokens in templates, logic in scripts:</strong> Strict flat identifiers in HTML.</li>
+        <li><strong>Light DOM by default:</strong> Encapsulation via CSS Scoping, not Shadow DOM.</li>
+      </ul>
+
+      <p>Every helper in Coralite has a native Web API equivalent you could have written yourself. A helper earns its place when the native call breaks under component reuse. We never rename the platform.</p>
+
+      <p>Correctness has the same shape. Invalid templates, broken component contracts, and server imports cannot compile. Failures are deterministic, located, and explained before output ships. <a href="/docs/guide/validation">See the validation guide →</a></p>
+    </article>
+
+    <!-- The Four Tracks -->
+    <section class="tracks-section">
+      <h2>The Four Tracks</h2>
+      <div class="tracks-grid">
+        <ui-card hoverable>
+          <div slot="header" class="track-header">
+            <ui-icon name="web" size="24" class="track-icon"></ui-icon>
+            <h3>Track A: The Native Web</h3>
+          </div>
+          <p>Server-rendered Web Components, Light DOM, and progressive enhancement.</p>
+        </ui-card>
+        <ui-card hoverable>
+          <div slot="header" class="track-header">
+            <ui-icon name="strictness" size="24" class="track-icon"></ui-icon>
+            <h3>Track B: Strictness</h3>
+          </div>
+          <p>AST-level boundary enforcement, strict template tokens, and zero-runtime overhead.</p>
+        </ui-card>
+        <ui-card hoverable>
+          <div slot="header" class="track-header">
+            <ui-icon name="education" size="24" class="track-icon"></ui-icon>
+            <h3>Track C: Education</h3>
+          </div>
+          <p>A learning path that starts with basic HTML and ends with a Netflix-shaped app in one paradigm.</p>
+        </ui-card>
+        <ui-card hoverable>
+          <div slot="header" class="track-header">
+            <ui-icon name="ai" size="24" class="track-icon"></ui-icon>
+            <h3>Track D: AI Legibility</h3>
+          </div>
+          <p>Machine-readable documentation and predictable APIs that LLMs can generate without hallucinations.</p>
+        </ui-card>
+      </div>
+    </section>
+
+    <!-- Trust-Ledger Callout -->
+    <section class="callout-section">
+      <div class="callout-box">
+        <div class="callout-text">
+          <h2>Structural Guarantees vs. Reputational Guarantees.</h2>
+          <p>Next.js and Astro rely on build-time tree-shaking to keep server code secure. Coralite physically strips it via AST analysis. It cannot leak.</p>
+        </div>
+        <ui-link href="/compare/" variant="primary">See the Benchmarks →</ui-link>
+      </div>
+    </section>
+  </main>
+
+  <site-footer></site-footer>
+</body>
+</html>

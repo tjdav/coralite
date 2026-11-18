@@ -1,0 +1,61 @@
+<template id="ui-accordion">
+  <details class="accordion" open="{{ open }}">
+    <summary class="accordion-header">
+      <span>{{ title }}</span>
+      <ui-icon name="chevron-down" class="chevron"></ui-icon>
+    </summary>
+    <div class="accordion-content">
+      <slot></slot>
+    </div>
+  </details>
+</template>
+
+<script type="module">
+  export const attributes = {
+    title: { type: String, required: true },
+    open: { type: Boolean, default: true }
+  }
+</script>
+
+<style>
+  :host {
+    display: block;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none; /* Hide default marker in Firefox */
+  }
+
+  /* Hide default marker in Chrome/Safari */
+  .accordion-header::-webkit-details-marker {
+    display: none;
+  }
+
+  .chevron {
+    transition: transform 0.2s ease;
+    color: var(--text-muted);
+  }
+
+  .accordion[open] .chevron {
+    transform: rotate(180deg);
+  }
+
+  .accordion-content {
+    padding: 0 16px 16px 16px;
+    color: var(--text-body);
+    font-family: var(--font-sans);
+    font-size: 14px;
+  }
+</style>

@@ -1,66 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.26.0 Released: Client Plugins & Bundle Enhancements"
-    description="Coralite v0.26.0 introduces a major refactor to rename the script plugin to client, moving the setup process directly to the frontend bundle, and simplifying attributes."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-03-05T11:53:12.000Z">
-  <meta name="author_id" content="thomas" data-dev="true">
-  <title>Coralite v0.26.0 Released: Client Plugins & Bundle Enhancements</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.26.0 Released: Client Plugins &amp; Bundle Enhancements"
+    description="Coralite v0.26.0 introduces a major refactor to rename the script plugin to client, moving the setup process directly to the frontend bundle, and simplifying attributes."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-03-05"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.26.0 Released</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.26.0 Released</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2026-03-05T11:53:12.000Z"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.26.0 Released</h1>
+        <p class="subhead">Coralite v0.26.0 introduces a major refactor to rename the script plugin to client, moving the setup process directly to the frontend bundle, and simplifying attributes.</p>
 
-    <p>I am excited to announce the release of <strong>Coralite v0.26.0</strong>! This update brings an important architectural shift by renaming the script plugin to client and moving its setup process directly into the frontend bundle.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">March 5, 2026</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Client Plugins & Bundle Setup"></coralite-heading>
+      <div class="post-body">
+        <p>I am excited to announce the release of <strong>Coralite v0.26.0</strong>! This update brings an important architectural shift by renaming the script plugin to client and moving its setup process directly into the frontend bundle.</p>
 
-    <p>This release introduces a significant refactor to how scripts are handled. We have renamed the <code>script</code> configuration to <code>client</code> in <code>createPlugin</code>. Additionally, the <code>client.setup</code> execution has been moved from the server-side <code>ScriptManager.prototype.use</code> to the frontend bundle.</p>
-    
-    <p>By bundling <code>client.setup</code> into the frontend output, it now executes globally during initialization, and its result is deeply merged into <code>context.values</code>. This simplifies the execution flow and improves consistency between the server and the client environment.</p>
+            <h2 id="client-plugins-bundle-setup">Client Plugins & Bundle Setup</h2>
 
-    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+            <p>This release introduces a significant refactor to how scripts are handled. We have renamed the <code>script</code> configuration to <code>client</code> in <code>createPlugin</code>. Additionally, the <code>client.setup</code> execution has been moved from the server-side <code>ScriptManager.prototype.use</code> to the frontend bundle.</p>
+            
+            <p>By bundling <code>client.setup</code> into the frontend output, it now executes globally during initialization, and its result is deeply merged into <code>context.values</code>. This simplifies the execution flow and improves consistency between the server and the client environment.</p>
 
-    <p>Due to the architectural improvements mentioned above, there are a few breaking changes to be aware of when upgrading to v0.26.0:</p>
+            <h2 id="breaking-changes">Breaking Changes</h2>
 
-    <ul>
-      <li><strong>Renamed `script` to `client`:</strong> The `script` property in `createPlugin` has been renamed to `client`. You will need to update your plugin configurations to use the new name.</li>
-      <li><strong>Server-side Execution Removed:</strong> Server-side execution of `client.setup` in `ScriptManager.prototype.use` has been completely removed.</li>
-      <li><strong>Bundled Execution:</strong> `ScriptManager.prototype.compileAllInstances` now bundles `client.setup` into the frontend output. Ensure any setup logic is compatible with the client environment.</li>
-    </ul>
+            <p>Due to the architectural improvements mentioned above, there are a few breaking changes to be aware of when upgrading to v0.26.0:</p>
 
-    <coralite-heading level="2" text="Code Refactoring"></coralite-heading>
+            <ul>
+              <li><strong>Renamed `script` to `client`:</strong> The `script` property in `createPlugin` has been renamed to `client`. You will need to update your plugin configurations to use the new name.</li>
+              <li><strong>Server-side Execution Removed:</strong> Server-side execution of `client.setup` in `ScriptManager.prototype.use` has been completely removed.</li>
+              <li><strong>Bundled Execution:</strong> `ScriptManager.prototype.compileAllInstances` now bundles `client.setup` into the frontend output. Ensure any setup logic is compatible with the client environment.</li>
+            </ul>
 
-    <p>Alongside the main architectural changes, we've also cleaned up some types and tests:</p>
-    
-    <ul>
-      <li>Migrated from script to client config in the `test-script-plugin`.</li>
-      <li>Renamed the `IgnoreByAttribute` type to simply `Attribute`, streamlining our type definitions.</li>
-    </ul>
+            <h2 id="code-refactoring">Code Refactoring</h2>
 
-    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+            <p>Alongside the main architectural changes, we've also cleaned up some types and tests:</p>
+            
+            <ul>
+              <li>Migrated from script to client config in the `test-script-plugin`.</li>
+              <li>Renamed the `IgnoreByAttribute` type to simply `Attribute`, streamlining our type definitions.</li>
+            </ul>
 
-    <p>To upgrade to the latest version, update your project dependencies:</p>
+            <h2 id="how-to-upgrade">How to Upgrade</h2>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite@0.26.0
-    </coralite-code-highlight>
+            <p>To upgrade to the latest version, update your project dependencies:</p>
 
-    <coralite-code-highlight language="bash">
-      npm install coralite-scripts@0.26.0
-    </coralite-code-highlight>
+            <code-block language="bash">
+              npm install coralite@0.26.0
+            </code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <code-block language="bash">
+              npm install coralite-scripts@0.26.0
+            </code-block>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

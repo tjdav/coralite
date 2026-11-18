@@ -1,69 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration 
-    type="article"
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
     title="Coralite v0.18.4 Release Notes"
-    seo-title="Coralite v0.18.4 Released: New Utilities, Improved Dev Experience & Responsive Fixes"
-    description="Coralite v0.18.4 adds recursive directory copying, sticky navbar, responsive hero section, and enhanced dev tools. Includes bug fixes, performance improvements, and updated dependencies for a smoother static site generation workflow."
-  ></coralite-meta>
-
-  <meta property="article:published_time" name="published_time" content="2025-09-18T08:17:57.000Z">
-  <meta name="author_id" content="thomas" data-dev="true">
+    description="Coralite v0.18.4 adds recursive directory copying, sticky navbar, responsive hero section, and enhanced dev tools."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-09-18"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.18.4</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.18.4</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-09-18T08:17:57.000Z"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.18.4</h1>
+        <p class="subhead">Coralite v0.18.4 adds recursive directory copying, sticky navbar, responsive hero section, and enhanced dev tools. Includes bug fixes, performance improvements, and updated dependencies for a smoother static site generation workflow.</p>
 
-    <p>Coralite v0.18.4 introduces new utility functions, enhances developer experience in local development, and includes several visual and structural refinements to improve usability and maintainability.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">September 18, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Key Features"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite v0.18.4 introduces new utility functions, enhances developer experience in local development, and includes several visual and structural refinements to improve usability and maintainability.</p>
 
-    <ul>
-      <li>Added <code>public</code> directory copying in development mode via <code>coralite-scripts</code>, enabling asset serving during local development.</li>
-      <li>Introduced <code>copyDirectory</code> utility for recursive directory copying, simplifying file system operations in build and plugin workflows.</li>
-      <li>Added <code>deleteDirectoryRecursively</code> utility function for safe and efficient cleanup of nested directories during compilation or build processes.</li>
-      <li>Enhanced UI with new layout and display utility functions to support consistent styling and responsive design patterns.</li>
-      <li>Implemented a sticky navbar for improved navigation experience on longer pages.</li>
-      <li>Added SVG logo and updated hero section with responsive markup and background styling for better visual consistency across devices.</li>
-      <li>Transferred branding and assets from <code>coralite.io</code> to the core project, unifying design and content.</li>
-      <li>Exported type definitions to improve type safety and developer tooling support in plugin and application code.</li>
-    </ul>
+            <h2 id="key-features">Key Features</h2>
 
-    <coralite-heading level="2" text="Bug Fixes"></coralite-heading>
+            <ul>
+              <li>Added <code>public</code> directory copying in development mode via <code>coralite-scripts</code>, enabling asset serving during local development.</li>
+              <li>Introduced <code>copyDirectory</code> utility for recursive directory copying, simplifying file system operations in build and plugin workflows.</li>
+              <li>Added <code>deleteDirectoryRecursively</code> utility function for safe and efficient cleanup of nested directories during compilation or build processes.</li>
+              <li>Enhanced UI with new layout and display utility functions to support consistent styling and responsive design patterns.</li>
+              <li>Implemented a sticky navbar for improved navigation experience on longer pages.</li>
+              <li>Added SVG logo and updated hero section with responsive markup and background styling for better visual consistency across devices.</li>
+              <li>Transferred branding and assets from <code>coralite.io</code> to the core project, unifying design and content.</li>
+              <li>Exported type definitions to improve type safety and developer tooling support in plugin and application code.</li>
+            </ul>
 
-    <ul>
-      <li>Output directory is now cleaned before compilation, preventing stale files from interfering with builds.</li>
-      <li>Removed unused custom hot reload element, reducing bundle size and potential runtime conflicts.</li>
-      <li>Fixed hero section markup and responsiveness, ensuring consistent layout across screen sizes.</li>
-      <li>Removed unused border styles on buttons to improve visual clarity and reduce CSS bloat.</li>
-    </ul>
+            <h2 id="bug-fixes">Bug Fixes</h2>
 
-    <coralite-heading level="2" text="Maintenance & Improvements"></coralite-heading>
+            <ul>
+              <li>Output directory is now cleaned before compilation, preventing stale files from interfering with builds.</li>
+              <li>Removed unused custom hot reload element, reducing bundle size and potential runtime conflicts.</li>
+              <li>Fixed hero section markup and responsiveness, ensuring consistent layout across screen sizes.</li>
+              <li>Removed unused border styles on buttons to improve visual clarity and reduce CSS bloat.</li>
+            </ul>
 
-    <ul>
-      <li>Removed redundant <code>hrtime</code> initialization in build mode, improving performance.</li>
-      <li>Updated dependency lock files and dependencies including <code>esbuild</code>, <code>playwright-firefox</code>, and <code>@types/node</code> to ensure compatibility and security.</li>
-      <li>Upgraded <code>pnpm</code> to version 10.17.0 and added <code>coralite-release</code> for streamlined release workflows.</li>
-      <li>Updated ESLint stylistic plugins and build scripts to run before publishing, ensuring consistent code quality.</li>
-      <li>Changelog updated to reflect all changes for transparency and release tracking.</li>
-    </ul>
+            <h2 id="maintenance-improvements">Maintenance & Improvements</h2>
 
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <ul>
+              <li>Removed redundant <code>hrtime</code> initialization in build mode, improving performance.</li>
+              <li>Updated dependency lock files and dependencies including <code>esbuild</code>, <code>playwright-firefox</code>, and <code>@types/node</code> to ensure compatibility and security.</li>
+              <li>Upgraded <code>pnpm</code> to version 10.17.0 and added <code>coralite-release</code> for streamlined release workflows.</li>
+              <li>Updated ESLint stylistic plugins and build scripts to run before publishing, ensuring consistent code quality.</li>
+              <li>Changelog updated to reflect all changes for transparency and release tracking.</li>
+            </ul>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.18.4</coralite-code-highlight>
+            <h2 id="get-the-release">Get the release</h2>
 
-    <p>For a complete list of changes, view the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.18.4" target="_blank">v0.18.4 changelog on Codeberg</a>.</p>
+            <code-block language="bash">npm install coralite@0.18.4</code-block>
+
+            <p>For a complete list of changes, view the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.18.4" target="_blank">v0.18.4 changelog on Codeberg</a>.</p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-
+  <site-footer></site-footer>
 </body>
-
 </html>

@@ -1,305 +1,348 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Coralite Plugin Authoring Guide: Extend the Framework Architecture"
-    description="Learn the concepts of authoring Coralite plugins. Understand server-side lifecycle hooks, global component registration, and injecting client.context."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite Plugin Authoring Guide: Extend the Framework Architecture"
+    description="Learn the concepts of authoring Coralite plugins. Understand server-side lifecycle hooks, global component registration, and injecting client.context."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main class="container content">
-    <h1 class="display">Authoring Plugins</h1>
+  <site-header></site-header>
 
-    <p>Plugins are the primary way to extend Coralite's functionality. The framework's architecture is designed to be highly extensible via the <code>definePlugin</code> function.</p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="guide/plugins"></docs-sidebar>
 
-    <p>With plugins, you can hook deep into the build lifecycle, register custom components globally, bundle external scripts, and inject custom helper functions directly into the frontend.</p>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/guide/">Guide</a>
+        <span class="separator">/</span>
+        <span>Authoring Plugins</span>
+      </ui-breadcrumb>
 
-    <coralite-heading level="2" text="The Conceptual Flow"></coralite-heading>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Authoring Plugins</h1>
+          <ui-badge variant="cyan">Guide</ui-badge>
+        </div>
+        <p class="subhead">Learn the concepts of authoring Coralite plugins. Understand server-side lifecycle hooks, global component registration, and injecting client.context.</p>
+      </div>
 
-    <p>Authoring a plugin involves understanding how Coralite synthesizes server-side rendering and client-side hydration. When you register a plugin, Coralite integrates it through the following flow:</p>
+      <div class="lesson-body">
+        <p>Plugins are the primary way to extend Coralite's functionality. The framework's architecture is designed to be highly extensible via the <code>definePlugin</code> function.</p>
 
-    <ol>
-      <li><strong>Registration & Bootstrapping:</strong> Coralite loads your plugin via <code>definePlugin</code>. It initializes both <code>server</code> and <code>client</code> configurations, setting up global contexts that will be available to components and pages.</li>
-      <li><strong>Server Execution:</strong> During the build process, Coralite triggers server-side lifecycle hooks (like <code>onPageSet</code> or <code>onBeforeBuild</code>). If your plugin provides a <code>server.context</code>, its methods become available to component <code>server()</code> blocks and page <code>server</code> handlers.</li>
-      <li><strong>Discovery & Bundling:</strong> Coralite analyzes components and pages, identifying which plugin utilities are being used. It automatically bundles necessary dependencies and prepares the client-side runtime.</li>
-      <li><strong>Client Hydration & Execution:</strong> In the browser, Coralite initializes the <code>client.context</code>. Plugin hooks like <code>onBeforeComponentRender</code> fire as components mount, and your utilities become available via the context object in component <code>client()</code> and page <code>client()</code> blocks.</li>
-    </ol>
+            <p>With plugins, you can hook deep into the build lifecycle, register custom components globally, bundle external scripts, and inject custom helper functions directly into the frontend.</p>
 
-    <coralite-heading level="2" text="Server-Side Lifecycle Hooks"></coralite-heading>
+            <h2 id="the-conceptual-flow">The Conceptual Flow</h2>
 
-    <p>Plugins can hook into almost every phase of Coralite's build lifecycle to perform actions when files are processed or rendering occurs.</p>
+            <p>Authoring a plugin involves understanding how Coralite synthesizes server-side rendering and client-side hydration. When you register a plugin, Coralite integrates it through the following flow:</p>
 
-    <p>Hooks receive a context object containing the <code>app</code> instance, the plugin's <code>config</code>, and relevant lifecycle data.</p>
+            <ol>
+              <li><strong>Registration & Bootstrapping:</strong> Coralite loads your plugin via <code>definePlugin</code>. It initializes both <code>server</code> and <code>client</code> configurations, setting up global contexts that will be available to components and pages.</li>
+              <li><strong>Server Execution:</strong> During the build process, Coralite triggers server-side lifecycle hooks (like <code>onPageSet</code> or <code>onBeforeBuild</code>). If your plugin provides a <code>server.context</code>, its methods become available to component <code>server()</code> blocks and page <code>server</code> handlers.</li>
+              <li><strong>Discovery & Bundling:</strong> Coralite analyzes components and pages, identifying which plugin utilities are being used. It automatically bundles necessary dependencies and prepares the client-side runtime.</li>
+              <li><strong>Client Hydration & Execution:</strong> In the browser, Coralite initializes the <code>client.context</code>. Plugin hooks like <code>onBeforeComponentRender</code> fire as components mount, and your utilities become available via the context object in component <code>client()</code> and page <code>client()</code> blocks.</li>
+            </ol>
 
-    <coralite-code-highlight language="javascript">
-      export default definePlugin({
-        name: 'my-hook-plugin',
-        server: {
-          // Fire when a new page is discovered
-          onPageSet: async ({ page, data, app }) => {
-            console.log(`Processing page: ${data.path.pathname}`);
-            // You can mutate the page object directly
-            page.meta.processedBy = 'my-hook-plugin';
-          },
+            <h2 id="server-side-lifecycle-hooks">Server-Side Lifecycle Hooks</h2>
 
-          // Fire before a page is rendered to HTML
-          onBeforePageRender: async ({ elements, page, app }) => {
-            // 'elements' is the parsed HTML AST. 
-            // You can inject or modify elements here.
-            elements.root.children.push({
-              type: 'tag',
-              name: 'div',
-              attribs: { id: 'plugin-injected' },
-              children: [{ type: 'text', data: 'Hello from Plugin!' }]
-            });
-          }
-        }
-      });
-    </coralite-code-highlight>
+            <p>Plugins can hook into almost every phase of Coralite's build lifecycle to perform actions when files are processed or rendering occurs.</p>
 
-    <p>For a full list of available hooks and their arguments, see the <a href="/docs/reference/define-plugin.html#server-hooks">API Reference</a>.</p>
+            <p>Hooks receive a context object containing the <code>app</code> instance, the plugin's <code>config</code>, and relevant lifecycle data.</p>
 
-    <coralite-heading level="2" text="Server-Side Context"></coralite-heading>
+            <code-block language="javascript">
+              export default definePlugin({
+                name: 'my-hook-plugin',
+                server: {
+                  // Fire when a new page is discovered
+                  onPageSet: async ({ page, data, app }) => {
+                    console.log(`Processing page: ${data.path.pathname}`);
+                    // You can mutate the page object directly
+                    page.meta.processedBy = 'my-hook-plugin';
+                  },
 
-    <p>While <code>client.context</code> is for the browser, <code>server.context</code> allows you to provide utilities to the <code>server</code> block of components and pages (<code>server</code>). This is useful for providing data fetching helpers, logging, or shared business logic that should only run during the build.</p>
-
-    <p>Just like the client context, <code>server.context</code> uses a <strong>Two-Phase Resolver</strong>. The first phase allows for global setup and inter-plugin registration, while the second phase provides the actual utilities to the component or page instance.</p>
-
-    <coralite-code-highlight language="javascript">
-      // Plugin definition
-      export default definePlugin({
-        name: 'data-helper',
-        server: {
-          context: (pluginContext) => {
-            // Phase 1: Global setup. Mutate pluginContext to share with other plugins.
-            pluginContext.db = initializeDB();
-
-            return (instanceContext) => {
-              // Phase 2: Per-instance resolver. 
-              // Use instanceContext to access other plugins.
-              const logger = instanceContext['logger-plugin'];
-
-              return {
-                fetchSecure: async (url) => {
-                  logger.log(`Fetching: ${url}`);
-                  const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${pluginContext.config.token}` }
-                  });
-                  return response.json();
+                  // Fire before a page is rendered to HTML
+                  onBeforePageRender: async ({ elements, page, app }) => {
+                    // 'elements' is the parsed HTML AST. 
+                    // You can inject or modify elements here.
+                    elements.root.children.push({
+                      type: 'tag',
+                      name: 'div',
+                      attribs: { id: 'plugin-injected' },
+                      children: [{ type: 'text', data: 'Hello from Plugin!' }]
+                    });
+                  }
                 }
-              };
-            }
-          }
-        }
-      });
+              });
+            </code-block>
 
-      // Usage in a component
-      export default defineComponent({
-        async server({ 'data-helper': helper }) {
-          const data = await helper.fetchSecure('https://api.example.com/data');
-          return { data };
-        }
-      });
-    </coralite-code-highlight>
+            <p>For a full list of available hooks and their arguments, see the <a href="/docs/reference/define-plugin.html#server-hooks">API Reference</a>.</p>
 
-    <coralite-heading level="2" text="Ubiquitous Ambient Context (context)"></coralite-heading>
+            <h2 id="server-side-context">Server-Side Context</h2>
 
-    <p>When a plugin provides lightweight, synchronous utilities (such as an i18n translation helper <code>$t</code>, formatters, or math utilities) that need to be universally accessible across <strong>all</strong> execution blocks &mdash; including component and page <code>server()</code>, <code>getters</code>, <code>client()</code>, <code>slots</code>, and <code>style</code> &mdash; declare top-level <code>context</code> instead of splitting into separate <code>server.context</code> and <code>client.context</code> blocks.</p>
+            <p>While <code>client.context</code> is for the browser, <code>server.context</code> allows you to provide utilities to the <code>server</code> block of components and pages (<code>server</code>). This is useful for providing data fetching helpers, logging, or shared business logic that should only run during the build.</p>
 
-    <p>Top-level context uses the curried <strong>Two-Phase Resolver</strong> pattern: Phase 1 runs at plugin initialization, and Phase 2 lazily resolves per instance context:</p>
+            <p>Just like the client context, <code>server.context</code> uses a <strong>Two-Phase Resolver</strong>. The first phase allows for global setup and inter-plugin registration, while the second phase provides the actual utilities to the component or page instance.</p>
 
-    <coralite-code-highlight language="javascript">
-      import { definePlugin } from 'coralite';
+            <code-block language="javascript">
+              // Plugin definition
+              export default definePlugin({
+                name: 'data-helper',
+                server: {
+                  context: (pluginContext) => {
+                    // Phase 1: Global setup. Mutate pluginContext to share with other plugins.
+                    pluginContext.db = initializeDB();
 
-      export default definePlugin({
-        name: '$t',
-        config: {
-          defaultLocale: { type: String, default: 'en' }
-        },
-        context: ({ app, config }) => {
-          const dict = {
-            en: { welcome: 'Welcome', submit: 'Submit' },
-            es: { welcome: 'Bienvenido', submit: 'Enviar' }
-          };
+                    return (instanceContext) => {
+                      // Phase 2: Per-instance resolver. 
+                      // Use instanceContext to access other plugins.
+                      const logger = instanceContext['logger-plugin'];
 
-          return (instanceContext) => {
-            const locale = instanceContext.route?.params?.lang || config.defaultLocale;
-            return (key) => dict[locale]?.[key] || key;
-          };
-        }
-      });
-    </coralite-code-highlight>
+                      return {
+                        fetchSecure: async (url) => {
+                          logger.log(`Fetching: ${url}`);
+                          const response = await fetch(url, {
+                            headers: { 'Authorization': `Bearer ${pluginContext.config.token}` }
+                          });
+                          return response.json();
+                        }
+                      };
+                    }
+                  }
+                }
+              });
 
-    <p>Because top-level <code>context</code> is available directly in <code>getters</code>, zero-JS static components can resolve localized copy during SSR and client hydration without needing to define a boilerplate <code>server()</code> block:</p>
+              // Usage in a component
+              export default defineComponent({
+                async server({ 'data-helper': helper }) {
+                  const data = await helper.fetchSecure('https://api.example.com/data');
+                  return { data };
+                }
+              });
+            </code-block>
 
-    <coralite-code-highlight language="html">
-      &lt;template id="greeting-banner"&gt;
-        &lt;h1&gt;{{ heading }}&lt;/h1&gt;
-      &lt;/template&gt;
+            <h2 id="ubiquitous-ambient-context-context">Ubiquitous Ambient Context (context)</h2>
 
-      &lt;script type="module"&gt;
-        export const getters = {
-          heading: ({ $t }) => $t('welcome')
-        };
-      &lt;/script&gt;
-    </coralite-code-highlight>
+            <p>When a plugin provides lightweight, synchronous utilities (such as an i18n translation helper <code>$t</code>, formatters, or math utilities) that need to be universally accessible across <strong>all</strong> execution blocks &mdash; including component and page <code>server()</code>, <code>getters</code>, <code>client()</code>, <code>slots</code>, and <code>style</code> &mdash; declare top-level <code>context</code> instead of splitting into separate <code>server.context</code> and <code>client.context</code> blocks.</p>
 
-    <p><strong>Mutual Exclusivity Rule (<code>CORALITE-P211</code>):</strong> A plugin must define either top-level <code>context</code> (for ubiquitous, synchronous ambient helpers) or environment-specific <code>server.context</code> / <code>client.context</code> (for asynchronous, environment-specialized tasks). Defining both top-level <code>context</code> and environment-specific context on the same plugin throws <code>CORALITE-P211</code>.</p>
+            <p>Top-level context uses the curried <strong>Two-Phase Resolver</strong> pattern: Phase 1 runs at plugin initialization, and Phase 2 lazily resolves per instance context:</p>
 
-    <coralite-heading level="2" text="Global Component Registration"></coralite-heading>
+            <code-block language="javascript">
+              import { definePlugin } from 'coralite';
 
-    <p>Plugins can distribute their own HTML components. By providing an array of file paths to the <code>components</code> property in your plugin configuration, Coralite automatically reads, parses, and registers these files as global components during initialization.</p>
+              export default definePlugin({
+                name: '$t',
+                config: {
+                  defaultLocale: { type: String, default: 'en' }
+                },
+                context: ({ app, config }) => {
+                  const dict = {
+                    en: { welcome: 'Welcome', submit: 'Submit' },
+                    es: { welcome: 'Bienvenido', submit: 'Enviar' }
+                  };
 
-    <p>This means users of your plugin can instantly use your custom tags (e.g., <code>&lt;my-awesome-slider&gt;</code>) without having to copy the HTML files into their own project's <code>src/components/</code> directory.</p>
+                  return (instanceContext) => {
+                    const locale = instanceContext.route?.params?.lang || config.defaultLocale;
+                    return (key) => dict[locale]?.[key] || key;
+                  };
+                }
+              });
+            </code-block>
 
-    <coralite-heading level="2" text="Injecting Client Helpers"></coralite-heading>
+            <p>Because top-level <code>context</code> is available directly in <code>getters</code>, zero-JS static components can resolve localized copy during SSR and client hydration without needing to define a boilerplate <code>server()</code> block:</p>
 
-    <p>The most powerful feature of Coralite plugins is the ability to provide reusable functionality directly to component and page client blocks using <code>client.context</code>.</p>
+            <code-block language="html">
+              &lt;template id="greeting-banner"&gt;
+                &lt;h1&gt;{{ heading }}&lt;/h1&gt;
+              &lt;/template&gt;
 
-    <p>Context utilities are namespaced on the <code>context</code> object available in component <code>client()</code> and page <code>client</code> execution blocks (e.g. <code>context['my-plugin']</code>). However, because Coralite is a static site generator, there is a strict boundary between server code and client code.</p>
+              &lt;script type="module"&gt;
+                export const getters = {
+                  heading: ({ $t }) => $t('welcome')
+                };
+              &lt;/script&gt;
+            </code-block>
 
-    <coralite-heading level="3" text="The Two-Phase Resolver"></coralite-heading>
+            <p><strong>Mutual Exclusivity Rule (<code>CORALITE-P211</code>):</strong> A plugin must define either top-level <code>context</code> (for ubiquitous, synchronous ambient helpers) or environment-specific <code>server.context</code> / <code>client.context</code> (for asynchronous, environment-specialized tasks). Defining both top-level <code>context</code> and environment-specific context on the same plugin throws <code>CORALITE-P211</code>.</p>
 
-    <p>Helpers must be structured using a Two-Phase Resolver function that executes during setup. The outermost function receives the plugin context (Phase 1, runs on the server and contains the global application instance and plugin configuration), and it must return a second function that receives the local Web Component instance context (Phase 2). This second function then returns an object containing the actual utility functions accessible on the client.</p>
+            <h2 id="global-component-registration">Global Component Registration</h2>
 
-    <p>To use client-only APIs (like <code>window</code>, <code>document</code>, or the component's <code>AbortSignal</code>), the returned helper functions encapsulate that logic within their own bodies.</p>
+            <p>Plugins can distribute their own HTML components. By providing an array of file paths to the <code>components</code> property in your plugin configuration, Coralite automatically reads, parses, and registers these files as global components during initialization.</p>
 
-    <coralite-heading level="3" text="Inter-Plugin Communication"></coralite-heading>
+            <p>This means users of your plugin can instantly use your custom tags (e.g., <code>&lt;my-awesome-slider&gt;</code>) without having to copy the HTML files into their own project's <code>src/components/</code> directory.</p>
 
-    <p>Because Phase 1 of the resolver runs during initialization, you can use it to share services between plugins. Any property added to the <code>pluginContext</code> object in Phase 1 becomes available to all subsequent plugins.</p>
+            <h2 id="injecting-client-helpers">Injecting Client Helpers</h2>
 
-    <coralite-code-highlight language="javascript">
-      // Plugin A: Provides a shared service
-      client: {
-        context: (pluginContext) => {
-          pluginContext.mySharedService = { log: (msg) => console.log(msg) };
-          return (instanceContext) => ({});
-        }
-      }
+            <p>The most powerful feature of Coralite plugins is the ability to provide reusable functionality directly to component and page client blocks using <code>client.context</code>.</p>
 
-      // Plugin B: Consumes the shared service
-      client: {
-        context: (pluginContext) => {
-          const service = pluginContext.mySharedService;
-          return (instanceContext) => {
-            return {
-              doSomething: () => service.log('Doing something...')
-            };
-          };
-        }
-      }
-    </coralite-code-highlight>
+            <p>Context utilities are namespaced on the <code>context</code> object available in component <code>client()</code> and page <code>client</code> execution blocks (e.g. <code>context['my-plugin']</code>). However, because Coralite is a static site generator, there is a strict boundary between server code and client code.</p>
 
-    <coralite-code-highlight language="javascript">
-      // Server-side definition in definePlugin
-      client: {
-        context: (pluginContext) => {
-          // Phase 1: Runs on the SERVER and receives pluginContext (including config)
-          const apiKey = pluginContext.config.apiKey;
-          
-          // Share data with other plugins in Phase 1
-          pluginContext.sharedClientData = { version: '1.0' };
+            <h3 id="the-two-phase-resolver">The Two-Phase Resolver</h3>
 
-          return (instanceContext) => {
-            // Phase 2: Receives the local Web Component instance context (signal, state, etc.)
-            // and the namespaced proxy to other plugins.
-            const { signal } = instanceContext;
-            const uiPlugin = instanceContext['ui-plugin'];
+            <p>Helpers must be structured using a Two-Phase Resolver function that executes during setup. The outermost function receives the plugin context (Phase 1, runs on the server and contains the global application instance and plugin configuration), and it must return a second function that receives the local Web Component instance context (Phase 2). This second function then returns an object containing the actual utility functions accessible on the client.</p>
 
-            // Phase 3: Return the actual helper object accessible in the browser
-            return {
-              trackEvent: (buttonElement, eventName) => {
-                uiPlugin.showToast(`Tracking: ${eventName}`);
-                buttonElement.addEventListener('click', () => {
-                  window.navigator.sendBeacon('https://api.analytics.com', JSON.stringify({
-                    key: apiKey,
-                    event: eventName
-                  }));
-                }, { signal });
+            <p>To use client-only APIs (like <code>window</code>, <code>document</code>, or the component's <code>AbortSignal</code>), the returned helper functions encapsulate that logic within their own bodies.</p>
+
+            <h3 id="inter-plugin-communication">Inter-Plugin Communication</h3>
+
+            <p>Because Phase 1 of the resolver runs during initialization, you can use it to share services between plugins. Any property added to the <code>pluginContext</code> object in Phase 1 becomes available to all subsequent plugins.</p>
+
+            <code-block language="javascript">
+              // Plugin A: Provides a shared service
+              client: {
+                context: (pluginContext) => {
+                  pluginContext.mySharedService = { log: (msg) => console.log(msg) };
+                  return (instanceContext) => ({});
+                }
               }
-            };
-          }
-        }
-      }
-    </coralite-code-highlight>
 
-    <coralite-heading level="2" text="Client-Side Lifecycle Hooks"></coralite-heading>
+              // Plugin B: Consumes the shared service
+              client: {
+                context: (pluginContext) => {
+                  const service = pluginContext.mySharedService;
+                  return (instanceContext) => {
+                    return {
+                      doSomething: () => service.log('Doing something...')
+                    };
+                  };
+                }
+              }
+            </code-block>
 
-    <p>Just like on the server, plugins can hook into the client-side lifecycle of every component. This is useful for global monitoring, automatic event tracking, or managing global state.</p>
+            <code-block language="javascript">
+              // Server-side definition in definePlugin
+              client: {
+                context: (pluginContext) => {
+                  // Phase 1: Runs on the SERVER and receives pluginContext (including config)
+                  const apiKey = pluginContext.config.apiKey;
+                  
+                  // Share data with other plugins in Phase 1
+                  pluginContext.sharedClientData = { version: '1.0' };
 
-    <ul>
-      <li><code>onBeforeComponentRender(instanceContext)</code>: Fires before a component's <code>client</code> block executes.</li>
-      <li><code>onAfterComponentRender(instanceContext)</code>: Fires after a component's <code>client</code> block executes.</li>
-      <li><code>onDisconnected(instanceContext)</code>: Fires when a component is removed from the DOM.</li>
-    </ul>
+                  return (instanceContext) => {
+                    // Phase 2: Receives the local Web Component instance context (signal, state, etc.)
+                    // and the namespaced proxy to other plugins.
+                    const { signal } = instanceContext;
+                    const uiPlugin = instanceContext['ui-plugin'];
 
-    <coralite-code-highlight language="javascript">
-      export default definePlugin({
-        name: 'client-monitor',
-        client: {
-          onBeforeComponentRender: (context) => {
-            console.log(`Component ${context.id} is mounting...`);
-          },
-          onDisconnected: (context) => {
-            console.log(`Component ${context.id} was removed.`);
-          }
-        }
-      });
-    </coralite-code-highlight>
+                    // Phase 3: Return the actual helper object accessible in the browser
+                    return {
+                      trackEvent: (buttonElement, eventName) => {
+                        uiPlugin.showToast(`Tracking: ${eventName}`);
+                        buttonElement.addEventListener('click', () => {
+                          window.navigator.sendBeacon('https://api.analytics.com', JSON.stringify({
+                            key: apiKey,
+                            event: eventName
+                          }));
+                        }, { signal });
+                      }
+                    };
+                  }
+                }
+              }
+            </code-block>
 
-    <coralite-heading level="2" text="Imperative Components & Dependency Tracking"></coralite-heading>
+            <h2 id="client-side-lifecycle-hooks">Client-Side Lifecycle Hooks</h2>
 
-    <p>Shared DOM factories belong in a plugin's <code>client.context</code> or in component/page <code>client()</code> code. Coralite AST-scans those client functions, rewrites <code>document.createElement</code>, <code>innerHTML</code>, <code>outerHTML</code>, and <code>insertAdjacentHTML</code> to its on-demand component loaders, and records literal custom-element tags in page/component dependency metadata.</p>
+            <p>Just like on the server, plugins can hook into the client-side lifecycle of every component. This is useful for global monitoring, automatic event tracking, or managing global state.</p>
 
-    <coralite-code-highlight language="javascript" title="Creating a Component from Plugin Context">
-      import { definePlugin } from 'coralite'
+            <ul>
+              <li><code>onBeforeComponentRender(instanceContext)</code>: Fires before a component's <code>client</code> block executes.</li>
+              <li><code>onAfterComponentRender(instanceContext)</code>: Fires after a component's <code>client</code> block executes.</li>
+              <li><code>onDisconnected(instanceContext)</code>: Fires when a component is removed from the DOM.</li>
+            </ul>
 
-      export default definePlugin({
-        name: 'eventCards',
-        client: {
-          context: () => (instanceContext) => ({
-            createCard (event) {
-              const card = document.createElement('event-card')
-              card.setAttribute('event-id', event.id)
-              card.setAttribute('label', event.title)
-              return card
-            }
-          })
-        }
-      })
-    </coralite-code-highlight>
+            <code-block language="javascript">
+              export default definePlugin({
+                name: 'client-monitor',
+                client: {
+                  onBeforeComponentRender: (context) => {
+                    console.log(`Component ${context.id} is mounting...`);
+                  },
+                  onDisconnected: (context) => {
+                    console.log(`Component ${context.id} was removed.`);
+                  }
+                }
+              });
+            </code-block>
 
-    <p>Use literal tags so the component is recorded during the build. Plugin <code>client.context</code>, <code>client.init</code>, and lifecycle hooks are scanned; dynamically imported helper modules are bundled but not scanned. Keep helpers pure or use <code>window.__coralite__.dom.createElement(tag)</code> / <code>await window.__coralite__.dom.loadComponent(tag)</code> when an unscanned helper must create DOM.</p>
+            <h2 id="imperative-components-dependency-tracking">Imperative Components & Dependency Tracking</h2>
 
-    <p><code>dependencies</code> is unrelated to custom-element tracking; it controls plugin registration order and cross-plugin availability. For example, <code>dependencies: ['$t']</code> ensures the <code>$t</code> plugin is registered before a plugin that consumes it.</p>
+            <p>Shared DOM factories belong in a plugin's <code>client.context</code> or in component/page <code>client()</code> code. Coralite AST-scans those client functions, rewrites <code>document.createElement</code>, <code>innerHTML</code>, <code>outerHTML</code>, and <code>insertAdjacentHTML</code> to its on-demand component loaders, and records literal custom-element tags in page/component dependency metadata.</p>
 
-    <p>Phase 1 of <code>client.context</code> runs before the component loader is ready; create elements in phase 2 or <code>client.init</code>.</p>
+            <code-block language="javascript" filename="Creating a Component from Plugin Context">
+              import { definePlugin } from 'coralite'
 
-    <p>See the <a href="/docs/reference/imperative-components.html">Imperative Components Reference</a> for the complete creation, loading, ownership, styling, and testing model.</p>
+              export default definePlugin({
+                name: 'eventCards',
+                client: {
+                  context: () => (instanceContext) => ({
+                    createCard (event) {
+                      const card = document.createElement('event-card')
+                      card.setAttribute('event-id', event.id)
+                      card.setAttribute('label', event.title)
+                      return card
+                    }
+                  })
+                }
+              })
+            </code-block>
 
-    <coralite-heading level="2" text="Testing Plugin Context"></coralite-heading>
+            <p>Use literal tags so the component is recorded during the build. Plugin <code>client.context</code>, <code>client.init</code>, and lifecycle hooks are scanned; dynamically imported helper modules are bundled but not scanned. Keep helpers pure or use <code>window.__coralite__.dom.createElement(tag)</code> / <code>await window.__coralite__.dom.loadComponent(tag)</code> when an unscanned helper must create DOM.</p>
 
-    <p>Use <code>testing.mocks.plugins</code> in <code>mode: 'testing'</code> to shallow-merge mocked methods over a plugin's resolved <code>server.context</code> or <code>client.context</code>. The real Phase 1 and Phase 2 functions still run, so use a stub plugin when the real plugin performs external I/O or side effects during setup.</p>
+            <p><code>dependencies</code> is unrelated to custom-element tracking; it controls plugin registration order and cross-plugin availability. For example, <code>dependencies: ['$t']</code> ensures the <code>$t</code> plugin is registered before a plugin that consumes it.</p>
 
-    <p>For focused unit tests, inject a plugin-shaped object directly with <code>options.context</code> on <code>loadComponent</code> or <code>loadPage</code>. This bypasses plugin setup entirely.</p>
+            <p>Phase 1 of <code>client.context</code> runs before the component loader is ready; create elements in phase 2 or <code>client.init</code>.</p>
 
-    <ul>
-      <li><a href="/docs/guide/e2e-testing.html#plugin-mocking">Plugin mocking in E2E builds</a></li>
-      <li><a href="/docs/guide/testing.html#mocking-plugin-context-in-unit-tests">Mocking plugin context in unit tests</a></li>
-      <li><a href="/docs/reference/e2e-testing.html#plugin-mocks-testingmocksplugins">Plugin mock reference</a></li>
-    </ul>
+            <p>See the <a href="/docs/reference/imperative-components">Imperative Components Reference</a> for the complete creation, loading, ownership, styling, and testing model.</p>
 
-    <coralite-heading level="2" text="Zero-Config Dependencies"></coralite-heading>
+            <h2 id="testing-plugin-context">Testing Plugin Context</h2>
 
-    <p>Unlike earlier versions of Coralite, V1 removes the need for manual dependency arrays like <code>client.imports</code> or <code>client.components</code>. The underlying AST parser automatically detects dynamic imports (e.g., <code>await import('my-analytics-sdk')</code>) inside the actual runtime logic of your context utilities and bundles them automatically. This covers import bundling, not custom-element dependency tracking: the imported helper module's body is not AST-scanned for <code>document.createElement</code> or HTML insertion. Keep element creation in scanned client code or use the runtime fallback described above.</p>
+            <p>Use <code>testing.mocks.plugins</code> in <code>mode: 'testing'</code> to shallow-merge mocked methods over a plugin's resolved <code>server.context</code> or <code>client.context</code>. The real Phase 1 and Phase 2 functions still run, so use a stub plugin when the real plugin performs external I/O or side effects during setup.</p>
 
-    <hr>
+            <p>For focused unit tests, inject a plugin-shaped object directly with <code>options.context</code> on <code>loadComponent</code> or <code>loadPage</code>. This bypasses plugin setup entirely.</p>
 
-    <p>Ready to build your plugin? Consult the strict API signatures and configuration options in the <a href="/docs/reference/define-plugin.html">definePlugin API Reference</a>.</p>
+            <ul>
+              <li><a href="/docs/guide/e2e-testing.html#plugin-mocking">Plugin mocking in E2E builds</a></li>
+              <li><a href="/docs/guide/testing.html#mocking-plugin-context-in-unit-tests">Mocking plugin context in unit tests</a></li>
+              <li><a href="/docs/reference/e2e-testing.html#plugin-mocks-testingmocksplugins">Plugin mock reference</a></li>
+            </ul>
 
-  </main>
-  <coralite-footer></coralite-footer>
+            <h2 id="zero-config-dependencies">Zero-Config Dependencies</h2>
+
+            <p>Unlike earlier versions of Coralite, V1 removes the need for manual dependency arrays like <code>client.imports</code> or <code>client.components</code>. The underlying AST parser automatically detects dynamic imports (e.g., <code>await import('my-analytics-sdk')</code>) inside the actual runtime logic of your context utilities and bundles them automatically. This covers import bundling, not custom-element dependency tracking: the imported helper module's body is not AST-scanned for <code>document.createElement</code> or HTML insertion. Keep element creation in scanned client code or use the runtime fallback described above.</p>
+
+            <hr>
+
+            <p>Ready to build your plugin? Consult the strict API signatures and configuration options in the <a href="/docs/reference/define-plugin">definePlugin API Reference</a>.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/guide/styling" variant="secondary">← Previous: Component styles</ui-link>
+        <ui-link href="/docs/guide/i18n" variant="primary">Next: Internationalization (i18n) →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-conceptual-flow">The Conceptual Flow</a>
+        <a href="#server-side-lifecycle-hooks">Server-Side Lifecycle Hooks</a>
+        <a href="#server-side-context">Server-Side Context</a>
+        <a href="#ubiquitous-ambient-context-context">Ubiquitous Ambient Context (context)</a>
+        <a href="#global-component-registration">Global Component Registration</a>
+        <a href="#injecting-client-helpers">Injecting Client Helpers</a>
+        <a href="#client-side-lifecycle-hooks">Client-Side Lifecycle Hooks</a>
+        <a href="#imperative-components-dependency-tracking">Imperative Components & Dependency Tracking</a>
+        <a href="#testing-plugin-context">Testing Plugin Context</a>
+        <a href="#zero-config-dependencies">Zero-Config Dependencies</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="attributes"
+    description="Declares, coerces, and validates host HTML attributes into reactive component state."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <div slot="sidebar">
+      <ui-accordion title="Component API" open>
+        <ui-nav-link href="/reference/attributes" active>attributes</ui-nav-link>
+        <ui-nav-link href="/reference/client">client</ui-nav-link>
+        <ui-nav-link href="/reference/server">server</ui-nav-link>
+        <ui-nav-link href="/reference/getters">getters</ui-nav-link>
+        <ui-nav-link href="/reference/style">style</ui-nav-link>
+        <ui-nav-link href="/reference/slots">slots</ui-nav-link>
+        <ui-nav-link href="/reference/form-control">formControl</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Page API">
+        <ui-nav-link href="/reference/page-api">paths & definePage</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Plugin API">
+        <ui-nav-link href="/reference/plugins">definePlugin</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="CLI">
+        <ui-nav-link href="/reference/cli">commands</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Component API</a>
+        <span class="separator">/</span>
+        <span>attributes</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>attributes</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">Declares, coerces, and validates host HTML attributes into reactive component state.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="typescript-signature">TypeScript Signature</h2>
+        <code-block language="typescript" filename="attributes.ts">
+export const attributes: Record<string, {
+  type: StringConstructor | NumberConstructor | BooleanConstructor;
+  default?: any;
+  required?: boolean;
+  reflect?: boolean;
+  transform?: (val: any) => any;
+  validate?: (val: any) => boolean | string;
+}>
+        </code-block>
+
+        <h2 id="the-6-step-execution-pipeline">The 6-Step Execution Pipeline</h2>
+        <p>Deterministic transformation sequence executed upon every attribute mount or host mutation.</p>
+        <div class="pipeline-grid">
+          <div class="pipeline-step">
+            <span class="step-num">01</span>
+            <div><strong>Required Check</strong><p>Validates presence.</p></div>
+          </div>
+          <div class="pipeline-step">
+            <span class="step-num">02</span>
+            <div><strong>Coerce</strong><p>Casts raw string to primitive.</p></div>
+          </div>
+          <div class="pipeline-step">
+            <span class="step-num">03</span>
+            <div><strong>Transform</strong><p>Executes custom transform callback.</p></div>
+          </div>
+          <div class="pipeline-step">
+            <span class="step-num">04</span>
+            <div><strong>Values Check</strong><p>Inspects permissible enumerations.</p></div>
+          </div>
+          <div class="pipeline-step">
+            <span class="step-num">05</span>
+            <div><strong>Validate</strong><p>Evaluates user validation predicate.</p></div>
+          </div>
+          <div class="pipeline-step">
+            <span class="step-num">06</span>
+            <div><strong>State Application</strong><p>Injects reactive signal into host.</p></div>
+          </div>
+        </div>
+
+        <div class="diagnostic-callout">
+          <strong>CORALITE-E102: Mutex Violation</strong>
+          <p><code>required: true</code> cannot be combined with a <code>default</code> assignment.</p>
+        </div>
+
+        <h2 id="allowed-types">Allowed Types</h2>
+        <table class="types-table">
+          <thead>
+            <tr><th>Type</th><th>Coercion Behavior</th><th>Reflection Behavior</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>String</td><td>Casts to string.</td><td>No (unless reflect: true).</td></tr>
+            <tr><td>Number</td><td>Parses float.</td><td>No (unless reflect: true).</td></tr>
+            <tr><td>Boolean</td><td>Presence is true.</td><td>Yes. Renders as attr="".</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="forbidden-vs-required">Forbidden vs. Required</h2>
+        <div class="split-code">
+          <div class="forbidden">
+            <code-block language="javascript" filename="forbidden.js">
+attributes: {
+  user: { type: Object }
+}
+            </code-block>
+          </div>
+          <div class="required">
+            <code-block language="javascript" filename="required.js">
+attributes: {
+  userId: { type: String }
+}
+            </code-block>
+          </div>
+        </div>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/" variant="secondary">← Reference</ui-link>
+        <ui-link href="/reference/client" variant="primary">Next: client →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#typescript-signature">TypeScript Signature</a>
+        <a href="#allowed-types">Allowed Types</a>
+        <a href="#forbidden-vs-required">Forbidden vs. Required</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

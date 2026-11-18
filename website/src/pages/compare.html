@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Compare — Coralite Architecture"
+    description="How Coralite compares to React, Next.js, Vite, Vue, Svelte, and Astro: native Web Components, a real server/client boundary, and compile-time failure."></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <main class="compare-page page-container">
+    <ui-icon style="display: none;" aria-hidden="true"></ui-icon>
+    <section class="hero-section">
+      <ui-badge variant="violet">Architecture Evaluation</ui-badge>
+      <h1>Structural vs. Reputational Guarantees.</h1>
+      <p class="subhead">Every framework promises to keep your server code secure. We prove it by physically stripping it from the bundle.</p>
+    </section>
+
+    <section class="table-section">
+      <div class="table-scroll">
+        <table class="ledger-table">
+        <thead>
+          <tr>
+            <th>Feature / Metric</th>
+            <th class="coralite-col">Coralite (Structural)</th>
+            <th>Next.js / Astro (Reputational)</th>
+            <th>React (Library)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Failure Discovery</td>
+            <td class="coralite-col"><span class="highlight">Compile-time, fail-closed</span></td>
+            <td>Runtime + tests / typecheck</td>
+            <td>Runtime / lint</td>
+          </tr>
+          <tr>
+            <td>Diagnostics</td>
+            <td class="coralite-col"><span class="highlight">Coded, located, 1-shot fixes</span></td>
+            <td>Tool-specific / mixed</td>
+            <td>Warnings / lint</td>
+          </tr>
+          <tr>
+            <td>Server/Client Boundary</td>
+            <td class="coralite-col"><span class="highlight">AST-level stripping</span> (<code>CORALITE-E301</code>)</td>
+            <td>Build-time tree-shaking</td>
+            <td>Manual <code>use client</code> directives</td>
+          </tr>
+          <tr>
+            <td>DOM Architecture</td>
+            <td class="coralite-col"><span class="highlight">Native Light DOM</span></td>
+            <td>Virtual DOM / Shadow DOM</td>
+            <td>Virtual DOM</td>
+          </tr>
+          <tr>
+            <td>Template Logic</td>
+            <td class="coralite-col"><span class="highlight">Strict flat tokens</span> (<code coralite-ignore>{{ count }}</code>)</td>
+            <td>JSX / Full JS execution</td>
+            <td>JSX / Full JS execution</td>
+          </tr>
+          <tr>
+            <td>Hydration</td>
+            <td class="coralite-col"><span class="highlight">Selective</span> (<code>no-hydration</code>)</td>
+            <td>Island / Partial Hydration</td>
+            <td>Full Root Hydration</td>
+          </tr>
+        </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="benchmark-section">
+      <h2>No Virtual DOM. Native Speed.</h2>
+      <p>Data generated from the standard <code>js-framework-benchmark</code> suite. Because Coralite compiles to native Light DOM and physically strips server code, it avoids the memory and scripting overhead of Virtual DOM diffing.</p>
+      
+      <div class="metrics-grid">
+        <ui-card>
+          <div slot="header" class="metric-header">
+            <div class="icon-wrapper">
+              <ui-icon name="memory" size="32" class="icon-cyan"></ui-icon>
+            </div>
+            <h3>Memory Allocation</h3>
+          </div>
+          <div class="metric-value" style="color: var(--accent-cyan);">{{ memory }}</div>
+          <div class="metric-label">21_ready-memory</div>
+        </ui-card>
+        <ui-card>
+          <div slot="header" class="metric-header">
+            <div class="icon-wrapper">
+              <ui-icon name="time" size="32" class="icon-violet"></ui-icon>
+            </div>
+            <h3>Script Execution</h3>
+          </div>
+          <div class="metric-value" style="color: var(--accent-violet);">{{ script }}</div>
+          <div class="metric-label">03_update10th1k_x16</div>
+        </ui-card>
+        <ui-card>
+          <div slot="header" class="metric-header">
+            <div class="icon-wrapper">
+              <ui-icon name="swap" size="32" class="icon-pink"></ui-icon>
+            </div>
+            <h3>Total Swap Duration</h3>
+          </div>
+          <div class="metric-value" style="color: var(--accent-pink);">{{ swap }}</div>
+          <div class="metric-label">05_swap1k</div>
+        </ui-card>
+      </div>
+    </section>
+  </main>
+
+  <site-footer></site-footer>
+</body>
+</html>
+
+<script type="module">
+  export async function server () {
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+
+    const filePath = path.resolve(process.cwd(), 'src/data/benchmarks.json')
+    const rawData = await fs.readFile(filePath, 'utf8')
+    const data = JSON.parse(rawData)
+
+    return {
+      memory: data.memory,
+      script: data.script,
+      swap: data.swap
+    }
+  }
+</script>
+

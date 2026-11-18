@@ -1,46 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.6.1" description="Coralite v0.6.1 introduces documentation improvements, dynamic module support, and technical refinements for HTML module static site generation. Explore new features now."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-02-16T13:44:48+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.6.1"
+    description="Coralite v0.6.1 introduces documentation improvements, dynamic module support, and technical refinements for HTML module static site generation. Explore new features now."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-02-16"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.6.1</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.6.1</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-02-16T13:44:48+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.6.1</h1>
+        <p class="subhead">Coralite v0.6.1 introduces documentation improvements, dynamic module support, and technical refinements for HTML module static site generation. Explore new features now.</p>
 
-    <p>Coralite’s latest release, v0.6.1, introduces improvements and documentation enhancements to support more robust development practices and better user guidance when working with the HTML module static site generator.</p>
-<coralite-heading level="2" text="Key Improvements and Features"></coralite-heading>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">February 16, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <ul>
-      <li><strong>Dynamic Module Import:</strong> Added support for dynamically importing modules, enabling more flexible and modular project structures. This is particularly useful in large-scale static site generation workflows.</li>
-      <li><strong>Bug Fix: Render Computed Slot Nodes:</strong> Resolved an issue with the rendering of computed slot nodes, ensuring that dynamic content placement within templates functions as intended.</li>
-    </ul>
+      <div class="post-body">
+        <p>Coralite’s latest release, v0.6.1, introduces improvements and documentation enhancements to support more robust development practices and better user guidance when working with the HTML module static site generator.</p>
+        <h2 id="key-improvements-and-features">Key Improvements and Features</h2>
 
-    <coralite-heading level="2" text="Documentation Enhancements"></coralite-heading>
+            <ul>
+              <li><strong>Dynamic Module Import:</strong> Added support for dynamically importing modules, enabling more flexible and modular project structures. This is particularly useful in large-scale static site generation workflows.</li>
+              <li><strong>Bug Fix: Render Computed Slot Nodes:</strong> Resolved an issue with the rendering of computed slot nodes, ensuring that dynamic content placement within templates functions as intended.</li>
+            </ul>
 
-    <ul>
-      <li><strong>Type Definitions:</strong> Added a detailed documentation entry for the <code>CoraliteResult</code> type, improving clarity and usability for developers working with Coralite’s return values.</li>
-      <li><strong>Example Usage:</strong> Introduced example annotations within the documentation to illustrate practical usage patterns of Coralite features.</li>
-      <li><strong>Improved Technical Documentation:</strong> Added foundational technical documentation covering key concepts, making it easier for new users and contributors to understand and work with Coralite’s architecture.</li>
-    </ul>
-    
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
-    <coralite-code-highlight language="bash">npm install coralite@0.6.1</coralite-code-highlight>
+            <h2 id="documentation-enhancements">Documentation Enhancements</h2>
 
-    <p>For a full list of changes, see the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.1" target="_blank">v0.6.1 changelog</a>.</p>
+            <ul>
+              <li><strong>Type Definitions:</strong> Added a detailed documentation entry for the <code>CoraliteResult</code> type, improving clarity and usability for developers working with Coralite’s return values.</li>
+              <li><strong>Example Usage:</strong> Introduced example annotations within the documentation to illustrate practical usage patterns of Coralite features.</li>
+              <li><strong>Improved Technical Documentation:</strong> Added foundational technical documentation covering key concepts, making it easier for new users and contributors to understand and work with Coralite’s architecture.</li>
+            </ul>
+            
+            <h2 id="get-the-release">Get the release</h2>
+            <code-block language="bash">npm install coralite@0.6.1</code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <p>For a full list of changes, see the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.1" target="_blank">v0.6.1 changelog</a>.</p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

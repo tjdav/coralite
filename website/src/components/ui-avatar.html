@@ -1,0 +1,52 @@
+<template id="ui-avatar">
+  <div class="avatar {{ sizeClass }}">
+    {{ initials }}
+  </div>
+</template>
+
+<script type="module">
+  export const attributes = {
+    initials: { type: String, default: '?' },
+    size: { type: String, default: 'md' }
+  }
+
+  export const getters = {
+    sizeClass: ({ state }) => `avatar--${state.size}`
+  }
+</script>
+
+<style>
+  :host {
+    display: inline-block;
+  }
+
+  .avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--accent-violet);
+    color: #FFFFFF;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  .avatar--sm {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .avatar--md {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .avatar--lg {
+    width: 80px;
+    height: 80px;
+    font-size: 24px;
+  }
+</style>

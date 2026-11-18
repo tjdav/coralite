@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="CLI"
+    description="The coralite binary is the only tool you need: develop, build, validate, and fix the workspace."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <div slot="sidebar">
+      <ui-accordion title="Component API">
+        <ui-nav-link href="/reference/attributes">attributes</ui-nav-link>
+        <ui-nav-link href="/reference/client">client</ui-nav-link>
+        <ui-nav-link href="/reference/server">server</ui-nav-link>
+        <ui-nav-link href="/reference/getters">getters</ui-nav-link>
+        <ui-nav-link href="/reference/style">style</ui-nav-link>
+        <ui-nav-link href="/reference/slots">slots</ui-nav-link>
+        <ui-nav-link href="/reference/form-control">formControl</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Page API">
+        <ui-nav-link href="/reference/page-api">paths & definePage</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Plugin API">
+        <ui-nav-link href="/reference/plugins">definePlugin</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="CLI" open>
+        <ui-nav-link href="/reference/cli" active>commands</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">CLI</a>
+        <span class="separator">/</span>
+        <span>commands</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>CLI</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">The <code>coralite</code> binary is the only tool you need: develop, build, validate, and fix the workspace.</p>
+      </div>
+
+      <div class="lesson-body">
+        <h2 id="commands">Commands</h2>
+        <code-block language="bash" filename="commands.sh">
+coralite dev       # Development server with incremental rebuilds
+coralite build     # Production build into dist/
+coralite test      # Testing server (deterministic build for E2E)
+coralite check     # Unified validation across components, pages, plugins
+coralite fix       # Apply safe auto-fixes across the workspace
+coralite init-agent # Scaffold AGENTS.md and AI IDE config aliases
+        </code-block>
+
+        <p>Granular validators remain available when you want to scope a pass:</p>
+        <code-block language="bash" filename="validators.sh">
+coralite validate-components
+coralite validate-pages
+coralite validate-plugins
+        </code-block>
+
+        <h2 id="shared-build-flags">Shared Build Flags</h2>
+        <p><code>dev</code>, <code>test</code>, and <code>build</code> accept the same options:</p>
+        <code-block language="bash" filename="flags.sh">
+coralite build \
+  --clean              # Clear the output directory first
+  --verbose            # Verbose logging
+  --no-incremental     # Rebuild every page and component
+  --assets pkg:path:dest  # Copy static assets during build
+        </code-block>
+
+        <h2 id="validation-options">Validation Options</h2>
+        <p><code>coralite check</code> reports AST diagnostics and TypeScript errors together. Use the filters to focus on one concern in CI or in an editor loop.</p>
+
+        <code-block language="bash" filename="check.sh">
+coralite check --only-failed           # Only files with errors or warnings
+coralite check --code E201 E203        # Filter by diagnostic code
+coralite check --status failed         # Filter by outcome
+coralite check --format json           # Machine-readable output
+coralite check --no-types              # Skip TypeScript, AST rules only
+coralite check --strict                # Treat warnings and unused code as failures
+        </code-block>
+
+        <h2 id="auto-fixes">Auto-Fixes</h2>
+        <p><code>coralite fix</code> applies only safe transformations; preview them with <code>--dry-run</code> before writing. Interactive mode lets you accept each fix individually.</p>
+
+        <code-block language="bash" filename="fix.sh">
+coralite fix --dry-run          # Preview every change
+coralite fix --code W402        # Fix one diagnostic class
+coralite fix --migrate-pages    # Upgrade legacy definePage config to flat exports
+        </code-block>
+
+        <h2 id="configuration-discovery">Configuration Discovery</h2>
+        <p>Every command resolves <code>coralite.config.js</code> from the current directory upward. The resolved config supplies <code>pages</code>, <code>components</code>, <code>fixtures</code>, <code>public</code>, <code>output</code>, <code>styles</code>, <code>store</code>, and <code>plugins</code>, so no command needs path arguments in a standard project.</p>
+
+        <code-block language="javascript" filename="coralite.config.js">
+import { defineConfig } from 'coralite'
+
+export default defineConfig({
+  public: 'public',
+  output: 'dist',
+  pages: 'src/pages',
+  components: 'src/components'
+})
+        </code-block>
+
+        <div class="diagnostic-callout">
+          <strong>Exit Codes</strong>
+          <p><code>check</code> exits non-zero when any error is reported, which makes it a drop-in CI gate. Add <code>--strict</code> to fail on warnings as well.</p>
+        </div>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/plugins" variant="secondary">← Previous: Plugins</ui-link>
+        <ui-link href="/reference/" variant="primary">Back to Reference →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#commands">Commands</a>
+        <a href="#shared-build-flags">Shared Build Flags</a>
+        <a href="#validation-options">Validation Options</a>
+        <a href="#auto-fixes">Auto-Fixes</a>
+        <a href="#configuration-discovery">Configuration Discovery</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

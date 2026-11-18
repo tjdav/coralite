@@ -1,361 +1,404 @@
-<!-- coralite-ignore E108 -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="Components Reference — Coralite"
-    description="Definitive API reference for Coralite Components, covering named exports, component structure, attributes, server data fetching, getters, style, slots, provide/consume, client logic, formControl, listStrategy, onError, and authoring rules."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Components Reference"
+    description="Definitive API reference for Coralite Components, covering named exports, component structure, attributes, server data fetching, getters, style, slots"
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-
-  <main class="container content">
-    <h1 class="display">Components Reference</h1>
-
-    <p>This reference details the Component API for authoring Web Components in Coralite. Every component is defined using standard ES module named exports (<code>export function</code>, <code>export const</code>) declared in a <code>&lt;script type="module"&gt;</code> block. The legacy <code>export default defineComponent({ ... })</code> wrapper remains supported for backward compatibility.</p>
-
-    <coralite-heading level="2" text="1. Component Structure"></coralite-heading>
-
-    <p>A Coralite component file combines template markup, JS logic, and component styles. The canonical file structure arranges <code>&lt;template&gt;</code>, <code>&lt;script type="module"&gt;</code>, and <code>&lt;style&gt;</code> as top-level siblings:</p>
-
-    <coralite-code-highlight language="html" title="Component Structure">
-<template id="user-profile">
-  <div class="card">
-    <h2>{{ name }}</h2>
-    <p>{{ role }}</p>
-  </div>
-</template>
-
-&lt;script type="module">
-  export const attributes = {
-    userId: {
-      type: String,
-      required: true
-    }
-  }
-
-  export async function server ({ state }) {
-    return {
-      name: 'Alex Developer',
-      role: 'Core Contributor',
-      id: state.userId
-    }
-  }
-&lt;/script&gt;
-
-<style>
-  .card {
-    padding: 1rem;
-    border-radius: 8px;
-  }
-</style>
-    </coralite-code-highlight>
-
-    <p><strong>In-Template Placement:</strong> Component parser normalization also permits placing <code>&lt;script type="module"&gt;</code> or <code>&lt;style&gt;</code> nested directly inside the <code>&lt;template&gt;</code> block. During compilation, the framework normalizes in-template tags and extracts them into the component's module definition.</p>
-
-    <coralite-heading level="2" text="2. attributes"></coralite-heading>
-
-    <p>The <code>attributes</code> block defines the external HTML attributes accepted by the host element. Attributes are coerced and validated when parsed from host element markup.</p>
-
-    <p><strong>Supported Types:</strong> Primitive types only (<code>String</code>, <code>Number</code>, <code>Boolean</code>). Passing <code>Array</code> or <code>Object</code> directly in <code>attributes</code> raises diagnostic <code>CORALITE-E101</code>. For complex dynamic data, pass data through server fetching or W3C context provider mechanisms.</p>
-
-    <coralite-code-highlight language="javascript" title="Attribute Schema Options">
-export const attributes = {
-  // Shorthand syntax
-  title: String,
-  disabled: Boolean,
-  count: Number,
-
-  // Schema object syntax
-  variant: {
-    type: String,
-    default: 'primary',
-    values: ['primary', 'secondary', 'danger'],
-    reflect: true
-  },
-  limit: {
-    type: Number,
-    default: 10,
-    required: true,
-    transform: (val) => Math.max(0, val),
-    validate: (val) => val <= 100 || 'limit cannot exceed 100'
-  }
-}
-    </coralite-code-highlight>
-
-    <ul>
-      <li><code>type</code>: Primitive constructor (<code>String</code>, <code>Number</code>, <code>Boolean</code>).</li>
-      <li><code>default</code>: Default value when attribute is absent on host element.</li>
-      <li><code>required</code>: Set to <code>true</code> to mandate attribute presence.</li>
-      <li><code>values</code>: Enumerated allowed values array.</li>
-      <li><code>reflect</code>: Set to <code>true</code> to reflect host attribute back to DOM.</li>
-      <li><code>transform</code>: Pure function to sanitize or scale incoming attribute values.</li>
-      <li><code>validate</code>: Validator function returning boolean or error message string.</li>
-    </ul>
-
-    <coralite-heading level="2" text="3. server()"></coralite-heading>
-
-    <p>The <code>server()</code> handler executes on the server during build-time HTML rendering. It fetches external data, reads local files, or processes configuration required to compute the initial component state.</p>
-
-    <p><strong>Context Object:</strong> Receives <code>{ state, route, app, signal, isServer, ...pluginContext }</code>.</p>
-
-    <coralite-code-highlight language="javascript" title="server() Data Fetching Example">
-export const attributes = {
-  dataFile: { type: String, default: 'content.json' }
-}
+  <site-header></site-header>
+
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="reference/components"></docs-sidebar>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/">Reference</a>
+        <span class="separator">/</span>
+        <span>Components Reference</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Components Reference</h1>
+          <ui-badge variant="cyan">Reference</ui-badge>
+        </div>
+        <p class="subhead">Definitive API reference for Coralite Components, covering named exports, component structure, attributes, server data fetching, getters, style, slots, provide/consume, client logic, formControl, listStrategy, onError, and authoring rules.</p>
+      </div>
+
+      <div class="lesson-body">
+        <p>This reference details the Component API for authoring Web Components in Coralite. Every component is defined using standard ES module named exports (<code>export function</code>, <code>export const</code>) declared in a <code>&lt;script type="module"&gt;</code> block. The legacy <code>export default defineComponent({ ... })</code> wrapper remains supported for backward compatibility.</p>
+
+            <h2 id="1-component-structure">1. Component Structure</h2>
+
+            <p>A Coralite component file combines template markup, JS logic, and component styles. The canonical file structure arranges <code>&lt;template&gt;</code>, <code>&lt;script type="module"&gt;</code>, and <code>&lt;style&gt;</code> as top-level siblings:</p>
+
+            <code-block language="html" filename="Component Structure">
+        <template id="user-profile">
+          <div class="card">
+            <h2>{{ name }}</h2>
+            <p>{{ role }}</p>
+          </div>
+        </template>
+
+        &lt;script type="module">
+          export const attributes = {
+            userId: {
+              type: String,
+              required: true
+            }
+          }
+
+          export async function server ({ state }) {
+            return {
+              name: 'Alex Developer',
+              role: 'Core Contributor',
+              id: state.userId
+            }
+          }
+        &lt;/script&gt;
+
+        <style>
+          .card {
+            padding: 1rem;
+            border-radius: 8px;
+          }
+        </style>
+            </code-block>
+
+            <p><strong>In-Template Placement:</strong> Component parser normalization also permits placing <code>&lt;script type="module"&gt;</code> or <code>&lt;style&gt;</code> nested directly inside the <code>&lt;template&gt;</code> block. During compilation, the framework normalizes in-template tags and extracts them into the component's module definition.</p>
+
+            <h2 id="2-attributes">2. attributes</h2>
+
+            <p>The <code>attributes</code> block defines the external HTML attributes accepted by the host element. Attributes are coerced and validated when parsed from host element markup.</p>
+
+            <p><strong>Supported Types:</strong> Primitive types only (<code>String</code>, <code>Number</code>, <code>Boolean</code>). Passing <code>Array</code> or <code>Object</code> directly in <code>attributes</code> raises diagnostic <code>CORALITE-E101</code>. For complex dynamic data, pass data through server fetching or W3C context provider mechanisms.</p>
+
+            <code-block language="javascript" filename="Attribute Schema Options">
+        export const attributes = {
+          // Shorthand syntax
+          title: String,
+          disabled: Boolean,
+          count: Number,
+
+          // Schema object syntax
+          variant: {
+            type: String,
+            default: 'primary',
+            values: ['primary', 'secondary', 'danger'],
+            reflect: true
+          },
+          limit: {
+            type: Number,
+            default: 10,
+            required: true,
+            transform: (val) => Math.max(0, val),
+            validate: (val) => val <= 100 || 'limit cannot exceed 100'
+          }
+        }
+            </code-block>
+
+            <ul>
+              <li><code>type</code>: Primitive constructor (<code>String</code>, <code>Number</code>, <code>Boolean</code>).</li>
+              <li><code>default</code>: Default value when attribute is absent on host element.</li>
+              <li><code>required</code>: Set to <code>true</code> to mandate attribute presence.</li>
+              <li><code>values</code>: Enumerated allowed values array.</li>
+              <li><code>reflect</code>: Set to <code>true</code> to reflect host attribute back to DOM.</li>
+              <li><code>transform</code>: Pure function to sanitize or scale incoming attribute values.</li>
+              <li><code>validate</code>: Validator function returning boolean or error message string.</li>
+            </ul>
 
-export async function server ({ state, isServer }) {
-  if (!isServer) return {}
+            <h2 id="3-server">3. server()</h2>
 
-  const fs = await import('node:fs/promises')
-  const raw = await fs.readFile(state.dataFile, 'utf-8')
-  const data = JSON.parse(raw)
+            <p>The <code>server()</code> handler executes on the server during build-time HTML rendering. It fetches external data, reads local files, or processes configuration required to compute the initial component state.</p>
 
-  return {
-    items: data.items || [],
-    lastUpdated: new Date().toISOString()
-  }
-}
-    </coralite-code-highlight>
+            <p><strong>Context Object:</strong> Receives <code>{ state, route, app, signal, isServer, ...pluginContext }</code>.</p>
 
-    <p>Returned properties are merged directly into the component's state object before template rendering.</p>
+            <code-block language="javascript" filename="server() Data Fetching Example">
+        export const attributes = {
+          dataFile: { type: String, default: 'content.json' }
+        }
 
-    <coralite-heading level="2" text="4. getters"></coralite-heading>
+        export async function server ({ state, isServer }) {
+          if (!isServer) return {}
 
-    <p>The <code>getters</code> declaration provides synchronous derived state computations. Getter values update automatically whenever dependencies inside state change.</p>
+          const fs = await import('node:fs/promises')
+          const raw = await fs.readFile(state.dataFile, 'utf-8')
+          const data = JSON.parse(raw)
 
-    <p><strong>Context Object:</strong> Functions in <code>getters</code> receive a single unified context parameter <code>({ state, route, refs, slots, signal, isServer, ...pluginContext })</code>. Parameters can be destructured or accepted as a whole context object (e.g. <code>(context) => context.state.price</code>). Naming the parameter <code>state</code> without destructuring (e.g. <code>(state) => state.price</code>) triggers <code>CORALITE-E105</code> because the parameter holds the context object, not state directly.</p>
+          return {
+            items: data.items || [],
+            lastUpdated: new Date().toISOString()
+          }
+        }
+            </code-block>
 
-    <coralite-code-highlight language="javascript" title="Synchronous Derived Getters">
-export const attributes = {
-  price: Number,
-  taxRate: { type: Number, default: 0.08 }
-}
+            <p>Returned properties are merged directly into the component's state object before template rendering.</p>
 
-export const getters = {
-  formattedPrice: ({ state }) => `$${state.price.toFixed(2)}`,
-  total: ({ state }) => state.price * (1 + state.taxRate),
-  badgeText: ({ state }) => `${state.price > 100 ? 'Premium' : 'Standard'}`
-}
-    </coralite-code-highlight>
+            <h2 id="4-getters">4. getters</h2>
 
-    <coralite-heading level="2" text="5. style"></coralite-heading>
+            <p>The <code>getters</code> declaration provides synchronous derived state computations. Getter values update automatically whenever dependencies inside state change.</p>
 
-    <p>The <code>style</code> declaration defines dynamic CSS properties and CSS Custom Properties (e.g., <code>--theme-color</code>) that apply synchronously to host element scope.</p>
+            <p><strong>Context Object:</strong> Functions in <code>getters</code> receive a single unified context parameter <code>({ state, route, refs, slots, signal, isServer, ...pluginContext })</code>. Parameters can be destructured or accepted as a whole context object (e.g. <code>(context) => context.state.price</code>). Naming the parameter <code>state</code> without destructuring (e.g. <code>(state) => state.price</code>) triggers <code>CORALITE-E105</code> because the parameter holds the context object, not state directly.</p>
 
-    <p><strong>Context Object:</strong> Style functions receive <code>state</code> directly: <code>(state) => value</code>.</p>
+            <code-block language="javascript" filename="Synchronous Derived Getters">
+        export const attributes = {
+          price: Number,
+          taxRate: { type: Number, default: 0.08 }
+        }
 
-    <p><strong>Synchronous Execution:</strong> Style functions must execute synchronously. Returning a Promise or declaring an <code>async</code> style function triggers diagnostic <code>CORALITE-E303</code>.</p>
+        export const getters = {
+          formattedPrice: ({ state }) => `$${state.price.toFixed(2)}`,
+          total: ({ state }) => state.price * (1 + state.taxRate),
+          badgeText: ({ state }) => `${state.price > 100 ? 'Premium' : 'Standard'}`
+        }
+            </code-block>
 
-    <coralite-code-highlight language="javascript" title="Dynamic CSS Properties">
-export const attributes = {
-  color: { type: String, default: '#3b82f6' },
-  padding: { type: Number, default: 16 }
-}
+            <h2 id="5-style">5. style</h2>
 
-export const style = {
-  '--theme-primary': (state) => state.color,
-  '--host-padding': (state) => `${state.padding}px`
-}
-    </coralite-code-highlight>
+            <p>The <code>style</code> declaration defines dynamic CSS properties and CSS Custom Properties (e.g., <code>--theme-color</code>) that apply synchronously to host element scope.</p>
 
-    <coralite-heading level="2" text="6. slots"></coralite-heading>
+            <p><strong>Context Object:</strong> Style functions receive <code>state</code> directly: <code>(state) => value</code>.</p>
 
-    <p>The <code>slots</code> declaration transforms or filters Light DOM children before slot distribution occurs in template rendering.</p>
+            <p><strong>Synchronous Execution:</strong> Style functions must execute synchronously. Returning a Promise or declaring an <code>async</code> style function triggers diagnostic <code>CORALITE-E303</code>.</p>
 
-    <p><strong>Context Object:</strong> Receives a unified context parameter <code>({ nodes, state, isServer, ...pluginContext }) => nodes</code> or <code>(context) => context.nodes</code>.</p>
+            <code-block language="javascript" filename="Dynamic CSS Properties">
+        export const attributes = {
+          color: { type: String, default: '#3b82f6' },
+          padding: { type: Number, default: 16 }
+        }
 
-    <coralite-code-highlight language="javascript" title="Light DOM Slot Filtering">
-export const slots = {
-  default: ({ nodes }) => {
-    // Filter or sort incoming slot nodes
-    return nodes.filter(node => node.nodeType === 1 && node.matches('.active'))
-  }
-}
-    </coralite-code-highlight>
+        export const style = {
+          '--theme-primary': (state) => state.color,
+          '--host-padding': (state) => `${state.padding}px`
+        }
+            </code-block>
 
-    <p><strong>Literal projection:</strong> add <code>coralite-ignore</code> to a <code>&lt;slot&gt;</code> (for example <code>&lt;slot coralite-ignore&gt;&lt;/slot&gt;</code>) to keep projected content literal: no token interpolation, custom-element compilation, hydration, or validation. Slot fallback content is still processed normally. See the <a href="/docs/reference/coralite-ignore.html"><code>coralite-ignore</code> Reference</a>.</p>
+            <h2 id="6-slots">6. slots</h2>
 
-    <coralite-heading level="2" text="7. provide / consume"></coralite-heading>
+            <p>The <code>slots</code> declaration transforms or filters Light DOM children before slot distribution occurs in template rendering.</p>
 
-    <p>Coralite implements the W3C Context Protocol via <code>provide</code> and <code>consume</code> declarations, allowing ancestor components to broadcast context values down the DOM tree to descendant components without prop drilling.</p>
+            <p><strong>Context Object:</strong> Receives a unified context parameter <code>({ nodes, state, isServer, ...pluginContext }) => nodes</code> or <code>(context) => context.nodes</code>.</p>
 
-    <p><strong>Context Keys:</strong> Use standard strings or keys returned by <code>createContext('coralite:theme')</code>.</p>
+            <code-block language="javascript" filename="Light DOM Slot Filtering">
+        export const slots = {
+          default: ({ nodes }) => {
+            // Filter or sort incoming slot nodes
+            return nodes.filter(node => node.nodeType === 1 && node.matches('.active'))
+          }
+        }
+            </code-block>
 
-    <coralite-code-highlight language="javascript" title="Context Provider & Consumer Example">
-// ThemeProvider.html
-import { createContext } from 'coralite'
+            <p><strong>Literal projection:</strong> add <code>coralite-ignore</code> to a <code>&lt;slot&gt;</code> (for example <code>&lt;slot&gt;&lt;/slot&gt;</code>) to keep projected content literal: no token interpolation, custom-element compilation, hydration, or validation. Slot fallback content is still processed normally. See the <a href="/docs/reference/coralite-ignore"><code>coralite-ignore</code> Reference</a>.</p>
 
-export const ThemeContext = createContext('coralite:theme')
+            <h2 id="7-provide-consume">7. provide / consume</h2>
 
-export const attributes = {
-  theme: { type: String, default: 'dark' }
-}
+            <p>Coralite implements the W3C Context Protocol via <code>provide</code> and <code>consume</code> declarations, allowing ancestor components to broadcast context values down the DOM tree to descendant components without prop drilling.</p>
 
-export const provide = {
-  [ThemeContext]: 'dark'
-}
+            <p><strong>Context Keys:</strong> Use standard strings or keys returned by <code>createContext('coralite:theme')</code>.</p>
 
-// ThemeButton.html
-import { ThemeContext } from './ThemeProvider.html'
+            <code-block language="javascript" filename="Context Provider & Consumer Example">
+        // ThemeProvider.html
+        import { createContext } from 'coralite'
 
-export const consume = [ThemeContext]
+        export const ThemeContext = createContext('coralite:theme')
 
-export function client ({ state }) {
-  console.log('Active consumed theme:', state[ThemeContext])
-}
-    </coralite-code-highlight>
+        export const attributes = {
+          theme: { type: String, default: 'dark' }
+        }
 
-    <coralite-heading level="2" text="8. client()"></coralite-heading>
+        export const provide = {
+          [ThemeContext]: 'dark'
+        }
 
-    <p>The <code>client()</code> handler executes in the browser environment once per component instance upon DOM mounting.</p>
+        // ThemeButton.html
+        import { ThemeContext } from './ThemeProvider.html'
 
-    <p><strong>Context Object:</strong> Receives <code>{ state, route, refs, signal, emit, observe, slots, root, updateComplete, isServer, ...pluginContext }</code>.</p>
+        export const consume = [ThemeContext]
 
-    <p><strong>Critical Rule — Non-blocking <code>updateComplete</code>:</strong> <em>Do not await <code>updateComplete</code> at the top of <code>client()</code>.</em> The DOM is already settled when <code>client()</code> fires. Use <code>await updateComplete</code> only after mutating state if you need to measure rendered DOM element layout or dimensions afterwards.</p>
+        export function client ({ state }) {
+          console.log('Active consumed theme:', state[ThemeContext])
+        }
+            </code-block>
 
-    <p><strong>Event Binding & Emitters:</strong> Bind event listeners with an <code>AbortSignal</code> provided via <code>signal</code> for automatic cleanup upon component unmount. Use <code>emit('custom-event', detail)</code> instead of calling <code>dispatchEvent</code> directly.</p>
+            <h2 id="8-client">8. client()</h2>
 
-    <p><strong>Lazy Dependency Stylesheets:</strong> Load third-party or local CSS files on demand inside <code>client()</code> via <code>await import('pkg/styles.css', { media, nonce, crossorigin, referrerPolicy, signal, force })</code> (or standard Import Attributes <code>{ with: { type: 'css', ... }, signal, force }</code>). Coralite bundles the stylesheet into a hashed asset under <code>assets/css/</code>, injects a global <code>&lt;link rel="stylesheet"&gt;</code> into <code>&lt;head&gt;</code>, and resolves to <code>{ default: link.sheet, link }</code>.</p>
+            <p>The <code>client()</code> handler executes in the browser environment once per component instance upon DOM mounting.</p>
 
-    <coralite-code-highlight language="javascript" title="Interactive Client Counter Example">
-export const attributes = {
-  initialCount: { type: Number, default: 0 }
-}
+            <p><strong>Context Object:</strong> Receives <code>{ state, route, refs, signal, emit, observe, slots, root, updateComplete, isServer, ...pluginContext }</code>.</p>
 
-export function client ({ state, refs, signal, emit, observe, updateComplete }) {
-  state.count = state.initialCount
+            <p><strong>Critical Rule — Non-blocking <code>updateComplete</code>:</strong> <em>Do not await <code>updateComplete</code> at the top of <code>client()</code>.</em> The DOM is already settled when <code>client()</code> fires. Use <code>await updateComplete</code> only after mutating state if you need to measure rendered DOM element layout or dimensions afterwards.</p>
 
-  // Reactive state observation
-  observe('count', (newVal) => {
-    emit('count-change', { value: newVal })
-  })
+            <p><strong>Event Binding & Emitters:</strong> Bind event listeners with an <code>AbortSignal</code> provided via <code>signal</code> for automatic cleanup upon component unmount. Use <code>emit('custom-event', detail)</code> instead of calling <code>dispatchEvent</code> directly.</p>
 
-  // DOM Event attachment with automatic unmount cleanup
-  const btn = refs('incrementBtn')
-  if (btn) {
-    btn.addEventListener('click', async () => {
-      state.count++
+            <p><strong>Lazy Dependency Stylesheets:</strong> Load third-party or local CSS files on demand inside <code>client()</code> via <code>await import('pkg/styles.css', { media, nonce, crossorigin, referrerPolicy, signal, force })</code> (or standard Import Attributes <code>{ with: { type: 'css', ... }, signal, force }</code>). Coralite bundles the stylesheet into a hashed asset under <code>assets/css/</code>, injects a global <code>&lt;link rel="stylesheet"&gt;</code> into <code>&lt;head&gt;</code>, and resolves to <code>{ default: link.sheet, link }</code>.</p>
 
-      // Measure DOM layout only after state mutation flush
-      await updateComplete
-      console.log('Updated button width:', btn.offsetWidth)
-    }, { signal })
-  }
-}
-    </coralite-code-highlight>
+            <code-block language="javascript" filename="Interactive Client Counter Example">
+        export const attributes = {
+          initialCount: { type: Number, default: 0 }
+        }
 
-    <coralite-heading level="2" text="9. formControl (FACE)"></coralite-heading>
+        export function client ({ state, refs, signal, emit, observe, updateComplete }) {
+          state.count = state.initialCount
 
-    <p>Exporting <code>formControl = true</code> (or legacy <code>formAssociated: true</code>) opts the custom component into Form-Associated Custom Elements (FACE). The framework attaches <code>ElementInternals</code> to host elements, integrating the component with standard HTML <code>&lt;form&gt;</code> elements.</p>
+          // Reactive state observation
+          observe('count', (newVal) => {
+            emit('count-change', { value: newVal })
+          })
 
-    <coralite-code-highlight language="javascript" title="Custom Form Input Component">
-export const formControl = true
+          // DOM Event attachment with automatic unmount cleanup
+          const btn = refs('incrementBtn')
+          if (btn) {
+            btn.addEventListener('click', async () => {
+              state.count++
 
-export const attributes = {
-  value: String,
-  required: Boolean
-}
+              // Measure DOM layout only after state mutation flush
+              await updateComplete
+              console.log('Updated button width:', btn.offsetWidth)
+            }, { signal })
+          }
+        }
+            </code-block>
 
-export function client ({ state, refs, signal, setFormValue, setValidity, onFormReset }) {
-  // Sync initial form value and validity
-  setFormValue(state.value || '')
-  if (state.required && !state.value) {
-    setValidity({ valueMissing: true }, 'This field is required', refs('input'))
-  } else {
-    setValidity({})
-  }
+            <h2 id="9-formcontrol-face">9. formControl (FACE)</h2>
 
-  // Input state synchronization
-  const inputEl = refs('input')
-  if (inputEl) {
-    inputEl.addEventListener('input', (e) => {
-      state.value = e.target.value
-      setFormValue(state.value)
+            <p>Exporting <code>formControl = true</code> (or legacy <code>formAssociated: true</code>) opts the custom component into Form-Associated Custom Elements (FACE). The framework attaches <code>ElementInternals</code> to host elements, integrating the component with standard HTML <code>&lt;form&gt;</code> elements.</p>
 
-      if (state.required && !state.value) {
-        setValidity({ valueMissing: true }, 'This field is required', inputEl)
-      } else {
-        setValidity({})
-      }
-    }, { signal })
-  }
+            <code-block language="javascript" filename="Custom Form Input Component">
+        export const formControl = true
 
-  // Handle form reset events
-  onFormReset(() => {
-    state.value = ''
-    setFormValue('')
-  })
-}
-    </coralite-code-highlight>
+        export const attributes = {
+          value: String,
+          required: Boolean
+        }
 
-    <coralite-heading level="2" text="10. listStrategy"></coralite-heading>
+        export function client ({ state, refs, signal, setFormValue, setValidity, onFormReset }) {
+          // Sync initial form value and validity
+          setFormValue(state.value || '')
+          if (state.required && !state.value) {
+            setValidity({ valueMissing: true }, 'This field is required', refs('input'))
+          } else {
+            setValidity({})
+          }
 
-    <p>Exporting <code>listStrategy</code> controls how reactive array mutations are reconciled in the DOM. It consolidates the former <code>reconcile</code> and <code>key</code> options.</p>
+          // Input state synchronization
+          const inputEl = refs('input')
+          if (inputEl) {
+            inputEl.addEventListener('input', (e) => {
+              state.value = e.target.value
+              setFormValue(state.value)
 
-    <p><strong>Values:</strong> <code>'full'</code> (default), <code>'minimal'</code> (pattern-matched array patches), or an object <code>{ mode: 'minimal', key: (item) => item.id }</code>.</p>
+              if (state.required && !state.value) {
+                setValidity({ valueMissing: true }, 'This field is required', inputEl)
+              } else {
+                setValidity({})
+              }
+            }, { signal })
+          }
 
-    <coralite-code-highlight language="javascript" title="Array Reconciliation Strategy">
-// Fast minimal pattern-matching with custom key extraction
-export const listStrategy = {
-  mode: 'minimal',
-  key: (item) => item.uuid
-}
-    </coralite-code-highlight>
+          // Handle form reset events
+          onFormReset(() => {
+            state.value = ''
+            setFormValue('')
+          })
+        }
+            </code-block>
 
-    <coralite-heading level="2" text="11. onError"></coralite-heading>
+            <h2 id="10-liststrategy">10. listStrategy</h2>
 
-    <p>The <code>onError</code> hook provides an SSR error boundary for component rendering during build time in production mode. When an exception occurs during server rendering of the component, <code>onError</code> intercepts the failure and returns a fallback HTML template or fallback state.</p>
+            <p>Exporting <code>listStrategy</code> controls how reactive array mutations are reconciled in the DOM. It consolidates the former <code>reconcile</code> and <code>key</code> options.</p>
 
-    <p><strong>Return Shape:</strong> Returns an object <code>{ template, state }</code> or string fallback HTML.</p>
+            <p><strong>Values:</strong> <code>'full'</code> (default), <code>'minimal'</code> (pattern-matched array patches), or an object <code>{ mode: 'minimal', key: (item) => item.id }</code>.</p>
 
-    <coralite-code-highlight language="javascript" title="Production Error Boundary Hook">
-export async function server () {
-  throw new Error('External API request failed')
-}
+            <code-block language="javascript" filename="Array Reconciliation Strategy">
+        // Fast minimal pattern-matching with custom key extraction
+        export const listStrategy = {
+          mode: 'minimal',
+          key: (item) => item.uuid
+        }
+            </code-block>
 
-export function onError ({ error }) {
-  console.error('SSR Component Render Failed:', error.message)
-  return {
-    template: '<div class="fallback-card">Content currently unavailable</div>',
-    state: { errorOccurred: true }
-  }
-}
-    </coralite-code-highlight>
+            <h2 id="11-onerror">11. onError</h2>
 
-    <coralite-heading level="2" text="12. Error Boundaries and Fault Isolation"></coralite-heading>
+            <p>The <code>onError</code> hook provides an SSR error boundary for component rendering during build time in production mode. When an exception occurs during server rendering of the component, <code>onError</code> intercepts the failure and returns a fallback HTML template or fallback state.</p>
 
-    <p>Coralite guarantees build isolation across independent page elements and dynamic routes:</p>
+            <p><strong>Return Shape:</strong> Returns an object <code>{ template, state }</code> or string fallback HTML.</p>
 
-    <ul>
-      <li><strong>Production Failure Isolation:</strong> If a component throws an error during server rendering in production mode, Coralite checks for an <code>onError</code> boundary fallback. If <code>onError</code> is present, its fallback markup renders in place of the failed component without breaking the parent page build.</li>
-      <li><strong>Development Diagnostic Mode:</strong> In development mode, component failures display diagnostic error overlays immediately in terminal output and browser logs, assisting instant troubleshooting.</li>
-      <li><strong>Build Isolation:</strong> Unhandled component errors without fallback handlers mark the affected page build output as failed while allowing sibling static pages to complete compilation without process crash.</li>
-    </ul>
+            <code-block language="javascript" filename="Production Error Boundary Hook">
+        export async function server () {
+          throw new Error('External API request failed')
+        }
 
-    <coralite-heading level="2" text="13. No Defensive Guards"></coralite-heading>
+        export function onError ({ error }) {
+          console.error('SSR Component Render Failed:', error.message)
+          return {
+            template: '<div class="fallback-card">Content currently unavailable</div>',
+            state: { errorOccurred: true }
+          }
+        }
+            </code-block>
 
-    <p>Coralite guarantees determinism for all framework-provided context objects and plugin extensions passed to component handlers.</p>
+            <h2 id="12-error-boundaries-and-fault-isolation">12. Error Boundaries and Fault Isolation</h2>
 
-    <ul>
-      <li><strong>Guaranteed Context Objects:</strong> Do not write defensive conditional guards checking framework context keys (for example, write <code>client({ lists, router }) { ... }</code> directly without defensive code like <code>if (!lists) return</code>). Context properties are guaranteed by the framework runtime.</li>
-      <li><strong>Environment Branching:</strong> Always use the deterministic <code>isServer</code> boolean parameter supplied in context objects to branch logic between build-time server rendering and browser runtime execution. Do not rely on <code>typeof window !== 'undefined'</code> guards.</li>
-    </ul>
+            <p>Coralite guarantees build isolation across independent page elements and dynamic routes:</p>
 
-    <coralite-code-highlight language="javascript" title="Deterministic Context Usage">
-// Access plugin context directly without defensive guards
-export function client ({ state, lists, router, isServer }) {
-  if (isServer) return
+            <ul>
+              <li><strong>Production Failure Isolation:</strong> If a component throws an error during server rendering in production mode, Coralite checks for an <code>onError</code> boundary fallback. If <code>onError</code> is present, its fallback markup renders in place of the failed component without breaking the parent page build.</li>
+              <li><strong>Development Diagnostic Mode:</strong> In development mode, component failures display diagnostic error overlays immediately in terminal output and browser logs, assisting instant troubleshooting.</li>
+              <li><strong>Build Isolation:</strong> Unhandled component errors without fallback handlers mark the affected page build output as failed while allowing sibling static pages to complete compilation without process crash.</li>
+            </ul>
 
-  // Direct invocation without checking `if (!lists) return`
-  const store = lists.createStore({ key: 'id' })
-}
-    </coralite-code-highlight>
+            <h2 id="13-no-defensive-guards">13. No Defensive Guards</h2>
 
-  </main>
+            <p>Coralite guarantees determinism for all framework-provided context objects and plugin extensions passed to component handlers.</p>
 
-  <coralite-footer></coralite-footer>
+            <ul>
+              <li><strong>Guaranteed Context Objects:</strong> Do not write defensive conditional guards checking framework context keys (for example, write <code>client({ lists, router }) { ... }</code> directly without defensive code like <code>if (!lists) return</code>). Context properties are guaranteed by the framework runtime.</li>
+              <li><strong>Environment Branching:</strong> Always use the deterministic <code>isServer</code> boolean parameter supplied in context objects to branch logic between build-time server rendering and browser runtime execution. Do not rely on <code>typeof window !== 'undefined'</code> guards.</li>
+            </ul>
+
+            <code-block language="javascript" filename="Deterministic Context Usage">
+        // Access plugin context directly without defensive guards
+        export function client ({ state, lists, router, isServer }) {
+          if (isServer) return
+
+          // Direct invocation without checking `if (!lists) return`
+          const store = lists.createStore({ key: 'id' })
+        }
+            </code-block>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/reference/pages" variant="secondary">← Previous: Pages & Routing Reference</ui-link>
+        <ui-link href="/docs/reference/define-component" variant="primary">Next: Component API Reference →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#1-component-structure">1. Component Structure</a>
+        <a href="#2-attributes">2. attributes</a>
+        <a href="#3-server">3. server()</a>
+        <a href="#4-getters">4. getters</a>
+        <a href="#5-style">5. style</a>
+        <a href="#6-slots">6. slots</a>
+        <a href="#7-provide-consume">7. provide / consume</a>
+        <a href="#8-client">8. client()</a>
+        <a href="#9-formcontrol-face">9. formControl (FACE)</a>
+        <a href="#10-liststrategy">10. listStrategy</a>
+        <a href="#11-onerror">11. onError</a>
+        <a href="#12-error-boundaries-and-fault-isolation">12. Error Boundaries and Fault Isolation</a>
+        <a href="#13-no-defensive-guards">13. No Defensive Guards</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

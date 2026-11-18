@@ -1,50 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration type="article" title="Coralite v0.6.0" description="Introducing Coralite v0.6.0: The first release of Coralite's HTML module static site generator with enhanced CLI integration, reusable utilities, and improved documentation for scalable projects."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2025-02-14T10:23:34+01:00">
-  <meta name="author_id" content="thomas" data-dev="true">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Coralite v0.6.0"
+    description="Introducing Coralite v0.6.0: The first release of Coralite's HTML module static site generator with enhanced CLI integration, reusable utilities"
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2025-02-14"
+    author="Thomas David"></article-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content post">
-    <h1 class="display">Coralite v0.6.0</h1>
+  <main class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/changelog/">Releases</a>
+      <span class="separator">/</span>
+      <span>Coralite v0.6.0</span>
+    </ui-breadcrumb>
 
-    <coralite-author name="thomas" date-time="2025-02-14T10:23:34+01:00"></coralite-author>
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Release</ui-badge>
+        <h1>Coralite v0.6.0</h1>
+        <p class="subhead">Introducing Coralite v0.6.0: The first release of Coralite's HTML module static site generator with enhanced CLI integration, reusable utilities, and improved documentation for scalable projects.</p>
 
-    <p>Coralite’s latest release, v0.6.0 introduces foundational features for building and rendering static websites, with a focus on component-based architecture, improved error handling, and enhanced developer tools.</p>
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">February 14, 2025</span>
+          </div>
+        </div>
+      </div>
 
-    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
+      <div class="post-body">
+        <p>Coralite’s latest release, v0.6.0 introduces foundational features for building and rendering static websites, with a focus on component-based architecture, improved error handling, and enhanced developer tools.</p>
 
-    <ul>  
-      <li><strong>Module reorganisation:</strong> Moved Coralite to a module structure for better maintainability and integration with external projects (<code>02a5e8f</code>). </li>  
-      <li><strong>Error clarity:</strong> Added document context to error messages for easier debugging (<code>e210844</code>). </li>  
-      <li><strong>Flexibility in rendering:</strong> Introduced a new option to ignore elements by attribute name-value pair, improving control over template processing (<code>229fef5</code>). </li>  
-      <li><strong>Compilation resilience:</strong> Fixed handling of missing components during compilation to prevent build failures (<code>5d44661</code>). </li>  
-      <li><strong>Utility expansion:</strong> Exported utility functions for broader reuse in projects (<code>891db2e</code>). </li>  
-      <li><strong>CLI integration:</strong> Updated CLI to leverage the Coralite module directly, simplifying command-line workflows (<code>b10bbe8</code>). </li>  
-    </ul>  
-    <coralite-heading level="2" text="Developer Improvements"></coralite-heading>
+            <h2 id="core-functionality">Core Functionality</h2>
 
-    <ul>  
-      <li><strong>Dry run support:</strong> Added a dry run option for testing changes without generating output (<code>48fe816</code>). </li>  
-      <li><strong>Type consistency:</strong> Standardised type definitions across modules through a global types file (<code>02a5e8f</code>). </li>  
-      <li><strong>Dependency management:</strong> Included <code>kleur</code> for enhanced terminal colour support in logs and outputs (<code>c78dde1</code>). </li>  
-    </ul>  
-    <coralite-heading level="2" text="Get the release"></coralite-heading>
+            <ul>  
+              <li><strong>Module reorganisation:</strong> Moved Coralite to a module structure for better maintainability and integration with external projects (<code>02a5e8f</code>). </li>  
+              <li><strong>Error clarity:</strong> Added document context to error messages for easier debugging (<code>e210844</code>). </li>  
+              <li><strong>Flexibility in rendering:</strong> Introduced a new option to ignore elements by attribute name-value pair, improving control over template processing (<code>229fef5</code>). </li>  
+              <li><strong>Compilation resilience:</strong> Fixed handling of missing components during compilation to prevent build failures (<code>5d44661</code>). </li>  
+              <li><strong>Utility expansion:</strong> Exported utility functions for broader reuse in projects (<code>891db2e</code>). </li>  
+              <li><strong>CLI integration:</strong> Updated CLI to leverage the Coralite module directly, simplifying command-line workflows (<code>b10bbe8</code>). </li>  
+            </ul>  
+            <h2 id="developer-improvements">Developer Improvements</h2>
 
-    <coralite-code-highlight language="bash">npm install coralite@0.6.0</coralite-code-highlight>
+            <ul>  
+              <li><strong>Dry run support:</strong> Added a dry run option for testing changes without generating output (<code>48fe816</code>). </li>  
+              <li><strong>Type consistency:</strong> Standardised type definitions across modules through a global types file (<code>02a5e8f</code>). </li>  
+              <li><strong>Dependency management:</strong> Included <code>kleur</code> for enhanced terminal colour support in logs and outputs (<code>c78dde1</code>). </li>  
+            </ul>  
+            <h2 id="get-the-release">Get the release</h2>
 
-    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.0" target="_blank">git v0.6.0 changelog</a></p>
+            <code-block language="bash">npm install coralite@0.6.0</code-block>
 
-    <coralite-related-posts></coralite-related-posts>
+            <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.0" target="_blank">git v0.6.0 changelog</a></p>
+      </div>
+
+      <div class="author-bio">
+        <ui-avatar initials="TD" size="md"></ui-avatar>
+        <div class="bio-info">
+          <h4>Thomas David</h4>
+          <p>Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.</p>
+        </div>
+      </div>
+
+      <div class="post-footer">
+        <a href="/blog/">← All posts</a>
+        <a href="/changelog/">Full changelog →</a>
+      </div>
+    </article>
   </main>
 
-  <coralite-footer></coralite-footer>
-  
+  <site-footer></site-footer>
 </body>
-
 </html>

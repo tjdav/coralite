@@ -1,237 +1,276 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="refs system - Coralite Documentation"
-    description="Complete guide to the core refs system for DOM element access in Coralite templates."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="refs system - Coralite Documentation"
+    description="Complete guide to the core refs system for DOM element access in Coralite templates."
+    section="Docs"></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
 
-  <main class="container content">
-    <!-- Introduction -->
-    <h1 class="display">refs System</h1>
-    <p>The <code>refs</code> system is a core Coralite feature that provides runtime DOM element access. It allows component scripts to safely access and manipulate DOM elements by their <code>ref</code> attributes. The framework handles automatic unique ID generation by assigning the generated ID to the <code>ref</code> attribute, leaving the standard <code>id</code> attribute intact.</p>
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="reference/plugins/refs"></docs-sidebar>
 
-    <!-- Table of Contents -->
-    <nav aria-label="table of contents">
-      <coralite-heading level="2" text="Table of Contents"></coralite-heading>
-      <ul>
-        <li><a href="#basic-usage">Basic Usage</a></li>
-        <li><a href="#complete-examples">Complete Examples</a></li>
-      </ul>
-    </nav>
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/plugins/">Built-in Plugins</a>
+        <span class="separator">/</span>
+        <span>refs System</span>
+      </ui-breadcrumb>
 
-    <!-- Basic Usage -->
-    <section id="basic-usage">
-      <coralite-heading level="2" text="Basic Usage"></coralite-heading>
-      <p>Here's the complete workflow for using refs:</p>
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>refs System</h1>
+          <ui-badge variant="cyan">Plugin</ui-badge>
+        </div>
+        <p class="subhead">Complete guide to the core refs system for DOM element access in Coralite templates.</p>
+      </div>
 
-      <coralite-code-html>
-        <template id="form-component">
-          <form>
-            <input type="text" ref="username" placeholder="Username">
-            <input type="password" ref="password" placeholder="Password">
-            <button type="button" ref="submitBtn">Submit</button>
-          </form>
-        </template>
+      <div class="lesson-body">
+        <!-- Introduction -->
+            <p>The <code>refs</code> system is a core Coralite feature that provides runtime DOM element access. It allows component scripts to safely access and manipulate DOM elements by their <code>ref</code> attributes. The framework handles automatic unique ID generation by assigning the generated ID to the <code>ref</code> attribute, leaving the standard <code>id</code> attribute intact.</p>
 
-        <script type="module">
-          import { defineComponent } from 'coralite'
-          
-          export default defineComponent({
-            client ({ signal, refs }) {
-              const username = refs('username')
-              const password = refs('password')
-              const submitBtn = refs('submitBtn')
-          
-              submitBtn.addEventListener('click', () => {
-                if (username.value && password.value) {
-                  console.log('Login:', username.value)
-                  // Handle form submission
-                } else {
-                  alert('Please fill all fields')
-                }
-              }, { signal })
-            }
-          })
-        </script>
-      </coralite-code-html>
-    </section>
+            <!-- Table of Contents -->
+            <nav aria-label="table of contents">
+              <h2 id="table-of-contents">Table of Contents</h2>
+              <ul>
+                <li><a href="#basic-usage">Basic Usage</a></li>
+                <li><a href="#complete-examples">Complete Examples</a></li>
+              </ul>
+            </nav>
 
-    <!-- Complete Examples -->
-    <section id="complete-examples">
-      <coralite-heading level="2" text="Complete Examples"></coralite-heading>
+            <!-- Basic Usage -->
+            <section id="basic-usage">
+              <h2>Basic Usage</h2>
+              <p>Here's the complete workflow for using refs:</p>
 
-      <coralite-heading level="3" text="Interactive Counter"></coralite-heading>
-      <coralite-code-html>
-        <template id="counter">
-          <div class="counter">
-            <h2 ref="display">Count: {{ currentCount }}</h2>
-            <button type="button" ref="increment">+</button>
-            <button type="button" ref="decrement">-</button>
-            <button type="button" ref="reset">Reset</button>
-          </div>
-        </template>
+              <code-block language="html">
+                <template id="form-component">
+                  <form>
+                    <input type="text" ref="username" placeholder="Username">
+                    <input type="password" ref="password" placeholder="Password">
+                    <button type="button" ref="submitBtn">Submit</button>
+                  </form>
+                </template>
 
-        <script type="module">
-          import { defineComponent } from 'coralite'
-          
-          export default defineComponent({
-            attributes: {
-              initial: {
-                type: Number,
-                default: 0
-              }
-            },
-            server ({ state }) {
-              return {
-                currentCount: state.initial
-              }
-            },
-            client ({ state, signal, refs }) {
-              const increment = refs('increment')
-              const decrement = refs('decrement')
-              const reset = refs('reset')
-          
-              increment.addEventListener('click', () => {
-                state.currentCount++
-              }, { signal })
-          
-              decrement.addEventListener('click', () => {
-                state.currentCount--
-              }, { signal })
-          
-              reset.addEventListener('click', () => {
-                state.currentCount = state.initial
-              }, { signal })
-            }
-          })
-        </script>
-      </coralite-code-html>
-
-      <coralite-heading level="3" text="Dynamic Form Validation"></coralite-heading>
-      <coralite-code-html>
-        <template id="signup-form">
-          <form>
-            <div>
-              <input type="email" ref="email" placeholder="Email">
-              <span ref="emailError" class="error"></span>
-            </div>
-            <div>
-              <input type="password" ref="password" placeholder="Password">
-              <span ref="passwordError" class="error"></span>
-            </div>
-            <button type="button" ref="submitBtn">Sign Up</button>
-          </form>
-        </template>
-
-        <script type="module">
-          import { defineComponent } from 'coralite'
-          
-          export default defineComponent({
-            client ({ signal, refs }) {
-              const email = refs('email')
-              const password = refs('password')
-              const emailError = refs('emailError')
-              const passwordError = refs('passwordError')
-              const submitBtn = refs('submitBtn')
-          
-              const validateEmail = (emailValue) => {
-                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)
-              }
-          
-              const validatePassword = (passwordValue) => {
-                return passwordValue.length >= 8
-              }
-          
-              submitBtn.addEventListener('click', () => {
-                let valid = true
-          
-                // Validate email
-                if (!validateEmail(email.value)) {
-                  emailError.textContent = 'Invalid email format'
-                  valid = false
-                } else {
-                  emailError.textContent = ''
-                }
-          
-                // Validate password
-                if (!validatePassword(password.value)) {
-                  passwordError.textContent = 'Password must be 8+ characters'
-                  valid = false
-                } else {
-                  passwordError.textContent = ''
-                }
-          
-                if (valid) {
-                  console.log('Form submitted:', email.value)
-                  // Submit form
-                }
-              }, { signal })
-            }
-          })
-        </script>
-      </coralite-code-html>
-
-      <coralite-heading level="3" text="Tabbed Interface"></coralite-heading>
-      <coralite-code-html>
-        <template id="tabs">
-          <div class="tabs">
-            <div class="tab-buttons">
-              <button type="button" ref="tab1">Tab 1</button>
-              <button type="button" ref="tab2">Tab 2</button>
-              <button type="button" ref="tab3">Tab 3</button>
-            </div>
-            <div class="tab-content">
-              <div ref="content1">Content 1</div>
-              <div ref="content2" hidden>Content 2</div>
-              <div ref="content3" hidden>Content 3</div>
-            </div>
-          </div>
-        </template>
-
-        <script type="module">
-          import { defineComponent } from 'coralite'
-          
-          export default defineComponent({
-            client ({ signal, refs }) {
-              const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
-              const contents = [refs('content1'), refs('content2'), refs('content3')]
-          
-              buttons.forEach((btn, index) => {
-                btn.addEventListener('click', () => {
-                  // Hide all contents
-                  contents.forEach(content => {
-                    content.hidden = true
+                <script type="module">
+                  import { defineComponent } from 'coralite'
+                  
+                  export default defineComponent({
+                    client ({ signal, refs }) {
+                      const username = refs('username')
+                      const password = refs('password')
+                      const submitBtn = refs('submitBtn')
+                  
+                      submitBtn.addEventListener('click', () => {
+                        if (username.value && password.value) {
+                          console.log('Login:', username.value)
+                          // Handle form submission
+                        } else {
+                          alert('Please fill all fields')
+                        }
+                      }, { signal })
+                    }
                   })
-          
-                  // Show selected content
-                  contents[index].hidden = false
-          
-                  // Update button states
-                  buttons.forEach(b => b.classList.remove('active'))
-                  btn.classList.add('active')
-                }, { signal })
-              })
-            }
-          })
-        </script>
-      </coralite-code-html>
+                </script>
+              </code-block>
+            </section>
 
-      <coralite-heading level="3" text="Key Points"></coralite-heading>
-      <ul>
-        <li><strong>Runtime Access</strong>: <code>refs('refName')</code> gets DOM elements</li>
-        <li><strong>Automatic Caching</strong>: Elements cached after first access</li>
-        <li><strong>Safe Queries</strong>: Returns null if element not found</li>
-        <li><strong>Under the Hood</strong>: Framework assigns the generated unique ID to the <code>ref</code> attribute and queries it via <code>document.querySelector('[ref="..."]')</code>. E2E tests should query this compiled ref attribute directly (e.g., <code>[ref="my-component__btn-0"]</code>).</li>
-      </ul>
-    </section>
+            <!-- Complete Examples -->
+            <section id="complete-examples">
+              <h2>Complete Examples</h2>
 
-  </main>
+              <h3 id="interactive-counter">Interactive Counter</h3>
+              <code-block language="html">
+                <template id="counter">
+                  <div class="counter">
+                    <h2 ref="display">Count: {{ currentCount }}</h2>
+                    <button type="button" ref="increment">+</button>
+                    <button type="button" ref="decrement">-</button>
+                    <button type="button" ref="reset">Reset</button>
+                  </div>
+                </template>
 
-  <coralite-footer></coralite-footer>
+                <script type="module">
+                  import { defineComponent } from 'coralite'
+                  
+                  export default defineComponent({
+                    attributes: {
+                      initial: {
+                        type: Number,
+                        default: 0
+                      }
+                    },
+                    server ({ state }) {
+                      return {
+                        currentCount: state.initial
+                      }
+                    },
+                    client ({ state, signal, refs }) {
+                      const increment = refs('increment')
+                      const decrement = refs('decrement')
+                      const reset = refs('reset')
+                  
+                      increment.addEventListener('click', () => {
+                        state.currentCount++
+                      }, { signal })
+                  
+                      decrement.addEventListener('click', () => {
+                        state.currentCount--
+                      }, { signal })
+                  
+                      reset.addEventListener('click', () => {
+                        state.currentCount = state.initial
+                      }, { signal })
+                    }
+                  })
+                </script>
+              </code-block>
+
+              <h3 id="dynamic-form-validation">Dynamic Form Validation</h3>
+              <code-block language="html">
+                <template id="signup-form">
+                  <form>
+                    <div>
+                      <input type="email" ref="email" placeholder="Email">
+                      <span ref="emailError" class="error"></span>
+                    </div>
+                    <div>
+                      <input type="password" ref="password" placeholder="Password">
+                      <span ref="passwordError" class="error"></span>
+                    </div>
+                    <button type="button" ref="submitBtn">Sign Up</button>
+                  </form>
+                </template>
+
+                <script type="module">
+                  import { defineComponent } from 'coralite'
+                  
+                  export default defineComponent({
+                    client ({ signal, refs }) {
+                      const email = refs('email')
+                      const password = refs('password')
+                      const emailError = refs('emailError')
+                      const passwordError = refs('passwordError')
+                      const submitBtn = refs('submitBtn')
+                  
+                      const validateEmail = (emailValue) => {
+                        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)
+                      }
+                  
+                      const validatePassword = (passwordValue) => {
+                        return passwordValue.length >= 8
+                      }
+                  
+                      submitBtn.addEventListener('click', () => {
+                        let valid = true
+                  
+                        // Validate email
+                        if (!validateEmail(email.value)) {
+                          emailError.textContent = 'Invalid email format'
+                          valid = false
+                        } else {
+                          emailError.textContent = ''
+                        }
+                  
+                        // Validate password
+                        if (!validatePassword(password.value)) {
+                          passwordError.textContent = 'Password must be 8+ characters'
+                          valid = false
+                        } else {
+                          passwordError.textContent = ''
+                        }
+                  
+                        if (valid) {
+                          console.log('Form submitted:', email.value)
+                          // Submit form
+                        }
+                      }, { signal })
+                    }
+                  })
+                </script>
+              </code-block>
+
+              <h3 id="tabbed-interface">Tabbed Interface</h3>
+              <code-block language="html">
+                <template id="tabs">
+                  <div class="tabs">
+                    <div class="tab-buttons">
+                      <button type="button" ref="tab1">Tab 1</button>
+                      <button type="button" ref="tab2">Tab 2</button>
+                      <button type="button" ref="tab3">Tab 3</button>
+                    </div>
+                    <div class="tab-content">
+                      <div ref="content1">Content 1</div>
+                      <div ref="content2" hidden>Content 2</div>
+                      <div ref="content3" hidden>Content 3</div>
+                    </div>
+                  </div>
+                </template>
+
+                <script type="module">
+                  import { defineComponent } from 'coralite'
+                  
+                  export default defineComponent({
+                    client ({ signal, refs }) {
+                      const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
+                      const contents = [refs('content1'), refs('content2'), refs('content3')]
+                  
+                      buttons.forEach((btn, index) => {
+                        btn.addEventListener('click', () => {
+                          // Hide all contents
+                          contents.forEach(content => {
+                            content.hidden = true
+                          })
+                  
+                          // Show selected content
+                          contents[index].hidden = false
+                  
+                          // Update button states
+                          buttons.forEach(b => b.classList.remove('active'))
+                          btn.classList.add('active')
+                        }, { signal })
+                      })
+                    }
+                  })
+                </script>
+              </code-block>
+
+              <h3 id="key-points">Key Points</h3>
+              <ul>
+                <li><strong>Runtime Access</strong>: <code>refs('refName')</code> gets DOM elements</li>
+                <li><strong>Automatic Caching</strong>: Elements cached after first access</li>
+                <li><strong>Safe Queries</strong>: Returns null if element not found</li>
+                <li><strong>Under the Hood</strong>: Framework assigns the generated unique ID to the <code>ref</code> attribute and queries it via <code>document.querySelector('[ref="..."]')</code>. E2E tests should query this compiled ref attribute directly (e.g., <code>[ref="my-component__btn-0"]</code>).</li>
+              </ul>
+            </section>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/reference/plugins/metadata" variant="primary">Next: Metadata Plugin →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#table-of-contents">Table of Contents</a>
+        <a href="#basic-usage">Basic Usage</a>
+        <a href="#complete-examples">Complete Examples</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
 </body>
-
 </html>

@@ -18,21 +18,38 @@
     "build": "coralite build",
     "check": "coralite check",
     "fix": "coralite fix",
+    "test:visual": "playwright test",
     "lint:css": "stylelint 'src/css/*.css'",
-    "lint:css:fix": "stylelint --fix 'src/css/*.css'"
+    "lint:css:fix": "stylelint --fix 'src/css/*.css'",
+    "check:redirects": "node scripts/check-redirects.js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "@solar-icons/js": "^2.3.4",
+    "@types/node": "^26.6.6",
     "autoprefixer": "^10.5.0",
-    "highlight.js": "^11.11.1",
+    "coralite": "workspace:*",
+    "dom-serializer": "^3.1.1",
+    "highlight.js": "^11.12.0",
     "postcss-import": "^16.1.1",
     "stylelint": "^16.26.1",
     "stylelint-config-twbs-bootstrap": "^16.1.0"
   },
-  "stylelint": {
-    "extends": "stylelint-config-twbs-bootstrap"
-  },
   "dependencies": {
-    "coralite": "workspace:*",
-    "fuse.js": "^7.4.2"
+    "@floating-ui/dom": "^1.8.0",
+    "fuse.js": "^7.5.0"
+  },
+  "stylelint": {
+    "extends": "stylelint-config-twbs-bootstrap",
+    "rules": {
+      "declaration-block-single-line-max-declarations": null,
+      "import-notation": "string",
+      "property-no-vendor-prefix": null,
+      "selector-class-pattern": null,
+      "selector-max-type": null,
+      "selector-no-qualifying-type": null,
+      "@stylistic/value-list-comma-space-after": "always-single-line",
+      "@stylistic/value-list-comma-newline-after": null
+    }
   }
 }

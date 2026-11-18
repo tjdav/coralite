@@ -1,21 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <coralite-meta no-hydration title="404 - Page Not Found" description="The page you are looking for does not exist."></coralite-meta>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Page Not Found — Coralite"
+    description="The page you are looking for does not exist. Head back to the Coralite homepage, read the docs, or search the site."
+    noindex></page-meta>
 </head>
-
 <body>
-  <coralite-navbar></coralite-navbar>
-  <main id="content" class="container py-5 text-center">
-    <h1 class="display mt-5">404</h1>
-    <p class="lead">Page Not Found</p>
-    <p>The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.</p>
-    <div class="mt-4">
-      <a href="/" class="button button-primary">Go to Home</a>
-    </div>
-  </main>
-  <coralite-footer></coralite-footer>
-</body>
+  <site-header></site-header>
 
+  <main class="error-page page-container">
+    <section class="error-hero">
+      <div class="error-code">CORALITE-E404</div>
+      <h1>Route Not Found in Manifest.</h1>
+      <p class="subhead">The page you are looking for does not exist in the AST compilation tree. It may have been moved, deleted, or renamed during the last build.</p>
+    </section>
+
+    <section class="terminal-section">
+      <ui-terminal>
+<span class="prompt">$</span> coralite build
+[Diagnostic Engine] Scanning manifest.json...
+<span class="warning">✖</span> Error: Route '/docs/undefined' not found.
+<span class="warning">✖</span> Check: Did you forget to add the .html file to src/pages/?
+<span class="prompt">$</span> npx coralite check
+      </ui-terminal>
+    </section>
+
+    <section class="recovery-section">
+      <div class="recovery-grid">
+        <ui-card>
+          <h3 slot="header">Return to Safety</h3>
+          <p>Go back to the homepage and start over.</p>
+          <ui-link href="/" variant="primary" style="margin-top: 16px;">Go Home</ui-link>
+        </ui-card>
+        <ui-card>
+          <h3 slot="header">Read the Docs</h3>
+          <p>Find the API or lesson you were looking for.</p>
+          <ui-link href="/docs/" variant="secondary" style="margin-top: 16px;">Browse Docs</ui-link>
+        </ui-card>
+      </div>
+    </section>
+
+    <section class="did-you-mean">
+      <p>Did you mean one of these?</p>
+      <div class="suggestion-links">
+        <a href="/reference/attributes">/reference/attributes</a>
+        <a href="/learn/01-the-document">/learn/the-document</a>
+        <a href="/why/">/why/</a>
+      </div>
+    </section>
+  </main>
+
+  <site-footer></site-footer>
+</body>
 </html>
+
