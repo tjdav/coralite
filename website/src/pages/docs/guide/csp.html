@@ -132,6 +132,8 @@
 
             <p>For statically generated sites (SSG), Coralite inspects all serialized inline <code>&lt;script&gt;</code>, <code>&lt;script type="importmap"&gt;</code>, and <code>&lt;style&gt;</code> elements post-render. It automatically calculates base64 cryptographic hashes (e.g. <code>'sha256-...'</code>) and populates the <code>script-src</code> and <code>style-src</code> directives.</p>
 
+            <p>In a source list, a hash or nonce supersedes <code>'unsafe-inline'</code>. When your configured <code>style-src</code> already contains <code>'unsafe-inline'</code>, Coralite therefore skips the style hashes instead of appending them: the inline sheet is already allowed, and adding a hash would silently block authored <code>style</code> attributes, which cannot be hashed. Drop <code>'unsafe-inline'</code> when you want hash-only style enforcement.</p>
+
             <h3 id="meta-tag-injection">Meta Tag Injection</h3>
 
             <p>When <code>injectMeta: true</code> is enabled, Coralite automatically inserts the computed policy directly into the HTML document's <code>&lt;head&gt;</code>:</p>

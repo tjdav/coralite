@@ -88,6 +88,49 @@ The header badge reads `packages/coralite/package.json` through
 file states the version: keeping docs version-free is what prevents the badge,
 the installation snippet and `public/llms-full.txt` from disagreeing again.
 
+## Performance
+
+`pnpm website:perf` (from the repository root) builds the site, serves `dist`
+with Brotli/gzip, and audits four routes on mobile plus the home page on
+desktop:
+
+| Route | Device |
+|---|---|
+| `/` | mobile, desktop |
+| `/docs/guide/getting-started/` | mobile |
+| `/learn/01-the-document/` | mobile |
+| `/blog/coralite-v0-11-1/` | mobile |
+
+It prints the score, FCP, LCP, TBT, CLS and the remaining opportunities for
+each run. `pnpm website:perf:assert` applies the soft budget — mobile score
+≥ 95 on every route, desktop ≥ 99, LCP ≤ 2.5 s, CLS ≤ 0.1 — and exits non-zero
+on a miss. It is not wired into CI; mobile scores vary by a couple of points
+between runs.
+
+Set `PERF_URL=https://…` to audit a deployed site instead of the local build
+(useful after the cutover), and `PERF_PORT` to move the local server.
+
+### Cache policy
+
+`public/_headers` is copied to `dist/_headers` and read by statichost.eu. The
+policy is path based and last match wins:
+
+- Everything revalidates by default (`max-age=0, must-revalidate`).
+- Content-hashed output under `/assets/*` is immutable for a year.
+- `assets/css/styles.css` and `assets/js/manifest.js` keep stable names, so
+  they override the wildcard and revalidate.
+- `/fonts/*` and `/images/*` are unversioned and get one week.
+
+### Known performance follow-ups
+
+- Lazy-load client JS for the command palette, mobile nav and code blocks; the
+  first paint currently ships hydration for all three.
+- Subset the Inter and JetBrains Mono variable fonts (47 KB and 40 KB).
+- Serve the hero coral through `srcset`/`sizes`; it is rendered at 342 px from
+  a 472 px source.
+- Minify the injected per-page component CSS in the renderer, before the CSP
+  hash is computed.
+
 ## Deploying
 
 The build produces a static site in `dist/`. Deploy `dist/` to any static host.
@@ -102,6 +145,8 @@ The build produces a static site in `dist/`. Deploy `dist/` to any static host.
   the output and static files win over redirects by default.
 - `public/_redirects` maps every legacy `.html` URL to its clean target. The
   host must honour it (Netlify and Cloudflare Pages do).
+- `public/_headers` sets the cache policy (see [Performance](#performance)).
+  statichost.eu reads it from the output root.
 
 Works out of the box on Netlify, Vercel, Cloudflare Pages, and GitHub Pages,
 provided the host supports the URL rules above.

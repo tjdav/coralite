@@ -1446,6 +1446,11 @@ Audit plugins using `coralite validate-plugins`:
 
 Supports Nonce mode (SSR), Hash mode (SSG), and External Scripts/Styles mode.
 
+In a source list a hash or nonce supersedes `'unsafe-inline'`. If your
+`style-src` already allows `'unsafe-inline'`, Coralite does not append style
+hashes: the inline sheet is already allowed, and a hash there would block
+authored `style` attributes, which cannot be hashed.
+
 ```javascript
 export default defineConfig({
   csp: {

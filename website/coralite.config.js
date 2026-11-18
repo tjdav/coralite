@@ -68,7 +68,10 @@ export default defineConfig({
     enabled: true,
     injectMeta: true,
     hashAlgorithm: 'sha256',
-    externalStyles: true,
+    // Inline the per-page component CSS so a second stylesheet never blocks
+    // first paint. `style-src` already allows 'unsafe-inline', so the hash is
+    // omitted and authored style attributes keep working.
+    externalStyles: false,
     directives: {
       'default-src': ["'self'"],
       // The Coralite client runtime revives serialized page controller
