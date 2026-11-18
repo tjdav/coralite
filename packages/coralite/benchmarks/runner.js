@@ -10,6 +10,7 @@ import { compareAgainstBaseline, DEFAULT_BASELINE_PATH } from './utils/regressio
 import { runBundleHydrationSuite } from './suites/02-bundle-hydration/bench.js'
 import { runInternalSuite } from './suites/04-internal/bench.js'
 import { runStressLifecycleSuite } from './suites/05-stress-lifecycle/bench.js'
+import { runHydrationPayloadSuite } from './suites/06-hydration-payload/bench.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -92,7 +93,7 @@ Usage:
 
 Options:
   --help, -h          Display formatted CLI usage and exit
-  --suite=<name>, -s  Run a specific benchmark suite (bundle-hydration, internal, stress, or all [default: all])
+  --suite=<name>, -s  Run a specific benchmark suite (bundle-hydration, hydration-payload, internal, stress, or all [default: all])
   --frameworks=<list> Comma-separated list of frameworks to include in bundle-hydration (coraliteDynamic, react, vue, svelte)
   --task-id=<id>      Identifier for the result file (default: adhoc)
   --phase=<phase>     Phase of run: before, after, baseline (default: after)
@@ -170,6 +171,23 @@ function formatTaskResults (resultsData, taskId, phase) {
     }
   }
 
+  const hydrationPayload = resultsData.suites?.['hydration-payload']
+  if (hydrationPayload) {
+    results['hydration-payload'] = {}
+    for (const [scenario, metrics] of Object.entries(hydrationPayload)) {
+      results['hydration-payload'][scenario] = {
+        htmlRawKb: metrics.htmlRawKB,
+        htmlGzipKb: metrics.htmlGzipKB,
+        hydrationRawKb: metrics.hydrationRawKB,
+        hydrationGzipKb: metrics.hydrationGzipKB,
+        jsRawKb: metrics.jsRawKB,
+        jsGzipKb: metrics.jsGzipKB,
+        instances: metrics.instances,
+        bytesPerInstance: metrics.bytesPerInstance
+      }
+    }
+  }
+
   return {
     taskId,
     phase,
@@ -206,7 +224,7 @@ async function main () {
   }
 
   const selectedSuite = flags.suite.toLowerCase()
-  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle']
+  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle', 'hydration-payload', 'payload']
 
   if (!VALID_SUITES.includes(selectedSuite)) {
     console.error(`\n❌ Error: Unknown suite "${flags.suite}".`)
@@ -234,6 +252,12 @@ async function main () {
       iterations: flags.iterations
     })
     resultsData.suites['stress-lifecycle'] = stressResults
+    triggerGC()
+  }
+
+  if (selectedSuite === 'all' || selectedSuite === 'hydration-payload' || selectedSuite === 'payload') {
+    const hydrationPayloadResults = await runHydrationPayloadSuite()
+    resultsData.suites['hydration-payload'] = hydrationPayloadResults
     triggerGC()
   }
 

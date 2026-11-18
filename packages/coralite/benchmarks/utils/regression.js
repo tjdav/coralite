@@ -73,8 +73,8 @@ export function compareAgainstBaseline (currentData, baselinePath = DEFAULT_BASE
 
     const diffPercent = +(((currentVal - baselineVal) / baselineVal) * 100).toFixed(2)
 
-    // Bundle size check (gzipKB, rawKB)
-    if (metricKey === 'gzipKB' || metricKey === 'rawKB') {
+    // Bundle size check (gzipKB, rawKB, hydration payload metrics)
+    if (metricKey === 'gzipKB' || metricKey === 'rawKB' || metricKey === 'htmlRawKB' || metricKey === 'htmlGzipKB' || metricKey === 'hydrationRawKB' || metricKey === 'hydrationGzipKB') {
       if (diffPercent > 5) {
         passed = false
         regressions.push({

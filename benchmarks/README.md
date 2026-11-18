@@ -7,8 +7,15 @@ Coralite has two benchmark tracks: **internal** (fast local regression checks) a
 Fast local checks (~30–60s) for regressions during development. Runs the surviving suites in `packages/coralite/benchmarks/`:
 
 - **`02-bundle-hydration`** — bundle size (raw + gzipped) and client hydration time
+- **`06-hydration-payload`** — client HTML, hydration payload, and generated JS sizes across dynamic and static component-heavy pages
 - **`04-internal`** — micro-benchmarks via mitata (AST interpolation, Lazy Proxy, AST DOM creation)
 - **`05-stress-lifecycle`** — selective hydration island scaling, state streaming, mount/unmount lifecycle
+
+Run only the payload suite:
+
+```sh
+pnpm bench:internal --suite=hydration-payload --task-id hydration-payload --phase after --save
+```
 
 Used per Phase 3 tasks (see `AGENTS.md`). Writes results to `benchmarks/results/<task-id>.json` when run with `--task-id` and `--save`.
 
@@ -62,7 +69,7 @@ Which internal suite is covered by which external harness:
 - **lumeland-benchmark** (`lumeland`) — SSG build-time comparison against other static site generators. Runs Deno harness. Requires Deno installed. CI cost: 1–5 min.
 - **jsbenchmarks.com** (`jsbenchmarks`) — Submission-prep validator only. Validates structure of local submission copy at `benchmarks/jsbenchmarks/coralite/` and outputs submission instructions; does not run an external harness directly.
 
-**Bundle size, hydration time, micro-benchmark cost, and lifecycle memory** are only measurable via `pnpm bench:internal`. The external harnesses measure DOM reactivity and SSG build time, not these.
+**Bundle size, hydration time, micro-benchmark cost, and lifecycle memory** are only measurable via `pnpm bench:internal`. `06-hydration-payload` additionally measures raw/gzipped HTML and the serialized component hydration payload. The external harnesses measure DOM reactivity and SSG build time, not these.
 
 ## Historical results
 

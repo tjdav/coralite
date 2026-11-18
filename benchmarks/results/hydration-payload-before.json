@@ -1,0 +1,36 @@
+{
+  "taskId": "hydration-payload-before",
+  "phase": "before",
+  "commit": "e3956068",
+  "runAt": "2026-11-18T05:11:29.131Z",
+  "machine": {
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "cores": 24,
+    "os": "Linux 7.0.0-43-generic",
+    "nodeVersion": "v24.16.0"
+  },
+  "results": {
+    "hydration-payload": {
+      "dynamic": {
+        "htmlRawKb": 250.3,
+        "htmlGzipKb": 7.3,
+        "hydrationRawKb": 219.7,
+        "hydrationGzipKb": 3.1,
+        "jsRawKb": 459,
+        "jsGzipKb": 53.1,
+        "instances": 63,
+        "bytesPerInstance": 3571
+      },
+      "static": {
+        "htmlRawKb": 238.2,
+        "htmlGzipKb": 6.3,
+        "hydrationRawKb": 215.7,
+        "hydrationGzipKb": 2.6,
+        "jsRawKb": 458.3,
+        "jsGzipKb": 53,
+        "instances": 63,
+        "bytesPerInstance": 3506
+      }
+    }
+  }
+}
