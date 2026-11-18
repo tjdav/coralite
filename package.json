@@ -43,7 +43,8 @@
     "website:dev": "pnpm --filter='./website' run start",
     "website:check": "pnpm --filter='./website' run check",
     "website:test": "pnpm --filter='./website' run check:redirects && pnpm --filter='./website' run test:visual",
-    "website:lint:css": "pnpm --filter='./website' run lint:css"
+    "website:lint:css": "pnpm --filter='./website' run lint:css",
+    "website:a11y:full": "pnpm --filter='./website' run a11y:full"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",

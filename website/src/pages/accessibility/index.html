@@ -35,18 +35,23 @@
 
       <h2>What we do</h2>
       <ul>
-        <li>Semantic HTML landmarks and heading order on every page.</li>
-        <li>Keyboard access to navigation, search and interactive components, with visible focus states.</li>
-        <li>Colour combinations chosen for contrast against the dark theme.</li>
+        <li>Semantic HTML landmarks on every page, with a skip link that moves focus to the main content.</li>
+        <li>Keyboard access to navigation, search and interactive components, with a visible focus indicator.</li>
+        <li>The search dialog and mobile menu trap focus, close with Escape and restore focus to their trigger; the closed menu is removed from the tab order.</li>
+        <li>Scrollable code samples are focusable regions with an accessible name.</li>
+        <li>Colour combinations that meet WCAG AA for text and control boundaries.</li>
         <li>Text alternatives for informative images and icons; decorative elements are hidden from assistive technology.</li>
+        <li>Animations and transitions respect the reduced-motion preference.</li>
         <li>Content that works without client-side JavaScript. Search is the only feature that requires it.</li>
       </ul>
 
+      <h2>Testing</h2>
+      <p>Every change runs automated <a href="https://www.w3.org/WAI/test-evaluate/" target="_blank" rel="noopener">WCAG 2.0, 2.1 and 2.2 AA checks</a> over a representative set of pages, including mobile layouts, together with keyboard tests for the skip link, search dialog and mobile menu. A full crawl of every page can be run on demand.</p>
+
       <h2>Known limitations</h2>
       <ul>
-        <li>The site has not been audited with screen readers or switch devices, so edge cases may remain.</li>
-        <li>Complex interactive widgets, such as the command palette, mobile navigation and tooltips, may be harder to operate with some assistive technologies.</li>
-        <li>Older blog posts may contain code samples or tables that are harder to follow on narrow screens.</li>
+        <li>The site has not yet been audited with screen readers or switch devices, so edge cases may remain.</li>
+        <li>Older blog posts may contain tables that are harder to follow on narrow screens.</li>
         <li>External sites we link to are outside our control.</li>
       </ul>
 

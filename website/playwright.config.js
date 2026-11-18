@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3333
 const externalBaseURL = process.env.BASE_URL
+const fullAudit = Boolean(process.env.A11Y_FULL)
 const baseURL = externalBaseURL || `http://localhost:${port}`
 
 export default defineConfig({
@@ -35,9 +36,9 @@ export default defineConfig({
   webServer: externalBaseURL
     ? undefined
     : {
-      command: 'pnpm coralite dev',
+      command: fullAudit ? 'node scripts/serve-dist.js' : 'pnpm coralite dev',
       url: baseURL,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: fullAudit ? false : !process.env.CI,
       timeout: 120 * 1000
     }
 })

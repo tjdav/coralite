@@ -21,9 +21,11 @@
     "test:visual": "playwright test",
     "lint:css": "stylelint 'src/css/*.css'",
     "lint:css:fix": "stylelint --fix 'src/css/*.css'",
-    "check:redirects": "node scripts/check-redirects.js"
+    "check:redirects": "node scripts/check-redirects.js",
+    "a11y:full": "pnpm build && A11Y_FULL=1 playwright test tests/__tests__/a11y-full.spec.js"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.65.0",
     "@solar-icons/js": "^2.3.4",
     "@types/node": "^26.6.6",
