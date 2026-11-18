@@ -80,6 +80,14 @@ canonical contract changes.
 4. Run `pnpm website:build` from the repository root.
 5. Run `pnpm website:test` and confirm canonical anchors and summary links still resolve.
 
+## Version
+
+The header badge reads `packages/coralite/package.json` through
+`src/plugins/site-version.js`, so a release bump updates the site without edits.
+`tests/__tests__/version.spec.js` fails if the badge drifts. No other page or
+file states the version: keeping docs version-free is what prevents the badge,
+the installation snippet and `public/llms-full.txt` from disagreeing again.
+
 ## Deploying
 
 The build produces a static site in `dist/`. Deploy `dist/` to any static host.

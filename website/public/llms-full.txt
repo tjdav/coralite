@@ -1,6 +1,6 @@
-# Coralite v1.0.0-rc.9 — Machine-Readable LLM Developer Reference
+# Coralite — Machine-Readable LLM Developer Reference
 
-> **Metadata**: Coralite Framework v1.0.0-rc.9 | Node.js Floor: `>=22.22.2` (ESM native)
+> **Metadata**: Node.js Floor: `>=22.22.2` (ESM native)
 
 ---
 

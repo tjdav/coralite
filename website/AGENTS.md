@@ -1,4 +1,4 @@
-# Coralite Project Agent Invariants (v{{ version }})
+# Coralite Project Agent Invariants
 
 Read this file before starting any task in this project. Rules apply to every task.
 
