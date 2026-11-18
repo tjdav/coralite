@@ -36,11 +36,14 @@ jobs:
       - name: Lint styles
         run: pnpm website:lint:css
 
+      - name: Build site
+        run: pnpm website:build
+
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
         working-directory: website
 
-      - name: Redirect audit and visual tests
+      - name: Redirect audit, sitemap audit and visual tests
         run: pnpm website:test
 
       - name: Upload Playwright report

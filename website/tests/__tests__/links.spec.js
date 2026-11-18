@@ -74,7 +74,7 @@ test('footer View Source links to the repository', async ({ page }) => {
   await page.goto('/')
   await page.waitForLoadState('networkidle')
 
-  const link = page.locator('site-footer .footer-bottom a')
+  const link = page.locator('site-footer .footer-bottom a[href="https://github.com/tjdav/coralite"]')
   await expect(link).toHaveText('View Source')
   await expect(link).toHaveAttribute('href', 'https://github.com/tjdav/coralite')
   await expect(link).toHaveAttribute('target', '_blank')
