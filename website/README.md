@@ -76,6 +76,9 @@ canonical contract changes.
 
 1. Update the canonical page first.
 2. Update `public/llms-full.txt` if the contract changed.
+   The diagnostic tables there and in `public/llms/diagnostics.md` mirror
+   `DIAGNOSTIC_CATALOG`; regenerate them with `coralite diagnostics --format json`
+   when codes change.
 3. Update summaries only when the high-level rule changed.
 4. Run `pnpm website:build` from the repository root.
 5. Run `pnpm website:test` and confirm canonical anchors and summary links still resolve.

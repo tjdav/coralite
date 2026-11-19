@@ -27,7 +27,7 @@ Key words per RFC 2119:
 - [CSS Scoping & Styling](/llms/css.md): `@layer components`, `:host` & `:host-context()` selectors, dynamic style variables, lazy dependency stylesheets (`await import('*.css')`), and slot layout transparency.
 - [Plugins Reference](/llms/plugins.md): `definePlugin`, two-phase context resolvers, build/client lifecycle hooks, and imperative custom-element dependency tracking.
 - [Imperative Components Reference](https://coralite.dev/docs/reference/imperative-components/): creation paths, scan boundaries, dependency tracking, runtime loaders, upgrades, ownership, styling, testing, and troubleshooting.
-- [Diagnostics & Validation](/llms/diagnostics.md): Compiler diagnostics (`CORALITE-E1xx` to `E4xx`), root causes, and automated AST fixer (`coralite fix`).
+- [Diagnostics & Validation](/llms/diagnostics.md): every Coralite diagnostic code with severity, auto-fix availability and fix guidance. Query the same catalogue with `coralite diagnostics --format json`.
 - [Configuration](/llms/config.md): `coralite.config.js`, `defineConfig` options, CSP policies, and build options.
 - [Automated Testing & E2E](/llms/testing.md): Playwright locator chaining, `updateComplete` settlement, and static `data-testid` conventions.
 - [coralite-ignore Reference](https://coralite.dev/docs/reference/coralite-ignore/): Literal page regions, literal slots, script/style text, component templates, page controller scripts, and validator pragma distinctions.
