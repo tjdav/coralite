@@ -1,26 +1,66 @@
 import { readdir, readFile, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { definePlugin } from 'coralite'
+import { parseHTML } from 'coralite/utils/server'
 import { renderOgImage } from '../og/render.js'
 
 /**
- * Reads one meta tag value from built HTML.
- * @param {string} html - Page HTML.
- * @param {RegExp} pattern - Pattern with the value in the first group.
- * @returns {string} Decoded value, or an empty string.
+ * Finds the first element with a tag name.
+ * @param {object} node - Parsed AST node.
+ * @param {string} name - Lowercase tag name.
+ * @returns {object|null} Matching element, or null.
  */
-function meta (html, pattern) {
-  const match = html.match(pattern)
-  if (!match) {
+function findElement (node, name) {
+  if (!node) {
+    return null
+  }
+  if (node.type === 'tag' && node.name === name) {
+    return node
+  }
+  for (const child of node.children || []) {
+    const found = findElement(child, name)
+    if (found) {
+      return found
+    }
+  }
+  return null
+}
+
+/**
+ * Collects the text content of a node.
+ * @param {object} node - Parsed AST node.
+ * @returns {string} Concatenated text.
+ */
+function textContent (node) {
+  if (!node) {
     return ''
   }
-  return match[1]
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .trim()
+  if (node.type === 'text') {
+    return node.data
+  }
+  return (node.children || []).map(textContent).join('')
+}
+
+/**
+ * Walks the tree for a meta tag with the requested property.
+ * @param {object} node - Parsed AST node.
+ * @param {string} property - Meta property value.
+ * @returns {string} Content value, or an empty string.
+ */
+function readMeta (node, property) {
+  if (!node) {
+    return ''
+  }
+  if (node.type === 'tag' && node.name === 'meta' && node.attribs && node.attribs.property === property) {
+    return node.attribs.content || ''
+  }
+  for (const child of node.children || []) {
+    const found = readMeta(child, property)
+    if (found) {
+      return found
+    }
+  }
+  return ''
 }
 
 /**
@@ -60,11 +100,15 @@ export default definePlugin({
         }
 
         const html = await readFile(pagePath, 'utf8')
-        const documentTitle = meta(html, /<title>([\s\S]*?)<\/title>/).replace(/\s+—\s+Coralite.*$/, '')
-        const heading = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/)
-        const rawTitle = documentTitle || (heading
-          ? meta(heading[1], /([\s\S]+)/).replace(/<[^>]+>/g, '').trim()
-          : '')
+        const document = parseHTML(html).root
+        let rawTitle = textContent(findElement(document, 'title'))
+        const suffix = rawTitle.indexOf(' — Coralite')
+        if (suffix !== -1) {
+          rawTitle = rawTitle.slice(0, suffix)
+        }
+        if (!rawTitle.trim()) {
+          rawTitle = textContent(findElement(document, 'h1'))
+        }
         const title = rawTitle.replace(/\s+/g, ' ').trim()
         if (!title) {
           continue
@@ -72,9 +116,9 @@ export default definePlugin({
 
         const png = await renderOgImage({
           title,
-          section: meta(html, /<meta property="article:section" content="([^"]*)"/),
-          author: meta(html, /<meta property="article:author" content="([^"]*)"/),
-          date: meta(html, /<meta property="article:published_time" content="([^"]*)"/)
+          section: readMeta(document, 'article:section'),
+          author: readMeta(document, 'article:author'),
+          date: readMeta(document, 'article:published_time')
         })
 
         const relativePath = `images/og/blog/${entry.name}.png`
