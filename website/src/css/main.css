@@ -130,9 +130,6 @@ pre code { padding: 0; font-size: inherit; color: inherit; background: transpare
 .post-body a { color: var(--accent-cyan); text-decoration: underline; }
 .post-body strong { color: var(--text-primary); }
 .post-body blockquote { padding-left: 24px; margin: 48px 0; font-size: 24px; font-style: italic; line-height: 1.4; color: var(--accent-violet); border-left: 4px solid var(--accent-violet); }
-.post-body figure { margin: 40px 0; }
-.post-body figure img { display: block; width: 100%; height: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
-.post-body figcaption { margin-top: 12px; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
 .post-body .table-wrap { margin: 0 0 32px; overflow-x: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
 .post-body table { width: 100%; min-width: 560px; font-size: 15px; border-collapse: collapse; }
 .post-body caption { padding: 12px 16px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-align: left; text-transform: uppercase; letter-spacing: 1px; background: var(--bg-card); border-bottom: 1px solid var(--border-subtle); }
