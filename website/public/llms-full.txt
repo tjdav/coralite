@@ -1390,34 +1390,77 @@ npx coralite validate-components -c src/components --coverage --strict
 ```
 
 ### Diagnostic Severity Model
-Diagnostics emitted by the AST validator follow a three-level severity model:
-- `error`: Fatal syntax, schema, or reactivity rule violation. Fails validation.
-- `warning`: Unused symbols, dead CSS, or redundant checks.
-- `info`: Informational suggestion.
+Diagnostics emitted by the AST validator follow a two-level severity model:
+- `error`: Fatal syntax, schema, route, config or reactivity rule violation. Fails the build.
+- `warning`: Unused symbols, dead code, redundant checks or accessibility findings. Fails only under `--strict`.
 
-### Rule Categories & Verified Diagnostic Codes
-- **Attribute Schema**:
-  - `CORALITE-E101`: Non-primitive `Array` or `Object` constructor in attribute schema.
-  - `CORALITE-E102`: Mutex violation (`required: true` combined with `default`).
-  - `CORALITE-E103`: Asynchronous `transform` or `validate` function.
-  - `CORALITE-E104`: Attribute name collides with reserved context or slot key.
-  - `CORALITE-E105`: Context parameter misuse (accidental (state) => state.prop, deprecated context.attributes, or legacy multi-arg slots).
-  - `CORALITE-E106`: Invalid `provide` or `consume` configuration schema.
-  - `CORALITE-E109`: Static top-level `.css` import, dynamic `.css` import outside `client()`, or invalid CSS import options.
-- **Template Syntax**:
-  - `CORALITE-E201`: Complex, arithmetic, or non-identifier template expression (e.g. `{{ a + b }}`). (Auto-fixer lifts expression to derived getter).
-  - `CORALITE-E202`: Missing `ref` declaration referenced by `refs('name')`. (Auto-fixer injects `ref` on matching element).
-  - `CORALITE-E203`: Inline event listener attribute (`onclick`, `onsubmit`) in `<template>`.
-  - `CORALITE-W204`: Redundant existence check on template ref (e.g. `if (btn)`).
-- **Client & Reactivity Boundaries**:
-  - `CORALITE-E301`: Outer static module import referenced in `client()`. (Auto-fixer rewrites to dynamic `await import(...)`).
-  - `CORALITE-E302`: Reactive state mutation detected inside `observe()` callback.
-  - `CORALITE-E303`: Asynchronous getter function in `style` block.
-  - `CORALITE-E304`: Node runtime global (`process`, `Buffer`, `setImmediate`, ...) referenced inside `client()`. Web-platform globals shared with the browser (`console`, `fetch`, `URL`, `crypto`, ...) are allowed.
-- **Dead Code & Coverage**:
-  - `CORALITE-W401`: Unused getter, server property, or declared attribute.
-  - `CORALITE-W402`: Dead CSS selectors or unused element `ref="..."` declaration.
-  - `CORALITE-E403`: Unresolvable or missing dependency stylesheet (`.css`) specifier.
+### Diagnostic Catalogue
+Coralite emits 52 stable diagnostic codes across five domains. Severity is either `error` (fails the build) or `warning` (reported, fails only under `--strict`); 12 codes are auto-fixable.
+
+Query the catalogue at any time:
+
+```bash
+coralite diagnostics
+coralite diagnostics --family plugin --fixable
+coralite diagnostics --format json
+```
+
+The canonical list with summaries and fix guidance lives at `/reference/diagnostics/` and in `/llms/diagnostics.md`.
+
+| Code | Severity | Auto-fix | Diagnostic |
+| --- | --- | --- | --- |
+| `CORALITE-A101` | warning | no | Image missing alt text |
+| `CORALITE-A102` | warning | no | Link without accessible text |
+| `CORALITE-A103` | warning | no | ARIA attribute unsupported by role |
+| `CORALITE-A105` | warning | no | Nested interactive element |
+| `CORALITE-CFG-001` | error | no | Unknown CSP mode key |
+| `CORALITE-CFG-002` | error | no | Recursive CSP modes |
+| `CORALITE-CFG-003` | error | no | Unknown CSP configuration key |
+| `CORALITE-E101` | error | no | Blocked attribute type |
+| `CORALITE-E102` | error | yes | Attribute declares required and default |
+| `CORALITE-E103` | error | no | Asynchronous attribute handler |
+| `CORALITE-E104` | error | no | Reserved context key collision |
+| `CORALITE-E105` | error | yes | Invalid context shape |
+| `CORALITE-E106` | error | yes | Invalid provide or consume option |
+| `CORALITE-E107` | error | no | Invalid option or unknown block |
+| `CORALITE-E109` | error | no | CSS import outside client() |
+| `CORALITE-E201` | error | yes | Complex template expression |
+| `CORALITE-E202` | error | yes | Missing template ref |
+| `CORALITE-E203` | error | yes | Inline event handler |
+| `CORALITE-E204` | error | no | Missing or invalid template id |
+| `CORALITE-E205` | error | no | Unresolved template token |
+| `CORALITE-E301` | error | yes | Module-scope import in client() |
+| `CORALITE-E302` | warning | no | State mutated in observe() |
+| `CORALITE-E303` | error | no | Asynchronous style getter |
+| `CORALITE-E304` | error | no | Node global in client() |
+| `CORALITE-E401` | warning | no | HTTP request global in server() |
+| `CORALITE-E402` | error | no | Invalid page paths() result |
+| `CORALITE-E403` | error | no | Unresolvable stylesheet |
+| `CORALITE-E407` | error | no | Invalid plugin paths() result |
+| `CORALITE-P101` | error | no | Missing plugin name |
+| `CORALITE-P102` | error | no | Reserved plugin name |
+| `CORALITE-P201` | error | yes | Single-phase context resolver |
+| `CORALITE-P202` | error | no | Invalid server hook or property |
+| `CORALITE-P203` | error | no | Server-only import in client block |
+| `CORALITE-P204` | error | no | Invalid modes declaration |
+| `CORALITE-P205` | error | no | Invalid dependencies declaration |
+| `CORALITE-P206` | error | no | Invalid plugin config schema |
+| `CORALITE-P207` | error | no | Invalid plugin config value |
+| `CORALITE-P209` | error | no | Reassigned config.clientConfig |
+| `CORALITE-P210` | error | no | Non-serializable client config |
+| `CORALITE-P211` | error | no | Mixed context declarations |
+| `CORALITE-P301` | error | no | Outer scope leak in client code |
+| `CORALITE-P302` | error | no | Function-valued client.config |
+| `CORALITE-P303` | error | no | Invalid client hook or property |
+| `CORALITE-P401` | error | yes | Missing definePlugin wrapper |
+| `CORALITE-PAGE-101` | warning | no | Unknown custom element |
+| `CORALITE-PAGE-102` | error | yes | Missing required attribute |
+| `CORALITE-PAGE-201` | error | no | Page reaches into component internals |
+| `CORALITE-W204` | warning | yes | Redundant ref existence guard |
+| `CORALITE-W401` | warning | no | Unused declaration |
+| `CORALITE-W402` | warning | yes | Unused template ref |
+| `CORALITE-W501` | warning | no | Reserved tag prefix |
+| `CORALITE-W601` | error | no | Defensive guard on framework context |
 
 ### CLI Flags & Pragmas
 - **CLI Options**:

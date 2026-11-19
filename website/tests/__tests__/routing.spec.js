@@ -6,6 +6,7 @@ const PAGES = [
   '/compare/',
   '/docs/guide/getting-started/',
   '/reference/client/',
+  '/reference/diagnostics/',
   '/learn/',
   '/blog/',
   '/blog/coralite-v0-43-1/',

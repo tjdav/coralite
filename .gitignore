@@ -93,3 +93,5 @@ temp-benchmark/
 examples/
 .coralite
 RELEASE_POST.md
+# Local design references
+website/mockup/

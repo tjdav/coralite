@@ -5,6 +5,7 @@ import floatingPlugin from './src/plugins/floating-ui.js'
 import sitemapPlugin from './src/plugins/sitemap.js'
 import searchPlugin from './src/plugins/search.js'
 import changelogPlugin from './src/plugins/changelog.js'
+import diagnosticsPlugin from './src/plugins/diagnostics.js'
 import siteVersionPlugin from './src/plugins/site-version.js'
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3333
@@ -62,7 +63,8 @@ export default defineConfig({
     floatingPlugin,
     changelogPlugin,
     sitemapPlugin({ customFiles: llmsFiles }),
-    searchPlugin
+    searchPlugin,
+    diagnosticsPlugin
   ],
   csp: {
     enabled: true,

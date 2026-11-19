@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Diagnostics"
+    description="Every Coralite diagnostic code in one place: severity, family, auto-fix availability and how to resolve it."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <div slot="sidebar">
+      <ui-accordion title="Component API">
+        <ui-nav-link href="/reference/attributes/">attributes</ui-nav-link>
+        <ui-nav-link href="/reference/client/">client</ui-nav-link>
+        <ui-nav-link href="/reference/server/">server</ui-nav-link>
+        <ui-nav-link href="/reference/getters/">getters</ui-nav-link>
+        <ui-nav-link href="/reference/style/">style</ui-nav-link>
+        <ui-nav-link href="/reference/slots/">slots</ui-nav-link>
+        <ui-nav-link href="/reference/form-control/">formControl</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Page API">
+        <ui-nav-link href="/reference/page-api/">paths & definePage</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="Plugin API">
+        <ui-nav-link href="/reference/plugins/">definePlugin</ui-nav-link>
+      </ui-accordion>
+
+      <ui-accordion title="CLI">
+        <ui-nav-link href="/reference/cli/">commands</ui-nav-link>
+        <ui-nav-link href="/reference/diagnostics/" active>diagnostics</ui-nav-link>
+      </ui-accordion>
+    </div>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <span>Diagnostics</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Diagnostics</h1>
+          <ui-badge variant="cyan">Reference</ui-badge>
+        </div>
+        <p class="subhead">Every code Coralite can emit, grouped by domain, with its severity, whether <code>coralite fix</code> can repair it, and how to resolve it.</p>
+      </div>
+
+      <div class="lesson-body">
+        <div class="doc-callout doc-callout--info">
+          <strong>Codes are contracts.</strong> They are stable across releases, safe to match in CI, and the same strings appear in <code>coralite check</code>, the JSON report and this page. Filter a run with <code>--code E201</code>, silence a single finding with a pragma, or hand the JSON to an agent.
+        </div>
+
+        <h2 id="working-with-diagnostics">Working with diagnostics</h2>
+
+        <code-block language="bash" filename="terminal">
+# Audit the workspace
+coralite check
+
+# Only the codes you are cleaning up right now
+coralite check --code E201 E202 --only-failed
+
+# Machine-readable report for CI or an agent
+coralite check --format json
+
+# Preview and apply automatic repairs
+coralite fix --dry-run
+coralite fix --code E201
+        </code-block>
+
+        <p>Every code carries a severity. Errors fail the build; warnings are reported and only fail under <code>--strict</code>. Auto-fixable codes name the AST transformation <code>coralite fix</code> applies, so a repair is deterministic rather than a suggestion.</p>
+
+        <p>Component diagnostics can be silenced locally with a pragma comment inside the component file. Config, route and stylesheet errors abort the build and cannot be ignored.</p>
+
+        <code-block language="html" filename="src/components/ui-legacy-card.html">
+<template id="ui-legacy-card">
+  <!-- coralite-ignore W402 -->
+  <div ref="shell">{{ title }}</div>
+</template>
+        </code-block>
+
+        <h2 id="code-availability">The catalogue from the CLI</h2>
+
+        <p>The same catalogue that renders this page ships with the framework, so you can query it without leaving the terminal or pull it into tooling:</p>
+
+        <code-block language="bash" filename="terminal">
+coralite diagnostics
+coralite diagnostics --family plugin --fixable
+coralite diagnostics --search template --format json
+        </code-block>
+
+        <div id="catalogue" data-diagnostics-catalogue></div>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/cli/" variant="secondary">← Previous: CLI</ui-link>
+        <ui-link href="/docs/guide/validation/" variant="primary">Validation guide →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a href="#working-with-diagnostics">Working with diagnostics</a>
+        <a href="#code-availability">The catalogue from the CLI</a>
+        <a href="#catalogue">Catalogue</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+
+  <script type="module">
+    export function client ({ signal }) {
+      const toolbar = document.querySelector('[data-diagnostics-toolbar]')
+      const search = toolbar.querySelector('[data-diagnostics-search]')
+      const family = toolbar.querySelector('[data-diagnostics-family]')
+      const fixable = toolbar.querySelector('[data-diagnostics-fixable]')
+      const status = toolbar.querySelector('[data-diagnostics-count]')
+      const empty = document.querySelector('[data-diagnostics-empty]')
+      const rows = [...document.querySelectorAll('[data-diagnostics-row]')]
+      const groups = [...document.querySelectorAll('[data-diagnostics-group]')]
+
+      if (!(search instanceof HTMLInputElement) || !(family instanceof HTMLSelectElement) || !(fixable instanceof HTMLInputElement)) {
+        return
+      }
+
+      toolbar.classList.remove('is-hidden')
+
+      const apply = () => {
+        const query = search.value.trim().toLowerCase()
+        const selectedFamily = family.value
+        let visible = 0
+
+        for (const row of rows) {
+          const searchText = row.getAttribute('data-search') || ''
+          const familyName = row.getAttribute('data-family') || ''
+          const matchesQuery = !query || searchText.includes(query)
+          const matchesFamily = !selectedFamily || familyName === selectedFamily
+          const matchesFixable = !fixable.checked || row.getAttribute('data-fixable') === 'true'
+          const show = matchesQuery && matchesFamily && matchesFixable
+          row.classList.toggle('is-hidden', !show)
+          if (show) {
+            visible++
+          }
+        }
+
+        for (const group of groups) {
+          const anyVisible = [...group.querySelectorAll('[data-diagnostics-row]')].some(row => !row.classList.contains('is-hidden'))
+          group.classList.toggle('is-hidden', !anyVisible)
+        }
+
+        status.textContent = `${visible} of ${rows.length} codes shown`
+        empty.classList.toggle('is-hidden', visible > 0)
+      }
+
+      search.addEventListener('input', apply, { signal })
+      family.addEventListener('change', apply, { signal })
+      fixable.addEventListener('change', apply, { signal })
+
+      apply()
+    }
+  </script>
+</body>
+</html>
