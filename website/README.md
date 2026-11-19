@@ -142,7 +142,8 @@ Every blog post gets a generated 1200×630 PNG at
 `/images/social.png`.
 
 Generation runs in `coralite build` through `src/plugins/og-images.js`, which
-renders the card with satori and rasterises it with resvg. It reads the built
+renders the card with satori and rasterises it with resvg. Cards use the site
+logo and a coral cut-out chosen deterministically from the post slug. It reads the built
 title, section, author and published date from each page, so there is no
 separate list to maintain. Files are only rewritten when their bytes change.
 

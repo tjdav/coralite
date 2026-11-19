@@ -116,6 +116,7 @@ export default definePlugin({
 
         const png = await renderOgImage({
           title,
+          slug: entry.name,
           section: readMeta(document, 'article:section'),
           author: readMeta(document, 'article:author'),
           date: readMeta(document, 'article:published_time')
