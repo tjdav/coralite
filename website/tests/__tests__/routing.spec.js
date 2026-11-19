@@ -10,6 +10,7 @@ const PAGES = [
   '/learn/',
   '/blog/',
   '/blog/coralite-v0-43-1/',
+  '/blog/expensive-way-to-find-out/',
   '/changelog/',
   '/404'
 ]

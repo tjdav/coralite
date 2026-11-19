@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="The Expensive Way to Find Out You Were Wrong"
+    description="Finding out late costs a browser, a test setup, and time spent deciding what to test. Coralite tries to tell you at build time instead."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-11-19"
+    author="Thomas David"
+    section="Engineering"></article-meta>
+</head>
+<body>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
+
+  <main id="main-content" tabindex="-1" class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/reference/diagnostics/">Diagnostics</a>
+      <span class="separator">/</span>
+      <span>The Expensive Way to Find Out You Were Wrong</span>
+    </ui-breadcrumb>
+
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Engineering</ui-badge>
+        <h1>The Expensive Way to Find Out You Were Wrong</h1>
+        <p class="subhead">Finding out late costs a browser, a test setup, and time spent deciding what to test. Coralite tries to tell you at build time instead.</p>
+
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">November 19, 2026 · 5 min read</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="post-body">
+        <p class="lead">This is a post about Coralite and compile-time errors in the front end.</p>
+
+        <p>One of the things I did with Coralite is make it compile and tell me what's wrong. I've been using it long enough that I now expect a line number and a suggested fix when something breaks. I expect to find out I was wrong in about the time it takes to save a file.</p>
+
+        <p>Which means I've stopped noticing that it's unusual. This post is an attempt to describe what the loop used to be like, and what changed.</p>
+
+        <h2 id="finding-out-late">Finding out late</h2>
+
+        <p>In the front end, the usual lifecycle is an end-to-end test. Something like Playwright. You write the test, run it, wait for a browser, read the error, and work out whether the failure is in the code or in the test.</p>
+
+        <p>That's pretty expensive. It needs a browser or a headless browser, and a setup you keep paying for as the app grows.</p>
+
+        <blockquote>It takes time to set up, and more time to figure out what you want to test.</blockquote>
+
+        <p>The second one is the part nobody budgets for. You have to hold the intended behaviour in your head, turn it into an assertion, and hope the assertion is about the thing that's actually broken rather than the thing that's easy to assert.</p>
+
+        <p>Runtime errors in React are the same story. You need the app in a state where the component renders, and a browser to look at it. You can automate that, but the automation has its own cost.</p>
+
+        <p>With an AI in the loop it gets worse. The model proposes a change, the browser runs, the test fails, the model reads the failure, and the model proposes another change. Every round trip costs a browser launch and a few thousand tokens. It works. It's just slow enough that you start avoiding it.</p>
+
+        <h2 id="what-coralite-catches">What Coralite catches</h2>
+
+        <p>A lot of this can be caught earlier. You don't need a browser for it.</p>
+
+        <p>If you've created an anti-pattern, if a ref isn't declared, if you're reading an element the wrong way, or if there's a type error, Coralite tells you at build time. You get the file, the line, and a suggested fix. Sometimes it can apply the fix itself.</p>
+
+        <p>This doesn't replace end-to-end tests. Race conditions between components, layouts that break at one viewport, a password manager filling a form: none of that shows up in static analysis. The point is that a lot of errors were being sent to the expensive place when a cheaper one was available.</p>
+
+        <p>A real run against a component with an inline handler and a module-scope import in <code>client()</code>, trimmed to one finding:</p>
+
+        <code-block language="bash" filename="terminal">
+$ coralite check
+
+src/components/ui-counter.html
+┌─ [CORALITE-E301] Top-level import 'log' referenced inside client() block.
+│ File: src/components/ui-counter.html:15:5
+├─ Code Context ────────────────────────────────────────────────────────────────
+     14 |   export async function client ({ state, refs, signal }) {
+ >   15 |     log('mounted')
+        |     ^
+     16 |     refs('button').addEventListener('click', () => {
+├─ Why this failed ─────────────────────────────────────────────────────────────
+│ Top-level imports cannot be referenced inside client() block as client code
+│ is executed in browser context.
+├─ Suggested 1-Shot Fix ────────────────────────────────────────────────────────
+│ Convert top-level import 'log' to dynamic import inside client()
+│ const { log } = await import('../utils/log.js')
+└───────────────────────────────────────────────────────────────────────────────
+        </code-block>
+
+        <p>The transformation <code>coralite fix</code> applies:</p>
+
+        <code-block language="diff" filename="ui-counter.html">
+  &lt;template id="ui-counter"&gt;
+-   &lt;button ref="button" type="button" onclick="increment()"&gt;
++   &lt;button ref="button" type="button"&gt;
+      Count is {{ count }}
+    &lt;/button&gt;
+  &lt;/template&gt;
+
+  &lt;script type="module"&gt;
+-   import { log } from '../utils/log.js'
+
+    export function server () {
+      return { count: 0 }
+    }
+
+    export async function client ({ state, refs, signal }) {
++     const { log } = await import('../utils/log.js')
+      log('mounted')
+      refs('button').addEventListener('click', () => {
+        state.count++
+      }, { signal })
+    }
+  &lt;/script&gt;
+        </code-block>
+
+        <p>That's why <code>--dry-run</code> exists. You preview the change, read the diff, then apply it.</p>
+
+        <h2 id="the-check-script">The check script</h2>
+
+        <p>All of the checks are one command, <code>coralite check</code>. You can filter to the codes you're working on with <code>--code</code>, and <code>--format json</code> gives you a report that CI or an agent can read.</p>
+
+        <p>The catalogue behind it is a page and a CLI command. <code>coralite diagnostics</code> lists every code with its severity and whether <code>coralite fix</code> can repair it. Today it holds:</p>
+
+        <div class="diag-summary post-stats">
+          <div class="diag-stat"><strong>52</strong><span>codes</span></div>
+          <div class="diag-stat"><strong>41</strong><span>errors</span></div>
+          <div class="diag-stat"><strong>11</strong><span>warnings</span></div>
+          <div class="diag-stat"><strong>12</strong><span>auto-fixable</span></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <caption>Diagnostic domains in the Coralite catalogue</caption>
+            <thead>
+              <tr>
+                <th scope="col">Domain</th>
+                <th scope="col">Codes</th>
+                <th scope="col">Count</th>
+                <th scope="col">What it audits</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Component</strong></td>
+                <td><code>E1xx–E4xx</code>, <code>W2xx–W6xx</code></td>
+                <td>24</td>
+                <td>Template syntax, attribute schemas, script boundaries, reactivity, dead code.</td>
+              </tr>
+              <tr>
+                <td><strong>Plugin</strong></td>
+                <td><code>P1xx–P4xx</code></td>
+                <td>17</td>
+                <td>Plugin contracts, lifecycle hooks, config schemas, serialization boundaries.</td>
+              </tr>
+              <tr>
+                <td><strong>Page</strong></td>
+                <td><code>PAGE-101</code>–<code>201</code></td>
+                <td>4</td>
+                <td>Custom element registration, required attributes, encapsulation.</td>
+              </tr>
+              <tr>
+                <td><strong>Accessibility</strong></td>
+                <td><code>A101</code>–<code>A105</code></td>
+                <td>4</td>
+                <td>Alt text, accessible names, ARIA support, nested interactives.</td>
+              </tr>
+              <tr>
+                <td><strong>Configuration</strong></td>
+                <td><code>CFG-001</code>–<code>003</code></td>
+                <td>3</td>
+                <td>CSP mode and directive configuration.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>A few examples. <code>E201</code> rejects a template expression like <code>{{ count + 1 }}</code> and lifts it into a getter. <code>E202</code> catches <code>refs('increment')</code> when nothing in the template declares that ref. <code>E301</code> catches a module-scope import used inside <code>client()</code> and rewrites it to <code>await import()</code>.</p>
+
+        <p>The rest of the catalogue covers the same kinds of problems: page scripts reaching into component internals, missing <code>alt</code> text, state mutated inside <code>observe()</code>, and CSP configuration mistakes. Component diagnostics can be silenced with a pragma. Configuration and route errors stop the build and can't be ignored.</p>
+
+        <code-block language="bash" filename="terminal">
+coralite diagnostics
+coralite diagnostics --family plugin --fixable
+coralite diagnostics --search template --format json
+        </code-block>
+
+        <h2 id="why-it-can-do-this-at-build-time">Why it can do this at build time</h2>
+
+        <p>None of it needs a browser because the rules are strict. Templates only hold tokens, so every token has to resolve to a declared symbol. Logic lives in named exports, so <code>client</code> and <code>server</code> are known top-level functions. Attributes are declared objects, so the wrong type is visible at the declaration.</p>
+
+        <p>That doesn't mean it catches everything. It means the list is finite and the gaps are known.</p>
+
+        <h2 id="all-just-regular-html-and-css">All just regular HTML and CSS</h2>
+
+        <p>The part I keep coming back to is that none of it needed a new syntax. The component is an HTML file, the template is HTML, the styles are CSS with <code>:host</code> and <code>::slotted</code>, and the logic is JavaScript in a <code>&lt;script type="module"&gt;</code> block. The check runs on the same file.</p>
+
+        <p>So the loop is fast, and the thing that makes it fast is the thing that makes it readable: there's nothing in the source that isn't HTML, CSS, or JavaScript. When the tool tells you what's wrong, it's telling you about code you can read, in vocabulary the platform already owns.</p>
+
+        <p>The full catalogue is at <a href="/reference/diagnostics/">/reference/diagnostics/</a>, grouped by domain, with every fix named. If you're evaluating Coralite and want to know what it catches before you commit, that page tells you exactly.</p>
+      </div>
+    </article>
+  </main>
+
+  <site-footer></site-footer>
+</body>
+</html>

@@ -130,6 +130,30 @@ pre code { padding: 0; font-size: inherit; color: inherit; background: transpare
 .post-body a { color: var(--accent-cyan); text-decoration: underline; }
 .post-body strong { color: var(--text-primary); }
 .post-body blockquote { padding-left: 24px; margin: 48px 0; font-size: 24px; font-style: italic; line-height: 1.4; color: var(--accent-violet); border-left: 4px solid var(--accent-violet); }
+.post-body .table-wrap { margin: 0 0 32px; overflow-x: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+.post-body table { width: 100%; min-width: 560px; font-size: 15px; border-collapse: collapse; }
+.post-body caption { padding: 12px 16px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); text-align: left; text-transform: uppercase; letter-spacing: 1px; background: var(--bg-card); border-bottom: 1px solid var(--border-subtle); }
+.post-body th { padding: 10px 16px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; color: var(--text-muted); text-align: left; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border-subtle); }
+.post-body td { padding: 12px 16px; vertical-align: top; border-bottom: 1px solid var(--border-subtle); }
+.post-body tbody tr:last-child td { border-bottom: none; }
+.post-body td code,
+.post-body th code { font-size: 13px; }
+.post-body .post-stats { margin: 32px 0; }
+
+@media (max-width: 700px) {
+  .post-body .table-wrap { overflow: visible; border: none; }
+  .post-body table { display: block; min-width: 0; }
+  .post-body caption { padding: 10px 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  .post-body thead { display: none; }
+  .post-body tbody { display: block; }
+  .post-body tr { display: block; padding: 14px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-top: none; }
+  .post-body tbody tr:last-child { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+  .post-body td { display: block; padding: 0; border: none; }
+  .post-body td:first-child { margin-bottom: 6px; font-size: 16px; }
+  .post-body td:nth-child(2)::before { color: var(--text-muted); content: "Codes: "; }
+  .post-body td:nth-child(3)::before { color: var(--text-muted); content: "Count: "; }
+  .post-body td:nth-child(4) { margin-top: 6px; }
+}
 .author-bio { display: flex; gap: 24px; align-items: flex-start; padding: 32px; margin-top: 96px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
 .bio-info h4 { margin: 0 0 8px; font-size: 18px; color: var(--text-primary); }
 .bio-info p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
