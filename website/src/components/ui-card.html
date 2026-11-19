@@ -11,21 +11,52 @@
 
 <script type="module">
   export const attributes = {
-    hoverable: { type: Boolean, default: false }
+    hoverable: { type: Boolean, default: false },
+    accent: { type: String, default: '' },
+    featured: { type: Boolean, default: false }
   }
 </script>
 
 <style>
   :host {
     display: block;
+    height: 100%;
+    --card-accent: var(--accent-violet);
+    --card-accent-text: var(--accent-violet-text);
+    --card-accent-soft: rgba(139, 92, 246, .14);
+  }
+
+  :host([accent="cyan"]) {
+    --card-accent: var(--accent-cyan);
+    --card-accent-text: var(--accent-cyan);
+    --card-accent-soft: rgba(6, 182, 212, .14);
+  }
+
+  :host([accent="pink"]) {
+    --card-accent: var(--accent-pink);
+    --card-accent-text: var(--accent-pink);
+    --card-accent-soft: rgba(236, 72, 153, .14);
+  }
+
+  :host([accent="amber"]) {
+    --card-accent: var(--accent-amber);
+    --card-accent-text: var(--accent-amber);
+    --card-accent-soft: rgba(245, 158, 11, .14);
   }
 
   .card {
+    box-sizing: border-box;
+    height: 100%;
     background-color: var(--bg-card);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
     padding: 24px;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  :host([featured]) .card {
+    border-color: var(--card-accent);
+    box-shadow: 0 0 0 1px var(--card-accent-soft), 0 0 32px var(--card-accent-soft);
   }
 
   :host([hoverable]) .card:hover {

@@ -6,7 +6,8 @@
 
 <script type="module">
   export const attributes = {
-    variant: { type: String, default: 'violet' }
+    variant: { type: String, default: 'violet' },
+    outline: { type: Boolean, default: false }
   }
 </script>
 
@@ -40,5 +41,24 @@
   :host([variant="amber"]) .badge {
     background-color: rgba(245, 158, 11, 0.15);
     color: var(--accent-amber);
+  }
+
+  /* Eyebrow treatment: outline pill with a leading dot. */
+  :host([outline]) .badge {
+    gap: 8px;
+    padding: 6px 14px;
+    background-color: transparent;
+    border: 1px solid currentColor;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  :host([outline]) .badge::before {
+    width: 5px;
+    height: 5px;
+    content: "";
+    background-color: currentColor;
+    border-radius: 50%;
   }
 </style>

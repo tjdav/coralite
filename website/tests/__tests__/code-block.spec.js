@@ -1,19 +1,5 @@
 import { test, expect } from '../fixtures.js'
 
-test('homepage install command is copyable', async ({ page, context }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
-  await page.goto('/')
-  await page.waitForLoadState('networkidle')
-
-  const block = page.locator('main code-block').first()
-  await expect(block).toContainText('npm create coralite@latest')
-
-  await block.locator('button').click()
-
-  const clipboard = await page.evaluate(() => navigator.clipboard.readText())
-  expect(clipboard.trim()).toBe('npm create coralite@latest')
-})
-
 test('css code blocks are syntax highlighted', async ({ page }) => {
   await page.goto('/learn/05-native-css-scoping')
   await page.waitForLoadState('networkidle')

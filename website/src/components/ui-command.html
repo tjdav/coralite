@@ -1,0 +1,140 @@
+<template id="ui-command">
+  <div class="command">
+    <span class="prompt" aria-hidden="true">{{ prompt }}</span>
+    <code class="text">{{ command }}</code>
+    <button ref="copy" type="button" class="copy" aria-label="Copy command">
+      <svg class="icon icon-copy" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+        <path d="M5 15V6a2 2 0 0 1 2-2h9"></path>
+      </svg>
+      <svg class="icon icon-check" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="m5 13 4 4L19 7"></path>
+      </svg>
+    </button>
+    <span ref="status" class="status" role="status" aria-live="polite"></span>
+  </div>
+</template>
+
+<script type="module">
+  export const attributes = {
+    command: { type: String, required: true },
+    prompt: { type: String, default: '$' }
+  }
+
+  export async function client ({ state, refs, signal }) {
+    const button = refs('copy')
+    const status = refs('status')
+    let reset
+
+    button.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(state.command)
+      button.setAttribute('data-copied', '')
+      status.textContent = 'Copied to clipboard'
+      clearTimeout(reset)
+      reset = setTimeout(() => {
+        button.removeAttribute('data-copied')
+        status.textContent = ''
+      }, 2000)
+    }, { signal })
+
+    signal.addEventListener('abort', () => clearTimeout(reset))
+  }
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+
+  .command {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 10px 10px 16px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background-color: var(--bg-code);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    transition: border-color 0.2s ease;
+  }
+
+  .command:hover {
+    border-color: var(--border-strong);
+  }
+
+  .prompt {
+    color: var(--accent-violet-text);
+    user-select: none;
+  }
+
+  .text {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    overflow-x: auto;
+    font-size: 13px;
+    color: var(--text-body);
+    background: none;
+    border-radius: 0;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+
+  .copy {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    color: var(--text-muted);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+  }
+
+  .copy:hover {
+    color: var(--text-primary);
+    background-color: var(--border-subtle);
+  }
+
+  .copy:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 1px;
+  }
+
+  .icon {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .icon-check {
+    display: none;
+    color: var(--accent-green);
+  }
+
+  .copy[data-copied] .icon-copy {
+    display: none;
+  }
+
+  .copy[data-copied] .icon-check {
+    display: block;
+  }
+
+  .status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+</style>

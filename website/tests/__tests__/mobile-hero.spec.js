@@ -24,7 +24,7 @@ test.describe('hero on a 360x640 phone', () => {
   test('keeps both CTAs and the install command above the fold', async ({ page }) => {
     await page.goto('/')
     await expectAboveFold(page, '.hero-actions', 640)
-    await expectAboveFold(page, '.hero-content code-block', 640)
+    await expectAboveFold(page, '.hero-content ui-command', 640)
   })
 })
 

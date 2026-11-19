@@ -1,5 +1,5 @@
 <template id="ui-link">
-  <a href="{{ href }}" class="c-link {{ variantClass }}" target="{{ target }}" rel="{{ rel }}">
+  <a href="{{ href }}" class="c-link {{ variantClass }} {{ pillClass }} {{ arrowClass }}" target="{{ target }}" rel="{{ rel }}">
     <slot></slot>
   </a>
 </template>
@@ -8,11 +8,15 @@
   export const attributes = {
     href: { type: String, required: true },
     variant: { type: String, default: 'primary' },
-    external: { type: Boolean, default: false }
+    external: { type: Boolean, default: false },
+    pill: { type: Boolean, default: false },
+    arrow: { type: Boolean, default: false }
   }
 
   export const getters = {
     variantClass: ({ state }) => `c-link--${state.variant === 'outline' ? 'secondary' : state.variant}`,
+    pillClass: ({ state }) => (state.pill ? 'c-link--pill' : ''),
+    arrowClass: ({ state }) => (state.arrow ? 'c-link--arrow' : ''),
     target: ({ state }) => (state.external ? '_blank' : '_self'),
     rel: ({ state }) => (state.external ? 'noopener noreferrer' : '')
   }
@@ -69,5 +73,21 @@
   }
   .c-link--danger:hover {
     background-color: #b91c1c;
+  }
+
+  .c-link--pill {
+    padding: 10px 20px;
+    border-radius: 9999px;
+    gap: 8px;
+  }
+
+  .c-link--primary.c-link--pill {
+    box-shadow: 0 0 24px rgba(139, 92, 246, .28);
+  }
+
+  .c-link--arrow::after {
+    content: "→" / "";
+    font-size: 15px;
+    line-height: 1;
   }
 </style>

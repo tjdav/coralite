@@ -33,24 +33,23 @@ test.describe('Interactions', () => {
     await expect(usage).toBeVisible()
     await expect(compiled).toBeVisible()
 
-    // Authored is the left column; usage and compiled stack in the right column.
+    // Authored and compiled compare side by side; usage sits below both.
     const a = await authored.boundingBox()
     const u = await usage.boundingBox()
     const c = await compiled.boundingBox()
-    expect(Math.abs(a.y - u.y)).toBeLessThan(4)
-    expect(a.x).toBeLessThan(u.x)
-    expect(c.y).toBeGreaterThan(u.y)
-    expect(Math.abs(c.x - u.x)).toBeLessThan(2)
-    expect(Math.abs(c.width - u.width)).toBeLessThan(2)
+    expect(Math.abs(a.y - c.y)).toBeLessThan(4)
+    expect(a.x).toBeLessThan(c.x)
+    expect(u.y).toBeGreaterThan(a.y + a.height)
+    expect(Math.abs(a.width - c.width)).toBeLessThan(2)
 
-    await expect(page.getByText('02 Used on a page')).toBeVisible()
-    await expect(page.getByText('03 Compiled output (generated)')).toBeVisible()
+    await expect(page.getByText('Used on a page')).toBeVisible()
+    await expect(page.getByText('Compiled at build time')).toBeVisible()
 
     await expect(usage).toContainText('<site-counter step="1"></site-counter>')
     await expect(authored).toContainText('export function server')
     await expect(compiled).toContainText('data-cid="site-counter-0"')
     await expect(compiled).toContainText('ref="site-counter-0__count-button"')
-    await expect(compiled).toContainText('you never author this markup')
+    await expect(page.locator('.code-note')).toContainText('you never author this markup')
     await expect(page.locator('.toggle-container')).toHaveCount(0)
   })
 
