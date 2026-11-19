@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="The Expensive Way to Find Out You Were Wrong"
+    description="Runtime feedback is the expensive way to discover a mistake. How 52 compile-time diagnostics move that discovery into the editor."
+    section="Blog"
+    type="article"></page-meta>
+  <article-meta no-hydration
+    published="2026-11-19"
+    author="Thomas David"
+    section="Engineering"></article-meta>
+</head>
+<body>
+  <script type="module">
+    export const meta = {}
+  </script>
+  <site-header></site-header>
+
+  <main id="main-content" tabindex="-1" class="page-container page-container--post">
+    <ui-breadcrumb>
+      <a href="/blog/">Blog</a>
+      <span class="separator">/</span>
+      <a href="/reference/diagnostics/">Diagnostics</a>
+      <span class="separator">/</span>
+      <span>The Expensive Way to Find Out You Were Wrong</span>
+    </ui-breadcrumb>
+
+    <article class="post-content">
+      <div class="post-header">
+        <ui-badge variant="violet">Engineering</ui-badge>
+        <h1>The Expensive Way to Find Out You Were Wrong</h1>
+        <p class="subhead">Runtime feedback costs a browser, a test harness and an interpretation step. Compile-time feedback costs a save. The difference is not speed — it is the difference between a puzzle and a task.</p>
+
+        <div class="author-row">
+          <ui-avatar initials="TD" size="sm"></ui-avatar>
+          <div class="author-info">
+            <span class="author-name">Thomas David</span>
+            <span class="meta">November 19, 2026 · 9 min read</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="post-body">
+        <p class="lead">I've started taking the feedback loop for granted. Not in the abstract way people mean when they say “developer experience.” In a specific way: I've been writing Coralite components for long enough that when something breaks, I expect a line number and a suggested fix. I expect to find out I was wrong in about the time it takes to save a file.</p>
+
+        <p>And because I expect it, I've stopped noticing that it's unusual. Which means I've also stopped being able to describe what it was like without it.</p>
+
+        <p>So this post is an attempt to describe it, and to point at the thing that makes it possible.</p>
+
+        <h2 id="the-triple-cost">The triple cost</h2>
+
+        <p>The standard front-end lifecycle places detection late. You write the thing, you run the thing, and if it's wrong you find out from a browser.</p>
+
+        <p>That's the first cost, and it's the obvious one. A runtime error in a React component needs a browser or a headless browser. It needs the app in a state where the component renders. It needs you to look at the error, work out what it means, and trace it back to a line.</p>
+
+        <p>The second cost is setup. Getting a browser into a state where it can test the thing you care about is not free, and it's not a one-time cost — it's a cost you pay again every time the surface area changes.</p>
+
+        <p>The third cost is the one nobody budgets for, and it's the biggest: <strong>time to figure out what you want to test.</strong> The first two costs are infrastructure. This one is design. You have to hold the intended behavior in your head, translate it into an assertion, and hope the assertion is about the thing that's actually broken rather than the thing that's easy to assert.</p>
+
+        <p>Playwright is the honest version of this. It's a good tool, and the reason it's good is that it's solving a hard problem — end-to-end tests verify the assembled system, which is the only place certain classes of bug exist. But the loop is: write it, run it, wait for the browser, read the failure, work out whether the failure is the bug or the test.</p>
+
+        <p>If you're doing that with an AI in the loop, the cost compounds. The model proposes a change, the browser runs, the test fails, the model reads the failure, the model proposes another change. Every iteration costs a browser launch and a few thousand tokens. It works. It's just slow enough that you start avoiding it.</p>
+
+        <h2 id="what-e2e-actually-catches">What e2e actually catches</h2>
+
+        <p>Before I say anything about compile-time detection, I want to be precise about what it doesn't replace.</p>
+
+        <p>End-to-end tests catch integration failures, real browser behavior, timing, third-party scripts, network conditions, and the entire class of bugs that only exist when the system is assembled. Static analysis will never catch a race condition between two components. It will never catch a layout that breaks at a specific viewport. It will never catch the bug that only appears when a real user with a real password manager autofills a form.</p>
+
+        <blockquote>A large class of errors was being pushed into an expensive medium when a cheap one was available.</blockquote>
+
+        <p>The claim isn't that compile-time replaces end-to-end testing. The claim is narrower and more interesting. An undeclared ref is not a race condition. A template token that doesn't resolve is not a layout bug. These are facts about the source that are true or false before anything runs — and if you don't catch them at that point, you catch them later, in the medium that costs a browser.</p>
+
+        <h2 id="detection-and-remediation">Detection and remediation are different products</h2>
+
+        <p>Here's the distinction that took me a while to articulate, and it's the one that matters.</p>
+
+        <p><strong>Detection</strong> tells you something is wrong. <strong>Remediation</strong> tells you what to do about it.</p>
+
+        <p>Most tools do the first. Some do it very well — a good type checker will tell you exactly which line and exactly which type. But the second is what changes the loop, because remediation is what turns a failure into a step.</p>
+
+        <blockquote>A failure without a next step is a puzzle. A failure with a next step is a task.</blockquote>
+
+        <h2 id="a-catalogue-not-a-list">A catalogue, not a list</h2>
+
+        <p>Coralite's diagnostics are documented as a single catalogue at <a href="/reference/diagnostics/">/reference/diagnostics/</a>. Every code the framework can emit, grouped by domain, with its severity, whether <code>coralite fix</code> can repair it, and how to resolve it. Today that catalogue holds 52 codes — 41 errors, 11 warnings, and 12 that <code>coralite fix</code> can repair without a human decision.</p>
+
+        <div class="diag-summary post-stats">
+          <div class="diag-stat"><strong>52</strong><span>codes</span></div>
+          <div class="diag-stat"><strong>41</strong><span>errors</span></div>
+          <div class="diag-stat"><strong>11</strong><span>warnings</span></div>
+          <div class="diag-stat"><strong>12</strong><span>auto-fixable</span></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <caption>Diagnostic domains in the Coralite catalogue</caption>
+            <thead>
+              <tr>
+                <th scope="col">Domain</th>
+                <th scope="col">Codes</th>
+                <th scope="col">Count</th>
+                <th scope="col">What it audits</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Component</strong></td>
+                <td><code>E1xx–E4xx</code>, <code>W2xx–W6xx</code></td>
+                <td>24</td>
+                <td>Template syntax, attribute schemas, script boundaries, reactivity, dead code.</td>
+              </tr>
+              <tr>
+                <td><strong>Plugin</strong></td>
+                <td><code>P1xx–P4xx</code></td>
+                <td>17</td>
+                <td>Plugin contracts, lifecycle hooks, config schemas, serialization boundaries.</td>
+              </tr>
+              <tr>
+                <td><strong>Page</strong></td>
+                <td><code>PAGE-101</code>–<code>201</code></td>
+                <td>4</td>
+                <td>Custom element registration, required attributes, encapsulation.</td>
+              </tr>
+              <tr>
+                <td><strong>Accessibility</strong></td>
+                <td><code>A101</code>–<code>A105</code></td>
+                <td>4</td>
+                <td>Alt text, accessible names, ARIA support, nested interactives.</td>
+              </tr>
+              <tr>
+                <td><strong>Configuration</strong></td>
+                <td><code>CFG-001</code>–<code>003</code></td>
+                <td>3</td>
+                <td>CSP mode and directive configuration.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Three examples show the shape better than the whole list would.</p>
+
+        <p><strong><code>E201</code> — an expression in a template.</strong> A token like <code>{{ count + 1 }}</code> is rejected because templates hold flat identifiers and nothing else. The remediation is to lift the expression into a getter, and <code>coralite fix</code> performs that transformation: it names the getter, adds it to <code>export const getters</code>, and rewrites the token. There is no decision to make, only a shape to apply.</p>
+
+        <p><strong><code>E202</code> — a ref that no element declares.</strong> <code>refs('increment')</code> in <code>client()</code> is checked against the template. When exactly one candidate element exists, the fixer injects <code>ref="increment"</code>. When the target is ambiguous, it refuses and says so — a deterministic tool that knows when it cannot be deterministic.</p>
+
+        <p><strong><code>E301</code> — a module-scope import used in <code>client()</code>.</strong> The client block is serialized to the browser, so a static import cannot be referenced by name there. The fix rewrites it to <code>await import()</code> inside the block, which keeps the module out of the serialized function.</p>
+
+        <p>The rest of the catalogue works the same way: <code>PAGE-201</code> catches a page script reaching into a component's internals, <code>A101</code> catches an <code>&lt;img&gt;</code> without <code>alt</code>, <code>E302</code> warns when <code>observe()</code> mutates state, and the three <code>CFG</code> codes stop the build on CSP configuration mistakes. Component diagnostics can be silenced with a pragma when a finding is intentional; configuration and route errors abort the build and cannot be ignored.</p>
+
+        <p>The catalogue is also queryable from the CLI, so you never need the browser to see the list:</p>
+
+        <code-block language="bash" filename="terminal">
+coralite diagnostics
+coralite diagnostics --family plugin --fixable
+coralite diagnostics --search template --format json
+        </code-block>
+
+        <figure>
+          <img src="/images/blog/diagnostics-reference.avif" alt="The Coralite diagnostics reference showing 52 codes, 41 errors, 11 warnings and 12 auto-fixable, above a filterable table grouped by domain." width="1232" height="1600" loading="lazy" decoding="async">
+          <figcaption>The reference page is generated from the same catalogue <code>coralite diagnostics</code> prints.</figcaption>
+        </figure>
+
+        <h2 id="why-the-validator-can-be-complete">Why the validator can be complete</h2>
+
+        <p>The thing I want to be honest about is that the validator isn't clever. It's <em>possible</em>.</p>
+
+        <p>Every code in the catalogue is catchable because the constraints are strict. Templates hold tokens and nothing else, so every hole in a template is a declared symbol — which means <code>E205</code> can check that every token resolves, and <code>E201</code> can reject anything that isn't a flat identifier, without parsing an expression grammar. Named exports mean <code>client</code> and <code>server</code> are known top-level statements, so <code>E301</code> can check what <code>client()</code> references without doing dataflow analysis. Attributes are declared objects, so <code>E101</code> can reject an <code>Array</code> type at the point of declaration rather than at the point of use.</p>
+
+        <p>A framework where logic lives in templates and imports live at module scope can't enumerate its own errors. It would have to run the thing and see what breaks. That's not a criticism of those frameworks — it's a consequence of a different set of constraints, and those constraints buy things that matter too.</p>
+
+        <blockquote>If the syntax is open, the space of errors is unbounded. Coralite's constraint set is small and closed, so the error space is enumerable.</blockquote>
+
+        <p>That doesn't mean it catches everything today. It means the list is finite, the gaps are known, and coverage can grow toward a boundary rather than chase one.</p>
+
+        <h2 id="suggested-fixes-and-deterministic-fixes">Suggested fixes and deterministic fixes</h2>
+
+        <p>The catalogue distinguishes two kinds of remediation, and the distinction matters more than it looks.</p>
+
+        <p>Every code has a <strong>suggested fix</strong> — the <code>Fix.</code> line that tells you what to do. <code>E102</code> says to keep <code>required</code> and drop <code>default</code>, or keep <code>default</code> and drop <code>required</code>. That's a decision the tool can't make for you, because it depends on what the attribute is for.</p>
+
+        <p>Twelve codes are <strong>auto-fixable</strong>, and those are deterministic rather than suggestive. The catalogue names the AST transformation <code>coralite fix</code> applies, and those fixes are structural transformations on the same file. A deterministic repair means the same input produces the same output, and the output is a shape rather than a guess about what you meant.</p>
+
+        <p>Here is a real run against a component with an inline handler and a module-scope import used inside <code>client()</code>, abridged to one finding:</p>
+
+        <code-block language="bash" filename="terminal">
+$ coralite check
+
+src/components/ui-counter.html
+┌─ [CORALITE-E301] Top-level import 'log' referenced inside client() block.
+│ File: src/components/ui-counter.html:15:5
+├─ Code Context ────────────────────────────────────────────────────────────────
+     14 |   export async function client ({ state, refs, signal }) {
+ >   15 |     log('mounted')
+        |     ^
+     16 |     refs('button').addEventListener('click', () => {
+├─ Why this failed ─────────────────────────────────────────────────────────────
+│ Top-level imports cannot be referenced inside client() block as client code
+│ is executed in browser context.
+├─ Suggested 1-Shot Fix ────────────────────────────────────────────────────────
+│ Convert top-level import 'log' to dynamic import inside client()
+│ const { log } = await import('../utils/log.js')
+└───────────────────────────────────────────────────────────────────────────────
+        </code-block>
+
+        <p>And the transformation the fixer applies:</p>
+
+        <code-block language="diff" filename="ui-counter.html">
+  &lt;template id="ui-counter"&gt;
+-   &lt;button ref="button" type="button" onclick="increment()"&gt;
++   &lt;button ref="button" type="button"&gt;
+      Count is {{ count }}
+    &lt;/button&gt;
+  &lt;/template&gt;
+
+  &lt;script type="module"&gt;
+-   import { log } from '../utils/log.js'
+
+    export function server () {
+      return { count: 0 }
+    }
+
+    export async function client ({ state, refs, signal }) {
++     const { log } = await import('../utils/log.js')
+      log('mounted')
+      refs('button').addEventListener('click', () => {
+        state.count++
+      }, { signal })
+    }
+  &lt;/script&gt;
+        </code-block>
+
+        <p>And that's why <code>--dry-run</code> exists. Auto-fix on code you don't understand is dangerous, and a tool that rewrites your source without showing you the diff first is asking for a kind of trust it hasn't earned. So you preview, you read, you apply.</p>
+
+        <h2 id="the-ai-loop-briefly">The AI loop, briefly</h2>
+
+        <p>I said at the top that the AI loop is expensive, and the remediation side is where that changes. You don't have to feed a model heaps of instructions about how Coralite works. You run <code>coralite check</code>, you read the code and the suggested fix, and you fix the thing. <code>--format json</code> gives you the same information in a shape an agent can parse, and the pragma comments let a single finding be silenced without silencing the rest.</p>
+
+        <p>That's a separate post, because the workflow it enables is different enough to deserve its own. But it's worth saying here that the reason it works is the same reason the validator works: the codes are contracts. They're stable across releases, safe to match in CI, and the same strings appear in <code>coralite check</code>, the JSON report, and the reference page.</p>
+
+        <h2 id="all-just-regular-html-and-css">All just regular HTML and CSS</h2>
+
+        <p>The thing I keep coming back to is that none of this required a new syntax.</p>
+
+        <p>The component is an HTML file. The template is HTML. The styles are CSS with <code>:host</code> and <code>::slotted</code>. The logic is JavaScript in a <code>&lt;script type="module"&gt;</code> block, using named exports. The validator checks all of that without a browser, and the auto-fixes are AST transformations on the same file.</p>
+
+        <p>So the loop is fast, and the thing that makes it fast is the thing that makes it legible: there's nothing in the source that isn't HTML, CSS, or JavaScript. Which means when the tool tells you what's wrong, it's telling you about code you can read, in vocabulary the platform already owns.</p>
+
+        <p>The full catalogue is at <a href="/reference/diagnostics/">/reference/diagnostics/</a> — 52 codes, grouped by domain, with every fix and every auto-fixable transformation named. If you're evaluating Coralite and want to know what it catches before you commit, that page is the honest answer.</p>
+      </div>
+    </article>
+  </main>
+
+  <site-footer></site-footer>
+</body>
+</html>
