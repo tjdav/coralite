@@ -45,9 +45,13 @@
       ? `${state.title} — Coralite ${state.section}`
       : state.title),
     canonicalUrl: ({ state }) => `https://coralite.dev${state.routePath}`,
-    imageUrl: ({ state }) => (state.image.startsWith('http')
-      ? state.image
-      : `https://coralite.dev${state.image}`),
+    imageUrl: ({ state }) => {
+      const blogSlug = state.routePath.match(/^\/blog\/([^/]+)\/$/)
+      const path = blogSlug && state.image === '/images/social.png'
+        ? `/images/og/blog/${blogSlug[1]}.png`
+        : state.image
+      return path.startsWith('http') ? path : `https://coralite.dev${path}`
+    },
     robots: ({ state }) => (state.noindex
       ? 'noindex, follow'
       : 'index, follow, max-image-preview:large')
