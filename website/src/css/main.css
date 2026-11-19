@@ -154,9 +154,6 @@ pre code { padding: 0; font-size: inherit; color: inherit; background: transpare
   .post-body td:nth-child(3)::before { color: var(--text-muted); content: "Count: "; }
   .post-body td:nth-child(4) { margin-top: 6px; }
 }
-.author-bio { display: flex; gap: 24px; align-items: flex-start; padding: 32px; margin-top: 96px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
-.bio-info h4 { margin: 0 0 8px; font-size: 18px; color: var(--text-primary); }
-.bio-info p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
 .post-footer { display: flex; justify-content: space-between; padding-top: 32px; margin-top: 64px; border-top: 1px solid var(--border-subtle); }
 
 /* Changelog (scoped to avoid colliding with blog release cards) */
