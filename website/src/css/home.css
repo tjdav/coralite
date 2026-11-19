@@ -1,4 +1,5 @@
 main.home-page {
+  --surface-alt: #070a12;
   width: 100%;
 }
 
@@ -7,7 +8,12 @@ main.home-page {
 main.home-page section {
   padding-block: 120px;
   padding-inline: max(24px, calc((100% - 1440px) / 2));
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid #171e2a;
+}
+
+main.home-page .progression-section,
+main.home-page .failure-section {
+  background-color: var(--surface-alt);
 }
 
 main.home-page section:last-of-type {
@@ -18,7 +24,7 @@ main.home-page section:last-of-type {
 main.home-page .hero-section {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 48px;
   align-items: center;
   overflow: hidden;
@@ -91,9 +97,15 @@ main.home-page .hero-content h1 {
   font-weight: 700;
   line-height: 1.1;
   color: var(--text-primary);
-  background: linear-gradient(to right, var(--text-primary), var(--text-muted));
+  letter-spacing: -.02em;
+}
+
+main.home-page .hero-accent {
+  display: block;
+  background: linear-gradient(96deg, #c4b5fd 0%, var(--accent-violet) 45%, #7c3aed 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 main.home-page .hero-content p {
@@ -105,8 +117,13 @@ main.home-page .hero-content p {
 
 main.home-page .hero-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+}
+
+main.home-page .hero-content ui-badge {
+  margin-bottom: 8px;
 }
 
 main.home-page .hero-visual {
@@ -163,6 +180,18 @@ main.home-page .opinions-section > p {
   text-align: center;
 }
 
+main.home-page .progression-section > ui-badge,
+main.home-page .proof-section > ui-badge,
+main.home-page .opinions-section > ui-badge {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 18px;
+}
+
+main.home-page .accent {
+  color: var(--accent-violet-text);
+}
+
 main.home-page .progression-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -185,7 +214,42 @@ main.home-page .progression-header h3 {
 }
 
 main.home-page .progression-grid ui-card {
-  padding: 24px;
+  position: relative;
+}
+
+main.home-page .progression-grid ui-badge {
+  text-transform: uppercase;
+}
+
+/* Dot and connector trace the progression from card to card. */
+main.home-page .progression-grid ui-card::before {
+  position: absolute;
+  top: 33px;
+  right: 20px;
+  width: 6px;
+  height: 6px;
+  content: "";
+  background-color: var(--card-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--card-accent);
+}
+
+main.home-page .progression-grid ui-card::after {
+  position: absolute;
+  top: 35px;
+  right: -16px;
+  width: 36px;
+  height: 1px;
+  content: "";
+  background-color: var(--border-strong);
+}
+
+main.home-page .progression-grid ui-card:last-child::after {
+  display: none;
+}
+
+main.home-page .progression-grid ui-card[featured] h3 {
+  color: var(--accent-violet-text);
 }
 
 main.home-page .progression-grid p {
@@ -195,18 +259,26 @@ main.home-page .progression-grid p {
 }
 
 /* Proof */
-main.home-page .code-steps {
+main.home-page .code-compare {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-main.home-page .code-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0;
+main.home-page .code-compare .code-pane,
+main.home-page .code-compare code-block {
+  height: 100%;
+}
+
+main.home-page .code-note {
+  max-width: 1200px;
+  margin: 16px auto 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
 }
 
 main.home-page .code-pane {
@@ -216,19 +288,6 @@ main.home-page .code-pane {
   min-width: 0;
 }
 
-main.home-page .code-pane-header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-main.home-page .code-pane-path {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
 main.home-page .code-pane-note {
   margin: 0;
   font-size: 13px;
@@ -236,33 +295,18 @@ main.home-page .code-pane-note {
   color: var(--text-muted);
 }
 
-main.home-page .build-connector {
-  display: flex;
-  gap: 16px;
+main.home-page .code-usage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
   align-items: center;
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-main.home-page .build-connector::before,
-main.home-page .build-connector::after {
-  flex: 1;
-  height: 1px;
-  content: "";
-  background: var(--border-subtle);
-}
-
-main.home-page .code-pane--compiled code-block {
-  border-radius: var(--radius-lg);
-  box-shadow: 0 0 0 1px var(--accent-cyan), 0 0 16px rgba(6, 182, 212, .25);
+  max-width: 1200px;
+  margin: 24px auto 0;
 }
 
 @media (max-width: 1100px) {
-  main.home-page .code-steps {
+  main.home-page .code-compare,
+  main.home-page .code-usage {
     grid-template-columns: 1fr;
   }
 }
@@ -403,10 +447,53 @@ main.home-page .opinions-grid {
   gap: 24px;
 }
 
+main.home-page .opinion-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+main.home-page .opinion-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+main.home-page .opinion-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--card-accent);
+  background-color: var(--card-accent-soft);
+  border: 1px solid var(--card-accent);
+  border-radius: 10px;
+}
+
+main.home-page .opinions-grid p code {
+  color: var(--accent-cyan);
+}
+
 /* Education */
-main.home-page .education-section ui-card {
+main.home-page .education-panel {
   position: relative;
+  padding: 40px;
   overflow: hidden;
+  background:
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    linear-gradient(120deg, rgba(139, 92, 246, .85), rgba(6, 182, 212, .45) 55%, rgba(236, 72, 153, .8)) border-box;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+}
+
+main.home-page .education-panel::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, var(--accent-violet), var(--accent-pink) 50%, var(--accent-cyan));
 }
 
 main.home-page .education-content {
@@ -418,9 +505,13 @@ main.home-page .education-content {
   justify-content: space-between;
 }
 
+main.home-page .education-content ui-badge {
+  margin-bottom: 14px;
+}
+
 main.home-page .education-content h2 {
-  margin-bottom: 8px;
-  font-size: 24px;
+  margin: 0 0 8px;
+  font-size: 28px;
 }
 
 main.home-page .education-content p {
@@ -443,7 +534,7 @@ main.home-page .cta-coral {
     padding-block: 40px 56px;
   }
   main.home-page .hero-section {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 28px;
   }
   main.home-page .hero-content h1 {
@@ -460,6 +551,15 @@ main.home-page .cta-coral {
   }
   main.home-page .hero-visual {
     height: 240px;
+  }
+  main.home-page .progression-grid ui-card::after {
+    display: none;
+  }
+  main.home-page .education-panel {
+    padding: 24px;
+  }
+  main.home-page .education-content h2 {
+    font-size: 24px;
   }
   main.home-page .progression-grid {
     grid-template-columns: 1fr;

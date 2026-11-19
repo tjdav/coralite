@@ -15,14 +15,14 @@
     <section class="hero-section">
       <div class="hero-rays" aria-hidden="true"></div>
       <div class="hero-content">
-        <ui-badge variant="cyan">From first line of HTML to full-stack ecosystem</ui-badge>
-        <h1>Grow your app. Don't rewrite it.</h1>
+        <ui-badge variant="cyan" outline>From first line of HTML to full-stack ecosystem</ui-badge>
+        <h1>Grow your app. <span class="hero-accent">Don't rewrite it.</span></h1>
         <p>The server-rendered Web Component framework that scales with you. Start with basic HTML, add CSS, sprinkle in JS, and build complex, solid systems without ever learning a new framework syntax. And if the contract breaks, the build fails before broken code ships.</p>
         <div class="hero-actions">
-          <ui-link href="/learn/" variant="primary">Start Learning</ui-link>
-          <ui-link href="/docs/" variant="secondary">Read the Docs</ui-link>
+          <ui-link href="/learn/" variant="primary" pill arrow>Start Learning</ui-link>
+          <ui-link href="/docs/" variant="secondary" pill>Read the Docs</ui-link>
         </div>
-        <code-block language="bash">npm create coralite@latest</code-block>
+        <ui-command command="npm create coralite@latest"></ui-command>
       </div>
       <div class="hero-visual">
         <img src="/images/coral-red.avif" alt="Watercolor coral reef" class="coral-img" width="472" height="505" decoding="async" />
@@ -36,31 +36,32 @@
 
     <!-- Progression Section -->
     <section class="progression-section">
-      <h2>Evolutionary Progression</h2>
-      <p>The Progression Path. Learn the platform. Build the ecosystem.</p>
+      <ui-badge variant="cyan" outline>Evolutionary progression</ui-badge>
+      <h2>The <span class="accent">Progression</span> Path</h2>
+      <p>Learn the platform. Build the ecosystem.</p>
       <div class="progression-grid">
-        <ui-card>
+        <ui-card accent="violet">
           <div slot="header" class="progression-header">
             <ui-badge variant="violet">01 HTML</ui-badge>
             <h3>The Document</h3>
           </div>
           <p>Semantic structure and natively accessible forms. Pure structural baseline without wrapper fatigue.</p>
         </ui-card>
-        <ui-card>
+        <ui-card accent="cyan">
           <div slot="header" class="progression-header">
             <ui-badge variant="cyan">02 CSS</ui-badge>
             <h3>The Style</h3>
           </div>
           <p>Native encapsulation via @layer & CSS scoping. Predictable cascades with zero runtime overhead.</p>
         </ui-card>
-        <ui-card>
+        <ui-card accent="violet">
           <div slot="header" class="progression-header">
             <ui-badge variant="violet">03 JS</ui-badge>
             <h3>The Behavior</h3>
           </div>
           <p>Standard DOM event lifecycle, reactive signals, and explicit bindings that clean themselves up.</p>
         </ui-card>
-        <ui-card hoverable>
+        <ui-card accent="violet" featured>
           <div slot="header" class="progression-header">
             <ui-badge variant="violet">04 Coralite</ui-badge>
             <h3>The Ecosystem</h3>
@@ -72,16 +73,13 @@
 
     <!-- Proof Section -->
     <section class="proof-section">
+      <ui-badge variant="violet" outline>Verifiable architecture</ui-badge>
       <h2>No Magic. Just the Platform.</h2>
       <p>See exactly how your authored component becomes a compiled, server-rendered Web Component.</p>
-      
-      <div class="code-steps">
+
+      <div class="code-compare">
         <div class="code-pane" data-code-pane="authored">
-          <div class="code-pane-header">
-            <ui-badge variant="violet">01 Authored</ui-badge>
-            <span class="code-pane-path">src/components/site-counter.html</span>
-          </div>
-          <code-block language="html" filename="site-counter.html">
+          <code-block variant="panel" tone="violet" label="Authored" filename="src/components/site-counter.html" line-numbers language="html">
 <template id="site-counter">
   <button ref="count-button" type="button" class="btn">
     Count is {{ count }}
@@ -107,35 +105,24 @@
           </code-block>
         </div>
 
-        <div class="code-stack">
-          <div class="code-pane code-pane--usage" data-code-pane="usage">
-            <div class="code-pane-header">
-              <ui-badge variant="violet">02 Used on a page</ui-badge>
-              <span class="code-pane-path">src/pages/index.html</span>
-            </div>
-            <code-block language="html" filename="index.html">
-<site-counter step="1"></site-counter>
-            </code-block>
-            <p class="code-pane-note">That is the whole usage surface: the tag name plus optional attributes. No imports, no registration, no wrapper element.</p>
-          </div>
-
-          <div class="build-connector" aria-hidden="true">compiled at build time</div>
-
-          <div class="code-pane code-pane--compiled" data-code-pane="compiled">
-            <div class="code-pane-header">
-              <ui-badge variant="cyan">03 Compiled output (generated)</ui-badge>
-              <span class="code-pane-path">dist/index.html</span>
-            </div>
-            <code-block language="html" filename="index.html">
+        <div class="code-pane code-pane--compiled" data-code-pane="compiled">
+          <code-block variant="panel" tone="cyan" label="Compiled at build time" filename="dist/index.html" line-numbers language="html">
 <site-counter step="1" data-cid="site-counter-0" data-coralite-initial>
   <button ref="site-counter-0__count-button" type="button" class="btn" ...>
     Count is <c-token>0</c-token>
   </button>
 </site-counter>
-            </code-block>
-            <p class="code-pane-note">Build artifact — you never author this markup. <code>...</code> marks compiler-emitted hydration bindings; hydration state ships in a module script.</p>
-          </div>
+          </code-block>
         </div>
+      </div>
+
+      <p class="code-note">Build artifact — you never author this markup. <code>...</code> marks compiler-emitted hydration bindings; hydration state ships in a module script.</p>
+
+      <div class="code-usage" data-code-pane="usage">
+        <code-block variant="panel" label="Used on a page" filename="src/pages/index.html" language="html">
+<site-counter step="1"></site-counter>
+        </code-block>
+        <p class="code-pane-note">That is the whole usage surface: the tag name plus optional attributes. No imports, no registration, no wrapper element.</p>
       </div>
     </section>
 
@@ -190,20 +177,30 @@
 
     <!-- Three Opinions -->
     <section class="opinions-section">
+      <ui-badge variant="cyan" outline>Framework opinions</ui-badge>
       <h2>Architectural Decisions</h2>
       <p>Coralite intentionally leaves out unnecessary abstractions, aligning directly with native browser mechanisms.</p>
-      
+
       <div class="opinions-grid">
-        <ui-card>
-          <h3 slot="header">Explicit Boundaries</h3>
+        <ui-card accent="violet">
+          <div slot="header" class="opinion-header">
+            <span class="opinion-icon"><ui-icon name="strictness" size="22"></ui-icon></span>
+            <h3>Explicit Boundaries</h3>
+          </div>
           <p>No <code>class extends HTMLElement</code>. Define behavior with standard top-level <code>export function server()</code> and <code>export const attributes</code>.</p>
         </ui-card>
-        <ui-card>
-          <h3 slot="header">Clean Separation</h3>
+        <ui-card accent="cyan">
+          <div slot="header" class="opinion-header">
+            <span class="opinion-icon"><ui-icon name="style" size="22"></ui-icon></span>
+            <h3>Clean Separation</h3>
+          </div>
           <p>Strict flat identifiers in HTML (<code>{{ token }}</code>). Logic is lifted to getters. No inline handlers or complex expressions.</p>
         </ui-card>
-        <ui-card>
-          <h3 slot="header">Native Foundation</h3>
+        <ui-card accent="pink">
+          <div slot="header" class="opinion-header">
+            <span class="opinion-icon"><ui-icon name="web" size="22"></ui-icon></span>
+            <h3>Native Foundation</h3>
+          </div>
           <p>No Shadow DOM. Encapsulation is handled via CSS Scoping and <code>@layer</code>. Preserves native form association and accessible DOM structures.</p>
         </ui-card>
       </div>
@@ -211,16 +208,17 @@
 
     <!-- Education CTA -->
     <section class="education-section">
-      <ui-card>
+      <div class="education-panel">
         <div class="education-content">
           <div>
+            <ui-badge variant="violet" outline>Guided curriculum</ui-badge>
             <h2>The Ecosystem is for Everyone.</h2>
             <p>Read our step-by-step lessons. Start with a basic HTML page and build a Netflix-shaped app in one paradigm.</p>
           </div>
-          <ui-link href="/learn/" variant="primary">Explore the Lessons</ui-link>
+          <ui-link href="/learn/" variant="primary" pill arrow>Explore the Lessons</ui-link>
         </div>
         <img src="/images/coral-blue.avif" alt="Coral decoration" class="cta-coral" width="259" height="200" decoding="async" />
-      </ui-card>
+      </div>
     </section>
   </main>
 
