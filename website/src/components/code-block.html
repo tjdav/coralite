@@ -26,7 +26,7 @@
   import css from 'highlight.js/lib/languages/css'
   import bash from 'highlight.js/lib/languages/bash'
   import diff from 'highlight.js/lib/languages/diff'
-  import { indent, dedent } from '../utils/format.js'
+  import { dedent } from '../utils/format.js'
 
   hljs.registerLanguage('javascript', javascript)
   hljs.registerLanguage('xml', xml)
@@ -133,17 +133,16 @@
       }
 
       const dedented = dedent(fullText).trim()
-      const indentedContent = indent(dedented, '  ')
-  
+
       try {
         const lang = state.language.toLowerCase()
         if (!hljs.getLanguage(lang)) {
           return [{ type: 'text', data: dedented }]
         }
-        const highlightCode = hljs.highlight(indentedContent, { language: lang })
+        const highlightCode = hljs.highlight(dedented, { language: lang })
         const highlightedHtml = highlightCode.value.trimEnd()
         if (state.lineNumbers) {
-          const count = indentedContent.trimEnd().split('\n').length
+          const count = dedented.split('\n').length
           const numbers = Array.from({ length: count }, (_, index) => String(index + 1).padStart(2, '0')).join('\n')
           const wrapped = parseHTML(`<span class="code-gutter" aria-hidden="true">${numbers}</span><span class="code-content">${highlightedHtml}</span>`)
           return replacePlaceholders(wrapped.root.children, placeholders)
@@ -171,7 +170,7 @@
     }, { signal })
 
     const codeEl = codeBody.querySelector('code') || codeBody
-    if (codeEl && !codeEl.querySelector('.code-keyword, .code-string, .code-tag')) {
+    if (codeEl && !codeEl.querySelector('span[class^="code-"]')) {
       const { default: hljsLib } = await import('highlight.js/lib/core')
       const { default: javascriptLang } = await import('highlight.js/lib/languages/javascript')
       const { default: xmlLang } = await import('highlight.js/lib/languages/xml')
@@ -201,7 +200,10 @@
 
       const lang = (state.language || 'text').toLowerCase()
       if (hljsLib.getLanguage(lang)) {
-        const rawCode = codeEl.textContent.trim()
+        const lines = codeEl.textContent.replace(/^\n+/, '').replace(/\s+$/, '').split('\n')
+        const widths = lines.filter(line => line.trim()).map(line => line.match(/^[ \t]*/)[0].length)
+        const minIndent = Math.min(...widths)
+        const rawCode = lines.map(line => line.slice(minIndent)).join('\n')
         const highlighted = hljsLib.highlight(rawCode, { language: lang })
         codeEl.innerHTML = highlighted.value
       }
