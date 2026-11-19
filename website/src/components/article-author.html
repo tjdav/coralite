@@ -1,0 +1,47 @@
+<template id="article-author">
+  <div class="author-bio">
+    <ui-avatar initials="{{ initials }}" size="md"></ui-avatar>
+    <div class="bio-info">
+      <h4>{{ name }}</h4>
+      <p>{{ bio }}</p>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  export const attributes = {
+    name: { type: String, default: 'Thomas David' },
+    initials: { type: String, default: 'TD' },
+    bio: { type: String, default: 'Creator of Coralite. Writing about the intersection of native web APIs, compiler design, and AI-assisted development.' }
+  }
+</script>
+
+<style>
+  :host {
+    display: block;
+  }
+
+  .author-bio {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 32px;
+    margin-top: 96px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+  }
+
+  .bio-info h4 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    color: var(--text-primary);
+  }
+
+  .bio-info p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+</style>
