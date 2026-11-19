@@ -8,7 +8,7 @@ import { join, resolve, relative } from 'node:path'
 import { existsSync, mkdirSync, statSync, readdirSync } from 'node:fs'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import pkg from '../package.json' with { type: 'json' }
-import { normalizeErrorCodes, matchesErrorCode } from '#lib'
+import { normalizeErrorCodes, matchesErrorCode, DIAGNOSTIC_CATALOG } from '#lib'
 import loadConfig from '#lib/cli/load-config.js'
 import server from '#lib/cli/server.js'
 import { buildCommand } from '#lib/cli/commands/build.js'
@@ -677,6 +677,78 @@ async function main () {
         process.stderr.write(kleur.red().bold('ERROR: ') + err.message + '\n')
         process.exit(1)
       }
+    })
+
+  program
+    .command('diagnostics')
+    .description('List every diagnostic code Coralite can emit')
+    .option('--family <family>', 'Filter by family: component, plugin, page, accessibility, config')
+    .option('--severity <severity>', 'Filter by severity: error or warning')
+    .option('--fixable', 'Only list codes with an automatic fix', false)
+    .option('--search <text>', 'Filter by code, title or summary')
+    .option('--format <format>', 'Output format: "console" or "json"', 'console')
+    .action((options) => {
+      const families = ['component', 'plugin', 'page', 'accessibility', 'config']
+      const severities = ['error', 'warning']
+
+      if (options.family && !families.includes(options.family)) {
+        process.stderr.write(kleur.red().bold('ERROR: ') + `Unknown family "${options.family}". Use one of: ${families.join(', ')}.\n`)
+        process.exit(1)
+      }
+      if (options.severity && !severities.includes(options.severity)) {
+        process.stderr.write(kleur.red().bold('ERROR: ') + `Unknown severity "${options.severity}". Use one of: ${severities.join(', ')}.\n`)
+        process.exit(1)
+      }
+      if (!['console', 'json'].includes(options.format)) {
+        process.stderr.write(kleur.red().bold('ERROR: ') + `Unknown format "${options.format}". Use "console" or "json".\n`)
+        process.exit(1)
+      }
+
+      let entries = DIAGNOSTIC_CATALOG
+      if (options.family) {
+        entries = entries.filter(entry => entry.family === options.family)
+      }
+      if (options.severity) {
+        entries = entries.filter(entry => entry.severity === options.severity)
+      }
+      if (options.fixable) {
+        entries = entries.filter(entry => entry.fixable)
+      }
+      if (options.search) {
+        const query = options.search.toLowerCase()
+        entries = entries.filter(entry => `${entry.code} ${entry.title} ${entry.summary}`.toLowerCase().includes(query))
+      }
+
+      const errors = entries.filter(entry => entry.severity === 'error').length
+      const warnings = entries.filter(entry => entry.severity === 'warning').length
+      const fixable = entries.filter(entry => entry.fixable).length
+
+      if (options.format === 'json') {
+        process.stdout.write(JSON.stringify({
+          total: entries.length,
+          errors,
+          warnings,
+          fixable,
+          codes: entries
+        }, null, 2) + '\n')
+        return
+      }
+
+      for (const family of families) {
+        const group = entries.filter(entry => entry.family === family)
+        if (group.length === 0) {
+          continue
+        }
+        process.stdout.write('\n' + kleur.bold().underline(family.toUpperCase()) + ` (${group.length})\n\n`)
+        for (const entry of group) {
+          const severity = entry.severity === 'error' ? kleur.red('error  ') : kleur.yellow('warning')
+          const fix = entry.fixable ? kleur.green('  auto-fix') : ''
+          process.stdout.write(`  ${kleur.cyan(entry.code.padEnd(19))} ${severity}${fix}  ${entry.title}\n`)
+        }
+      }
+
+      process.stdout.write(`\n${entries.length} code(s) · ${errors} error(s) · ${warnings} warning(s) · ${fixable} auto-fixable\n`)
+      process.stdout.write(`Machine-readable: ${kleur.cyan('coralite diagnostics --format json')}\n`)
     })
 
   program
