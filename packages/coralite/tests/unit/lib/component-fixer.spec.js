@@ -81,6 +81,51 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
     assert.strictEqual(postE301s.length, 0)
   })
 
+  test('CORALITE-E301: rewrites imports for flat exported function client()', () => {
+    const input = `<template id="flat-date">
+  <div>Date</div>
+</template>
+
+<script type="module">
+  import { formatDate } from './utils.js'
+
+  export function client () {
+    const d = formatDate(new Date())
+  }
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'flat-date.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(!result.outputCode.includes("import { formatDate } from './utils.js'"))
+    assert.ok(result.outputCode.includes('export async function client'))
+    assert.ok(result.outputCode.includes("const { formatDate } = await import('./utils.js')"))
+
+    const postValidation = validateComponentSource(result.outputCode, 'flat-date.html')
+    assert.strictEqual(postValidation.diagnostics.filter(d => d.code === 'CORALITE-E301').length, 0)
+  })
+
+  test('CORALITE-E301: rewrites imports for flat exported arrow client', () => {
+    const input = `<template id="flat-chart">
+  <div>Chart</div>
+</template>
+
+<script type="module">
+  import { draw } from './chart.js'
+
+  export const client = ({ state }) => {
+    draw(state)
+  }
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'flat-chart.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('export const client = async ({ state }) =>'))
+    assert.ok(result.outputCode.includes("const { draw } = await import('./chart.js')"))
+
+    const postValidation = validateComponentSource(result.outputCode, 'flat-chart.html')
+    assert.strictEqual(postValidation.diagnostics.filter(d => d.code === 'CORALITE-E301').length, 0)
+  })
+
   test('CORALITE-E301: handles default import, namespace import, and mixed imports rewriting', () => {
     const input = `<template>
   <div>Chart</div>
