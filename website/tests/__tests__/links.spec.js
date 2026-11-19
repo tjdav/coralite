@@ -80,3 +80,26 @@ test('footer View Source links to the repository', async ({ page }) => {
   await expect(link).toHaveAttribute('target', '_blank')
   await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
 })
+
+test('the current section renders as a filled pill in the primary nav', async ({ page }) => {
+  await page.goto('/docs/guide/getting-started/')
+  await page.waitForLoadState('networkidle')
+
+  const current = page.locator('.desktop-nav a[aria-current="page"]')
+  await expect(current).toHaveCount(1)
+  await expect(current).toHaveText('Docs')
+
+  const style = await current.evaluate(el => {
+    const computed = getComputedStyle(el)
+    return {
+      background: computed.backgroundColor,
+      radius: computed.borderRadius,
+      color: computed.color
+    }
+  })
+  expect(style.background).toBe('rgb(124, 58, 237)')
+  expect(style.radius).toBe('9999px')
+  expect(style.color).toBe('rgb(255, 255, 255)')
+
+  await expect(page.locator('.desktop-nav a', { hasText: 'Learn' })).not.toHaveAttribute('aria-current', 'page')
+})

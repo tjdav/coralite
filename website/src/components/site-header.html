@@ -159,22 +159,35 @@
 
   .desktop-nav {
     display: flex;
-    gap: 24px;
+    gap: 4px;
     flex-wrap: nowrap;
   }
 
   .desktop-nav a {
+    padding: 6px 12px;
     text-decoration: none;
     color: var(--text-muted);
     font-family: var(--font-sans);
     font-size: 14px;
     font-weight: 500;
     white-space: nowrap;
-    transition: color 0.2s ease;
+    border-radius: 9999px;
+    transition: color 0.2s ease, background-color 0.2s ease;
   }
 
   .desktop-nav a:hover {
     color: var(--text-primary);
+    background-color: rgba(148, 163, 184, .12);
+  }
+
+  .desktop-nav a[aria-current="page"] {
+    color: #FFFFFF;
+    background-color: var(--accent-violet-strong);
+    box-shadow: 0 0 20px rgba(124, 58, 237, .35);
+  }
+
+  .desktop-nav a[aria-current="page"]:hover {
+    background-color: #6d28d9;
   }
 
   .actions {
