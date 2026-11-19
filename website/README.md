@@ -134,6 +134,23 @@ policy is path based and last match wins:
 - Minify the injected per-page component CSS in the renderer, before the CSP
   hash is computed.
 
+## Open Graph images
+
+Every blog post gets a generated 1200×630 PNG at
+`dist/images/og/blog/<slug>.png`, and `page-meta` points `og:image` and
+`twitter:image` at it. Pages outside `/blog/<slug>/` keep the shared
+`/images/social.png`.
+
+Generation runs in `coralite build` through `src/plugins/og-images.js`, which
+renders the card with satori and rasterises it with resvg. It reads the built
+title, section, author and published date from each page, so there is no
+separate list to maintain. Files are only rewritten when their bytes change.
+
+- Template: `src/og/render.js`
+- Fonts: `src/og/fonts/` (static Inter subsets; see the README there)
+- Test: `tests/__tests__/og-images.spec.js` verifies every post's meta resolves
+  to an existing 1200×630 PNG after a build
+
 ## Deploying
 
 The build produces a static site in `dist/`. Deploy `dist/` to any static host.

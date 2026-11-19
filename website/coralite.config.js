@@ -6,6 +6,7 @@ import sitemapPlugin from './src/plugins/sitemap.js'
 import searchPlugin from './src/plugins/search.js'
 import changelogPlugin from './src/plugins/changelog.js'
 import diagnosticsPlugin from './src/plugins/diagnostics.js'
+import ogImagesPlugin from './src/plugins/og-images.js'
 import siteVersionPlugin from './src/plugins/site-version.js'
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3333
@@ -64,7 +65,8 @@ export default defineConfig({
     changelogPlugin,
     sitemapPlugin({ customFiles: llmsFiles }),
     searchPlugin,
-    diagnosticsPlugin
+    diagnosticsPlugin,
+    ogImagesPlugin
   ],
   csp: {
     enabled: true,
