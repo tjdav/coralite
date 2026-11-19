@@ -414,4 +414,35 @@ export default {
       assert.match(output, /VALID|valid/i)
     })
   })
+
+  describe('diagnostics', () => {
+    test('lists every catalogued code as JSON', () => {
+      const output = runCli('diagnostics --format json').toString()
+      const report = JSON.parse(output)
+
+      assert.equal(report.total, 52)
+      assert.equal(report.errors + report.warnings, report.total)
+      assert.equal(report.fixable, report.codes.filter(entry => entry.fixable).length)
+
+      for (const entry of report.codes) {
+        assert.match(entry.code, /^CORALITE-[A-Z]+-?\d+$/)
+        assert.equal(typeof entry.title, 'string')
+        assert.equal(typeof entry.summary, 'string')
+        assert.equal(entry.summary.length > 0, true)
+      }
+    })
+
+    test('filters by family and fixability', () => {
+      const output = runCli('diagnostics --family plugin --fixable').toString()
+      assert.match(output, /CORALITE-P201/)
+      assert.match(output, /CORALITE-P401/)
+      assert.doesNotMatch(output, /CORALITE-E201/)
+      assert.match(output, /2 code\(s\)/)
+    })
+
+    test('rejects an unknown family', () => {
+      assert.throws(() => runCli('diagnostics --family nope'))
+    })
+  })
+
 })

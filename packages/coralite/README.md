@@ -72,6 +72,7 @@ npx coralite fix
 * **`coralite validate-components`**: Statically audits component templates, refs, CSS selectors, and script blocks.
 * **`coralite validate-plugins`**: Validates plugin contracts, lifecycle hooks, and isomorphic boundary compliance.
 * **`coralite validate-pages`**: Validates page HTML against component schemas and encapsulation rules.
+* **`coralite diagnostics`**: Lists every diagnostic code with severity, auto-fix availability and guidance. Supports `--family`, `--severity`, `--fixable`, `--search` and `--format json` for tooling and CI. Also available as `DIAGNOSTIC_CATALOG` from the package root.
 
 ---
 
