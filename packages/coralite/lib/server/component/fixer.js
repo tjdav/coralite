@@ -31,6 +31,72 @@ function getPropKeyName (propNode) {
   return null
 }
 
+/**
+ * Finds the client() function declared by flat named exports.
+ * @param {object} ast - Parsed module AST.
+ * @returns {object|null} Client function node, or null.
+ */
+function findFlatClientTarget (ast) {
+  let target = null
+  walkAncestorJS(ast, {
+    ExportNamedDeclaration (node) {
+      if (target) {
+        return
+      }
+      const decl = node.declaration
+      if (!decl) {
+        return
+      }
+      if (decl.type === 'FunctionDeclaration' && decl.id && decl.id.name === 'client') {
+        target = decl
+        return
+      }
+      if (decl.type !== 'VariableDeclaration') {
+        return
+      }
+      for (const d of decl.declarations) {
+        if (d.id.type === 'Identifier' && d.id.name === 'client' && d.init) {
+          if (d.init.type === 'FunctionExpression' || d.init.type === 'ArrowFunctionExpression') {
+            target = d.init
+          }
+        }
+      }
+    }
+  })
+  return target
+}
+
+/**
+ * Finds the client() function for either the flat export or defineComponent form.
+ * @param {object} ast - Parsed module AST.
+ * @returns {object|null} Client function node, or null.
+ */
+function findClientTarget (ast) {
+  let target = null
+  walkAncestorJS(ast, {
+    CallExpression (node) {
+      if (target) {
+        return
+      }
+      if (
+        node.callee.type === 'Identifier' &&
+        node.callee.name === 'defineComponent' &&
+        node.arguments.length > 0 &&
+        node.arguments[0].type === 'ObjectExpression'
+      ) {
+        const clientProp = node.arguments[0].properties.find(p => getPropKeyName(p) === 'client')
+        if (clientProp && clientProp.type === 'Property') {
+          const fnVal = clientProp.value
+          if (fnVal.type === 'FunctionExpression' || fnVal.type === 'ArrowFunctionExpression') {
+            target = fnVal
+          }
+        }
+      }
+    }
+  })
+  return target || findFlatClientTarget(ast)
+}
+
 function isSemanticMatch (el, strippedRef) {
   const rLower = strippedRef.toLowerCase()
   const rCamel = kebabToCamel(strippedRef)
@@ -856,7 +922,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
 
       // 2.3 CORALITE-E301 (Smart Client Dynamic Import Rewrite)
       const e301Diagnostics = diagnosticsList.filter(d => d.code === 'CORALITE-E301' && d.fix?.action === 'dynamic_import')
-      if (e301Diagnostics.length > 0) {
+      if (e301Diagnostics.length > 0 && findClientTarget(ast)) {
         const targetSymbols = new Set()
         const sharedSymbols = new Set()
         for (const diag of e301Diagnostics) {
@@ -988,8 +1054,13 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
           }
         }
 
+        let injected = false
+
         walkAncestorJS(ast, {
           CallExpression (node) {
+            if (injected) {
+              return
+            }
             if (
               node.callee.type === 'Identifier' &&
               node.callee.name === 'defineComponent' &&
@@ -1021,6 +1092,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
                     scriptContent = scriptContent.slice(0, clientStart) + asyncSubstr + scriptContent.slice(fnVal.body.range[0])
                   }
 
+                  injected = true
                   for (const sym of targetSymbols) {
                     fixesApplied.push({
                       code: 'CORALITE-E301',
@@ -1032,6 +1104,32 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
             }
           }
         })
+
+        if (!injected) {
+          const flatTarget = findFlatClientTarget(ast)
+          if (flatTarget && flatTarget.body.range) {
+            const bodyStart = flatTarget.body.range[0] + 1
+            const injection = '\n    ' + importStatements.join('\n    ')
+            scriptContent = scriptContent.slice(0, bodyStart) + injection + scriptContent.slice(bodyStart)
+
+            if (!flatTarget.async) {
+              const headStart = flatTarget.range[0]
+              const headEnd = flatTarget.body.range[0]
+              const head = scriptContent.slice(headStart, headEnd)
+              const asyncHead = head.includes('function')
+                ? head.replace('function', 'async function')
+                : `async ${head}`
+              scriptContent = scriptContent.slice(0, headStart) + asyncHead + scriptContent.slice(headEnd)
+            }
+
+            for (const sym of targetSymbols) {
+              fixesApplied.push({
+                code: 'CORALITE-E301',
+                description: `Convert top-level import '${sym}' to dynamic import in client()`
+              })
+            }
+          }
+        }
       }
 
       if (isHtmlFile) {
