@@ -109,3 +109,33 @@ test('reference index visual test', async ({ page }) => {
     fullPage: true
   })
 })
+
+test('provide and consume reference page visual test', async ({ page }) => {
+  await page.goto('/reference/provide-consume')
+
+  await page.waitForLoadState('networkidle')
+
+  await expect(page).toHaveScreenshot('reference-provide-consume.png', {
+    fullPage: true
+  })
+})
+
+test('listStrategy reference page visual test', async ({ page }) => {
+  await page.goto('/reference/list-strategy')
+
+  await page.waitForLoadState('networkidle')
+
+  await expect(page).toHaveScreenshot('reference-list-strategy.png', {
+    fullPage: true
+  })
+})
+
+test('onError reference page visual test', async ({ page }) => {
+  await page.goto('/reference/on-error')
+
+  await page.waitForLoadState('networkidle')
+
+  await expect(page).toHaveScreenshot('reference-on-error.png', {
+    fullPage: true
+  })
+})
