@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="Page API"
-    description="Pages are thin orchestrators. They compose components and define the routing manifest."
+    description="The page module contract: enumeration, metadata, server data, derived state, root styles, context and browser lifecycle."
     section="Reference"></page-meta>
 </head>
 <body>
@@ -20,7 +20,7 @@
         <span class="separator">/</span>
         <a href="/reference/">Page API</a>
         <span class="separator">/</span>
-        <span>paths & definePage</span>
+        <span>paths &amp; exports</span>
       </ui-breadcrumb>
 
       <div class="lesson-header">
@@ -28,102 +28,222 @@
           <h1>Page API</h1>
           <ui-badge variant="cyan">Stable</ui-badge>
         </div>
-        <p class="subhead">Pages are thin orchestrators. They compose components and define the routing manifest.</p>
+        <p class="subhead">A page is the document and one controller script. It enumerates routes, loads data, and composes components without owning their internals.</p>
       </div>
 
       <div class="lesson-body">
-        <h2 id="the-definepage-syntax">The definePage Syntax (Legacy)</h2>
-        <p>Components and pages share the same export surface: top-level named exports. Pages are entry points, not Web Components, so <code>export default definePage({ ... })</code> is retained as a legacy shape; new pages use <code>export function server</code>, <code>export const meta</code>, and the other named exports.</p>
+        <p>Pages use the same flat named exports as components, with a smaller set. Handlers are <code>export function</code>; declarations are <code>export const</code>. A page with no controller script at all is valid and builds as static HTML.</p>
 
-        <code-block language="html" filename="index.html">
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <title>{{ title }}</title>
-</head>
-<body>
-  <site-header></site-header>
-  <main>
-    <h1>{{ title }}</h1>
-  </main>
-  <site-footer></site-footer>
-</body>
-</html>
+        <h2 id="exports">Exports</h2>
 
-<script type="module">
-  import { definePage } from 'coralite'
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Export</th>
+                <th scope="col">Form</th>
+                <th scope="col">Runs</th>
+                <th scope="col">Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>paths</code></td><td><code>export function</code></td><td>Build</td><td>Enumerates the parameter sets to compile for a dynamic route.</td></tr>
+              <tr><td><code>meta</code></td><td><code>export const</code></td><td>Build</td><td>Declares page metadata and seeds default state.</td></tr>
+              <tr><td><code>server</code></td><td><code>export function</code></td><td>Build</td><td>Loads data for the page and can emit a redirect.</td></tr>
+              <tr><td><code>getters</code></td><td><code>export const</code></td><td>Build + browser</td><td>Derives page state for tokens.</td></tr>
+              <tr><td><code>style</code></td><td><code>export const</code></td><td>Build + browser</td><td>Writes custom properties and inline styles on the root element.</td></tr>
+              <tr><td><code>provide</code></td><td><code>export const</code></td><td>Build + browser</td><td>Provides context to every descendant component.</td></tr>
+              <tr><td><code>client</code></td><td><code>export function</code></td><td>Browser</td><td>Binds page-level behavior once the document is interactive.</td></tr>
+              <tr><td><code>onError</code></td><td><code>export function</code></td><td>Production build</td><td>Replaces the document when the page render fails. See <a href="/reference/on-error/">onError</a>.</td></tr>
+            </tbody>
+          </table>
+        </div>
 
-  export default definePage({
-    getters: {
-      title: () => 'Home Page'
-    }
-  })
-</script>
+        <p>Pages reject <code>attributes</code>, <code>slots</code>, <code>consume</code> and <code>formControl</code>. There is no host element to declare attributes on, there is nothing above a page to consume from, and form association belongs to a component. A wrong export form or a rejected block is <a href="/reference/diagnostics/#coralite-e107"><code>CORALITE-E107</code></a>.</p>
+
+        <h2 id="paths">paths()</h2>
+
+        <p>Dynamic routes must enumerate the parameter combinations to build. The function receives <code>{ app }</code>, may be asynchronous, and returns an array of parameter objects. Each object is matched against the route pattern derived from the file name.</p>
+
+        <code-block language="javascript" filename="src/pages/posts/[id].html">
+export async function paths () {
+  const fs = await import('node:fs/promises')
+  const files = await fs.readdir('src/data/posts')
+
+  return files.map((file) =&gt; ({
+    id: file.replace(/\.json$/, '')
+  }))
+}
+
+export async function server ({ route }) {
+  const fs = await import('node:fs/promises')
+  const raw = await fs.readFile(`src/data/posts/${route.params.id}.json`, 'utf8')
+  return { post: JSON.parse(raw) }
+}
         </code-block>
 
-        <h2 id="valid-page-blocks">Valid Page Blocks</h2>
-        <p>Pages support a subset of the component API:</p>
+        <p>Return parameters, not paths. <code>[{ path: '/posts/hello' }]</code> is not a parameter object: <code>path</code> is an undeclared parameter, so it is <a href="/reference/diagnostics/#coralite-e402"><code>CORALITE-E402</code></a>. A non-array result is the same code, and so is a non-string value. Every declared parameter must be present in every entry, and no extra keys are allowed. The values always arrive in <code>route.params</code>, never as a separate argument.</p>
+
+        <p>Two enumerated objects with the same parameters are a build error. Deduplicate in <code>paths()</code> rather than relying on output order.</p>
+
+        <h2 id="meta">meta</h2>
+
+        <p><code>meta</code> is the page's public information surface: title, description, language, canonical URL, and any project-specific key. It uses the attribute schema, so it supports <code>type</code>, <code>default</code>, <code>values</code> and <code>validate</code>. <code>required</code> is rejected: a page has no external input, so declare a default instead.</p>
+
+        <code-block language="javascript" filename="page-meta.js">
+export const meta = {
+  title: { type: String, default: 'Untitled' },
+  description: { type: String, default: '' },
+  section: { type: String, values: ['Guide', 'Reference', 'Blog'] },
+  noIndex: { type: Boolean, default: false }
+}
+        </code-block>
+
+        <p>Values seed state, so a token or getter can read them. Keys are not restricted to SEO fields: <code>campaign</code>, <code>locale</code> or <code>version</code> are equally valid.</p>
+
+        <h2 id="server">server()</h2>
+
+        <p>The page handler runs at build time with the page's context and returns an object merged into page state. Unlike a component, it can also stop the render and emit a redirect stub.</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>state</code></td><td>Meta defaults, page tags and values returned so far.</td></tr>
+              <tr><td><code>route</code></td><td>The concrete route for this output, including <code>params</code>.</td></tr>
+              <tr><td><code>page</code></td><td>The page object, including its exports.</td></tr>
+              <tr><td><code>session</code></td><td>The active build session.</td></tr>
+              <tr><td><code>signal</code></td><td>The build cancellation signal.</td></tr>
+              <tr><td><code>store</code></td><td>The server store when <code>store</code> is configured.</td></tr>
+              <tr><td><code>app</code></td><td>The Coralite instance.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Plugin <code>server.context</code> is merged into the same object, so a handler destructures plugin keys directly.</p>
+
+        <h3 id="redirects">Redirects</h3>
+
+        <p>Returning <code>__redirect</code> writes a redirect stub instead of rendering the document. The value is an object with <code>to</code> and an optional <code>status</code> of <code>301</code> or <code>302</code>.</p>
+
+        <code-block language="javascript" filename="redirect.js">
+export function server ({ state }) {
+  if (state.legacySlug) {
+    return {
+      __redirect: { to: `/posts/${state.currentSlug}/`, status: 301 }
+    }
+  }
+}
+        </code-block>
+
+        <p>A relative target must start with <code>/</code>; absolute <code>http://</code> and <code>https://</code> targets are allowed. Anything else fails the build.</p>
+
+        <h2 id="getters-style-provide">getters, style and provide</h2>
+
+        <p><code>getters</code>, <code>style</code> and <code>provide</code> behave as they do in components, with one difference each:</p>
+
         <ul>
-          <li><code>paths</code>: For dynamic routing.</li>
-          <li><code>server</code>: For SSR data fetching.</li>
-          <li><code>getters</code>: For derived state.</li>
-          <li><code>style</code>: For page-level CSS variables.</li>
-          <li><code>provide</code>: For tree-based dependency injection.</li>
-          <li><code>client</code>: For page-level interactivity.</li>
-          <li><code>onError</code>: For page-level error boundaries.</li>
+          <li><strong>getters</strong> receive the same context as a component, but <code>refs</code> returns <code>null</code> during SSR and page-level refs during hydration. Use <a href="/reference/getters/">the getters reference</a> for the context table.</li>
+          <li><strong>style</strong> writes onto the document root, so a custom property declared here is visible site-wide. Prefer page style for theme values the whole document needs; put component-scoped values in the component.</li>
+          <li><strong>provide</strong> makes the page the outermost provider. Every component on the page, at any depth, can consume it. See <a href="/reference/provide-consume/">provide and consume</a>.</li>
         </ul>
 
-        <p><strong>Pages do not support</strong> <code>attributes</code>, <code>slots</code>, <code>consume</code>, or <code>formControl</code>.</p>
-
-        <h2 id="dynamic-routing-with-paths">Dynamic Routing with paths()</h2>
-        <p>The <code>paths()</code> function allows you to generate multiple HTML files from a single page template. This is how you build a blog or a documentation site with hundreds of pages without duplicating the layout.</p>
-
-        <code-block language="javascript" filename="blog-post.html">
-<script type="module">
-  import { definePage } from 'coralite'
-
-  export default definePage({
-    async paths () {
-      const fs = await import('node:fs/promises')
-      const files = await fs.readdir('src/data/blog')
-  
-      return files.map(file => ({
-        path: `/blog/${file.replace('.json', '')}`,
-        params: { id: file.replace('.json', '') }
-      }))
-    },
-  
-    async server ({ params }) {
-      const fs = await import('node:fs/promises')
-      const data = await fs.readFile(`src/data/blog/${params.id}.json`, 'utf8')
-      return JSON.parse(data)
-    }
-  })
-</script>
+        <code-block language="javascript" filename="page-style.js">
+export const style = {
+  '--page-accent': ({ state }) =&gt; state.accent || '#06b6d4'
+}
         </code-block>
 
-        <h2 id="the-page-boundary">The Page Boundary</h2>
-        <p>Pages are strictly consumers of components. They must not query component internals or reach into their shadow/light DOM. The component's <code>client()</code> block is the only place where internal logic should live.</p>
+        <h2 id="client">client()</h2>
 
-        <div class="diagnostic-callout">
-          <strong>CORALITE-PAGE-201: Encapsulation Violation</strong>
-          <p>Do not use <code>document.querySelector</code> or DOM manipulation inside a page's <code>client()</code> block to target elements inside a component. If a page needs to interact with a component, it should pass data via attributes and listen for custom events using <code>emit()</code>.</p>
+        <p>The page client handler runs once in the browser. It receives a narrower context than a component: there is no instance identifier, no attribute errors and no form API.</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>state</code></td><td>Reactive page state. Writes update tokens and getters.</td></tr>
+              <tr><td><code>route</code></td><td>The active route, including <code>params</code>.</td></tr>
+              <tr><td><code>root</code></td><td><code>document.documentElement</code>.</td></tr>
+              <tr><td><code>refs</code></td><td>Resolves <code>ref="name"</code> anywhere in the document.</td></tr>
+              <tr><td><code>signal</code></td><td>Page runtime signal. Pass it to listeners you add from here.</td></tr>
+              <tr><td><code>emit</code></td><td>Dispatches a bubbling, composed event from the document root.</td></tr>
+              <tr><td><code>observe</code></td><td>Observes a page state key. Side effects only.</td></tr>
+              <tr><td><code>updateComplete</code></td><td>Resolves immediately; page updates are not batched like component renders.</td></tr>
+              <tr><td><code>store</code>, plugin keys</td><td>The global store and <code>client.context</code>, when configured.</td></tr>
+            </tbody>
+          </table>
         </div>
+
+        <code-block language="javascript" filename="page-client.js">
+export function client ({ refs, signal, emit }) {
+  refs('shortcut').addEventListener('keydown', (event) =&gt; {
+    if (event.key !== '/') {
+      return
+    }
+    event.preventDefault()
+    emit('search:open')
+  }, { signal })
+}
+        </code-block>
+
+        <h2 id="boundary">The page boundary</h2>
+
+        <p>A page composes components and passes data through attributes or context. It must not reach into a component's DOM or read its internal state: that logic belongs in the component. Page code that queries component internals is a <code>CORALITE-PAGE-201</code> violation.</p>
+
+        <p>When the page needs a value from a component, listen for an event the component emits, or provide the value downward. The page does not need to know how the component renders it.</p>
+
+        <h2 id="legacy">Legacy definePage</h2>
+
+        <p><code>export default definePage({ ... })</code> is still accepted for existing pages. It is the same configuration object as the flat exports, just wrapped. New pages use the named exports; the wrapper is retained only for backwards compatibility and gets no new options.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e107"><code>CORALITE-E107</code></a> reports a wrong export form, a rejected block, or more than one page controller script.</li>
+          <li><a href="/reference/diagnostics/#coralite-e402"><code>CORALITE-E402</code></a> reports a <code>paths()</code> result that is not an array of parameter objects.</li>
+          <li><a href="/reference/diagnostics/#coralite-e401"><code>CORALITE-E401</code></a> reports request or response globals, which pages do not receive.</li>
+          <li><a href="/reference/diagnostics/#coralite-page-201"><code>CORALITE-PAGE-201</code></a> reports page code that reaches into component internals.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/docs/reference/pages/">Pages guide and routing reference</a> for file-based routes and patterns.</li>
+          <li><a href="/docs/reference/components/">Component overview</a> for the layer a page composes.</li>
+          <li><a href="/reference/server/">server</a> for build-time data patterns shared with components.</li>
+        </ul>
       </div>
 
       <div class="lesson-navigation">
-        <ui-link href="/reference/form-control/" variant="secondary">← Previous: formControl</ui-link>
-        <ui-link href="/reference/plugins/" variant="primary">Next: Plugins →</ui-link>
+        <ui-link href="/reference/on-error/" variant="secondary">← Previous: onError</ui-link>
+        <ui-link href="/reference/plugins/" variant="primary">Next: definePlugin →</ui-link>
       </div>
     </div>
 
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#the-definepage-syntax">The definePage Syntax</a>
-        <a href="#valid-page-blocks">Valid Page Blocks</a>
-        <a href="#dynamic-routing-with-paths">Dynamic Routing</a>
-        <a href="#the-page-boundary">The Page Boundary</a>
+        <a class="active" href="#exports">Exports</a>
+        <a href="#paths">paths()</a>
+        <a href="#meta">meta</a>
+        <a href="#server">server()</a>
+        <a href="#getters-style-provide">getters, style and provide</a>
+        <a href="#client">client()</a>
+        <a href="#boundary">The page boundary</a>
+        <a href="#legacy">Legacy definePage</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
       </div>
     </div>
   </docs-layout>

@@ -39,6 +39,7 @@ coralite build     # Production build into dist/
 coralite test      # Testing server (deterministic build for E2E)
 coralite check     # Unified validation across components, pages, plugins
 coralite fix       # Apply safe auto-fixes across the workspace
+coralite diagnostics # List every diagnostic code and its metadata
 coralite init-agent # Scaffold AGENTS.md and AI IDE config aliases
         </code-block>
 
@@ -68,8 +69,25 @@ coralite check --code E201 E203        # Filter by diagnostic code
 coralite check --status failed         # Filter by outcome
 coralite check --format json           # Machine-readable output
 coralite check --no-types              # Skip TypeScript, AST rules only
+coralite check --types-only            # Run only the TypeScript checker
+coralite check --coverage              # Include component coverage metrics
 coralite check --strict                # Treat warnings and unused code as failures
         </code-block>
+
+        <h2 id="diagnostic-catalogue">Diagnostic Catalogue</h2>
+
+        <p><code>coralite diagnostics</code> prints the same catalogue the reference renders, without a build. Use it to look up a code, or to feed the list into tooling.</p>
+
+        <code-block language="bash" filename="diagnostics.sh">
+coralite diagnostics                         # Every code, grouped by family
+coralite diagnostics --family plugin         # One family
+coralite diagnostics --severity warning      # Errors or warnings
+coralite diagnostics --fixable               # Only codes coralite fix can repair
+coralite diagnostics --search template       # Match code, title or summary
+coralite diagnostics --format json           # Full entries, counts included
+        </code-block>
+
+        <p>Families are <code>component</code>, <code>plugin</code>, <code>page</code>, <code>accessibility</code> and <code>config</code>. The JSON form returns <code>{ total, errors, warnings, fixable, codes }</code>, where each entry carries <code>code</code>, <code>title</code>, <code>family</code>, <code>severity</code>, <code>fixable</code>, <code>summary</code> and <code>fix</code>. Invalid values exit non-zero with the accepted list.</p>
 
         <h2 id="auto-fixes">Auto-Fixes</h2>
         <p><code>coralite fix</code> applies only safe transformations; preview them with <code>--dry-run</code> before writing. Interactive mode lets you accept each fix individually.</p>
@@ -112,6 +130,7 @@ export default defineConfig({
         <a class="active" href="#commands">Commands</a>
         <a href="#shared-build-flags">Shared Build Flags</a>
         <a href="#validation-options">Validation Options</a>
+        <a href="#diagnostic-catalogue">Diagnostic Catalogue</a>
         <a href="#auto-fixes">Auto-Fixes</a>
         <a href="#configuration-discovery">Configuration Discovery</a>
       </div>
