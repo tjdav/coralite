@@ -152,6 +152,13 @@ separate list to maintain. Files are only rewritten when their bytes change.
 - Test: `tests/__tests__/og-images.spec.js` verifies every post's meta resolves
   to an existing 1200×630 PNG after a build
 
+## Documentation conventions
+
+Code samples are parsed as HTML, so literal angle brackets that are not
+markup (TypeScript generics, XML literals, placeholders such as `<name>`)
+must be escaped as `&lt;` / `&gt;`. `tests/__tests__/code-sample-markup.spec.js`
+scans every page and fails on an unescaped one.
+
 ## Deploying
 
 The build produces a static site in `dist/`. Deploy `dist/` to any static host.
