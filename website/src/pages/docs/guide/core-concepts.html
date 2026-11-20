@@ -34,6 +34,12 @@
       <div class="lesson-body">
         <p>Coralite is built on a "Native Web" philosophy. We believe that the most performant and maintainable applications are those that embrace standard DOM APIs and minimize framework abstraction layers like the Virtual DOM.</p>
 
+            <h2 id="one-platform-many-targets">One platform, many targets</h2>
+
+            <p>Coralite is web-first because the browser engine is the common runtime. A browser tab, an installed web app, an Electron or Tauri desktop window and a Capacitor mobile screen all render the same HTML, CSS and JavaScript. The platform is shared, so the component model is shared too.</p>
+
+            <p>What is not shared is the edge: storage, files, notifications, window controls, permissions, deep links and packaging. Those belong to the target. Core never assumes a URL bar, a network server or a hosting provider; target adapters add them through the plugin system. The full model is in <a href="/docs/guide/targets/">One Runtime, Every Platform</a>.</p>
+
             <h2 id="smart-state-dumb-template">Smart State, Dumb Template</h2>
 
             <p>In Coralite, we follow a strict separation of concerns called <strong>Smart State, Dumb Template</strong>. This approach eliminates the "Virtual DOM tax" by performing direct token replacement during rendering.</p>
@@ -116,7 +122,8 @@
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#smart-state-dumb-template">Smart State, Dumb Template</a>
+        <a class="active" href="#one-platform-many-targets">One platform, many targets</a>
+        <a href="#smart-state-dumb-template">Smart State, Dumb Template</a>
         <a href="#the-reactivity-engine">The Reactivity Engine</a>
         <a href="#lazy-deep-reactivity">Lazy Deep Reactivity</a>
         <a href="#native-web-standards">Native Web Standards</a>
