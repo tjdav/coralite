@@ -56,13 +56,13 @@
       <div class="lesson-body">
         <h2 id="typescript-signature">TypeScript Signature</h2>
         <code-block language="typescript" filename="getters.ts">
-export const getters: Record<string, (context: {
-  state: Readonly<Record<string, any>>;
+export const getters: Record&lt;string, (context: {
+  state: Readonly&lt;Record&lt;string, any&gt;&gt;;
   root: HTMLElement | null;
-  refs: (id: string) => HTMLElement | null;
+  refs: (id: string) =&gt; HTMLElement | null;
   slots: any;
   signal: AbortSignal;
-}) => any>
+}) =&gt; any&gt;
         </code-block>
 
         <h2 id="isomorphic-execution">Isomorphic Execution</h2>

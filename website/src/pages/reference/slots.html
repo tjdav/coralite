@@ -56,15 +56,15 @@
       <div class="lesson-body">
         <h2 id="typescript-signature">TypeScript Signature</h2>
         <code-block language="typescript" filename="slots.ts">
-export const slots: Record<string, (
+export const slots: Record&lt;string, (
   context: {
     nodes: any[];
-    state: Record<string, any>;
+    state: Record&lt;string, any&gt;;
     isServer: boolean;
     isClient: boolean;
-    slots: Record<string, any>;
+    slots: Record&lt;string, any&gt;;
   }
-) => any[] | undefined>
+) =&gt; any[] | undefined&gt;
         </code-block>
 
         <h2 id="server-side-transformation">Server-Side Transformation</h2>

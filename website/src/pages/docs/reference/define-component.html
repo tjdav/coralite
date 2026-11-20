@@ -63,7 +63,7 @@
 
             <div tabindex="0" role="region" aria-label="Scrollable table" class="docs-table-wrap">
                 <table class="docs-table">
-                <th scope="col"ead>
+                <th scope="col">
                   <tr>
                 <th scope="col">Export / Option</th>
                 <th scope="col">Form &amp; Type</th>
@@ -156,7 +156,7 @@
             <h3 id="attribute-schema-configuration">Attribute Schema Configuration</h3>
             <div tabindex="0" role="region" aria-label="Scrollable table" class="docs-table-wrap">
                 <table class="docs-table">
-                <th scope="col"ead>
+                <th scope="col">
                   <tr>
                 <th scope="col">Property</th>
                 <th scope="col">Type</th>
@@ -201,7 +201,7 @@
             <h3 id="the-6-step-attribute-execution-lifecycle-pipeline-graceful-error-handling">The 6-Step Attribute Execution Lifecycle Pipeline & Graceful Error Handling</h3>
             <p>Attributes execute sequentially through a strict 6-step lifecycle pipeline during component initialization and state changes. When validation fails (e.g., missing <code>required</code> attribute, <code>values</code> enum mismatch, or <code>validate</code> predicate failure), Coralite records the error message gracefully in <code>state.errors</code> and flat <code>error_*</code> tokens without halting SSR or crashing client scripts:</p>
             <ol>
-              <li><strong>1. <code>required</code> Check:</strong> Asserts attribute presence if <code>required: true</code> is configured. Records <code>"Attribute \"<name>\" is required."</code> on omission.</li>
+              <li><strong>1. <code>required</code> Check:</strong> Asserts attribute presence if <code>required: true</code> is configured. Records <code>"Attribute \"&lt;name&gt;\" is required."</code> on omission.</li>
               <li><strong>2. Type <code>coerce</code>:</strong> Coerces raw attribute string into specified primitive constructor (<code>Boolean</code>, <code>Number</code>, or <code>String</code>).</li>
               <li><strong>3. <code>transform</code>:</strong> Runs custom synchronous <code>transform(val)</code> function to format or sanitize value. Thrown errors are recorded in <code>state.errors</code> while retaining the attempted value.</li>
               <li><strong>4. <code>values</code> Check:</strong> Validates that value exists in allowed <code>values: [...]</code> enumeration array. Records formatted expected values error on mismatch.</li>
@@ -234,7 +234,7 @@
             <h3 id="coercion-matrix-reference">Coercion Matrix Reference</h3>
             <div tabindex="0" role="region" aria-label="Scrollable table" class="docs-table-wrap">
                 <table class="docs-table">
-                <th scope="col"ead>
+                <th scope="col">
                   <tr>
                 <th scope="col">Input HTML Attribute Value</th>
                 <th scope="col">Boolean Coercion</th>
@@ -413,7 +413,7 @@
 
             <div tabindex="0" role="region" aria-label="Scrollable table" class="docs-table-wrap">
                 <table class="docs-table">
-                <th scope="col"ead>
+                <th scope="col">
                   <tr>
                 <th scope="col">Property</th>
                 <th scope="col">Type</th>
@@ -531,19 +531,19 @@
             <p>Add <code>coralite-ignore</code> to a <code>&lt;slot&gt;</code> in the component template to keep projected content literal: no token interpolation, custom-element compilation, hydration, or validation. Slot fallback content is processed normally. See the <a href="/docs/reference/coralite-ignore/"><code>coralite-ignore</code> Reference</a>.</p>
 
             <code-block language="typescript">
-        type CoraliteSlotContext<State = any> = {
+        type CoraliteSlotContext&lt;State = any&gt; = {
           state: State;                                  // reactive proxy (client) / plain merged state (SSR)
-          observe: (prop: string, cb: (newVal: any, oldVal?: any) => any) => () => void; // ALWAYS returns a disposer
+          observe: (prop: string, cb: (newVal: any, oldVal?: any) =&gt; any) =&gt; () =&gt; void; // ALWAYS returns a disposer
           signal: AbortSignal;
           root: HTMLElement | null;                      // element on client, null during SSR build
-          refs: (name: string) => HTMLElement | null;    // no-op returning null on SSR
+          refs: (name: string) =&gt; HTMLElement | null;    // no-op returning null on SSR
           instanceId: string;
-        } & Record<string, any>
+        } & Record&lt;string, any&gt;
 
-        type SlotTransformer<State = any> = (
+        type SlotTransformer&lt;State = any&gt; = (
           nodes: Node[],
-          context: CoraliteSlotContext<State>
-        ) => Node[] | Node | string | null | Promise<Node[] | Node | string | null>
+          context: CoraliteSlotContext&lt;State&gt;
+        ) =&gt; Node[] | Node | string | null | Promise&lt;Node[] | Node | string | null&gt;
             </code-block>
 
             <h3 id="the-void-bypass-paradigm">The Void = Bypass Paradigm</h3>

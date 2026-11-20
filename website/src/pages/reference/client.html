@@ -58,15 +58,15 @@
         <p>The <code>CoraliteClientContext</code> parameter signature:</p>
         <code-block language="typescript" filename="client.ts">
 export async function client (context: {
-  state: Record<string, any>;
-  refs: (name: string) => HTMLElement | null;
+  state: Record&lt;string, any&gt;;
+  refs: (name: string) =&gt; HTMLElement | null;
   signal: AbortSignal;
-  emit: (name: string, detail?: any) => boolean;
-  observe: (key: string, cb: (newVal: any, oldVal: any) => void) => () => void;
-  updateComplete: Promise<boolean>;
-  setFormValue?: (value: any) => void;
-  setValidity?: (flags: ValidityStateFlags, message: string, anchor: HTMLElement) => void;
-}): Promise<void>
+  emit: (name: string, detail?: any) =&gt; boolean;
+  observe: (key: string, cb: (newVal: any, oldVal: any) =&gt; void) =&gt; () =&gt; void;
+  updateComplete: Promise&lt;boolean&gt;;
+  setFormValue?: (value: any) =&gt; void;
+  setValidity?: (flags: ValidityStateFlags, message: string, anchor: HTMLElement) =&gt; void;
+}): Promise&lt;void&gt;
         </code-block>
 
         <h2 id="lifecycle-cleanup">Lifecycle &amp; Cleanup</h2>
