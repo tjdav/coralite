@@ -1,13 +1,25 @@
 <template id="docs-layout">
   <div class="layout-grid">
     <aside class="sidebar-wrapper">
-      <slot name="sidebar"></slot>
+      <button class="mobile-disclosure-toggle" type="button" ref="sidebarToggle" aria-expanded="false" aria-controls="docs-nav-panel">
+        <span>Documentation menu</span>
+        <ui-icon name="chevron-down" size="16"></ui-icon>
+      </button>
+      <div class="mobile-disclosure-panel" id="docs-nav-panel" ref="sidebarPanel">
+        <slot name="sidebar"></slot>
+      </div>
     </aside>
     <main class="content-wrapper" id="main-content" tabindex="-1">
       <slot name="content"></slot>
     </main>
     <aside class="toc-wrapper">
-      <slot name="toc"></slot>
+      <button class="mobile-disclosure-toggle" type="button" ref="tocToggle" aria-expanded="false" aria-controls="docs-toc-panel">
+        <span>On this page</span>
+        <ui-icon name="chevron-down" size="16"></ui-icon>
+      </button>
+      <div class="mobile-disclosure-panel" id="docs-toc-panel" ref="tocPanel">
+        <slot name="toc"></slot>
+      </div>
     </aside>
   </div>
 </template>
@@ -15,7 +27,27 @@
 <script type="module">
   export const attributes = {}
 
-  export function client ({ root, signal }) {
+  export function client ({ root, refs, signal }) {
+    const mobileQuery = window.matchMedia('(max-width: 1100px)')
+
+    const bindDisclosure = (toggle, panel) => {
+      const setCollapsed = (collapsed) => {
+        panel.dataset.collapsed = String(collapsed)
+        toggle.setAttribute('aria-expanded', String(!collapsed))
+      }
+
+      setCollapsed(mobileQuery.matches)
+      toggle.addEventListener('click', () => {
+        setCollapsed(panel.dataset.collapsed !== 'true')
+      }, { signal })
+      mobileQuery.addEventListener('change', (event) => {
+        setCollapsed(event.matches)
+      }, { signal })
+    }
+
+    bindDisclosure(refs('sidebarToggle'), refs('sidebarPanel'))
+    bindDisclosure(refs('tocToggle'), refs('tocPanel'))
+
     const links = [...root.querySelectorAll('.docs-toc a[href^="#"]')]
     if (!links.length) return
 
@@ -123,12 +155,62 @@
     max-width: 800px;
   }
 
+  .mobile-disclosure-toggle {
+    display: none;
+  }
+
   @media (max-width: 1100px) {
     .layout-grid {
       grid-template-columns: 1fr;
       padding: 24px;
     }
-    .sidebar-wrapper, .toc-wrapper {
+
+    .sidebar-wrapper,
+    .toc-wrapper {
+      position: static;
+      display: block;
+      max-height: none;
+      margin-bottom: 8px;
+      overflow: visible;
+    }
+
+    .sidebar-wrapper {
+      order: 1;
+    }
+
+    .toc-wrapper {
+      order: 2;
+    }
+
+    .content-wrapper {
+      order: 3;
+    }
+
+    .mobile-disclosure-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+    }
+
+    .mobile-disclosure-toggle[aria-expanded="true"] ui-icon {
+      transform: rotate(180deg);
+    }
+
+    .mobile-disclosure-panel {
+      padding-top: 12px;
+    }
+
+    .mobile-disclosure-panel[data-collapsed="true"] {
       display: none;
     }
   }

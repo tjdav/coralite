@@ -5,24 +5,41 @@
 
   <div class="mobile-overlay {{ overlayClass }}" ref="overlay"></div>
 
-  <div class="mobile-drawer {{ drawerClass }}" ref="drawer" id="mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu" inert="{{ closed }}">
+  <div class="mobile-drawer {{ drawerClass }}" ref="drawer" id="mobile-drawer" role="dialog" aria-modal="true" aria-label="Site menu" inert="{{ closed }}">
     <div class="drawer-header">
-      <span class="logo">Coralite</span>
+      <a href="/" class="drawer-logo" aria-label="Coralite home">Coralite</a>
       <button ref="closeBtn" class="close-btn" type="button" aria-label="Close menu">
         <ui-icon name="close" size="24"></ui-icon>
       </button>
     </div>
-    
+
     <div class="drawer-content">
-      <ui-nav-link href="/learn/">Learn</ui-nav-link>
-      <ui-nav-link href="/docs/">Documentation</ui-nav-link>
-      <ui-nav-link href="/docs/guide/">Guide</ui-nav-link>
-      <ui-nav-link href="/docs/reference/">Reference</ui-nav-link>
-      <ui-nav-link href="/reference/">Component API</ui-nav-link>
-      <ui-nav-link href="/blog/">Blog</ui-nav-link>
-      <ui-nav-link href="/changelog/">Changelog</ui-nav-link>
-      <ui-nav-link href="/compare/">Compare</ui-nav-link>
-      <ui-nav-link href="/why/">Why Coralite</ui-nav-link>
+      <button ref="searchBtn" class="drawer-search" type="button" aria-keyshortcuts="Control+K">
+        <ui-icon name="search" size="16"></ui-icon>
+        <span>Search</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+
+      <nav class="drawer-nav" aria-label="Primary">
+        <p class="drawer-label">Explore</p>
+        <ui-nav-link href="/learn/" active="{{ learnActive }}">Learn</ui-nav-link>
+        <ui-nav-link href="/docs/" active="{{ docsActive }}">Docs</ui-nav-link>
+        <ui-nav-link href="/reference/" active="{{ referenceActive }}">Reference</ui-nav-link>
+
+        <p class="drawer-label drawer-label--spaced">Project</p>
+        <ui-nav-link href="/why/">Why Coralite</ui-nav-link>
+        <ui-nav-link href="/compare/">Compare</ui-nav-link>
+        <ui-nav-link href="/blog/">Blog</ui-nav-link>
+        <ui-nav-link href="/changelog/">Changelog</ui-nav-link>
+      </nav>
+
+      <div class="drawer-footer">
+        <a href="https://github.com/tjdav/coralite" class="drawer-github">
+          <ui-icon name="github" size="16"></ui-icon>
+          <span>GitHub</span>
+        </a>
+        <ui-badge variant="violet">v{{ version }}</ui-badge>
+      </div>
     </div>
   </div>
 </template>
@@ -37,20 +54,30 @@
     drawerClass: ({ state }) => (state.open ? 'is-open' : ''),
     expanded: ({ state }) => state.open,
     closed: ({ state }) => !state.open,
-    toggleLabel: ({ state }) => (state.open ? 'Close menu' : 'Open menu')
+    toggleLabel: ({ state }) => (state.open ? 'Close menu' : 'Open menu'),
+    learnActive: ({ route }) => route.path.startsWith('/learn'),
+    docsActive: ({ route }) => route.path.startsWith('/docs'),
+    referenceActive: ({ route }) => route.path.startsWith('/reference')
+  }
+
+  export function server ({ $version }) {
+    return { version: $version }
   }
 
   export function client ({ state, refs, signal, observe }) {
     const toggleBtn = refs('toggleBtn')
     const closeBtn = refs('closeBtn')
+    const searchBtn = refs('searchBtn')
     const overlay = refs('overlay')
     const drawer = refs('drawer')
     let lastFocused = null
     let background = []
+    let previousOverflow = ''
+    let resizeQuery = null
 
     const setBackgroundInert = (on) => {
       if (on) {
-        background = [document.querySelector('main'), document.querySelector('site-footer')].filter(Boolean)
+        background = [...document.querySelectorAll('main, site-footer, .skip-link, .logo-link, .desktop-nav, .desktop-actions')]
       }
       for (const element of background) {
         if (on) {
@@ -64,14 +91,21 @@
       }
     }
 
+    const close = () => {
+      if (state.open) {
+        state.open = false
+      }
+    }
+
     observe('open', (open) => {
       if (open) {
         lastFocused = document.activeElement
+        previousOverflow = document.body.style.overflow
         document.body.style.overflow = 'hidden'
         setBackgroundInert(true)
         requestAnimationFrame(() => closeBtn.focus())
       } else {
-        document.body.style.overflow = ''
+        document.body.style.overflow = previousOverflow
         setBackgroundInert(false)
         if (lastFocused instanceof HTMLElement) {
           lastFocused.focus()
@@ -79,23 +113,30 @@
       }
     })
 
-    drawer.addEventListener('keydown', (e) => {
-      if (e.key !== 'Tab' || !state.open) {
+    drawer.addEventListener('keydown', (event) => {
+      if (event.key !== 'Tab' || !state.open) {
         return
       }
-      const focusable = Array.from(drawer.querySelectorAll('a[href], button:not([disabled])'))
+      const focusable = Array.from(drawer.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])'))
         .filter(element => element instanceof HTMLElement)
       if (!focusable.length) {
         return
       }
       const first = focusable[0]
       const last = focusable[focusable.length - 1]
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault()
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
         last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
         first.focus()
+      }
+    }, { signal })
+
+    drawer.addEventListener('click', (event) => {
+      const link = event.target.closest('a[href]')
+      if (link) {
+        close()
       }
     }, { signal })
 
@@ -103,17 +144,26 @@
       state.open = true
     }, { signal })
 
-    closeBtn.addEventListener('click', () => {
-      state.open = false
+    closeBtn.addEventListener('click', close, { signal })
+    overlay.addEventListener('click', close, { signal })
+
+    searchBtn.addEventListener('click', () => {
+      close()
+      document.dispatchEvent(new CustomEvent('coralite:open-command-palette'))
     }, { signal })
 
-    overlay.addEventListener('click', () => {
-      state.open = false
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && state.open) {
+        close()
+      }
     }, { signal })
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && state.open) {
-        state.open = false
+    window.addEventListener('coralite:navigated', close, { signal })
+
+    resizeQuery = window.matchMedia('(min-width: 1101px)')
+    resizeQuery.addEventListener('change', (event) => {
+      if (event.matches) {
+        close()
       }
     }, { signal })
   }
@@ -124,31 +174,29 @@
     display: block;
   }
 
-  /* Hamburger Button (Mobile only) */
   .hamburger-btn {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 8px;
+    color: var(--text-primary);
     background: transparent;
     border: none;
-    color: var(--text-primary);
     cursor: pointer;
-    padding: 8px;
   }
 
   @media (min-width: 1101px) {
     :host(:not(#test-mobile-nav)) .hamburger-btn {
-      display: none; /* Hide on desktop */
+      display: none;
     }
   }
 
-  /* Overlay */
   .mobile-overlay {
     position: fixed;
     inset: 0;
+    z-index: 90;
     background: rgba(11, 15, 25, 0.8);
     backdrop-filter: blur(4px);
-    z-index: 90;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
@@ -159,20 +207,21 @@
     pointer-events: auto;
   }
 
-  /* Drawer */
   .mobile-drawer {
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
-    width: 320px;
-    background: var(--bg-sidebar);
-    border-right: 1px solid var(--border-subtle);
     z-index: 100;
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
+    width: min(86vw, 360px);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-subtle);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .mobile-drawer.is-open {
@@ -188,29 +237,112 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 24px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border-subtle);
   }
 
-  .logo {
+  .drawer-logo {
     font-family: var(--font-sans);
     font-size: 20px;
     font-weight: 700;
     color: var(--text-primary);
+    text-decoration: none;
   }
 
   .close-btn {
+    padding: 4px;
+    color: var(--text-muted);
     background: transparent;
     border: none;
-    color: var(--text-muted);
     cursor: pointer;
   }
 
   .drawer-content {
-    padding: 24px;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
     overflow-y: auto;
+  }
+
+  .drawer-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    text-align: left;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+  }
+
+  .drawer-search span {
+    flex: 1;
+  }
+
+  .drawer-search kbd {
+    padding: 2px 6px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+  }
+
+  .drawer-nav {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 2px;
+  }
+
+  .drawer-label {
+    margin: 0 0 6px;
+    padding: 0 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .drawer-label--spaced {
+    margin-top: 18px;
+  }
+
+  .drawer-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 16px;
+    margin-top: auto;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .drawer-github {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    text-decoration: none;
+  }
+
+  .drawer-github:hover {
+    color: var(--text-primary);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-overlay,
+    .mobile-drawer {
+      transition: none;
+    }
   }
 </style>
