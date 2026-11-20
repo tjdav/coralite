@@ -65,17 +65,32 @@ export default definePlugin({
             </thead>
             <tbody>
               <tr><td><code>name</code></td><td>string</td><td>Required. Unique across the build and used as the context namespace. <a href="/reference/diagnostics/#coralite-p101"><code>P101</code></a> when missing, <a href="/reference/diagnostics/#coralite-p102"><code>P102</code></a> when reserved.</td></tr>
-              <tr><td><code>config</code></td><td>object</td><td>Shared configuration, validated at definition time and overridable when the plugin is registered. <a href="/reference/diagnostics/#coralite-p206"><code>P206</code></a> for an invalid schema, <a href="/reference/diagnostics/#coralite-p207"><code>P207</code></a> for an invalid call-time value.</td></tr>
+              <tr><td><code>config</code></td><td>object</td><td>Shared configuration schema. Validated at definition time, then filled by calling the plugin with values. <a href="/reference/diagnostics/#coralite-p206"><code>P206</code></a> for an invalid schema, <a href="/reference/diagnostics/#coralite-p207"><code>P207</code></a> for an invalid value.</td></tr>
               <tr><td><code>context</code></td><td>function</td><td>Ubiquitous two-phase resolver. Mutually exclusive with <code>server.context</code> and <code>client.context</code>.</td></tr>
               <tr><td><code>server</code></td><td>object</td><td>Build-time hooks, components and context.</td></tr>
               <tr><td><code>client</code></td><td>object</td><td>Browser hooks, init and context.</td></tr>
-              <tr><td><code>dependencies</code></td><td>string[]</td><td>Plugin names that must initialize first. <a href="/reference/diagnostics/#coralite-p205"><code>P205</code></a> for a malformed list.</td></tr>
+              <tr><td><code>dependencies</code></td><td>string[]</td><td>Plugin names that must initialize first. <a href="/reference/diagnostics/#coralite-p205"><code>P205</code></a> for a malformed list, an unknown name or a cycle.</td></tr>
               <tr><td><code>modes</code></td><td>string[]</td><td>Build modes the plugin is active in. Defaults to all three. <a href="/reference/diagnostics/#coralite-p204"><code>P204</code></a> for an invalid list.</td></tr>
             </tbody>
           </table>
         </div>
 
         <p><code>depends</code> is not supported: it was renamed to <code>dependencies</code>, and the old key is <a href="/reference/diagnostics/#coralite-p206"><code>P206</code></a>. <code>rootDir</code> and <code>filePath</code> are resolved by the loader; do not set them by hand.</p>
+
+        <p>The value returned by <code>definePlugin</code> is callable. Calling it with values produces a configured instance, validated against the declared schemas, which is how a plugin is registered with project-specific settings:</p>
+
+        <code-block language="javascript" filename="coralite.config.js">
+import { defineConfig } from 'coralite'
+import feedback from './plugins/feedback.js'
+
+export default defineConfig({
+  plugins: [
+    feedback({ locale: 'de', endpoint: 'https://feedback.example.com' })
+  ]
+})
+        </code-block>
+
+        <p>A missing required value, an unknown key or a value of the wrong type is <a href="/reference/diagnostics/#coralite-p207"><code>P207</code></a>.</p>
 
         <h2 id="context">Context</h2>
 
@@ -190,7 +205,7 @@ export default definePlugin({
 
         <h2 id="dependencies-and-modes">Dependencies and modes</h2>
 
-        <p><code>dependencies</code> orders initialization: the named plugins run first and are available through phase-one context. The list is names, not imports, so the host project decides which plugins are registered.</p>
+        <p><code>dependencies</code> orders initialization: the named plugins run first and are available through phase-one context. Names must refer to plugins registered and active in the same mode; an unknown name or a dependency cycle is <a href="/reference/diagnostics/#coralite-p205"><code>P205</code></a>.</p>
 
         <p><code>modes</code> limits the plugin to specific build modes. A dev-only overlay, for example, should not be active in production or in the E2E testing mode.</p>
 
