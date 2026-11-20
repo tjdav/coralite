@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="One Runtime, Every Platform"
+    description="Why Coralite's web-first output runs on the web, in desktop shells and in mobile shells, and which parts are core versus plugin responsibilities."
+    section="Docs"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="guide/targets"></docs-sidebar>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/guide/">Guide</a>
+        <span class="separator">/</span>
+        <span>One Runtime, Every Platform</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>One Runtime, Every Platform</h1>
+          <ui-badge variant="cyan">Guide</ui-badge>
+        </div>
+        <p class="subhead">Coralite is web-first because every target that matters ships a browser engine. The shared platform stays in core; the platform edges belong to plugins.</p>
+      </div>
+
+      <div class="lesson-body">
+        <div class="doc-callout doc-callout--info">
+          <strong>The short version</strong>
+          <p>Desktop and mobile shells embed a browser engine. The same HTML, CSS and JavaScript run in a browser tab, an installed web app, an Electron or Tauri window, and a Capacitor or WebView screen. Storage, notifications, window controls and device APIs differ. Core owns the shared platform. Plugins own the edges.</p>
+        </div>
+
+        <h2 id="the-browser-is-the-common-runtime">The browser is the common runtime</h2>
+
+        <p>Most "native" app shells are a packaged browser with a bridge to the operating system. Electron bundles Chromium. Tauri uses the system WebView. Capacitor and similar mobile shells use the platform WebView. In each case the renderer is a browser engine, and the app is the bundle loaded into it.</p>
+
+        <p>That is why Coralite does not need a different UI layer per platform. It compiles one component tree that runs in every engine. The differences are at the boundary: how the app is packaged, where it stores data, which privileged APIs it can call, and how the operating system hands it a file, a URL or a notification.</p>
+
+        <h2 id="what-an-app-is-here">What an app is here</h2>
+
+        <p>An app is a bundled interface, its local state, and its integration with the platform it runs on. The renderer can be a native toolkit or a browser engine; that choice is a delivery detail, not the architecture.</p>
+
+        <ul>
+          <li><strong>A website</strong> is the bundle served over HTTP, usually with a URL bar and no privileged APIs.</li>
+          <li><strong>An installed web app</strong> is the same bundle installed with a manifest and, optionally, a service worker.</li>
+          <li><strong>A desktop app</strong> is the same bundle inside an Electron or Tauri window, with native menus, files and updates.</li>
+          <li><strong>A mobile app</strong> is the same bundle inside a WebView shell, with native storage, permissions, back navigation and store packaging.</li>
+        </ul>
+
+        <p>"Web app" has a reputation for bloat and slowness. That reputation comes from what gets shipped, not from the browser: oversized frameworks, virtual DOM diffing, hydration of content that never changes, and server code bundled into the client. Coralite removes those causes rather than avoiding the platform.</p>
+
+        <h2 id="what-is-shared">What is shared</h2>
+
+        <p>These are core assumptions because they exist in every browser engine Coralite targets:</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Layer</th>
+                <th scope="col">Shared behavior</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Markup and styling</td><td>HTML, CSS, custom properties, cascade layers, light DOM, scoped component styles.</td></tr>
+              <tr><td>Runtime</td><td>DOM, events, <code>AbortSignal</code>, <code>CustomEvent</code>, forms, <code>ElementInternals</code> when the engine supports it.</td></tr>
+              <tr><td>Language and modules</td><td>ES modules, dynamic <code>import()</code>, <code>Intl</code>, <code>fetch</code>, promises.</td></tr>
+              <tr><td>Coralite</td><td>Templates, flat tokens, state, getters, slots, context, validation, build output.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="what-differs">What differs</h2>
+
+        <p>These are not core assumptions. They are supplied by the target, usually through a plugin:</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Concern</th>
+                <th scope="col">Web</th>
+                <th scope="col">Desktop shell</th>
+                <th scope="col">Mobile shell</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Persistence</td><td>Cookies, IndexedDB, localStorage</td><td>Native preferences, local files, SQLite</td><td>Native storage, files, keychain</td></tr>
+              <tr><td>Files and documents</td><td>File input, download</td><td>Open/save dialogs, filesystem paths</td><td>Document picker, share sheet</td></tr>
+              <tr><td>Windows and lifecycle</td><td>Tab and page lifecycle</td><td>Windows, tray, menus, deep links</td><td>Screens, back gesture, app lifecycle</td></tr>
+              <tr><td>Notifications</td><td>Web Notifications, permission prompt</td><td>Native notifications</td><td>Push and local notifications</td></tr>
+              <tr><td>Packaging</td><td>Hosting or CDN</td><td>Installer, signing, auto-update</td><td>Store bundle, signing, provisioning</td></tr>
+              <tr><td>Privileged APIs</td><td>Permissions model</td><td>Full OS access through the bridge</td><td>Permission-gated native modules</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>A plugin can expose any of these as <code>client.context</code> helpers. Components call <code>storage.save()</code> or <code>window.minimize()</code> without knowing whether the implementation is IndexedDB or a native bridge.</p>
+
+        <h2 id="targets">Targets</h2>
+
+        <h3 id="web">Web</h3>
+
+        <p>The default output is static: every route becomes an HTML file plus the assets it needs. Host it on a CDN, an object store, or any static host. Request-time rendering is opt-in through the library API when a page must be assembled per request.</p>
+
+        <p>Web-only concerns stay optional: SEO metadata, canonical URLs, CSP, sitemaps, feeds and the SPA router plugin. See <a href="/docs/guide/building/">Building Applications</a> for the delivery modes.</p>
+
+        <h3 id="installed-web">Installed web</h3>
+
+        <p>Add a manifest, icons and, if offline behavior is required, a service worker. This is still the web target: installation changes how the app is launched, not how it renders. Service worker generation is a plugin or project concern, not a core assumption.</p>
+
+        <h3 id="desktop">Desktop shell</h3>
+
+        <p>Package the built output inside Electron or Tauri. The shell provides the window, menus, file dialogs, auto-update and privileged APIs. A target plugin typically does three things:</p>
+
+        <ul>
+          <li>writes the shell manifest or packaging files in <code>onAfterBuild</code></li>
+          <li>exposes window, filesystem and updater helpers through <code>client.context</code></li>
+          <li>adjusts asset paths with <code>baseURL</code> when the bundle is loaded from the filesystem instead of a server</li>
+        </ul>
+
+        <p>Installers, signing and notarization remain the responsibility of the shell toolchain. Coralite produces the bundle those tools package.</p>
+
+        <h3 id="mobile">Mobile shell</h3>
+
+        <p>Package the same output inside Capacitor or a comparable WebView shell. The adapter supplies the native bridge: storage, notifications, permissions, share sheet, back navigation and deep links. The renderer and the component tree do not change.</p>
+
+        <p>Two details matter in practice. Absolute route links must be reconciled with the shell's origin, and the back gesture must be mapped to the router or to history. Both belong in the target plugin, not in every component.</p>
+
+        <h2 id="what-core-guarantees">What core guarantees</h2>
+
+        <ul>
+          <li><strong>Zero client JavaScript by default.</strong> A component with no <code>client()</code> and no reactive state ships markup and CSS, not a runtime island.</li>
+          <li><strong>No Virtual DOM.</strong> Templates are flat tokens; updates patch the bindings that depend on the changed state.</li>
+          <li><strong>Server code is stripped.</strong> <code>server()</code> runs at build time and is removed from the browser bundle by AST analysis.</li>
+          <li><strong>Portable output.</strong> Routes become HTML, CSS and ES modules with no Node runtime requirement.</li>
+          <li><strong>Deterministic validation.</strong> Invalid templates, imports and component contracts fail before output ships.</li>
+        </ul>
+
+        <h2 id="performance">Why web-based does not mean slow</h2>
+
+        <p>The browser is not the bottleneck people remember. The bottleneck was the layer shipped on top of it. Coralite keeps native DOM, native forms and native events, avoids a diffing runtime, and emits only the JavaScript a component actually needs.</p>
+
+        <p>That claim is measured rather than asserted. The <a href="/compare/">benchmark section</a> runs the standard <code>js-framework-benchmark</code> suite and reports memory and scripting results against the frameworks that carry the reputation Coralite is trying to avoid.</p>
+
+        <p>Native toolkits remain the right choice when an app needs direct access to a platform API from the first frame, or when the product must not ship a browser engine at all. For interfaces that fit HTML, CSS and the DOM, a shell with Coralite's output can reach native-class responsiveness without carrying a framework runtime.</p>
+
+        <h2 id="what-plugins-add">What plugins add</h2>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Need</th>
+                <th scope="col">Extension point</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Change build options for a target</td><td><code>onBeforeBuild</code> returning <code>{ options }</code></td></tr>
+              <tr><td>Write a manifest, installer config or feed</td><td><code>onAfterBuild</code> plus <code>app.writeFile</code></td></tr>
+              <tr><td>Rewrite rendered HTML or inject platform metadata</td><td><code>onAfterPageRender</code>, mutating <code>result</code></td></tr>
+              <tr><td>Ship target components</td><td><code>server.components</code></td></tr>
+              <tr><td>Expose native capabilities</td><td><code>client.context</code>, resolved per instance</td></tr>
+              <tr><td>Register global platform listeners</td><td><code>client.init</code> with <code>onCleanup</code></td></tr>
+              <tr><td>Add routes from a content source</td><td><code>onPageSet</code> returning <code>paths</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>See <a href="/docs/guide/plugins/">Authoring Plugins</a> for the hook contracts and <a href="/reference/plugins/">the definePlugin reference</a> for every option.</p>
+
+        <h2 id="choosing-a-target">Choosing a target</h2>
+
+        <ul>
+          <li><strong>Web first</strong> when search, sharing and zero-install access matter.</li>
+          <li><strong>Installed web</strong> when the same app needs an icon, offline start and a standalone window.</li>
+          <li><strong>Desktop shell</strong> when the app needs local files, menus, tray behavior or auto-update.</li>
+          <li><strong>Mobile shell</strong> when the app needs store distribution, native storage, push or device permissions.</li>
+        </ul>
+
+        <p>The components, state and styling stay the same across all four. Only the adapter and the platform-facing components change.</p>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/docs/guide/building/">Building Applications</a> for static, hybrid and SPA delivery.</li>
+          <li><a href="/docs/guide/plugins/">Authoring Plugins</a> for target adapters and capability context.</li>
+          <li><a href="/docs/guide/core-concepts/">Core Concepts</a> for the state and rendering model.</li>
+          <li><a href="/compare/">Benchmarks</a> for the measured performance comparison.</li>
+        </ul>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/guide/core-concepts/" variant="secondary">← Previous: Core Concepts</ui-link>
+        <ui-link href="/docs/guide/building/" variant="primary">Next: Building Applications →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#the-browser-is-the-common-runtime">The browser is the common runtime</a>
+        <a href="#what-an-app-is-here">What an app is here</a>
+        <a href="#what-is-shared">What is shared</a>
+        <a href="#what-differs">What differs</a>
+        <a href="#targets">Targets</a>
+        <a href="#what-core-guarantees">What core guarantees</a>
+        <a href="#performance">Why web-based does not mean slow</a>
+        <a href="#what-plugins-add">What plugins add</a>
+        <a href="#choosing-a-target">Choosing a target</a>
+        <a href="#related">Related</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

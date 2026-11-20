@@ -297,6 +297,21 @@
 
             <p>See the <a href="/docs/reference/imperative-components/">Imperative Components Reference</a> for the complete creation, loading, ownership, styling, and testing model.</p>
 
+            <h2 id="platform-targets-and-capabilities">Platform targets and capabilities</h2>
+
+            <p>Core compiles a portable HTML, CSS and JavaScript bundle. It assumes a browser engine, but it does not assume a URL bar, a network server, a hosting provider or any privileged device API. Those are supplied by the target.</p>
+
+            <p>Two plugin shapes cover most platform work:</p>
+
+            <ul>
+              <li><strong>Target adapters</strong> change the build for a delivery target. <code>onBeforeBuild</code> can patch options such as <code>baseURL</code>; <code>onAfterBuild</code> can write a shell manifest, packaging metadata or a sitemap; <code>onAfterPageRender</code> can adjust rendered output before save.</li>
+              <li><strong>Capability adapters</strong> expose platform APIs to components. <code>client.context</code> adds helpers such as storage, files, notifications, window controls or a native bridge; <code>client.init</code> registers global listeners and passes teardown to <code>onCleanup</code>.</li>
+            </ul>
+
+            <p>Web-only features follow the same rule. Metadata extraction is built in because it is cheap and universal enough; sitemaps, feeds, canonical URLs and the SPA router are optional plugins or head components. Nothing web-specific is baked into a component contract.</p>
+
+            <p>Components call the adapter's helpers and do not know whether the implementation is IndexedDB, a desktop preferences file or a mobile keychain. Keep privileged access in the adapter rather than in component code, and see <a href="/docs/guide/targets/">One Runtime, Every Platform</a> for the full boundary.</p>
+
             <h2 id="testing-plugin-context">Testing Plugin Context</h2>
 
             <p>Use <code>testing.mocks.plugins</code> in <code>mode: 'testing'</code> to shallow-merge mocked methods over a plugin's resolved <code>server.context</code> or <code>client.context</code>. The real Phase 1 and Phase 2 functions still run, so use a stub plugin when the real plugin performs external I/O or side effects during setup.</p>
@@ -335,6 +350,7 @@
         <a href="#injecting-client-helpers">Injecting Client Helpers</a>
         <a href="#client-side-lifecycle-hooks">Client-Side Lifecycle Hooks</a>
         <a href="#imperative-components-dependency-tracking">Imperative Components & Dependency Tracking</a>
+        <a href="#platform-targets-and-capabilities">Platform targets and capabilities</a>
         <a href="#testing-plugin-context">Testing Plugin Context</a>
         <a href="#zero-config-dependencies">Zero-Config Dependencies</a>
       </div>

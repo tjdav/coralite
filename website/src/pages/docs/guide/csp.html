@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="Coralite Content Security Policy (CSP) Guide"
-    description="Comprehensive guide to securing Coralite applications with Content Security Policy (CSP), including SSG hashing, SSR nonces, externalization modes"
+    description="Comprehensive guide to securing Coralite applications with Content Security Policy (CSP), including static hashing, request-time nonces, externalization modes"
     section="Docs"></page-meta>
 </head>
 <body>
@@ -28,10 +28,15 @@
           <h1>Content Security Policy (CSP)</h1>
           <ui-badge variant="cyan">Guide</ui-badge>
         </div>
-        <p class="subhead">Comprehensive guide to securing Coralite applications with Content Security Policy (CSP), including SSG hashing, SSR nonces, externalization modes, and route-level overrides.</p>
+        <p class="subhead">Comprehensive guide to securing Coralite applications with Content Security Policy (CSP), including static hashing, request-time nonces, externalization modes, and route-level overrides.</p>
       </div>
 
       <div class="lesson-body">
+        <div class="doc-callout doc-callout--info">
+          <strong>Web-target feature</strong>
+          <p>CSP is enforced by the browser when a document is delivered over HTTP. Coralite generates hashes and nonces for its output, but the hosting layer decides the headers. Desktop and mobile shells can reuse the same output; whether CSP applies there depends on the shell.</p>
+        </div>
+
         <p>Content Security Policy (CSP) is a critical defense-in-depth web security standard designed to prevent Cross-Site Scripting (XSS), data injection, and malicious asset loading. Modern strict CSP policies (CSP Level 3) eliminate dangerous directives like <code>'unsafe-inline'</code> and <code>'unsafe-eval'</code>, enforcing cryptographic validation via <strong>hashes</strong> or <strong>nonces</strong> for inline assets.</p>
 
             <p>Coralite provides first-class, build-time and runtime CSP integration. The framework automatically tracks and secures all framework-injected elements—including hydration runtimes, component scripts, import maps, scoped component styles, and development live-reload connections—without requiring developer manual intervention.</p>
@@ -92,7 +97,7 @@
                 <td><code>hashAlgorithm</code></td>
                 <td><code>'sha256' | 'sha384' | 'sha512'</code></td>
                 <td><code>'sha256'</code></td>
-                <td>Hashing algorithm for inline script and style nodes in <strong>SSG Hash Mode</strong>.</td>
+                <td>Hashing algorithm for inline script and style nodes in <strong>Static Hash Mode</strong>.</td>
               </tr>
                   <tr>
                 <td><code>injectMeta</code></td>
@@ -128,9 +133,9 @@
                 </table>
               </div>
 
-            <h2 id="strategy-1-static-site-generation-ssg-with-automated-hashing">Strategy 1: Static Site Generation (SSG) with Automated Hashing</h2>
+            <h2 id="strategy-1-static-output-with-automated-hashing">Strategy 1: Static Output with Automated Hashing</h2>
 
-            <p>For statically generated sites (SSG), Coralite inspects all serialized inline <code>&lt;script&gt;</code>, <code>&lt;script type="importmap"&gt;</code>, and <code>&lt;style&gt;</code> elements post-render. It automatically calculates base64 cryptographic hashes (e.g. <code>'sha256-...'</code>) and populates the <code>script-src</code> and <code>style-src</code> directives.</p>
+            <p>For a static build, Coralite inspects all serialized inline <code>&lt;script&gt;</code>, <code>&lt;script type="importmap"&gt;</code>, and <code>&lt;style&gt;</code> elements post-render. It automatically calculates base64 cryptographic hashes (e.g. <code>'sha256-...'</code>) and populates the <code>script-src</code> and <code>style-src</code> directives.</p>
 
             <p>In a source list, a hash or nonce supersedes <code>'unsafe-inline'</code>. When your configured <code>style-src</code> already contains <code>'unsafe-inline'</code>, Coralite therefore skips the style hashes instead of appending them: the inline sheet is already allowed, and adding a hash would silently block authored <code>style</code> attributes, which cannot be hashed. Drop <code>'unsafe-inline'</code> when you want hash-only style enforcement.</p>
 
@@ -322,7 +327,7 @@
         <h4>On this page</h4>
         <a class="active" href="#quick-setup">Quick Setup</a>
         <a href="#configuration-options">Configuration Options</a>
-        <a href="#strategy-1-static-site-generation-ssg-with-automated-hashing">Strategy 1: Static Site Generation (SSG) with Automated Hashing</a>
+        <a href="#strategy-1-static-output-with-automated-hashing">Strategy 1: Static Output with Automated Hashing</a>
         <a href="#strategy-2-server-side-rendering-ssr-with-nonces">Strategy 2: Server-Side Rendering (SSR) with Nonces</a>
         <a href="#strategy-3-zero-inline-external-mode">Strategy 3: Zero-Inline External Mode</a>
         <a href="#route-level-customization">Route-Level Customization</a>
