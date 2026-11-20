@@ -60,6 +60,8 @@ coralite build \
   --assets pkg:path:dest  # Copy static assets during build
         </code-block>
 
+        <p><code>--assets</code> accepts <code>pkg:path:dest</code> for package files and <code>src:dest</code> for local paths that start with <code>.</code>, <code>..</code> or <code>/</code>. Multiple mappings can be passed in one flag, and a CLI mapping wins over a config asset with the same destination.</p>
+
         <h2 id="validation-options">Validation Options</h2>
         <p><code>coralite check</code> reports AST diagnostics and TypeScript errors together. Use the filters to focus on one concern in CI or in an editor loop.</p>
 

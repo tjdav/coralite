@@ -184,7 +184,7 @@
                 By default, Coralite preserves the host tag of dynamic components in the final HTML but applies <code>display: contents</code> via an internal stylesheet. This ensures the tag doesn't affect your layout while remaining available for hydration.
               </p>
               <p>
-                <strong>Note:</strong> If you use the <code>no-hydration</code> attribute, the host tag is completely removed (spliced) and replaced by its contents. Learn more in the <a href="/docs/guide/ssr.html#ast-splicing--no-hydration">SSR Guide</a>.
+                <strong>Note:</strong> If you use the <code>no-hydration</code> attribute, the host tag is completely removed (spliced) and replaced by its contents. Learn more in the <a href="/docs/guide/ssr/#ast-splicing-no-hydration">SSR Guide</a>.
               </p>
             </div>
 
@@ -262,7 +262,7 @@
             </code-block>
 
             <h4 id="2-server-server-side-logic">2. Server (Server-Side Logic)</h4>
-            <p>The <code>server</code> function runs strictly on the server during build-time. It's the place for database queries or API calls. External dependencies should be loaded via dynamic <code>await import()</code>. See the <a href="/docs/guide/ssr.html#the-server-block">SSR Guide</a> for more details.</p>
+            <p>The <code>server</code> function runs strictly on the server during build-time. It's the place for database queries or API calls. External dependencies should be loaded via dynamic <code>await import()</code>. See the <a href="/docs/guide/ssr/#the-server-block">SSR Guide</a> for more details.</p>
             <code-block language="javascript">
         export async function server ({ myPlugin }) {
           const posts = await db.getPosts();
@@ -432,7 +432,7 @@
 
             <hr>
 
-            <p>For detailed API signatures, see the <a href="/docs/reference/define-component/">Component API Reference</a>.</p>
+            <p>For detailed API signatures, see the <a href="/reference/">Component API Reference</a>.</p>
       </div>
 
       <div class="lesson-navigation">

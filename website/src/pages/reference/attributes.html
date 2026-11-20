@@ -208,6 +208,34 @@ export function client ({ state, refs, signal }) {
 
         <p>Only reflect values a stylesheet or consumer needs. Reflecting every attribute causes redundant DOM writes and makes host markup the second source of truth.</p>
 
+        <h2 id="validation-errors">Validation errors</h2>
+
+        <p>Attribute validation never aborts the render. Failures are recorded in two places:</p>
+
+        <ul>
+          <li><code>state.errors</code> maps the camelCase attribute name to the message, for example <code>state.errors.userAge</code>.</li>
+          <li><code>{{ error_&lt;name&gt; }}</code> tokens are populated in both camelCase and kebab-case, for example <code>{{ error_userAge }}</code> and <code>{{ error_user-age }}</code>. They render an empty string when the value is valid.</li>
+          <li>The client context exposes the same dictionary as <code>errors</code>.</li>
+        </ul>
+
+        <p>The dictionary is reactive. Writing to <code>state.errors</code>, deleting a key or replacing the whole object updates both token spellings and schedules a render. When every attribute is valid, <code>Object.keys(state.errors).length === 0</code>.</p>
+
+        <h2 id="template-attribute-toggling">Template attribute toggling</h2>
+
+        <p>When a single state token is bound to an element attribute, Coralite decides whether to write a value, write an empty presence attribute, or remove the attribute entirely.</p>
+
+        <ul>
+          <li><strong>Native boolean attributes:</strong> the 43 standard HTML boolean attributes and declared <code>Boolean</code> custom attributes use presence semantics. A falsy value removes the attribute; a truthy value writes an empty string, for example <code>disabled=""</code>.</li>
+          <li><strong>Core ARIA state:</strong> <code>aria-expanded</code>, <code>aria-pressed</code>, <code>aria-checked</code> and <code>aria-selected</code> format falsy values as <code>"false"</code> and keep <code>"mixed"</code>. They are removed only for nullish or empty values.</li>
+          <li><strong>Other ARIA attributes:</strong> falsy values remove the attribute, except numeric <code>0</code>, which is preserved.</li>
+          <li><strong>Standard attributes:</strong> values are written as strings. A nullish value removes the attribute, while an explicit empty string is preserved.</li>
+        </ul>
+
+        <details>
+          <summary>Supported native boolean attributes</summary>
+          <p><code>allowfullscreen</code>, <code>allowpaymentrequest</code>, <code>async</code>, <code>autofocus</code>, <code>autoplay</code>, <code>checked</code>, <code>compact</code>, <code>controls</code>, <code>credentialless</code>, <code>declare</code>, <code>default</code>, <code>defer</code>, <code>disabled</code>, <code>disablepictureinpicture</code>, <code>disableremoteplayback</code>, <code>formnovalidate</code>, <code>hidden</code>, <code>inert</code>, <code>ismap</code>, <code>itemscope</code>, <code>loop</code>, <code>multiple</code>, <code>muted</code>, <code>nohref</code>, <code>nomodule</code>, <code>noresize</code>, <code>noshade</code>, <code>novalidate</code>, <code>nowrap</code>, <code>open</code>, <code>playsinline</code>, <code>readonly</code>, <code>required</code>, <code>reversed</code>, <code>scoped</code>, <code>seamless</code>, <code>selected</code>, <code>shadowrootclonable</code>, <code>shadowrootdelegatesfocus</code>, <code>shadowrootserializable</code>, <code>truespeed</code>, <code>typemustmatch</code>, <code>webkitdirectory</code>.</p>
+        </details>
+
         <h2 id="diagnostics">Diagnostics</h2>
 
         <ul>
@@ -241,6 +269,8 @@ export function client ({ state, refs, signal }) {
         <a href="#execution-pipeline">Execution pipeline</a>
         <a href="#coercion">Coercion</a>
         <a href="#reflection">Reflection</a>
+        <a href="#validation-errors">Validation errors</a>
+        <a href="#template-attribute-toggling">Template attribute toggling</a>
         <a href="#diagnostics">Diagnostics</a>
         <a href="#related">Related</a>
       </div>

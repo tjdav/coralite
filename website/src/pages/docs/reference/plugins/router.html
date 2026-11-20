@@ -18,7 +18,7 @@
       <ui-breadcrumb>
         <a href="/docs/">Docs</a>
         <span class="separator">/</span>
-        <a href="/docs/reference/">Reference</a>
+        <a href="/docs/reference/">Internals</a>
         <span class="separator">/</span>
         <a href="/docs/reference/plugins/">Built-in Plugins</a>
         <span class="separator">/</span>
@@ -35,22 +35,6 @@
 
       <div class="lesson-body">
         <p>The <code>router</code> plugin (<code>coralite/plugins/router</code>) is an <strong>opt-in</strong> single-page application router layered on Coralite's static output. Without it, navigation is the default progressive-enhanced model: plain <code>&lt;a href&gt;</code> links, static HTML per route, and native Same-Document View Transitions between full page loads. When registered, the plugin intercepts same-origin link clicks and browser-history navigations, fetches the target's pre-built static HTML, and swaps only the <em>outlet</em> region (and head tags) in the live browser — with no full reload, and no client-side routing of arbitrary client state.</p>
-
-            <nav aria-label="table of contents">
-              <h2 id="table-of-contents">Table of Contents</h2>
-              <ul>
-                <li><a href="#registration-required">Registration (Required)</a></li>
-                <li><a href="#configuration-options">Configuration Options</a></li>
-                <li><a href="#outlet-swap-region">Outlet &amp; Swap Region</a></li>
-                <li><a href="#client-router-api">Client Router API</a></li>
-                <li><a href="#navigation-guards">Navigation Guards</a></li>
-                <li><a href="#navigation-events">Navigation Events</a></li>
-                <li><a href="#link-interception">Link Interception</a></li>
-                <li><a href="#behavior-contract">Behavior Contract</a></li>
-                <li><a href="#related-pages">Related Pages</a></li>
-              </ul>
-            </nav>
-
             <section id="registration">
               <h2 id="registration-required">Registration (Required)</h2>
               <p>Every SPA behavior of the router — link interception, <code>popstate</code> handling, guards, head reconciliation — lives inside the plugin's <code>client:init</code> and <code>server:onBeforePageRender</code> hooks, which only execute when the plugin is registered. A <code>data-router-outlet</code> marker <strong>without plugin registration is inert</strong>: the page behaves as a standard multi-page app.</p>
@@ -280,7 +264,7 @@
               <h2 id="related-pages">Related Pages</h2>
               <ul>
                 <li><a href="/docs/guide/spa-router/">SPA Router Guide</a> — patterns for outlet layout, guards, navigation events, state across route swaps, and production pitfalls.</li>
-                <li><a href="/docs/reference/pages.html#13-spa-router-opt-in">Pages &amp; Routing Reference, §13</a> — the SPA router section of the pages reference.</li>
+                <li><a href="/docs/reference/routing/#10-spa-router">Pages &amp; Routing Reference, §13</a> — the SPA router section of the pages reference.</li>
                 <li><a href="/docs/reference/plugins/">Plugins Reference</a> — the <code>definePlugin</code> contract, context resolvers, and lifecycle hooks.</li>
               </ul>
             </section>
@@ -294,7 +278,6 @@
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#table-of-contents">Table of Contents</a>
         <a href="#registration-required">Registration (Required)</a>
         <a href="#configuration-options">Configuration Options</a>
         <a href="#outlet-swap-region">Outlet &amp; Swap Region</a>

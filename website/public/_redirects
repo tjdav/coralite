@@ -185,3 +185,19 @@
 /docs/guide.html /docs/guide/ 301
 /docs/reference.html /docs/reference/ 301
 /docs/reference/plugins.html /docs/reference/plugins/ 301
+
+# Consolidated documentation pages
+/docs/reference/pages.html /docs/reference/routing/ 301
+/docs/reference/pages/ /docs/reference/routing/ 301
+/docs/reference/define-component.html /reference/ 301
+/docs/reference/define-component/ /reference/ 301
+/docs/reference/define-plugin.html /reference/plugins/ 301
+/docs/reference/define-plugin/ /reference/plugins/ 301
+/docs/reference/cli.html /reference/cli/ 301
+/docs/reference/cli/ /reference/cli/ 301
+/docs/reference/e2e-testing.html /docs/guide/e2e-testing/ 301
+/docs/reference/e2e-testing/ /docs/guide/e2e-testing/ 301
+/docs/reference/forms.html /reference/form-control/ 301
+/docs/reference/forms/ /reference/form-control/ 301
+/docs/guide/page-metadata.html /docs/guide/seo/ 301
+/docs/guide/page-metadata/ /docs/guide/seo/ 301
