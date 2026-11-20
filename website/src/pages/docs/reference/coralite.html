@@ -109,39 +109,42 @@
             </div>
 
             <h3 id="example-usage">Example Usage</h3>
-            <code-block language="JavaScript">import { createCoralite } from 'coralite';
+            <code-block language="JavaScript">
+              import { createCoralite } from 'coralite';
 
-        const app = await createCoralite({
-          components: './src/components',
-          pages: './src/pages',
-          mode: 'production',
-          plugins: [myCustomPlugin]
-        });</code-block>
+              const app = await createCoralite({
+                components: './src/components',
+                pages: './src/pages',
+                mode: 'production',
+                plugins: [myCustomPlugin]
+              });</code-block>
 
             <h2 id="build-method">Build Method</h2>
             <p>Compiles specified page(s) using the <strong>Three-Phase Sealed Queue</strong> architecture. It handles discovery, ISR invalidation, and parallel rendering.</p>
 
-            <code-block language="JavaScript">/**
-         * Compiles specified page(s).
-         *
-         * @param {string | string[]} [path] - Path(s) to build. If omitted, builds all invalidated pages.
-         * @param {CoraliteBuildOptions} [options] - Build configuration.
-         * @param {function} [callback] - Optional per-page transform callback.
-         * @return {Promise&lt;CoraliteBuildResult[]&gt;}
-         */
-        await app.build(path, options, callback)</code-block>
+            <code-block language="JavaScript">
+              /**
+               * Compiles specified page(s).
+               *
+               * @param {string | string[]} [path] - Path(s) to build. If omitted, builds all invalidated pages.
+               * @param {CoraliteBuildOptions} [options] - Build configuration.
+               * @param {function} [callback] - Optional per-page transform callback.
+               * @return {Promise&lt;CoraliteBuildResult[]&gt;}
+               */
+              await app.build(path, options, callback)</code-block>
 
             <h2 id="save-method">Save Method</h2>
             <p>Saves processed pages and generated client-side assets to the configured output directory.</p>
 
-            <code-block language="JavaScript">/**
-         * Compiles and saves pages to disk.
-         *
-         * @param {string | string[]} [path] - Optional page path(s) to build.
-         * @param {CoraliteBuildOptions} [options] - Build options.
-         * @returns {Promise&lt;CoraliteSaveResult[]&gt;} Array of saved file results.
-         */
-        await app.save(path, options)</code-block>
+            <code-block language="JavaScript">
+              /**
+               * Compiles and saves pages to disk.
+               *
+               * @param {string | string[]} [path] - Optional page path(s) to build.
+               * @param {CoraliteBuildOptions} [options] - Build options.
+               * @returns {Promise&lt;CoraliteSaveResult[]&gt;} Array of saved file results.
+               */
+              await app.save(path, options)</code-block>
 
             <h2 id="content-security-policy-utilities">Content Security Policy Utilities</h2>
 
@@ -150,20 +153,22 @@
             <h3 id="calculatehash-content-algorithm">calculateHash(content, algorithm)</h3>
             <p>Calculates a cryptographic base64 hash string suitable for CSP header source lists.</p>
 
-            <code-block language="JavaScript">import { calculateHash } from 'coralite';
+            <code-block language="JavaScript">
+              import { calculateHash } from 'coralite';
 
-        // Returns: "'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='"
-        const hash = calculateHash('console.log("hello");', 'sha256');</code-block>
+              // Returns: "'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='"
+              const hash = calculateHash('console.log("hello");', 'sha256');</code-block>
 
             <h3 id="formatcspdirectives-directives-options">formatCSPDirectives(directives, options)</h3>
             <p>Converts a directive dictionary into a normalized Content-Security-Policy HTTP header string.</p>
 
-            <code-block language="JavaScript">import { formatCSPDirectives } from 'coralite';
+            <code-block language="JavaScript">
+              import { formatCSPDirectives } from 'coralite';
 
-        const headerString = formatCSPDirectives({
-          'default-src': ["'self'"],
-          'script-src': ["'self'", "'sha256-abc...'"]
-        });</code-block>
+              const headerString = formatCSPDirectives({
+                'default-src': ["'self'"],
+                'script-src': ["'self'", "'sha256-abc...'"]
+              });</code-block>
 
             <h3 id="injectcspmeta-root-head-cspcontent-reportonly">injectCSPMeta(root, head, cspContent, reportOnly)</h3>
             <p>Helper used during AST compilation to insert or update the <code>&lt;meta http-equiv="Content-Security-Policy"&gt;</code> element in the document <code>&lt;head&gt;</code>.</p>
@@ -172,67 +177,74 @@
 
             <p>When rendering or compiling pages via <code>app.build()</code> or <code>app.save()</code>, each returned page result object exposes a <code>csp</code> property (type <code>CoraliteCSPResult</code>):</p>
 
-            <code-block language="JavaScript">const results = await app.build('/index.html');
-        const { csp } = results[0];
+            <code-block language="JavaScript">
+              const results = await app.build('/index.html');
+              const { csp } = results[0];
 
-        console.log(csp.mode);         // 'ssg-hash' | 'ssr-nonce' | 'external-scripts'
-        console.log(csp.header);       // "default-src 'self'; script-src 'self' 'sha256-...';"
-        console.log(csp.scriptHashes); // ["sha256-..."]
-        console.log(csp.directives);   // { 'default-src': ["'self'"], ... }</code-block>
+              console.log(csp.mode);         // 'ssg-hash' | 'ssr-nonce' | 'external-scripts'
+              console.log(csp.header);       // "default-src 'self'; script-src 'self' 'sha256-...';"
+              console.log(csp.scriptHashes); // ["sha256-..."]
+              console.log(csp.directives);   // { 'default-src': ["'self'"], ... }</code-block>
 
             <h2 id="get-page-paths-using-custom-element">Get Page Paths Using Custom Element</h2>
             <p>Uses the internal dependency graph to find all pages that consume a specific component.</p>
 
-            <code-block language="JavaScript">/**
-         * @param {string} path - Component path or ID.
-         * @returns {string[]} Page paths consuming this component.
-         */
-        app.getPagePathsUsingCustomElement(path)</code-block>
+            <code-block language="JavaScript">
+              /**
+               * @param {string} path - Component path or ID.
+               * @returns {string[]} Page paths consuming this component.
+               */
+              app.getPagePathsUsingCustomElement(path)</code-block>
 
             <h2 id="add-render-queue">Add Render Queue</h2>
             <p>Adds a page (physical or virtual) to the current render queue. Virtual pages must be added during the <code>onBeforeBuild</code> hook.</p>
 
-            <code-block language="JavaScript">/**
-         * @param {string | Object} value - Page path or virtual page object.
-         * @param {string} buildId - The current build ID.
-         */
-        await app.addRenderQueue(value, buildId)</code-block>
+            <code-block language="JavaScript">
+              /**
+               * @param {string | Object} value - Page path or virtual page object.
+               * @param {string} buildId - The current build ID.
+               */
+              await app.addRenderQueue(value, buildId)</code-block>
 
             <h2 id="create-component">Create Component</h2>
             <p>Imperatively creates a component element for inclusion in the AST.</p>
 
-            <code-block language="JavaScript">/**
-         * @param {ComponentElementOptions} options
-         * @returns {Promise&lt;CoraliteAnyNode | void&gt;}
-         */
-        await app.createComponentElement(options)</code-block>
+            <code-block language="JavaScript">
+              /**
+               * @param {ComponentElementOptions} options
+               * @returns {Promise&lt;CoraliteAnyNode | void&gt;}
+               */
+              await app.createComponentElement(options)</code-block>
 
             <h2 id="write-file">Write File</h2>
             <p>Writes a file to the output directory and automatically registers it for the build cleanup whitelist. This is the recommended way for plugins to generate additional assets.</p>
 
-            <code-block language="JavaScript">/**
-         * @param {string} dest - Relative path within the output directory.
-         * @param {string | Buffer} content - The file content.
-         * @param {object} [options] - Node.js writeFile options.
-         * @returns {Promise&lt;string&gt;} The absolute path to the written file.
-         */
-        await app.writeFile('my-asset.json', JSON.stringify(data))</code-block>
+            <code-block language="JavaScript">
+              /**
+               * @param {string} dest - Relative path within the output directory.
+               * @param {string | Buffer} content - The file content.
+               * @param {object} [options] - Node.js writeFile options.
+               * @returns {Promise&lt;string&gt;} The absolute path to the written file.
+               */
+              await app.writeFile('my-asset.json', JSON.stringify(data))</code-block>
 
             <h2 id="track-output-file">Track Output File</h2>
             <p>Manually registers a file path to be preserved during the build cleanup phase. This is useful for files generated by external tools or complex plugin logic that doesn't use <code>app.writeFile</code>.</p>
 
-            <code-block language="JavaScript">/**
-         * @param {string} path - Absolute path to the file.
-         */
-        app.trackOutputFile(absolutePath)</code-block>
+            <code-block language="JavaScript">
+              /**
+               * @param {string} path - Absolute path to the file.
+               */
+              app.trackOutputFile(absolutePath)</code-block>
 
             <h3 id="get-tracked-output-files">Get Tracked Output Files</h3>
             <p>Retrieves an array of all currently registered output file paths.</p>
 
-            <code-block language="JavaScript">/**
-         * @returns {string[]}
-         */
-        app.getTrackedOutputFiles()</code-block>
+            <code-block language="JavaScript">
+              /**
+               * @returns {string[]}
+               */
+              app.getTrackedOutputFiles()</code-block>
       </div>
 
       <div class="lesson-navigation">

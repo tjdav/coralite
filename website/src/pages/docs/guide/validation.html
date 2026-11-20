@@ -104,36 +104,39 @@
               Execute 1-shot AST auto-fixing across your workspace using `coralite fix` or domain-specific commands:
             </p>
 
-            <code-block language="bash"># Auto-fix all workspace components, pages, and plugins
-        coralite fix
+            <code-block language="bash">
+              # Auto-fix all workspace components, pages, and plugins
+              coralite fix
 
-        # Preview proposed fixes in unified colorized diff format without modifying disk
-        coralite fix --dry-run
+              # Preview proposed fixes in unified colorized diff format without modifying disk
+              coralite fix --dry-run
 
-        # Migrate page definePage({ ... }) configuration to flat named exports
-        coralite fix --migrate-pages
+              # Migrate page definePage({ ... }) configuration to flat named exports
+              coralite fix --migrate-pages
 
-        # Auto-fix components directly
-        coralite validate-components --fix</code-block>
+              # Auto-fix components directly
+              coralite validate-components --fix</code-block>
 
             <h2 id="4-ai-pair-programming-with-init-agent">4. AI Pair-Programming with init-agent</h2>
             <p>
               Scaffold zero-token rule files for AI coding assistants (Claude Code, Cursor, GitHub Copilot) to prevent hallucinations and ensure code compliance from the first prompt:
             </p>
 
-            <code-block language="bash"># Scaffold AGENTS.md in repo root
-        coralite init-agent
+            <code-block language="bash">
+              # Scaffold AGENTS.md in repo root
+              coralite init-agent
 
-        # Scaffold AGENTS.md plus .cursor/rules/coralite.mdc and .claude/AGENTS.md
-        coralite init-agent --cursor --claude</code-block>
+              # Scaffold AGENTS.md plus .cursor/rules/coralite.mdc and .claude/AGENTS.md
+              coralite init-agent --cursor --claude</code-block>
 
             <h2 id="5-strict-ci-quality-gates">5. Strict CI Quality Gates</h2>
             <p>
               Integrate Coralite's strict audit into your continuous integration pipeline to guarantee zero warnings or dead code in production builds:
             </p>
 
-            <code-block language="bash"># Strict workspace check (fails build if any errors or unused symbols exist)
-        coralite check --strict --coverage</code-block>
+            <code-block language="bash">
+              # Strict workspace check (fails build if any errors or unused symbols exist)
+              coralite check --strict --coverage</code-block>
       </div>
 
       <div class="lesson-navigation">
