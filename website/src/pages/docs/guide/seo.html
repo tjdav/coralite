@@ -128,17 +128,17 @@
             server: {
               async onAfterBuild ({ app }) {
                 const pages = app.pages.list || []
-                let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-                xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+                let xml = '&lt;?xml version="1.0" encoding="UTF-8"?&gt;\n'
+                xml += '&lt;urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"&gt;\n'
 
                 for (const page of pages) {
                   const loc = `${siteUrl}${page.routePath}`
-                  xml += '  <url>\n'
-                  xml += `    <loc>${loc}</loc>\n`
-                  xml += '  </url>\n'
+                  xml += '  &lt;url&gt;\n'
+                  xml += `    &lt;loc&gt;${loc}&lt;/loc&gt;\n`
+                  xml += '  &lt;/url&gt;\n'
                 }
 
-                xml += '</urlset>\n'
+                xml += '&lt;/urlset&gt;\n'
                 await app.writeFile('sitemap.xml', xml)
               }
             }
@@ -161,19 +161,19 @@
             server: {
               async onAfterBuild ({ app }) {
                 const posts = app.collections?.posts || []
-                let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-                xml += '<rss version="2.0">\n  <channel>\n'
-                xml += `    <title>${options.title || 'My Blog'}</title>\n`
-                xml += `    <link>${siteUrl}</link>\n`
+                let xml = '&lt;?xml version="1.0" encoding="UTF-8"?&gt;\n'
+                xml += '&lt;rss version="2.0"&gt;\n  &lt;channel&gt;\n'
+                xml += `    &lt;title&gt;${options.title || 'My Blog'}&lt;/title&gt;\n`
+                xml += `    &lt;link&gt;${siteUrl}&lt;/link&gt;\n`
 
                 for (const post of posts) {
-                  xml += '    <item>\n'
-                  xml += `      <title>${post.title}</title>\n`
-                  xml += `      <link>${siteUrl}${post.path}</link>\n`
-                  xml += '    </item>\n'
+                  xml += '    &lt;item&gt;\n'
+                  xml += `      &lt;title&gt;${post.title}&lt;/title&gt;\n`
+                  xml += `      &lt;link&gt;${siteUrl}${post.path}&lt;/link&gt;\n`
+                  xml += '    &lt;/item&gt;\n'
                 }
 
-                xml += '  </channel>\n</rss>\n'
+                xml += '  &lt;/channel&gt;\n&lt;/rss&gt;\n'
                 await app.writeFile('feed.xml', xml)
               }
             }

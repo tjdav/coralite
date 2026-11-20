@@ -57,13 +57,13 @@
         <h2 id="typescript-signature">TypeScript Signature</h2>
         <code-block language="typescript" filename="server.ts">
 export async function server (context: {
-  state: Record<string, any>;
+  state: Record&lt;string, any&gt;;
   route: CoraliteRoute;
   page?: CoralitePage;
   store?: CoraliteStore;
   signal: AbortSignal;
   // plus any ubiquitous plugin context
-}): Promise<Record<string, any> | void>
+}): Promise&lt;Record&lt;string, any&gt; | void&gt;
         </code-block>
 
         <h2 id="build-time-only">Build-Time Only</h2>

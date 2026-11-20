@@ -56,14 +56,14 @@
       <div class="lesson-body">
         <h2 id="typescript-signature">TypeScript Signature</h2>
         <code-block language="typescript" filename="attributes.ts">
-export const attributes: Record<string, {
+export const attributes: Record&lt;string, {
   type: StringConstructor | NumberConstructor | BooleanConstructor;
   default?: any;
   required?: boolean;
   reflect?: boolean;
-  transform?: (val: any) => any;
-  validate?: (val: any) => boolean | string;
-}>
+  transform?: (val: any) =&gt; any;
+  validate?: (val: any) =&gt; boolean | string;
+}&gt;
         </code-block>
 
         <h2 id="the-6-step-execution-pipeline">The 6-Step Execution Pipeline</h2>
@@ -102,7 +102,7 @@ export const attributes: Record<string, {
 
         <h2 id="allowed-types">Allowed Types</h2>
         <table class="types-table">
-          <th scope="col"ead>
+          <th scope="col">
             <tr><th scope="col">Type</th><th scope="col">Coercion Behavior</th><th scope="col">Reflection Behavior</th></tr>
           </thead>
           <tbody>
