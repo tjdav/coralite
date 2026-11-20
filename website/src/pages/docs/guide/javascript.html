@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="JavaScript in Coralite: Components &amp; State"
-    description="Deep dive into Coralite's client-side JavaScript capabilities. Learn to build interactive components using defineComponent, manage state, access DOM refs"
+    description="How component client() blocks work: flat named exports, reactive state, refs, observers, events, async getters and lazy imports."
     section="Docs"></page-meta>
 </head>
 <body>
@@ -28,224 +28,208 @@
           <h1>Client-Side JavaScript</h1>
           <ui-badge variant="cyan">Guide</ui-badge>
         </div>
-        <p class="subhead">Deep dive into Coralite's client-side JavaScript capabilities. Learn to build interactive components using defineComponent, manage state, access DOM refs, and handle data flow from server to client.</p>
+        <p class="subhead">How component <code>client()</code> blocks work: flat named exports, reactive state, refs, observers, events and the browser lifecycle.</p>
       </div>
 
       <div class="lesson-body">
         <p>
-              Coralite's component system allows you to bundle client-side logic directly with your HTML templates using the
-              <code>defineComponent</code> helper. This guide explains how to create interactive components, manage data flow,
-              and access DOM elements using the "Flat Options" API.
-            </p>
+          Client logic lives in a component's <code>&lt;script type="module"&gt;</code> block. The compiler reads top-level named exports, so there is no wrapper function and no configuration object around them. The browser receives only the blocks that need to run there.
+        </p>
 
-            <div class="doc-callout doc-callout--info">
-              <strong>Philosophy: Components as Logic Containers</strong>
-              <p>
-                In Coralite, standard <code>.html</code> pages should remain as declarative consumers. All imperative logic, DOM manipulation, and state management should be reserved for the <code>client</code> block within a component. Avoid using <code>&lt;script&gt;</code> tags in pages to interact with components.
-              </p>
-            </div>
+        <div class="doc-callout doc-callout--info">
+          <strong>Pages orchestrate, components encapsulate.</strong>
+          <p>
+            A page may have its own <code>client()</code> for document-level concerns such as shortcuts or analytics, but it must not reach into a component's DOM. Cross-component behavior belongs in the components that own it, or in a parent component that coordinates them.
+          </p>
+        </div>
 
-            <h2 id="the-definecomponent-helper">The defineComponent Helper</h2>
+        <h2 id="the-component-module">The component module</h2>
 
-            <p>
-              The <code>defineComponent</code> function is the core of Coralite's component logic. It separates server-side data
-              fetching and attribute coercion from client-side interactivity using four strictly isolated blocks.
-            </p>
+        <p>
+          A component declares behavior with named exports. Handlers are <code>export function</code>; configuration is <code>export const</code>.
+        </p>
 
-            <code-block language="javascript">
-              import { defineComponent } from 'coralite'
-              import db from 'node:database' // Stripped from client bundle
+        <code-block language="html" filename="src/components/counter-button.html">
+&lt;template id="counter-button"&gt;
+  &lt;button ref="button" type="button"&gt;
+    Clicked {{ count }} times
+  &lt;/button&gt;
+&lt;/template&gt;
 
-              export default defineComponent({
-                // Inputs: Coerced from HTML attributes
-                attributes: {
-                    initialCount: { type: Number, default: 0 }
-                },
+&lt;script type="module"&gt;
+  export const attributes = {
+    initialCount: { type: Number, default: 0 }
+  }
 
-                // Server-Side: Asynchronous data fetching (runs at build-time)
-                async server(context) {
-                    const user = await db.users.findFirst();
-                    return { userName: user.name }
-                },
+  export async function server () {
+    const store = await import('./store.js')
+    return { user: await store.currentUser() }
+  }
 
-                // Derived State: Pure functions (Read-Only)
-                getters: {
-                    greeting: ({ state }) => `Hello, ${state.userName}!`
-                },
+  export const getters = {
+    greeting: ({ state }) =&gt; `Hello, ${state.user.name}`
+  }
 
-                // Client-Side: Controller (Read/Write)
-                client({ state, signal, refs, observe, emit, ...pluginContext }) {
-                    console.log('Component mounted for user:', state.userName)
+  export function client ({ state, refs, signal, emit, observe }) {
+    state.count = state.initialCount
 
-                    // Register an observer to react to count changes
-                    observe('initialCount', (newVal, oldVal) => {
-                        console.log(`Count changed from ${oldVal} to ${newVal}`)
-                    })
+    observe('count', (value, previous) =&gt; {
+      console.log('count changed', previous, '→', value)
+    })
 
-                    const btn = refs('btn')
-                    btn.addEventListener('click', () => {
-                        state.initialCount++; // Reactive mutation
-                        emit('count-updated', { count: state.initialCount }); // Dispatch custom event
-                    }, { signal });
-                }
-              })
-            </code-block>
+    refs('button').addEventListener('click', () =&gt; {
+      state.count++
+      emit('count-updated', { count: state.count })
+    }, { signal })
+  }
+&lt;/script&gt;
+        </code-block>
 
-            <h2 id="the-client-context">The Client Context</h2>
+        <p>
+          The legacy <code>export default defineComponent({ ... })</code> wrapper still loads, but new components use the flat form. The wrapper adds no runtime behavior.
+        </p>
 
-            <p>
-              The <code>client</code> block is executed in the browser when the component mounts. It receives a flattened context object via destructuring:
-            </p>
+        <h2 id="the-client-context">The client context</h2>
 
-            <ul>
-                <li><code>state</code>: A <strong>Read/Write Reactive Proxy</strong>. This unified state contains state from <code>attributes</code>, <code>server</code> state, and <code>getters</code>. Any mutation here triggers a re-render and re-evaluates getters.</li>
-                <li><code>observe</code>: A function <code>observe(key, callback)</code> to register explicit side-effects on state changes. The callback receives <code>(newValue, oldValue)</code>. Observers are automatically cleaned up on component unmount.</li>
-                <li><code>emit</code>: A helper function <code>emit(name, detail?, options?)</code> to dispatch custom DOM events from the host custom element. Configured with <code>bubbles: true</code> and <code>composed: true</code> by default.</li>
-                <li><code>refs</code>: A helper function to query DOM elements within the component's root that have a <code>ref</code> attribute.</li>
-                <li><code>signal</code>: An <code>AbortSignal</code> tied to the component's lifecycle. Always use this to clean up event listeners or abort pending fetch requests when the component unmounts.</li>
-                <li><code>root</code>: The root HTML element instance of the Web Component.</li>
-                <li><code>instanceId</code>: A unique identifier string for this specific component instance.</li>
-            </ul>
+        <p>
+          <code>client()</code> runs once per mounted instance and receives a single context object. Destructure what the block needs.
+        </p>
 
-            <div class="doc-callout doc-callout--warning">
-              <strong>Imperative custom elements need tracked client code</strong>
-              <p>
-                Create custom elements in scanned client code: component/page <code>client()</code> or plugin client functions.
-                Coralite rewrites imperative creation there and records literal tags for dependency tracking. Dynamically
-                imported helper modules are bundled but not scanned, so do not create custom elements inside them. Production
-                builds do not patch DOM APIs; development and testing do, so testing can hide missing production dependency paths.
-              </p>
-              <p>
-                See the <a href="/docs/reference/imperative-components/">Imperative Components Reference</a> for creation
-                paths, runtime helpers, upgrade timing, ownership, styling, and troubleshooting.
-              </p>
-            </div>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>state</code></td><td>Read/write reactive proxy. Writes schedule a render and re-evaluate dependent getters.</td></tr>
+              <tr><td><code>refs</code></td><td>Resolves <code>ref="name"</code> inside the instance, including owned slot content.</td></tr>
+              <tr><td><code>signal</code></td><td>Aborts on disconnect. Pass it to listeners, fetches and timers.</td></tr>
+              <tr><td><code>observe</code></td><td>Runs a side-effect when a state key changes. Returns a disposer.</td></tr>
+              <tr><td><code>emit</code></td><td>Dispatches a bubbling, composed <code>CustomEvent</code> from the host.</td></tr>
+              <tr><td><code>updateComplete</code></td><td>Resolves after the current update flush writes the DOM. Do not await it at the top of the block.</td></tr>
+              <tr><td><code>errors</code></td><td>Live attribute validation errors from <code>state.errors</code>.</td></tr>
+              <tr><td><code>instanceId</code>, <code>root</code>, <code>route</code></td><td>Identity and location for the instance.</td></tr>
+              <tr><td>form helpers</td><td><code>internals</code>, <code>setFormValue</code>, <code>setValidity</code>, <code>checkValidity</code>, <code>reportValidity</code>, <code>onFormReset</code>, <code>onFormDisabled</code>, <code>onFormRestore</code>. Effective when the component exports <code>formControl = true</code>. See <a href="/reference/form-control/">formControl</a>.</td></tr>
+              <tr><td>plugin keys</td><td><code>client.context</code> from registered plugins is merged onto the context.</td></tr>
+            </tbody>
+          </table>
+        </div>
 
-            <h2 id="state-observation-side-effects-the-observe-pattern">State Observation & Side-Effects (the observe Pattern)</h2>
+        <div class="doc-callout doc-callout--warning">
+          <strong>Custom elements belong in scanned client code</strong>
+          <p>
+            Create custom elements in component or page <code>client()</code>, or in plugin client functions. Coralite rewrites literal creation there and records the tags for dependency tracking. Dynamically imported helper modules are bundled but not scanned, so creation inside them needs the runtime fallback.
+          </p>
+          <p>
+            See the <a href="/docs/reference/imperative-components/">Imperative Components Reference</a> for ownership, upgrade timing and troubleshooting.
+          </p>
+        </div>
 
-            <p>
-              While Coralite components update their templates automatically when state changes, you often need to perform imperative side-effects (such as updating external DOM libraries, sending analytics, or making network requests) in response to state updates. The <code>observe</code> function provides a clean, declarative pattern for handling these state changes.
-            </p>
+        <h2 id="state-observation-side-effects-the-observe-pattern">State observation</h2>
 
-            <h3 id="registering-observers">Registering Observers</h3>
+        <p>
+          Templates update automatically. <code>observe</code> is for the effects the template cannot express: canvas repaints, third-party widgets, analytics, or imperative DOM updates.
+        </p>
 
-            <p>
-              Inside the <code>client</code> function, you can call <code>observe(key, callback)</code>.
-            </p>
+        <ul>
+          <li><strong>Synchronous state:</strong> the callback runs when the observed value changes and the new value differs from the previous one.</li>
+          <li><strong>Async getters:</strong> the callback runs when the promise resolves. Stale resolutions are discarded if state changes while a resolution is in flight.</li>
+          <li><strong>Mutation is forbidden:</strong> assigning state inside an observer can loop. Use a getter for derived values; development builds report <code>CORALITE-E302</code>.</li>
+          <li><strong>Cleanup is automatic:</strong> observers are removed at disconnect. The returned disposer is for conditional teardown.</li>
+        </ul>
 
-            <ul>
-              <li>
-                <strong>Synchronous State Properties:</strong> For primitive or synchronous state properties, the callback is invoked synchronously whenever the state property matching the <code>key</code> is modified and its new value differs from its old value.
-              </li>
-              <li>
-                <strong>Async Getters:</strong> For asynchronous getters (getters returning Promises), the callback fires asynchronously after the Promise resolves, receiving <code>(resolvedNewVal, resolvedOldVal)</code>. Coralite tracks dependencies before and after <code>await</code> boundaries and automatically discards stale in-flight resolutions if newer state changes occur before resolution.
-              </li>
-            </ul>
+        <code-block language="javascript" filename="observe.js">
+export const getters = {
+  results: async ({ state, signal }) =&gt; {
+    const response = await fetch(`/api/search?q=${state.query}`, { signal })
+    return response.json()
+  }
+}
 
-            <code-block language="javascript">
-              export default defineComponent({
-                getters: {
-                  async searchResults({ state, signal }) {
-                    const res = await fetch(`/api/search?q=${state.query}`, { signal })
-                    return res.json()
-                  }
-                },
-                client({ state, observe }) {
-                  // Observe synchronous properties
-                  observe('score', (newVal, oldVal) => {
-                    console.log(`Score changed from ${oldVal} to ${newVal}`)
-                  })
+export function client ({ state, observe }) {
+  observe('score', (value, previous) =&gt; {
+    console.log(`score changed from ${previous} to ${value}`)
+  })
 
-                  // Observe async getters (receives resolved values)
-                  observe('searchResults', (results, oldResults) => {
-                    console.log('Search results updated:', results)
-                  })
-                }
-              })
-            </code-block>
+  observe('results', (results) =&gt; {
+    console.log('search results updated', results)
+  })
+}
+        </code-block>
 
-            <h3 id="best-practices-safeguards">Best Practices & Safeguards</h3>
+        <p>
+          Getters declared <code>async</code> are skipped during SSR, so the token renders empty in the initial HTML and resolves in the browser. Use them for interaction-driven data, not for content that must be present before JavaScript runs.
+        </p>
 
-            <ul>
-              <li>
-                <strong>Avoid Mutating State Inside Observers:</strong> Modifying state properties inside an observer callback can trigger infinite reactivity loops. If you need to compute derived state, always use the <code>getters</code> block of <code>defineComponent</code> instead.
-                <p>
-                  In development or testing environments, Coralite will log a warning if it detects a state mutation during observer execution, and will reject direct cyclic mutations to prevent browser freezes:
-                </p>
-                <code-block language="text">
-                  [Coralite Warning]: Cyclic state mutation detected inside an observe() callback. The observer for "score" mutates "score", which it depends on. This causes an infinite reactivity loop. Use getters for derived state instead.
-                </code-block>
-              </li>
-              <li>
-                <strong>Dual Circuit Breaker:</strong> Coralite includes a dual circuit breaker (50 consecutive flushes or 100 flushes in 1s) to catch indirect loops and unblock the UI thread in production and development environments.
-              </li>
-              <li>
-                <strong>Automatic Lifecycle Cleanup:</strong> You do not need to manually unregister observers. Coralite automatically cleans up all registered observers when the component is disconnected from the DOM to prevent memory leaks.
-              </li>
-            </ul>
+        <h2 id="native-reactivity-performance">Reactivity and performance</h2>
 
-            <h2 id="native-reactivity-performance">Native Reactivity & Performance</h2>
+        <p>
+          Coralite uses a lazy deep proxy. Nested objects and arrays become reactive the first time they are read, so a large dataset does not pay the wrapping cost until a component touches it.
+        </p>
 
-            <p>
-              Coralite uses a <strong>Lazy Deep Proxy</strong> system. Unlike frameworks that recursively make your entire data structure reactive upfront, Coralite only pays the performance cost for nested objects the exact moment they are accessed.
-            </p>
+        <p>
+          Templates are dumb on purpose. Instead of a Virtual DOM, Coralite replaces flat tokens directly and updates only the bindings that depend on the changed state. That is the same design decision described in <a href="/docs/guide/core-concepts/">Core Concepts</a>.
+        </p>
 
-            <p>
-                Additionally, Coralite follows the <strong>Smart State, Dumb Template</strong> philosophy. Instead of a Virtual DOM, Coralite performs direct token replacement (<code>{{ key }}</code>) in the template, making updates extremely fast and memory-efficient.
-            </p>
+        <h2 id="using-external-libraries">Using external libraries</h2>
 
-            <h2 id="using-external-libraries">Using External Libraries</h2>
+        <p>
+          Load browser dependencies inside <code>client()</code>. Local and package imports are bundled; stylesheets use the same dynamic import and resolve to the injected link.
+        </p>
 
-            <p>
-              Because Coralite leverages standard ESM, you can use dynamic <code>import()</code> statements directly inside your <code>client</code> function to load client-side JavaScript dependencies and lazy dependency stylesheets (<code>.css</code>). Local and npm package imports are automatically detected by the build tool and bundled for the browser.
-            </p>
+        <code-block language="javascript" filename="lazy-import.js">
+export async function client ({ refs, signal }) {
+  const [, { default: confetti }] = await Promise.all([
+    import('canvas-confetti/confetti.css', { signal }),
+    import('https://esm.sh/canvas-confetti@1.6.0')
+  ])
 
-            <code-block language="javascript">
-              export async function client({ state, signal, refs }) {
-                  const [, { default: confetti }] = await Promise.all([
-                      import('canvas-confetti/confetti.css', { signal }),
-                      import('https://esm.sh/canvas-confetti@1.6.0')
-                  ])
+  refs('celebrate').addEventListener('click', () =&gt; {
+    confetti()
+  }, { signal })
+}
+        </code-block>
 
-                  const btn = refs('celebrateBtn')
-                  btn.addEventListener('click', () => {
-                      confetti();
-                  }, { signal })
-              }
-            </code-block>
+        <p>
+          Module-scope imports are not available inside <code>client()</code>. Referencing one is <code>CORALITE-E301</code>. Node globals such as <code>process</code> are <code>CORALITE-E304</code>.
+        </p>
 
-            <h2 id="component-communication-event-dispatching">Component Communication & Event Dispatching</h2>
+        <h2 id="component-communication-event-dispatching">Component communication</h2>
 
-            <p>
-              Coralite provides a built-in <code>emit(name, detail?, options?)</code> helper on <code>CoraliteScriptContext</code> to send custom events from child components to parent components or external DOM listeners.
-            </p>
+        <p>
+          <code>emit(name, detail?, options?)</code> creates a native <code>CustomEvent</code> on the host with <code>bubbles: true</code> and <code>composed: true</code>. Parent components listen with a ref, and pages can listen at the document level.
+        </p>
 
-            <p>
-              When calling <code>emit('user-updated', { name: 'Alice' })</code>, Coralite automatically constructs a native <code>CustomEvent</code> and dispatches it from the component's host element with <code>bubbles: true</code> and <code>composed: true</code> enabled by default. This ensures the event bubbles seamlessly out of Shadow/Light DOM boundaries to parent containers.
-            </p>
+        <code-block language="javascript" filename="child.js">
+export function client ({ state, emit }) {
+  emit('user-updated', { id: state.userId, name: state.userName })
+}
+        </code-block>
 
-            <code-block language="javascript">
-                // Inside a child component's client block
-                client({ state, emit }) {
-                    // Emits a 'user-updated' CustomEvent from host element with bubbles: true & composed: true
-                    emit('user-updated', { id: state.userId, name: state.userName });
-                }
-            </code-block>
+        <code-block language="javascript" filename="parent.js">
+export function client ({ refs, signal }) {
+  const child = refs('userCard')
 
-            <p>
-              Parent components can listen for child events by targeting child element references using <code>refs</code> inside their own <code>client</code> block:
-            </p>
+  child.addEventListener('user-updated', (event) =&gt; {
+    console.log('user updated', event.detail.name)
+  }, { signal })
+}
+        </code-block>
 
-            <code-block language="javascript">
-                // Inside a parent component's client block
-                client({ signal, refs }) {
-                    const childComponent = refs('childUserCard');
-                    
-                    childComponent.addEventListener('user-updated', (event) => {
-                        console.log('User updated in child component:', event.detail.name);
-                    }, { signal });
-                }
-            </code-block>
+        <p>
+          <code>emit</code> returns <code>false</code> when a listener cancels a cancelable event. Pass <code>{ cancelable: true }</code> if a parent may veto the action.
+        </p>
+
+        <h2 id="next">Next</h2>
+
+        <ul>
+          <li><a href="/reference/client/">The client reference</a> for the full signature and diagnostics.</li>
+          <li><a href="/docs/guide/dom-refs/">Managing the DOM</a> for refs in practice.</li>
+          <li><a href="/docs/guide/authoring/">Authoring Pattern</a> for the export and import rules.</li>
+        </ul>
       </div>
 
       <div class="lesson-navigation">
@@ -257,12 +241,13 @@
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#the-definecomponent-helper">The defineComponent Helper</a>
-        <a href="#the-client-context">The Client Context</a>
-        <a href="#state-observation-side-effects-the-observe-pattern">State Observation & Side-Effects (the observe Pattern)</a>
-        <a href="#native-reactivity-performance">Native Reactivity & Performance</a>
-        <a href="#using-external-libraries">Using External Libraries</a>
-        <a href="#component-communication-event-dispatching">Component Communication & Event Dispatching</a>
+        <a class="active" href="#the-component-module">The component module</a>
+        <a href="#the-client-context">The client context</a>
+        <a href="#state-observation-side-effects-the-observe-pattern">State observation</a>
+        <a href="#native-reactivity-performance">Reactivity and performance</a>
+        <a href="#using-external-libraries">Using external libraries</a>
+        <a href="#component-communication-event-dispatching">Component communication</a>
+        <a href="#next">Next</a>
       </div>
     </div>
   </docs-layout>

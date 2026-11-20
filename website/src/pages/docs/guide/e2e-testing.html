@@ -179,18 +179,15 @@
               </template>
 
               &lt;script type="module"&gt;
-                import { defineComponent } from 'coralite'
+                export const attributes = {
+                  userId: String
+                }
 
-                export default defineComponent({
-                  attributes: {
-                    userId: String
-                  },
-                  async server ({ state }) {
-                    // In production/development, this would perform a real database lookup:
-                    const user = await db.fetchUser(state.userId)
-                    return { name: user.name }
-                  }
-                })
+                export async function server ({ state }) {
+                  const { db } = await import('../../lib/database.js')
+                  const user = await db.fetchUser(state.userId)
+                  return { name: user.name }
+                }
               &lt;/script&gt;
             </code-block>
 

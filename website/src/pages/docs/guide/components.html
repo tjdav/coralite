@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="Coralite Components: Static &amp; Dynamic Web Components"
-    description="Master Coralite components. Learn the difference between static and dynamic components, how to use templates, data binding, and the defineComponent plugin."
+    description="How Coralite components work: static templates, dynamic named exports, data binding, slots, refs and reactive state."
     section="Docs"></page-meta>
 </head>
 <body>
@@ -28,7 +28,7 @@
           <h1>Components</h1>
           <ui-badge variant="cyan">Guide</ui-badge>
         </div>
-        <p class="subhead">Master Coralite components. Learn the difference between static and dynamic components, how to use templates, data binding, and the defineComponent plugin.</p>
+        <p class="subhead">How Coralite components work: static templates, dynamic named exports, data binding, slots, refs and reactive state.</p>
       </div>
 
       <div class="lesson-body">
@@ -231,7 +231,7 @@
 
             <h4 id="1-attributes-inputs">1. Attributes (Inputs)</h4>
             <p>Attributes are the "props" of your component. Coralite supports type coercion, enum validation (<code>values</code> / array shorthand), mandatory requirements (<code>required: true</code>), synchronous transformations (<code>transform</code>), and custom validation predicates (<code>validate</code>).</p>
-            <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data. For full details on the 6-step attribute execution pipeline, see the <a href="/docs/reference/define-component.html#1-attributes">Component API Reference</a>.</p>
+            <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data. For full details on the 6-step attribute execution pipeline, see the <a href="/reference/attributes/">attributes reference</a>.</p>
             <code-block language="javascript">
         export const attributes = {
           // Type shorthand & array shorthand (allowed enum values)
@@ -279,27 +279,30 @@
             </code-block>
 
             <h4 id="4-style-reactive-css-properties">4. Style (Reactive CSS Properties)</h4>
-            <p>The <code>style</code> declaration allows you to declaratively bind reactive CSS variables (CSS Custom Properties) and standard inline CSS properties directly to the component's host custom element tag. Style functions receive <code>state</code> directly and must be synchronous.</p>
+            <p>The <code>style</code> declaration binds reactive CSS variables and inline properties to the component's host element. Style functions receive the context object and must be synchronous.</p>
             <code-block language="javascript">
         export const style = {
-          '--accent-color': (state) => state.theme === 'dark' ? '#38bdf8' : '#0284c7',
-          opacity: (state) => state.isVisible ? 1 : 0
+          '--accent-color': ({ state }) =&gt; state.theme === 'dark' ? '#38bdf8' : '#0284c7',
+          opacity: ({ state }) =&gt; state.isVisible ? 1 : 0
         }
             </code-block>
+            <p>Returning <code>null</code>, <code>undefined</code>, <code>false</code> or an empty string removes the declaration. See the <a href="/reference/style/">style reference</a> for normalization and the <code>CORALITE-E105</code> migration from the old <code>(state)</code> shape.</p>
 
             <h4 id="5-slots-light-dom-transformation">5. Slots (Light DOM Transformation)</h4>
-            <p>The <code>slots</code> declaration allows you to intercept and transform the Light DOM nodes passed to your component before they are rendered.</p>
+            <p>The <code>slots</code> declaration transforms the Light DOM nodes passed to your component before they are rendered. The function receives the context object, not positional arguments.</p>
             <code-block language="javascript">
         export const slots = {
-          default: (nodes, state) => {
-            // Wrap all nodes in a div if count is even
-            if (state.count % 2 === 0) {
-              return `<div class="wrapper">${nodes.map(n => n.outerHTML).join('')}</div>`;
-            }
-            return nodes;
+          default: ({ nodes }) =&gt; {
+            return nodes.filter((node) =&gt; {
+              if (node.nodeType !== 1) {
+                return true
+              }
+              return node.hasAttribute('data-visible')
+            })
           }
         }
             </code-block>
+            <p>Return <code>undefined</code> to leave the projection untouched, an array or node to replace it, or <code>null</code> to remove it so fallback content renders. See the <a href="/reference/slots/">slots reference</a>.</p>
 
             <h3 id="referencing-elements-refs">Referencing Elements (Refs)</h3>
 
@@ -389,7 +392,7 @@
               <li><strong>Fieldset Cascading:</strong> Ancestor <code>&lt;fieldset disabled&gt;</code> state automatically cascades into <code>state.disabled</code> and triggers <code>onFormDisabled</code>.</li>
             </ul>
 
-            <p>For complete details on host element properties (such as <code>el.name</code>, <code>el.form</code>, <code>el.validity</code>, and <code>el.checkValidity()</code>), see the <a href="/docs/reference/define-component.html#7-formassociated-form-associated-custom-elements">defineComponent API Reference</a>.</p>
+            <p>For complete details on host element properties (such as <code>el.name</code>, <code>el.form</code>, <code>el.validity</code>, and <code>el.checkValidity()</code>), see the <a href="/reference/form-control/">formControl reference</a>.</p>
 
             <h3 id="the-flow-of-state">The Flow of State</h3>
 
@@ -411,7 +414,7 @@
 
             <ul>
               <li><strong>Keep Templates Simple:</strong> Templates should only contain HTML and <code>{{ token }}</code> placeholders. Avoid complex logic in HTML.</li>
-              <li><strong>Boolean & ARIA Attribute Toggling:</strong> Native HTML boolean attributes (43 standard attributes) and <code>aria-*</code> attributes are automatically added or removed when bound to single state tokens. Learn more in the <a href="/docs/reference/define-component.html#native-html-boolean-attributes--wai-aria-auto-removal">Component API Reference</a>.</li>
+              <li><strong>Boolean & ARIA Attribute Toggling:</strong> Native HTML boolean attributes (43 standard attributes) and <code>aria-*</code> attributes are automatically added or removed when bound to single state tokens. Learn more in the <a href="/reference/attributes/#coercion">attributes reference</a>.</li>
               <li><strong>Prefer Primitives for Attributes:</strong> Only pass Strings, Numbers, and Booleans via attributes. Use <code>server</code> for complex objects.</li>
               <li><strong>Clean Up with AbortSignal:</strong> Always pass the <code>signal</code> to <code>addEventListener</code> or <code>fetch</code> inside your <code>client</code> to prevent memory leaks.</li>
             </ul>

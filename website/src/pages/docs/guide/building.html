@@ -36,7 +36,7 @@
 
             <h2 id="1-pure-ssg-default">1. Pure SSG (Default)</h2>
 
-            <p>By default, Coralite operates as a zero-JS Static Site Generator (SSG). During <code>coralite build</code>, every page in your <code>src/pages</code> directory is rendered to a static HTML file in <code>dist/</code>.</p>
+            <p>The default <code>coralite build</code> is static. Every page in <code>src/pages</code> renders to an HTML file in <code>dist/</code>, and client JavaScript is included only for components that declare it.</p>
 
             <p><strong>Best for:</strong> Blogs, documentation portals, marketing websites, content-driven publications, and e-commerce catalogs.</p>
 
@@ -73,7 +73,7 @@
 
             <h3 id="how-authentication-client-fetching-work">How Authentication &amp; Client Fetching Work</h3>
 
-            <p>Because Coralite is an SSG with zero server runtime at request time, there are no server-side HTTP request sessions or cookies available during page compilation. Authentication in Coralite is handled entirely on the client after hydration using standard browser APIs (such as session cookies, bearer tokens in <code>localStorage</code>, or HTTP-only cookies sent via <code>fetch</code>).</p>
+            <p>The default <code>coralite build</code> produces static output, so no request session exists while pages are compiled. Request-time rendering is opt-in through the library API (<code>coralite.build(url)</code>), and even then framework <code>server()</code> blocks do not receive request or response objects. Authentication belongs to the target: client-side session fetches for static web output, or a platform adapter that injects the signed-in user through plugin context.</p>
 
             <h3 id="example-user-profile-widget">Example: User Profile Widget</h3>
 
@@ -89,31 +89,29 @@
               &lt;/template&gt;
 
               &lt;script type="module"&gt;
-                import { defineComponent } from 'coralite'
+                export const getters = {
+                  userName: ({ state }) =&gt; state.user ? state.user.name : 'Guest',
+                  userEmail: ({ state }) =&gt; state.user ? state.user.email : 'Not signed in'
+                }
 
-                export default defineComponent({
-                  getters: {
-                    userName: ({ state }) => state.user ? state.user.name : 'Guest',
-                    userEmail: ({ state }) => state.user ? state.user.email : 'Not signed in'
-                  },
-                  async client ({ state, refs, signal }) {
-                    const statusEl = refs('status')
-                    try {
-                      const res = await fetch('/api/user', { signal })
-                      if (res.ok) {
-                        state.user = await res.json()
-                        statusEl.textContent = 'Authenticated'
-                        statusEl.classList.add('active')
-                      } else {
-                        statusEl.textContent = 'Unauthenticated'
-                      }
-                    } catch (err) {
-                      if (err.name !== 'AbortError') {
-                        statusEl.textContent = 'Failed to load user'
-                      }
+                export async function client ({ state, refs, signal }) {
+                  const statusEl = refs('status')
+
+                  try {
+                    const response = await fetch('/api/user', { signal })
+                    if (response.ok) {
+                      state.user = await response.json()
+                      statusEl.textContent = 'Authenticated'
+                      statusEl.classList.add('active')
+                    } else {
+                      statusEl.textContent = 'Unauthenticated'
+                    }
+                  } catch (error) {
+                    if (error.name !== 'AbortError') {
+                      statusEl.textContent = 'Failed to load user'
                     }
                   }
-                })
+                }
               &lt;/script&gt;
             </code-block>
 
