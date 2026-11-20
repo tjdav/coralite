@@ -5,36 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="formControl"
-    description="Opt-in integration with native HTML &amp;lt;form&amp;gt; submissions and constraint validations."
+    description="Opts a component into Form-Associated Custom Elements: native submission, reset, disabled propagation and constraint validation."
     section="Reference"></page-meta>
 </head>
 <body>
   <site-header></site-header>
 
   <docs-layout>
-    <div slot="sidebar">
-      <ui-accordion title="Component API" open>
-        <ui-nav-link href="/reference/attributes/">attributes</ui-nav-link>
-        <ui-nav-link href="/reference/client/">client</ui-nav-link>
-        <ui-nav-link href="/reference/server/">server</ui-nav-link>
-        <ui-nav-link href="/reference/getters/">getters</ui-nav-link>
-        <ui-nav-link href="/reference/style/">style</ui-nav-link>
-        <ui-nav-link href="/reference/slots/">slots</ui-nav-link>
-        <ui-nav-link href="/reference/form-control/" active>formControl</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Page API">
-        <ui-nav-link href="/reference/page-api/">paths & definePage</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Plugin API">
-        <ui-nav-link href="/reference/plugins/">definePlugin</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="CLI">
-        <ui-nav-link href="/reference/cli/">commands</ui-nav-link>
-      </ui-accordion>
-    </div>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
 
     <div slot="content">
       <ui-breadcrumb>
@@ -50,105 +28,198 @@
           <h1>formControl</h1>
           <ui-badge variant="cyan">Stable</ui-badge>
         </div>
-        <p class="subhead">Opt-in integration with native HTML &lt;form&gt; submissions and constraint validations.</p>
+        <p class="subhead">Turns a component into a real form control: it participates in submission, reset, disabled state and the browser's validation UI.</p>
       </div>
 
       <div class="lesson-body">
-        <h2 id="typescript-signature">TypeScript Signature</h2>
+        <div class="doc-callout doc-callout--info">
+          <strong>Browser only.</strong>
+          <p>The flag is read at build time to emit the right module, but the behavior comes from <code>ElementInternals</code>, which only exists in the browser. During SSR the component renders its normal markup and the form helpers are absent.</p>
+        </div>
+
+        <h2 id="signature">Signature</h2>
+
         <code-block language="typescript" filename="form-control.ts">
-// Opt-in by exporting a boolean
-export const formControl: boolean = true
+export const formControl: boolean
+// legacy alias, still accepted
+export const formAssociated: boolean
         </code-block>
 
-        <h2 id="native-form-association">Native Form Association</h2>
-        <p>Because Coralite uses Light DOM, your custom elements can participate in standard HTML forms. By exporting <code>export const formControl = true</code>, Coralite attaches an <code>ElementInternals</code> object to the custom element, making it a true Form-Associated Custom Element (FACE).</p>
+        <p><code>formControl</code> wins when both are declared. The value must be a boolean; anything else is <a href="/reference/diagnostics/#coralite-e107"><code>CORALITE-E107</code></a>. There is no per-instance opt-in: the export applies to every host element of the component.</p>
 
-        <h2 id="the-form-hooks">The Form Hooks</h2>
-        <p>When <code>formControl</code> is enabled, the <code>client()</code> context receives additional helpers to synchronize your component's state with the form.</p>
+        <h2 id="helpers">Client helpers</h2>
 
-        <code-block language="javascript" filename="hooks.js">
-export async function client ({
-  state,
-  refs,
-  setFormValue,
-  setValidity,
-  onFormReset,
-  onFormDisabled,
-  onFormRestore,
-  signal
-}) {
-  // Sync initial state
+        <p>The <a href="/reference/client/">client context</a> always exposes these members, but they only have an effect when the component is form-associated. Without the flag, <code>internals</code> is <code>null</code> and development builds warn when <code>setFormValue</code> or <code>setValidity</code> is called.</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Member</th>
+                <th scope="col">Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>internals</code></td><td>The host <code>ElementInternals</code> instance.</td></tr>
+              <tr><td><code>setFormValue(value, state?)</code></td><td>Sets the value submitted with the form. The optional second argument is the state restored by the browser.</td></tr>
+              <tr><td><code>setValidity(flags?, message?, anchor?)</code></td><td>Sets the <code>ValidityStateFlags</code>, the message shown by the browser, and the element the message points at.</td></tr>
+              <tr><td><code>checkValidity()</code></td><td>Runs constraint validation without showing UI.</td></tr>
+              <tr><td><code>reportValidity()</code></td><td>Runs constraint validation and shows the browser's message.</td></tr>
+              <tr><td><code>validity</code></td><td>The current <code>ValidityState</code>.</td></tr>
+              <tr><td><code>validationMessage</code></td><td>The message the browser would show.</td></tr>
+              <tr><td><code>form</code></td><td>The associated <code>HTMLFormElement</code>, or <code>null</code> when the element is not inside a form.</td></tr>
+              <tr><td><code>onFormReset(callback)</code></td><td>Runs when the form is reset. Returns a disposer.</td></tr>
+              <tr><td><code>onFormDisabled(callback)</code></td><td>Receives <code>true</code> or <code>false</code> when a disabled ancestor form or fieldset changes.</td></tr>
+              <tr><td><code>onFormRestore(callback)</code></td><td>Receives the restored value and the mode, <code>'restore'</code> or <code>'autocomplete'</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="value-synchronization">Value synchronization</h2>
+
+        <p>The browser does not read component state. Call <code>setFormValue</code> whenever the submitted value changes, including once at mount, or the form submits the empty default. Keep the value in the same shape a native input would submit: a string, or a <code>File</code> / <code>FormData</code> for richer controls.</p>
+
+        <code-block language="javascript" filename="value.js">
+export const formControl = true
+export const attributes = { value: { type: String, default: '' } }
+
+export function client ({ state, refs, signal, setFormValue }) {
+  const input = refs('input')
   setFormValue(state.value)
 
-  // Bind input
-  refs('input').addEventListener('input', (e) => {
-    state.value = e.target.value
+  input.addEventListener('input', () =&gt; {
+    state.value = input.value
     setFormValue(state.value)
   }, { signal })
+}
+        </code-block>
 
-  // Handle form reset
-  onFormReset(() => {
+        <h2 id="validation">Validation</h2>
+
+        <p><code>setValidity</code> takes standard <code>ValidityStateFlags</code>: <code>valueMissing</code>, <code>typeMismatch</code>, <code>patternMismatch</code>, <code>tooLong</code>, <code>tooShort</code>, <code>rangeUnderflow</code>, <code>rangeOverflow</code>, <code>stepMismatch</code>, <code>badInput</code>, <code>customError</code>. An empty object clears the error.</p>
+
+        <code-block language="javascript" filename="validity.js">
+function syncValidity ({ state, refs, setValidity }) {
+  if (!state.value &amp;&amp; state.required) {
+    setValidity({ valueMissing: true }, 'This field is required.', refs('input'))
+    return
+  }
+
+  if (state.value.length &lt; 3) {
+    setValidity({ tooShort: true }, 'Use at least three characters.', refs('input'))
+    return
+  }
+
+  setValidity({})
+}
+        </code-block>
+
+        <p>The anchor element is what the browser focuses and scrolls to when it reports the error. Point it at the visible input inside the component, not at the host, otherwise the tooltip has nowhere to attach.</p>
+
+        <h2 id="reset-and-disabled">Reset and disabled</h2>
+
+        <p>A native reset does not know about state, so restore it yourself. Disabled propagation is the other half: a disabled fieldset must visibly disable the inner control, and that is not automatic for light-DOM markup.</p>
+
+        <code-block language="javascript" filename="form-events.js">
+export function client ({ state, refs, onFormReset, onFormDisabled }) {
+  const input = refs('input')
+
+  onFormReset(() =&gt; {
     state.value = ''
-    refs('input').value = ''
+    input.value = ''
+  })
+
+  onFormDisabled((disabled) =&gt; {
+    state.disabled = disabled
+    input.disabled = disabled
   })
 }
         </code-block>
 
-        <h2 id="constraint-validation">Constraint Validation</h2>
-        <p>You can use <code>setValidity</code> to integrate your component with the browser's native validation UI (e.g., the red outline or tooltip).</p>
+        <h2 id="restore">Restore</h2>
 
-        <code-block language="javascript" filename="validity.js">
-setValidity(
-  { valueMissing: true }, 
-  'This field is required.', 
-  refs('input') // The anchor element for the browser tooltip
-)
-        </code-block>
+        <p><code>onFormRestore</code> covers browser-driven restoration: history navigation and autofill. The mode tells you which one fired, so a component can re-run its own formatting after autofill instead of trusting the raw value.</p>
 
-        <h2 id="complete-example">Complete Example</h2>
-        <p>Here is how a custom input component wires up the full FACE lifecycle.</p>
-
-        <code-block language="html" filename="custom-input.html">
-<template id="custom-input">
-  <input ref="input" type="text" />
-</template>
-
-<script type="module">
-  export const formControl = true
-  export const attributes = { value: { type: String, default: '' } }
-
-  export function client ({ state, refs, setFormValue, onFormReset, signal }) {
-    const input = refs('input')
+        <code-block language="javascript" filename="restore.js">
+export function client ({ state, setFormValue, onFormRestore }) {
+  onFormRestore((value, mode) =&gt; {
+    state.value = mode === 'autocomplete' ? value.trim() : value
     setFormValue(state.value)
-
-    input.addEventListener('input', (e) => {
-      state.value = e.target.value
-      setFormValue(state.value)
-    }, { signal })
-
-    onFormReset(() => {
-      state.value = ''
-      input.value = ''
-    })
-  }
-</script>
+  })
+}
         </code-block>
+
+        <h2 id="complete-example">Complete example</h2>
+
+        <code-block language="html" filename="src/components/quantity-input.html">
+&lt;template id="quantity-input"&gt;
+  &lt;button ref="decrease" type="button" aria-label="Decrease quantity"&gt;−&lt;/button&gt;
+  &lt;input ref="input" type="number" min="1" value="{{ value }}"&gt;
+  &lt;button ref="increase" type="button" aria-label="Increase quantity"&gt;+&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script type="module"&gt;
+  export const formControl = true
+
+  export const attributes = {
+    value: { type: Number, default: 1 }
+  }
+
+  export function client ({ state, refs, signal, setFormValue, setValidity, onFormReset }) {
+    const input = refs('input')
+
+    const commit = (next) =&gt; {
+      state.value = Math.max(1, next)
+      input.value = state.value
+      setFormValue(String(state.value))
+      setValidity({})
+    }
+
+    refs('decrease').addEventListener('click', () =&gt; commit(state.value - 1), { signal })
+    refs('increase').addEventListener('click', () =&gt; commit(state.value + 1), { signal })
+    input.addEventListener('change', () =&gt; commit(Number(input.value)), { signal })
+
+    onFormReset(() =&gt; commit(1))
+    setFormValue(String(state.value))
+  }
+&lt;/script&gt;
+        </code-block>
+
+        <p>Inside a form, the component submits under its <code>name</code> attribute like any native control. The host must carry that attribute in the page markup; it is not something <code>setFormValue</code> can supply.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e107"><code>CORALITE-E107</code></a> reports a non-boolean <code>formControl</code> or <code>formAssociated</code> value.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/reference/client/">client</a> for the rest of the browser context.</li>
+          <li><a href="/reference/attributes/">attributes</a> for declaring <code>value</code>, <code>name</code> and <code>required</code>.</li>
+          <li><a href="/docs/guide/components/">Components guide</a> for a full component walkthrough.</li>
+        </ul>
       </div>
 
       <div class="lesson-navigation">
         <ui-link href="/reference/slots/" variant="secondary">← Previous: slots</ui-link>
-        <ui-link href="/reference/page-api/" variant="primary">Next: Page API →</ui-link>
+        <ui-link href="/reference/provide-consume/" variant="primary">Next: provide &amp; consume →</ui-link>
       </div>
     </div>
 
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#typescript-signature">TypeScript Signature</a>
-        <a href="#native-form-association">Native Form Association</a>
-        <a href="#the-form-hooks">The Form Hooks</a>
-        <a href="#constraint-validation">Constraint Validation</a>
-        <a href="#complete-example">Complete Example</a>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#helpers">Client helpers</a>
+        <a href="#value-synchronization">Value synchronization</a>
+        <a href="#validation">Validation</a>
+        <a href="#reset-and-disabled">Reset and disabled</a>
+        <a href="#restore">Restore</a>
+        <a href="#complete-example">Complete example</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
       </div>
     </div>
   </docs-layout>

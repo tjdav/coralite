@@ -5,36 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="style"
-    description="Reactive derivation of CSS custom properties directly on the host element."
+    description="Maps reactive state onto host inline styles and CSS custom properties, synchronously and without a render."
     section="Reference"></page-meta>
 </head>
 <body>
   <site-header></site-header>
 
   <docs-layout>
-    <div slot="sidebar">
-      <ui-accordion title="Component API" open>
-        <ui-nav-link href="/reference/attributes/">attributes</ui-nav-link>
-        <ui-nav-link href="/reference/client/">client</ui-nav-link>
-        <ui-nav-link href="/reference/server/">server</ui-nav-link>
-        <ui-nav-link href="/reference/getters/">getters</ui-nav-link>
-        <ui-nav-link href="/reference/style/" active>style</ui-nav-link>
-        <ui-nav-link href="/reference/slots/">slots</ui-nav-link>
-        <ui-nav-link href="/reference/form-control/">formControl</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Page API">
-        <ui-nav-link href="/reference/page-api/">paths & definePage</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Plugin API">
-        <ui-nav-link href="/reference/plugins/">definePlugin</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="CLI">
-        <ui-nav-link href="/reference/cli/">commands</ui-nav-link>
-      </ui-accordion>
-    </div>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
 
     <div slot="content">
       <ui-breadcrumb>
@@ -50,43 +28,124 @@
           <h1>style</h1>
           <ui-badge variant="cyan">Stable</ui-badge>
         </div>
-        <p class="subhead">Reactive derivation of CSS custom properties directly on the host element.</p>
+        <p class="subhead">Writes state into the host element's inline style. The escape hatch for values a stylesheet cannot know, such as measured sizes and user-chosen colors.</p>
       </div>
 
       <div class="lesson-body">
-        <h2 id="typescript-signature">TypeScript Signature</h2>
+        <div class="doc-callout doc-callout--info">
+          <strong>Build time and browser.</strong>
+          <p>The server evaluates the block while rendering, so the first paint already carries the computed declaration. The browser re-applies it when tracked state changes, without re-rendering the template.</p>
+        </div>
+
+        <h2 id="signature">Signature</h2>
+
         <code-block language="typescript" filename="style.ts">
-export const style: Record&lt;string, ((context: { state: Record&lt;string, any&gt;; isServer: boolean }) =&gt; string | number | null | undefined | false) | string | number&gt;
-        </code-block>
+export const style: Record&lt;string, string | number | ((context: CoraliteStyleContext) =&gt; any)&gt;
 
-        <h2 id="declarative-styling">Declarative Styling</h2>
-        <p>Instead of manually mutating DOM classes or inline styles inside your <code>client()</code> block, you can use the <code>style</code> export. It takes an object where the keys are CSS properties (or custom properties) and the values are either static values or synchronous functions that receive a context object with <code>state</code>.</p>
-
-        <code-block language="javascript" filename="theme.js">
-export const style = {
-  '--card-bg': ({ state }) => state.isDark ? '#0f172a' : '#f8fafc',
-  '--card-text': ({ state }) => state.isDark ? '#f8fafc' : '#0f172a',
-  opacity: ({ state }) => state.isDisabled ? 0.5 : 1
+interface CoraliteStyleContext {
+  state: Readonly&lt;Record&lt;string, any&gt;&gt;
+  isServer: boolean
+  signal: AbortSignal
 }
         </code-block>
 
-        <h2 id="synchronous-constraint">Synchronous Constraint</h2>
-        <p>Style functions must be strictly synchronous. If you return a Promise, Coralite will throw an error and fail the render.</p>
+        <p>Keys are CSS property names. Standard properties accept camelCase and are normalized to kebab-case, so <code>backgroundColor</code> becomes <code>background-color</code>. Custom properties must start with <code>--</code> and are written exactly as declared.</p>
 
-        <div class="diagnostic-callout">
-          <strong>CORALITE-E303: Asynchronous style Getter</strong>
-          <p>You cannot use <code>async/await</code> inside the <code>style</code> block. If you need asynchronous data to compute a style, fetch it in <code>server()</code> and place it in <code>state</code>.</p>
+        <h2 id="context">Context</h2>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Type</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>state</code></td><td>read-only proxy</td><td>Reading a key registers a dependency, so the declaration updates when that key changes.</td></tr>
+              <tr><td><code>isServer</code></td><td>boolean</td><td><code>true</code> while rendering the page, <code>false</code> in the browser.</td></tr>
+              <tr><td><code>signal</code></td><td>AbortSignal</td><td>Aborts on disconnect. Style functions do not need it; it exists for symmetry with other blocks.</td></tr>
+            </tbody>
+          </table>
         </div>
 
-        <h2 id="nullish-omission">Nullish Omission</h2>
-        <p>Returning <code>null</code>, <code>undefined</code>, or <code>false</code> from a style function removes the CSS property from the host element entirely. Numeric <code>0</code> is preserved as a valid CSS value.</p>
+        <h2 id="declarations">Declarations</h2>
+
+        <p>A declaration is a constant or a function. Functions run synchronously and must not read <code>root</code>, <code>refs</code> or <code>slots</code>: style is evaluated before the DOM exists on the server and outside the template update in the browser.</p>
+
+        <code-block language="javascript" filename="theme.js">
+export const attributes = {
+  accent: { type: String, default: '#06b6d4' },
+  density: { type: String, default: 'comfortable' }
+}
+
+export const style = {
+  '--accent': ({ state }) =&gt; state.accent,
+  '--stack-gap': ({ state }) =&gt; (state.density === 'compact' ? '4px' : '12px'),
+  position: 'relative'
+}
+        </code-block>
+
+        <p>Custom properties are the preferred output. They let one declaration drive any number of rules in the component stylesheet, including descendants that the host cannot target through inline style.</p>
+
+        <h2 id="nullish-omission">Nullish omission</h2>
+
+        <p>Returning <code>null</code>, <code>undefined</code>, <code>false</code> or an empty string removes the declaration from the host style attribute. This makes conditional properties cheap: <code>null</code> means "not set", not <code>"null"</code> in the DOM.</p>
 
         <code-block language="javascript" filename="omission.js">
 export const style = {
-  // Removes margin if state.margin is null/undefined
-  margin: ({ state }) => state.margin
+  '--progress': ({ state }) =&gt; state.progress === 0 ? null : `${state.progress}%`
 }
         </code-block>
+
+        <p>Numbers are written without units, matching raw CSS. <code>padding: 16</code> produces <code>padding: 16;</code>, which browsers ignore. Add the unit yourself or use a plain property such as <code>zIndex</code> where unitless values are valid.</p>
+
+        <h2 id="synchronous-execution">Synchronous execution</h2>
+
+        <p>Style is resolved before the template renders, so it cannot wait. An <code>async</code> function, or a function returning a promise, fails with <a href="/reference/diagnostics/#coralite-e303"><code>CORALITE-E303</code></a>. Load asynchronous data in <a href="/reference/server/">server()</a> and read the result from state.</p>
+
+        <div class="split-code">
+          <div class="forbidden">
+            <code-block language="javascript" filename="forbidden.js">
+export const style = {
+  '--width': async ({ state }) =&gt; await measure(state)
+}
+            </code-block>
+          </div>
+          <div class="required">
+            <code-block language="javascript" filename="required.js">
+export const style = {
+  '--width': ({ state }) =&gt; `${state.width}px`
+}
+            </code-block>
+          </div>
+        </div>
+
+        <h2 id="parameter-shape">Parameter shape</h2>
+
+        <p>Style functions take the context object. The older <code>(state) =&gt; state.value</code> form is migrated automatically by <code>coralite fix</code> and reported as <a href="/reference/diagnostics/#coralite-e105"><code>CORALITE-E105</code></a>.</p>
+
+        <h2 id="output">Output</h2>
+
+        <p>The server writes the resolved declarations into the host <code>style</code> attribute, so the first paint is correct without waiting for JavaScript. The functions themselves stay in the component bundle because the browser has to re-evaluate them on state changes.</p>
+
+        <p>Use this block for values, not for rules. A component's static rules belong in its <code>&lt;style&gt;</code> element, where they are scoped, deduplicated and shipped as CSS rather than inline markup.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e303"><code>CORALITE-E303</code></a> reports an asynchronous style getter.</li>
+          <li><a href="/reference/diagnostics/#coralite-e105"><code>CORALITE-E105</code></a> reports the legacy single-parameter shape.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/docs/reference/components/">Component overview</a> for the style element and CSS scoping rules.</li>
+          <li><a href="/learn/07-theming-with-variables/">Theming with variables</a> for the custom property strategy.</li>
+          <li><a href="/reference/getters/">getters</a> for values that belong in the template rather than CSS.</li>
+        </ul>
       </div>
 
       <div class="lesson-navigation">
@@ -98,10 +157,15 @@ export const style = {
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#typescript-signature">TypeScript Signature</a>
-        <a href="#declarative-styling">Declarative Styling</a>
-        <a href="#synchronous-constraint">Synchronous Constraint</a>
-        <a href="#nullish-omission">Nullish Omission</a>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#context">Context</a>
+        <a href="#declarations">Declarations</a>
+        <a href="#nullish-omission">Nullish omission</a>
+        <a href="#synchronous-execution">Synchronous execution</a>
+        <a href="#parameter-shape">Parameter shape</a>
+        <a href="#output">Output</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
       </div>
     </div>
   </docs-layout>

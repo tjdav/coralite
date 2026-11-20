@@ -5,36 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="client"
-    description="The browser runtime execution block. Handles DOM lifecycle, event listeners, and form association."
+    description="The browser lifecycle block: refs, reactive state, observation, events, cleanup and form helpers."
     section="Reference"></page-meta>
 </head>
 <body>
   <site-header></site-header>
 
   <docs-layout>
-    <div slot="sidebar">
-      <ui-accordion title="Component API" open>
-        <ui-nav-link href="/reference/attributes/">attributes</ui-nav-link>
-        <ui-nav-link href="/reference/client/" active>client</ui-nav-link>
-        <ui-nav-link href="/reference/server/">server</ui-nav-link>
-        <ui-nav-link href="/reference/getters/">getters</ui-nav-link>
-        <ui-nav-link href="/reference/style/">style</ui-nav-link>
-        <ui-nav-link href="/reference/slots/">slots</ui-nav-link>
-        <ui-nav-link href="/reference/form-control/">formControl</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Page API">
-        <ui-nav-link href="/reference/page-api/">paths & definePage</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Plugin API">
-        <ui-nav-link href="/reference/plugins/">definePlugin</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="CLI">
-        <ui-nav-link href="/reference/cli/">commands</ui-nav-link>
-      </ui-accordion>
-    </div>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
 
     <div slot="content">
       <ui-breadcrumb>
@@ -50,56 +28,170 @@
           <h1>client</h1>
           <ui-badge variant="cyan">Stable</ui-badge>
         </div>
-        <p class="subhead">The browser runtime execution block. Handles DOM lifecycle, event listeners, and form association.</p>
+        <p class="subhead">The browser lifecycle block. Runs once per mounted instance and owns every listener, observer and timer the component creates.</p>
       </div>
 
       <div class="lesson-body">
-        <h2 id="typescript-signature">TypeScript Signature</h2>
-        <p>The <code>CoraliteClientContext</code> parameter signature:</p>
+        <div class="doc-callout doc-callout--info">
+          <strong>Browser only.</strong>
+          <p><code>client()</code> is stripped from the server render and serialized into the component bundle. It runs after the element is connected and its markup is hydrated. Module scope is not shared with it, so anything from the module must be loaded with <code>await import()</code> inside the block.</p>
+        </div>
+
+        <h2 id="signature">Signature</h2>
+
         <code-block language="typescript" filename="client.ts">
-export async function client (context: {
-  state: Record&lt;string, any&gt;;
-  refs: (name: string) =&gt; HTMLElement | null;
-  signal: AbortSignal;
-  emit: (name: string, detail?: any) =&gt; boolean;
-  observe: (key: string, cb: (newVal: any, oldVal: any) =&gt; void) =&gt; () =&gt; void;
-  updateComplete: Promise&lt;boolean&gt;;
-  setFormValue?: (value: any) =&gt; void;
-  setValidity?: (flags: ValidityStateFlags, message: string, anchor: HTMLElement) =&gt; void;
-}): Promise&lt;void&gt;
-        </code-block>
+export function client (context: CoraliteClientContext): void | Promise&lt;void&gt;
 
-        <h2 id="lifecycle-cleanup">Lifecycle &amp; Cleanup</h2>
-        <p>The <code>signal</code> provided in the context is an <code>AbortSignal</code> that fires when the component disconnects from the DOM. Passing it to <code>addEventListener</code> ensures zero memory leaks.</p>
-
-        <code-block language="javascript" filename="cleanup.js">
-export async function client ({ refs, signal }) {
-  refs('btn').addEventListener('click', () => {
-    console.log('clicked')
-  }, { signal }) // Auto-cleanup on disconnect
+interface CoraliteClientContext {
+  state: Record&lt;string, any&gt;
+  instanceId: string
+  root: HTMLElement
+  errors: Record&lt;string, string&gt;
+  refs: (name: string) =&gt; HTMLElement | null
+  signal: AbortSignal
+  observe: (key: string, callback: (value: any, previous: any) =&gt; void) =&gt; () =&gt; void
+  emit: (name: string, detail?: any, options?: CustomEventInit) =&gt; boolean
+  updateComplete: Promise&lt;boolean&gt;
+  route: CoraliteRoute
+  isServer: boolean
+  isClient: boolean
+  store?: any
+  internals?: ElementInternals
+  setFormValue?: (value: any, state?: any) =&gt; void
+  setValidity?: (flags?: ValidityStateFlags, message?: string, anchor?: HTMLElement) =&gt; void
+  checkValidity?: () =&gt; boolean
+  reportValidity?: () =&gt; boolean
+  validity?: ValidityState
+  validationMessage?: string
+  form?: HTMLFormElement | null
+  onFormReset?: (callback: () =&gt; void) =&gt; () =&gt; void
+  onFormDisabled?: (callback: (disabled: boolean) =&gt; void) =&gt; () =&gt; void
+  onFormRestore?: (callback: (state: any, mode: 'restore' | 'autocomplete') =&gt; void) =&gt; () =&gt; void
+  [pluginContext: string]: any
 }
         </code-block>
 
-        <h2 id="observing-state">Observing State</h2>
-        <p>Use <code>observe()</code> to react to specific state changes. This is exclusively for side-effects (like third-party canvas rendering). Never mutate state inside the observer.</p>
+        <h2 id="context">Context</h2>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Type</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>state</code></td><td>reactive proxy</td><td>Writes schedule a render. Getter values are read-only.</td></tr>
+              <tr><td><code>instanceId</code></td><td>string</td><td>Stable per element instance, shared with the hydration payload.</td></tr>
+              <tr><td><code>root</code></td><td>HTMLElement</td><td>The host custom element.</td></tr>
+              <tr><td><code>refs</code></td><td>function</td><td>Resolves <code>ref="name"</code> inside the instance, including refs owned by slot content.</td></tr>
+              <tr><td><code>signal</code></td><td>AbortSignal</td><td>Aborts on disconnect. Pass to <code>addEventListener</code>; observe, emit and form helpers clean up themselves.</td></tr>
+              <tr><td><code>observe</code></td><td>function</td><td>Runs a callback after a key changes. Returns a disposer. Side effects only.</td></tr>
+              <tr><td><code>emit</code></td><td>function</td><td>Dispatches a bubbling, composed <code>CustomEvent</code> from the host.</td></tr>
+              <tr><td><code>errors</code></td><td>object</td><td>The live <code>state.errors</code> dictionary from attribute validation.</td></tr>
+              <tr><td><code>updateComplete</code></td><td>Promise</td><td>Resolves after the current update flush writes the DOM.</td></tr>
+              <tr><td><code>internals</code> and form helpers</td><td>FACE</td><td>Always on the context; effective when the component opts into <code>formControl</code>. See <a href="/reference/form-control/">formControl</a>.</td></tr>
+              <tr><td><code>route</code>, <code>store</code></td><td>core</td><td>The matched route and the global store, when configured.</td></tr>
+              <tr><td>plugin keys</td><td>any</td><td><code>client.context</code> from registered plugins is merged onto the context.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="lifecycle">Lifecycle and cleanup</h2>
+
+        <p>The block runs once per mount. It is not re-invoked when state changes and it is not a render callback. The framework tears the instance down at disconnect; the contract is that everything the block creates is reachable from <code>signal</code>.</p>
+
+        <code-block language="javascript" filename="cleanup.js">
+export function client ({ refs, signal }) {
+  const button = refs('button')
+
+  button.addEventListener('click', () =&gt; {
+    console.log('clicked')
+  }, { signal })
+
+  const frame = requestAnimationFrame(() =&gt; {
+    console.log('first frame')
+  })
+  signal.addEventListener('abort', () =&gt; cancelAnimationFrame(frame), { once: true })
+}
+        </code-block>
+
+        <p>Do not await <code>updateComplete</code> at the top of the block. The DOM is already settled when <code>client()</code> runs, and awaiting it there delays every later line by a microtask for no reason. Await it after mutating state, when the next step depends on measured layout.</p>
+
+        <code-block language="javascript" filename="measure.js">
+export async function client ({ state, refs, signal, updateComplete }) {
+  const panel = refs('panel')
+
+  refs('expand').addEventListener('click', async () =&gt; {
+    state.expanded = true
+    await updateComplete
+    panel.scrollIntoView({ block: 'nearest' })
+  }, { signal })
+}
+        </code-block>
+
+        <h2 id="observing-state">Observing state</h2>
+
+        <p><code>observe</code> is for effects that must run when a value changes: canvas repaints, third-party widgets, analytics. It is never for deriving state. Assigning state inside an observer is an infinite-loop hazard and is reported as <a href="/reference/diagnostics/#coralite-e302"><code>CORALITE-E302</code></a>; use a <a href="/reference/getters/">getter</a> instead.</p>
 
         <code-block language="javascript" filename="observe.js">
-export async function client ({ state, observe }) {
-  observe('count', (newVal) => {
-    console.log('Count changed to:', newVal)
+export function client ({ state, observe }) {
+  observe('count', (value, previous) =&gt; {
+    console.log('count changed from', previous, 'to', value)
   })
 }
         </code-block>
 
-        <h2 id="form-associated-custom-elements-face">Form-Associated Custom Elements (FACE)</h2>
-        <p>If the component exports <code>export const formControl = true</code>, the <code>client()</code> context provides form helpers to integrate with native <code>&lt;form&gt;</code> elements.</p>
+        <p>The returned disposer exists for conditional teardown. Normal cleanup is automatic at disconnect.</p>
 
-        <code-block language="javascript" filename="face.js">
-export async function client ({ setFormValue, setValidity }) {
-  setFormValue('initial-value')
-  setValidity({ valueMissing: true }, 'This field is required', anchorEl)
+        <h2 id="events">Events</h2>
+
+        <p><code>emit</code> wraps <code>dispatchEvent</code> with the framework defaults: bubbling, composed, and visible to ancestor light-DOM listeners. It returns <code>false</code> if a listener called <code>preventDefault()</code> on a cancelable event.</p>
+
+        <code-block language="javascript" filename="emit.js">
+export function client ({ state, refs, signal, emit }) {
+  refs('save').addEventListener('click', () =&gt; {
+    const saved = emit('save', { value: state.value }, { cancelable: true })
+    if (saved) {
+      state.dirty = false
+    }
+  }, { signal })
 }
         </code-block>
+
+        <h2 id="serialization-boundary">Serialization boundary</h2>
+
+        <p>Top-level imports are not available inside <code>client()</code>. Referencing one is <a href="/reference/diagnostics/#coralite-e301"><code>CORALITE-E301</code></a>, because the server module graph is not shipped to the browser. Load the module locally instead:</p>
+
+        <code-block language="javascript" filename="lazy-import.js">
+export async function client ({ refs, signal }) {
+  const { createChart } = await import('../utils/chart.js')
+  const chart = createChart(refs('canvas'))
+  signal.addEventListener('abort', () =&gt; chart.destroy(), { once: true })
+}
+        </code-block>
+
+        <p>Node globals such as <code>process</code>, <code>Buffer</code> and <code>__dirname</code> are <a href="/reference/diagnostics/#coralite-e304"><code>CORALITE-E304</code></a>. A <code>.css</code> import belongs here too, loaded with <code>await import('pkg/styles.css')</code> so the bundle can register the stylesheet; importing CSS at module scope is <a href="/reference/diagnostics/#coralite-e109"><code>CORALITE-E109</code></a>.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e202"><code>CORALITE-E202</code></a> reports a <code>refs()</code> name that no template element declares.</li>
+          <li><a href="/reference/diagnostics/#coralite-e301"><code>CORALITE-E301</code></a> reports a module-scope import used inside the block.</li>
+          <li><a href="/reference/diagnostics/#coralite-e302"><code>CORALITE-E302</code></a> reports state mutated inside <code>observe()</code>.</li>
+          <li><a href="/reference/diagnostics/#coralite-e304"><code>CORALITE-E304</code></a> reports a Node global in the browser block.</li>
+          <li><a href="/reference/diagnostics/#coralite-e109"><code>CORALITE-E109</code></a> reports a stylesheet import outside <code>client()</code>.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/docs/guide/ssr/">SSR guide</a> for how the server and browser share state.</li>
+          <li><a href="/reference/server/">server</a> for the build-time half of the component.</li>
+          <li><a href="/reference/form-control/">formControl</a> for the form helpers listed above.</li>
+        </ul>
       </div>
 
       <div class="lesson-navigation">
@@ -111,10 +203,14 @@ export async function client ({ setFormValue, setValidity }) {
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#typescript-signature">TypeScript Signature</a>
-        <a href="#lifecycle-cleanup">Lifecycle &amp; Cleanup</a>
-        <a href="#observing-state">Observing State</a>
-        <a href="#form-associated-custom-elements-face">Form-Associated</a>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#context">Context</a>
+        <a href="#lifecycle">Lifecycle and cleanup</a>
+        <a href="#observing-state">Observing state</a>
+        <a href="#events">Events</a>
+        <a href="#serialization-boundary">Serialization boundary</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
       </div>
     </div>
   </docs-layout>

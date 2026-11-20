@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="onError"
+    description="A production error boundary for server rendering: catch a failed component or page and render fallback markup instead of failing the build."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Component API</a>
+        <span class="separator">/</span>
+        <span>onError</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>onError</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">Catches a failure during server rendering and substitutes fallback markup. The page around it still ships.</p>
+      </div>
+
+      <div class="lesson-body">
+        <div class="doc-callout doc-callout--warning">
+          <strong>Production only.</strong>
+          <p>In development and testing the error is thrown with a file path and component id so the failure is impossible to miss. <code>onError</code> exists to keep a production build complete, not to hide bugs while you work.</p>
+        </div>
+
+        <h2 id="signature">Signature</h2>
+
+        <code-block language="typescript" filename="on-error.ts">
+export function onError (context: {
+  error: Error
+  state: Record&lt;string, any&gt;
+  element?: object
+  page?: CoralitePage
+  root?: object
+}): string | { template?: string, state?: Record&lt;string, any&gt; } | void
+
+export function onError (context: {
+  error: Error
+  state: Record&lt;string, any&gt;
+  route: CoraliteRoute
+  app: CoraliteInstance
+}): string | { template?: string, state?: Record&lt;string, any&gt; } | null | void
+        </code-block>
+
+        <p>The first form belongs to a component and covers that element. The second belongs to a page and covers the whole document. Both can return a string of markup, an object with <code>template</code> and optional <code>state</code> patches, or nothing.</p>
+
+        <h2 id="component-boundary">Component boundary</h2>
+
+        <p>When a component's render throws, Coralite looks for <code>onError</code> in this order: the shared function, the evaluated script metadata, then the module definition. If a fallback is returned, its markup replaces the element, state patches are merged first, and hydration is disabled for the subtree.</p>
+
+        <code-block language="javascript" filename="src/components/release-feed.html">
+export async function server () {
+  const response = await fetch('https://api.example.com/releases')
+  if (!response.ok) {
+    throw new Error(`Release feed responded with ${response.status}`)
+  }
+  return { releases: await response.json() }
+}
+
+export function onError ({ error, state }) {
+  console.error('Release feed failed:', error.message)
+
+  return {
+    template: '&lt;p class="feed-fallback"&gt;Releases are unavailable right now.&lt;/p&gt;',
+    state: { feedAvailable: false, pageTitle: state.pageTitle || 'Releases' }
+  }
+}
+        </code-block>
+
+        <p>The fallback template is rendered with Coralite's normal parser and flat tokens resolved from the merged state. Custom elements inside it are compiled, so a fallback can be a real component rather than a bare string. It is not hydrated: the server output is final.</p>
+
+        <h2 id="page-boundary">Page boundary</h2>
+
+        <p>A page <code>onError</code> catches failures from the page render, including its components when they do not handle the error themselves. The returned markup becomes the page root, which makes it suitable for an outage page with the site's own header and footer.</p>
+
+        <code-block language="javascript" filename="src/pages/releases.html">
+export async function server ({ session }) {
+  const releases = session.state.releases || []
+  return { releases }
+}
+
+export function onError ({ error, route, app }) {
+  app.onError({ level: 'ERROR', message: error.message, route: route.path })
+  return '&lt;main class="outage"&gt;&lt;h1&gt;Temporarily unavailable&lt;/h1&gt;&lt;/main&gt;'
+}
+        </code-block>
+
+        <p>Returning <code>null</code> or <code>undefined</code> from a page boundary rethrows, which is how a page can opt out for failures that should fail the build.</p>
+
+        <h2 id="patterns">Patterns</h2>
+
+        <ul>
+          <li><strong>Third-party outage.</strong> Return cached or static guidance instead of an empty section.</li>
+          <li><strong>Per-item isolation.</strong> Put the boundary on the expensive item, not the page, so one failure does not remove the surrounding content.</li>
+          <li><strong>Observability.</strong> Report the error to the build's <code>onError</code> hook with the route and component id; the fallback markup is for visitors, the report is for you.</li>
+        </ul>
+
+        <p>Do not use <code>onError</code> to swallow validation or type errors. Those indicate a broken component and should fail in development and in CI, where the boundary is inactive.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e107"><code>CORALITE-E107</code></a> reports an <code>onError</code> export that is not a function.</li>
+        </ul>
+
+        <p>Registration also refuses a non-function boundary, so the failure appears with the component id even if validation is skipped.</p>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/reference/server/">server</a> for the failures most likely to reach this boundary.</li>
+          <li><a href="/docs/reference/pages/">Pages reference</a> for the page export contract.</li>
+          <li><a href="/docs/guide/validation/">Validation guide</a> for failures that should not be caught.</li>
+        </ul>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/list-strategy/" variant="secondary">← Previous: listStrategy</ui-link>
+        <ui-link href="/reference/page-api/" variant="primary">Next: Page API →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#component-boundary">Component boundary</a>
+        <a href="#page-boundary">Page boundary</a>
+        <a href="#patterns">Patterns</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

@@ -5,36 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="attributes"
-    description="Declares, coerces, and validates host HTML attributes into reactive component state."
+    description="Declares, coerces, validates and reflects host HTML attributes into reactive component state."
     section="Reference"></page-meta>
 </head>
 <body>
   <site-header></site-header>
 
   <docs-layout>
-    <div slot="sidebar">
-      <ui-accordion title="Component API" open>
-        <ui-nav-link href="/reference/attributes/" active>attributes</ui-nav-link>
-        <ui-nav-link href="/reference/client/">client</ui-nav-link>
-        <ui-nav-link href="/reference/server/">server</ui-nav-link>
-        <ui-nav-link href="/reference/getters/">getters</ui-nav-link>
-        <ui-nav-link href="/reference/style/">style</ui-nav-link>
-        <ui-nav-link href="/reference/slots/">slots</ui-nav-link>
-        <ui-nav-link href="/reference/form-control/">formControl</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Page API">
-        <ui-nav-link href="/reference/page-api/">paths & definePage</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Plugin API">
-        <ui-nav-link href="/reference/plugins/">definePlugin</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="CLI">
-        <ui-nav-link href="/reference/cli/">commands</ui-nav-link>
-      </ui-accordion>
-    </div>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
 
     <div slot="content">
       <ui-breadcrumb>
@@ -50,85 +28,203 @@
           <h1>attributes</h1>
           <ui-badge variant="cyan">Stable</ui-badge>
         </div>
-        <p class="subhead">Declares, coerces, and validates host HTML attributes into reactive component state.</p>
+        <p class="subhead">Declares the host attributes a component accepts, how they are coerced, and when they are written back to the DOM.</p>
       </div>
 
       <div class="lesson-body">
-        <h2 id="typescript-signature">TypeScript Signature</h2>
+        <div class="doc-callout doc-callout--info">
+          <strong>Runs at build time and in the browser.</strong>
+          <p>The server validates the attributes present in page markup while rendering. The browser repeats the same pipeline whenever a host attribute changes with <code>setAttribute</code> or <code>removeAttribute</code>.</p>
+        </div>
+
+        <h2 id="signature">Signature</h2>
+
         <code-block language="typescript" filename="attributes.ts">
-export const attributes: Record&lt;string, {
-  type: StringConstructor | NumberConstructor | BooleanConstructor;
-  default?: any;
-  required?: boolean;
-  reflect?: boolean;
-  transform?: (val: any) =&gt; any;
-  validate?: (val: any) =&gt; boolean | string;
-}&gt;
+export const attributes: Record&lt;string, AttributeSchema&gt;
+
+type AttributeSchema =
+  | StringConstructor
+  | NumberConstructor
+  | BooleanConstructor
+  | Array&lt;string | number | boolean&gt;
+  | {
+      type?: StringConstructor | NumberConstructor | BooleanConstructor
+      default?: any
+      required?: boolean
+      values?: Array&lt;string | number | boolean&gt;
+      reflect?: boolean
+      transform?: (value: any) =&gt; any
+      validate?: (value: any) =&gt; boolean | string | void
+    }
         </code-block>
 
-        <h2 id="the-6-step-execution-pipeline">The 6-Step Execution Pipeline</h2>
-        <p>Deterministic transformation sequence executed upon every attribute mount or host mutation.</p>
+        <p>Declaration keys are camelCase. Coralite maps them to the kebab-case attribute on the host element, so <code>userId</code> is written as <code>user-id</code> and both spellings resolve to the same state key.</p>
+
+        <h2 id="schema-options">Schema options</h2>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Option</th>
+                <th scope="col">Type</th>
+                <th scope="col">Effect</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>type</code></td>
+                <td><code>String</code> · <code>Number</code> · <code>Boolean</code></td>
+                <td>Primitive constructor used to coerce the raw attribute string. Defaults to <code>String</code>, or is inferred from <code>values</code>.</td>
+              </tr>
+              <tr>
+                <td><code>default</code></td>
+                <td>any</td>
+                <td>Value applied when the attribute is absent. Setting a default with <code>required: true</code> raises <code>CORALITE-E102</code>.</td>
+              </tr>
+              <tr>
+                <td><code>required</code></td>
+                <td>boolean</td>
+                <td>Records a validation error when the attribute is missing instead of failing the build.</td>
+              </tr>
+              <tr>
+                <td><code>values</code></td>
+                <td>array</td>
+                <td>Enumeration of accepted values. A mismatch records an error listing the expected values.</td>
+              </tr>
+              <tr>
+                <td><code>reflect</code></td>
+                <td>boolean</td>
+                <td>Writes the coerced value back to the host attribute whenever state changes.</td>
+              </tr>
+              <tr>
+                <td><code>transform</code></td>
+                <td>function</td>
+                <td>Runs after coercion, before <code>values</code> and <code>validate</code>. Must be synchronous; returning <code>undefined</code> leaves the state key unset.</td>
+              </tr>
+              <tr>
+                <td><code>validate</code></td>
+                <td>function</td>
+                <td>Returns <code>true</code> or nothing on success, <code>false</code> for the default message, or a string for a custom message. Must be synchronous.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Attributes accept primitives only. Declaring <code>{ type: Object }</code> or <code>{ type: Array }</code> fails with <code>CORALITE-E101</code>. Fetch structured data in <code>server()</code>, or pass it down the tree with <a href="/reference/provide-consume/">provide and consume</a>.</p>
+
+        <h2 id="execution-pipeline">Execution pipeline</h2>
+
+        <p>Every mount and every host mutation runs the same six steps in order:</p>
+
         <div class="pipeline-grid">
           <div class="pipeline-step">
             <span class="step-num">01</span>
-            <div><strong>Required Check</strong><p>Validates presence.</p></div>
+            <div><strong>Required</strong><p>Rejects a missing or null value.</p></div>
           </div>
           <div class="pipeline-step">
             <span class="step-num">02</span>
-            <div><strong>Coerce</strong><p>Casts raw string to primitive.</p></div>
+            <div><strong>Default and coerce</strong><p>Applies <code>default</code>, then the primitive constructor.</p></div>
           </div>
           <div class="pipeline-step">
             <span class="step-num">03</span>
-            <div><strong>Transform</strong><p>Executes custom transform callback.</p></div>
+            <div><strong>Transform</strong><p>Runs the synchronous <code>transform</code> callback.</p></div>
           </div>
           <div class="pipeline-step">
             <span class="step-num">04</span>
-            <div><strong>Values Check</strong><p>Inspects permissible enumerations.</p></div>
+            <div><strong>Values</strong><p>Checks the value against the enumeration.</p></div>
           </div>
           <div class="pipeline-step">
             <span class="step-num">05</span>
-            <div><strong>Validate</strong><p>Evaluates user validation predicate.</p></div>
+            <div><strong>Validate</strong><p>Evaluates the synchronous predicate.</p></div>
           </div>
           <div class="pipeline-step">
             <span class="step-num">06</span>
-            <div><strong>State Application</strong><p>Injects reactive signal into host.</p></div>
+            <div><strong>Apply</strong><p>Writes state and the <code>error_*</code> tokens.</p></div>
           </div>
         </div>
 
-        <div class="diagnostic-callout">
-          <strong>CORALITE-E102: Mutex Violation</strong>
-          <p><code>required: true</code> cannot be combined with a <code>default</code> assignment.</p>
+        <p>The pipeline is never aborted by a validation failure. A value that was supplied is kept in state so the UI can render around it, and the message is written to <code>state.errors</code> and the flat template tokens <code>{{ error_&lt;name&gt; }}</code> in both camelCase and kebab-case.</p>
+
+        <code-block language="html" filename="src/components/user-field.html">
+&lt;template id="user-field"&gt;
+  &lt;label for="age"&gt;Age&lt;/label&gt;
+  &lt;input id="age" type="number" value="{{ age }}"&gt;
+  &lt;span class="error"&gt;{{ error_age }}&lt;/span&gt;
+&lt;/template&gt;
+
+&lt;script type="module"&gt;
+  export const attributes = {
+    age: {
+      type: Number,
+      required: true,
+      transform: (value) =&gt; Math.trunc(value),
+      validate: (value) =&gt; value &gt;= 18 || 'You must be 18 or older.'
+    }
+  }
+&lt;/script&gt;
+        </code-block>
+
+        <h2 id="coercion">Coercion</h2>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Attribute value</th>
+                <th scope="col"><code>Boolean</code></th>
+                <th scope="col"><code>Number</code></th>
+                <th scope="col"><code>String</code></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>""</code> (bare attribute)</td><td><code>true</code></td><td><code>0</code></td><td><code>""</code></td></tr>
+              <tr><td><code>"true"</code></td><td><code>true</code></td><td><code>NaN</code></td><td><code>"true"</code></td></tr>
+              <tr><td><code>"false"</code></td><td><code>false</code></td><td><code>NaN</code></td><td><code>"false"</code></td></tr>
+              <tr><td><code>"42"</code></td><td><code>true</code></td><td><code>42</code></td><td><code>"42"</code></td></tr>
+              <tr><td><code>"0"</code></td><td><code>true</code></td><td><code>0</code></td><td><code>"0"</code></td></tr>
+              <tr><td><code>null</code> (absent)</td><td><code>false</code> or default</td><td><code>undefined</code> or default</td><td><code>undefined</code> or default</td></tr>
+            </tbody>
+          </table>
         </div>
 
-        <h2 id="allowed-types">Allowed Types</h2>
-        <table class="types-table">
-          <th scope="col">
-            <tr><th scope="col">Type</th><th scope="col">Coercion Behavior</th><th scope="col">Reflection Behavior</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>String</td><td>Casts to string.</td><td>No (unless reflect: true).</td></tr>
-            <tr><td>Number</td><td>Parses float.</td><td>No (unless reflect: true).</td></tr>
-            <tr><td>Boolean</td><td>Presence is true.</td><td>Yes. Renders as attr="".</td></tr>
-          </tbody>
-        </table>
+        <p><code>Number</code> uses <code>Number(value)</code>, so malformed input becomes <code>NaN</code>. Guard it with <code>values</code> or <code>validate</code> rather than parsing again in a getter.</p>
 
-        <h2 id="forbidden-vs-required">Forbidden vs. Required</h2>
-        <div class="split-code">
-          <div class="forbidden">
-            <code-block language="javascript" filename="forbidden.js">
-attributes: {
-  user: { type: Object }
+        <h2 id="reflection">Reflection</h2>
+
+        <p>Attributes are one-way by default: the DOM is the input, state is the result. Set <code>reflect: true</code> to keep the attribute in sync with state after client changes, which is how a component keeps a CSS selector such as <code>ui-toggle[checked]</code> working.</p>
+
+        <code-block language="javascript" filename="reflect.js">
+export const attributes = {
+  checked: { type: Boolean, default: false, reflect: true }
 }
-            </code-block>
-          </div>
-          <div class="required">
-            <code-block language="javascript" filename="required.js">
-attributes: {
-  userId: { type: String }
+
+export function client ({ state, refs, signal }) {
+  refs('toggle').addEventListener('click', () =&gt; {
+    state.checked = !state.checked
+  }, { signal })
 }
-            </code-block>
-          </div>
-        </div>
+        </code-block>
+
+        <p>Only reflect values a stylesheet or consumer needs. Reflecting every attribute causes redundant DOM writes and makes host markup the second source of truth.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e101"><code>CORALITE-E101</code></a> blocks <code>Array</code> and <code>Object</code> types.</li>
+          <li><a href="/reference/diagnostics/#coralite-e102"><code>CORALITE-E102</code></a> blocks <code>required: true</code> combined with <code>default</code>.</li>
+          <li><a href="/reference/diagnostics/#coralite-e103"><code>CORALITE-E103</code></a> blocks asynchronous <code>transform</code> and <code>validate</code> callbacks.</li>
+          <li><a href="/reference/diagnostics/#coralite-e104"><code>CORALITE-E104</code></a> blocks names that collide with framework context keys.</li>
+          <li><a href="/reference/diagnostics/#coralite-w401"><code>CORALITE-W401</code></a> reports a declared attribute that nothing reads.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/docs/reference/components/">Component overview</a> for how <code>attributes</code> fits the module contract.</li>
+          <li><a href="/reference/getters/">getters</a> for deriving values from coerced state.</li>
+          <li><a href="/reference/client/">client</a> for reacting to state changes.</li>
+        </ul>
       </div>
 
       <div class="lesson-navigation">
@@ -140,9 +236,13 @@ attributes: {
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#typescript-signature">TypeScript Signature</a>
-        <a href="#allowed-types">Allowed Types</a>
-        <a href="#forbidden-vs-required">Forbidden vs. Required</a>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#schema-options">Schema options</a>
+        <a href="#execution-pipeline">Execution pipeline</a>
+        <a href="#coercion">Coercion</a>
+        <a href="#reflection">Reflection</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
       </div>
     </div>
   </docs-layout>
