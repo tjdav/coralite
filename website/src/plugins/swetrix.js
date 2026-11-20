@@ -220,6 +220,19 @@ export default function swetrixPlugin (options) {
           injectBootstrap(component, bootstrapPath)
         }
       }
+    },
+    client: {
+      context: () => () => ({
+        analytics: {
+          track (name, meta) {
+            const coralite = window['__coralite__']
+            const api = coralite && coralite.plugins ? coralite.plugins.analytics : null
+            if (api) {
+              api.track(name, meta)
+            }
+          }
+        }
+      })
     }
   })
 }
