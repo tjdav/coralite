@@ -5,6 +5,8 @@ import { test, expect } from '../fixtures.js'
 const ROOT = join(process.cwd(), '..')
 const PAGES_DIR = join(process.cwd(), 'src/pages/reference')
 const TYPES = join(ROOT, 'packages/coralite/types/component.js')
+const PAGE_SOURCE = join(ROOT, 'packages/coralite/lib/shared/page.js')
+const PLUGIN_VALIDATOR = join(ROOT, 'packages/coralite/lib/server/plugin/validator.js')
 
 /**
  * Component exports and the reference page that documents each one.
@@ -22,6 +24,20 @@ const COMPONENT_PAGES = {
   listStrategy: 'list-strategy',
   onError: 'on-error',
   client: 'client'
+}
+
+/**
+ * Page exports and the reference page that documents each one.
+ */
+const PAGE_EXPORT_PAGES = {
+  paths: 'page-api',
+  server: 'page-api',
+  meta: 'page-api',
+  getters: 'page-api',
+  style: 'page-api',
+  provide: 'page-api',
+  client: 'page-api',
+  onError: 'page-api'
 }
 
 /**
@@ -45,6 +61,21 @@ function componentExports () {
     }
   }
   return names
+}
+
+/**
+ * Extracts names from a `new Set([...])` or array literal in a source file.
+ * @param {string} source - File contents.
+ * @param {string} declaration - Declaration prefix to locate.
+ * @returns {string[]} Quoted names.
+ */
+function stringList (source, declaration) {
+  const prefix = declaration.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = source.match(new RegExp(`${prefix}[\\s\\S]*?\\[([\\s\\S]*?)\\]`))
+  if (!match) {
+    throw new Error(`${declaration} not found`)
+  }
+  return [...match[1].matchAll(/'([^']+)'/g)].map((entry) => entry[1])
 }
 
 /**
@@ -78,6 +109,30 @@ test('every component export has a reference page', () => {
   expect(missing).toEqual([])
   expect(undocumented).toEqual([])
   expect(stale).toEqual([])
+})
+
+test('every page export has a reference target', () => {
+  const exports = stringList(readFileSync(PAGE_SOURCE, 'utf8'), 'export const PAGE_EXPORTS =')
+  const undocumented = exports.filter((name) => !PAGE_EXPORT_PAGES[name])
+  const source = readFileSync(join(PAGES_DIR, 'page-api.html'), 'utf8')
+  const unnamed = exports.filter((name) => !new RegExp(`\\b${name}\\b`).test(source))
+
+  expect(exports.length).toBeGreaterThan(0)
+  expect(undocumented).toEqual([])
+  expect(unnamed).toEqual([])
+})
+
+test('every plugin hook has a reference target', () => {
+  const source = readFileSync(PLUGIN_VALIDATOR, 'utf8')
+  const hooks = [
+    ...stringList(source, 'const SERVER_HOOK_NAMES = new Set('),
+    ...stringList(source, 'const CLIENT_HOOK_NAMES = new Set(')
+  ]
+  const page = readFileSync(join(PAGES_DIR, 'plugins.html'), 'utf8')
+  const unnamed = hooks.filter((name) => !page.includes(name))
+
+  expect(hooks.length).toBeGreaterThan(0)
+  expect(unnamed).toEqual([])
 })
 
 test('every reference page is linked from the shared sidebar', () => {

@@ -15,7 +15,7 @@ test('multi-line code blocks keep their authored indentation after hydration', a
 
   const commands = page.locator('code-block').filter({ hasText: 'coralite dev' }).first()
   const commandLines = (await commands.locator('pre').textContent()).split('\n').filter(line => line.trim())
-  expect(commandLines.map(indentOf)).toEqual([0, 0, 0, 0, 0, 0])
+  expect(commandLines.map(indentOf)).toEqual(commandLines.map(() => 0))
 
   const flags = page.locator('code-block').filter({ hasText: '--no-incremental' }).first()
   const flagLines = (await flags.locator('pre').textContent()).split('\n').filter(line => line.trim())
