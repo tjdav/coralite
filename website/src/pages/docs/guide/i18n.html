@@ -73,20 +73,26 @@
 
         export function server ({ route }) {
           return {
-            t: messages[route.params.lang] ?? messages.en
+            dictionary: messages[route.params.lang] ?? messages.en
           }
         }
             </code-block>
 
-            <p>In your HTML template, bind translation strings using flat template tokens:</p>
+            <p>In your HTML template, bind translation strings using flat template tokens. A dictionary object is not a token, so expose the string you need as a getter or a server return value.</p>
+
+            <code-block language="javascript">
+        export const getters = {
+          welcome: ({ state }) =&gt; state.dictionary.welcome
+        }
+            </code-block>
 
             <code-block language="html">
-        <h1>{{ t.welcome }}</h1>
+        &lt;h1&gt;{{ welcome }}&lt;/h1&gt;
             </code-block>
 
             <div class="doc-callout doc-callout--warning">
               <strong>Flat Template Tokens Requirement</strong>
-              <p>Coralite template tokens must be flat tokens (e.g., <code>{{ welcome }}</code> or single-level <code>{{ t.welcome }}</code>). Deep nested access such as <code>{{ t.home.title }}</code> is not supported in templates. Flatten your JSON translation structure or derive nested strings using a <code>getters</code> block.</p>
+              <p>Coralite template tokens are flat identifiers, not paths. <code>{{ t.welcome }}</code> and <code>{{ t.home.title }}</code> are both rejected as <code>CORALITE-E201</code>. Flatten the value you need into a getter or a server return key, then bind the flat token.</p>
             </div>
 
             <h2 id="3-formatting">3. Formatting</h2>

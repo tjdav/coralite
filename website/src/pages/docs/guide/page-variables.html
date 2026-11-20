@@ -57,7 +57,7 @@
 
             <h2 id="example-usage">Example Usage</h2>
 
-            <p>Because templates do not support dot notation for tokens (e.g., <code>{{ page.url.pathname }}</code>), you must map these variables to local properties in your component's <code>state</code> (via the <code>data</code> function) or <code>getters</code>.</p>
+            <p>Because templates do not support dot notation for tokens (e.g., <code>{{ page.url.pathname }}</code>), you must map these variables to local properties in your component's <code>state</code> with <code>server()</code> or <code>getters</code>.</p>
 
             <p>Here is an example of a navigation link component that automatically adds an "active" class if the current URL matches its target URL:</p>
 
@@ -70,17 +70,13 @@
               </template>
 
               &lt;script type="module"&gt;
-                import { defineComponent } from 'coralite'
+                export const attributes = {
+                  href: { type: String }
+                }
 
-                export default defineComponent({
-                  attributes: {
-                    href: { type: String }
-                  },
-                  getters: {
-                    // Mapping nested page variable to a flat state property
-                    activeClass: ({ state }) => (state.href === state.page.url.pathname ? 'active' : '')
-                  }
-                })
+                export const getters = {
+                  activeClass: ({ state }) =&gt; (state.href === state.page.url.pathname ? 'active' : '')
+                }
               &lt;/script&gt;
             </code-block>
 

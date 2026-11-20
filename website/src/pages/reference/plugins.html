@@ -154,7 +154,7 @@ export default definePlugin({
               <tr><td><code>onComponentUpdate</code></td><td><code>component</code></td><td>State patch.</td></tr>
               <tr><td><code>onComponentDelete</code></td><td><code>component</code></td><td>Nothing.</td></tr>
               <tr><td><code>onBeforePageRender</code></td><td><code>component</code>, <code>state</code>, <code>page</code>, <code>session</code></td><td>State patch.</td></tr>
-              <tr><td><code>onAfterPageRender</code></td><td><code>result</code>, <code>session</code></td><td>Extra <code>CoraliteResult</code> outputs to save.</td></tr>
+              <tr><td><code>onAfterPageRender</code></td><td><code>result</code>, <code>session</code></td><td>Mutate <code>result</code> to adjust content or injected assets before save. The return value is ignored.</td></tr>
               <tr><td><code>onBeforeComponentRender</code></td><td><code>state</code>, <code>componentId</code>, <code>instanceId</code>, <code>refs</code>, <code>template</code></td><td>State patch merged before render.</td></tr>
               <tr><td><code>onAfterComponentRender</code></td><td><code>result</code>, <code>state</code>, <code>componentId</code>, <code>instanceId</code></td><td>AST patch merged after render.</td></tr>
             </tbody>

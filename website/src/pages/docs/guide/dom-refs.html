@@ -71,39 +71,32 @@
 
             <h3 id="2-client-side-client-block">2. Client-Side Client Block</h3>
 
-            <p>Inside your <code>defineComponent</code>'s <code>client</code> block, the refs plugin provides a helper function: <code>refs('yourName')</code>.</p>
+            <p>Inside the component's <code>client()</code> block, <code>refs('name')</code> resolves the element that declares that ref.</p>
 
             <p>Call this function with the name you defined in the template to retrieve the actual DOM element.</p>
 
             <code-block language="html">
-              <script type="module">
-                import { defineComponent } from 'coralite'
+              &lt;script type="module"&gt;
+                export function client ({ refs, signal }) {
+                  const input = refs('usernameInput')
+                  const button = refs('submitBtn')
 
-                export default defineComponent({
-                  client: ({ refs }) => {
-
-                    // Safe DOM element retrieval
-                    const input = refs('usernameInput')
-                    const button = refs('submitBtn')
-
-                    // Now use standard DOM APIs
-                    button.addEventListener('click', (e) => {
-                      e.preventDefault()
-                      console.log(`Submitted username: ${input.value}`)
-                    })
-                  }
-                })
-              </script>
+                  button.addEventListener('click', (event) =&gt; {
+                    event.preventDefault()
+                    console.log(`Submitted username: ${input.value}`)
+                  }, { signal })
+                }
+              &lt;/script&gt;
             </code-block>
 
-            <h2 id="under-the-hood-scoping-safety">Under the Hood: Scoping & Safety</h2>
+            <h2 id="under-the-hood-scoping-safety">Under the Hood: Scoping &amp; Safety</h2>
 
-            <p>The refs plugin is highly context-aware. Depending on how your component is compiled, it behaves differently to ensure maximum safety:</p>
+            <p>Refs are scoped to the component instance, which is why they survive component reuse in a way that a global CSS selector does not.</p>
 
             <ol>
-              <li><strong>Global Queries:</strong> For declarative components, the plugin queries <code>document.querySelector('[ref="..."]')</code> where the generated unique ref ID is assigned.</li>
-              <li><strong>Caching:</strong> The first time you call <code>refs('myEl')</code>, it performs the DOM query. If found, the DOM node is cached locally in the plugin. The next time you call <code>refs('myEl')</code>, it returns immediately without querying the DOM again.</li>
-              <li><strong>Null Safety:</strong> If the element isn't found (perhaps conditionally rendered out), the helper safely returns <code>null</code> without throwing an error.</li>
+              <li><strong>Instance scope:</strong> the ref id is stamped at compile time and resolved inside the instance, including refs owned by projected slot content.</li>
+              <li><strong>Guaranteed at mount:</strong> a template ref exists when <code>client()</code> runs. Guarding it with <code>if (!button) return</code> is redundant and reported as <code>CORALITE-W204</code>.</li>
+              <li><strong>Missing names fail validation:</strong> calling <code>refs('name')</code> for a name the template never declares is <code>CORALITE-E202</code>.</li>
             </ol>
 
             <h2 id="e2e-testing-hydration-readiness">E2E Testing & Hydration Readiness</h2>

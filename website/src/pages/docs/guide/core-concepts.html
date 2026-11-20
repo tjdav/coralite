@@ -32,7 +32,13 @@
       </div>
 
       <div class="lesson-body">
-        <p>Coralite is built on a "Native Web" philosophy. We believe that the most performant and maintainable web applications are those that embrace standard DOM APIs and minimize framework abstraction layers like the Virtual DOM.</p>
+        <p>Coralite is built on a "Native Web" philosophy. We believe that the most performant and maintainable applications are those that embrace standard DOM APIs and minimize framework abstraction layers like the Virtual DOM.</p>
+
+            <h2 id="one-platform-many-targets">One platform, many targets</h2>
+
+            <p>Coralite is web-first because the browser engine is the common runtime. A browser tab, an installed web app, an Electron or Tauri desktop window and a Capacitor mobile screen all render the same HTML, CSS and JavaScript. The platform is shared, so the component model is shared too.</p>
+
+            <p>What is not shared is the edge: storage, files, notifications, window controls, permissions, deep links and packaging. Those belong to the target. Core never assumes a URL bar, a network server or a hosting provider; target adapters add them through the plugin system. The full model is in <a href="/docs/guide/targets/">One Runtime, Every Platform</a>.</p>
 
             <h2 id="smart-state-dumb-template">Smart State, Dumb Template</h2>
 
@@ -97,14 +103,14 @@
               <li><strong>Separation of Concerns:</strong> Pages are strictly <strong>consumers</strong> of components. All logic is reserved for components, ensuring that pages remain clean, declarative, and easy to maintain.</li>
             </ul>
 
-            <h2 id="pages-as-consumers">Pages as Consumers</h2>
+            <h2 id="pages-as-consumers">Pages orchestrate, components encapsulate</h2>
 
-            <p>A fundamental architectural principle in Coralite is that <strong>Pages are consumers, not controllers</strong>. This means:</p>
+            <p>A page owns the document. It may declare <code>paths</code>, <code>meta</code>, <code>server</code>, <code>getters</code>, <code>style</code>, <code>provide</code>, <code>client</code> and <code>onError</code> for document-level concerns: routing, metadata, root theme variables, page-wide shortcuts, analytics and a page-level error boundary.</p>
 
             <ul>
-              <li><strong>No Page-Level Logic:</strong> Standard <code>.html</code> pages should not contain <code>&lt;script&gt;</code> tags that attempt to query or manipulate components.</li>
-              <li><strong>Encapsulated Interaction:</strong> Any interaction with the DOM must happen within a component's <code>client</code> block using the <code>ref</code> system. Attempting to select an element inside a component from a page script is an anti-pattern.</li>
-              <li><strong>Parent Coordination:</strong> If you find yourself needing to coordinate logic between two separate components on a page, those components should be wrapped in a "parent" component which encapsulates that coordination logic.</li>
+              <li><strong>Page handlers are real:</strong> they are not a legacy escape hatch. Use them for the document, not for a component's internals.</li>
+              <li><strong>Component interiors stay private:</strong> a page must not query or mutate the DOM inside a component. That is <code>CORALITE-PAGE-201</code>. Pass data down through attributes or <code>provide</code>, and listen for <code>emit</code> events going up.</li>
+              <li><strong>Coordination lives in a parent:</strong> when two components must coordinate, wrap them in a parent component that owns the interaction. If the value is document-wide, a page provider is the lighter option.</li>
             </ul>
       </div>
 
@@ -116,11 +122,12 @@
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#smart-state-dumb-template">Smart State, Dumb Template</a>
+        <a class="active" href="#one-platform-many-targets">One platform, many targets</a>
+        <a href="#smart-state-dumb-template">Smart State, Dumb Template</a>
         <a href="#the-reactivity-engine">The Reactivity Engine</a>
         <a href="#lazy-deep-reactivity">Lazy Deep Reactivity</a>
         <a href="#native-web-standards">Native Web Standards</a>
-        <a href="#pages-as-consumers">Pages as Consumers</a>
+        <a href="#pages-as-consumers">Pages orchestrate, components encapsulate</a>
       </div>
     </div>
   </docs-layout>

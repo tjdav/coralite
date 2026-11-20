@@ -45,7 +45,7 @@
 
             <h2 id="architecture-the-life-of-a-page">Architecture: The Life of a Page</h2>
 
-            <p>Understanding how Coralite processes your code is key to building performant websites. The lifecycle follows three distinct phases:</p>
+            <p>Understanding how Coralite processes your code is key to building performant applications. The lifecycle follows three distinct phases:</p>
 
             <ol>
               <li><strong>Build Phase (SSR):</strong> Coralite's compiler parses your components. It executes all <code>server</code> blocks, resolves attributes, and generates a static HTML file. Any data returned from the <code>server</code> block is serialized into a JSON state object and embedded in the page.</li>
@@ -58,37 +58,32 @@
             <p>The <code>server</code> block is the heart of Coralite's SSR capabilities. It is an <code>async</code> function that runs strictly on the server during the build phase.</p>
 
             <div class="doc-callout doc-callout--info">
-              <strong>💡 Pro Tip: Server-Only Imports</strong>
+              <strong>💡 Load server-only modules inside the block</strong>
               <p>
-                <strong>Top-level imports</strong> in your component's script block are treated as server-side only unless they are specifically accessed by the <code>client</code> block. This allows you to import heavy server-side libraries (like database drivers) without them ever reaching the browser.
+                Top-level imports belong to the module scope and are bundled with the component. Load a database driver, filesystem module or other Node-only dependency with <code>await import()</code> inside <code>server()</code>. That keeps it out of the browser bundle and satisfies the same rule that applies to page handlers.
               </p>
             </div>
 
             <p>The following example shows the full loop: fetching data on the server, passing it to the state, and rendering it in the template.</p>
 
             <code-block language="html">
-        <template id="user-profile">
-          <div class="user-card">
-            <h2>{{ user.name }}</h2>
-            <p>Rank: {{ user.rank }}</p>
-          </div>
-        </template>
+        &lt;template id="user-profile"&gt;
+          &lt;div class="user-card"&gt;
+            &lt;h2&gt;{{ userName }}&lt;/h2&gt;
+            &lt;p&gt;Rank: {{ userRank }}&lt;/p&gt;
+          &lt;/div&gt;
+        &lt;/template&gt;
 
         &lt;script type="module"&gt;
-          import { defineComponent } from 'coralite'
-          // Safely stays on the server
-          import { db } from '#lib/database'
+          export async function server () {
+            const { db } = await import('#lib/database')
+            const user = await db.query('SELECT name, rank FROM users LIMIT 1')
 
-          export default defineComponent({
-            // The server block executes during the build phase
-            async server () {
-              // 1. Fetch data securely
-              const userData = await db.query('SELECT name, rank FROM users LIMIT 1')
-
-              // 2. Return data to automatically populate the state and template
-              return { user: userData }
+            return {
+              userName: user.name,
+              userRank: user.rank
             }
-          })
+          }
         &lt;/script&gt;
             </code-block>
 
@@ -117,7 +112,7 @@
             <h3 id="recommended-patterns">Recommended Patterns</h3>
             <ul>
               <li><strong>Prerender Everything:</strong> If data doesn't change based on the user's session, fetch it in the <code>server</code> block.</li>
-              <li><strong>Strategic Splicing:</strong> Use <code>no-hydration</code> for 90% of your site (headers, footers, static content) to keep the client-side JS bundle tiny.</li>
+              <li><strong>Strategic Splicing:</strong> Use <code>no-hydration</code> for most of your interface (headers, footers, static content) to keep the client-side JS bundle tiny.</li>
               <li><strong>Lean State:</strong> Only return data from the <code>server</code> block that is actually needed by the template or <code>client</code> block.</li>
             </ul>
 

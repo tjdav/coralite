@@ -324,58 +324,49 @@
             <h2 id="reactive-styling-with-the-style-block">Reactive Styling with the style Block</h2>
 
             <p>
-              In addition to static <code>&lt;style&gt;</code> tags, Coralite components can drive dynamic CSS variables and inline host styles reactively via the top-level <code>style</code> block in <code>defineComponent</code>.
+              In addition to static <code>&lt;style&gt;</code> tags, Coralite components can drive dynamic CSS variables and inline host styles reactively via the top-level <code>style</code> block.
             </p>
 
             <p>
-              The <code>style</code> block allows you to define getters that return CSS custom properties (prefixed with <code>--</code>) or standard CSS properties based on component state. These CSS variables naturally cascade down through your component's template.
+              The <code>style</code> block defines functions that receive the context object and return CSS custom properties (prefixed with <code>--</code>) or standard CSS properties based on component state. These CSS variables naturally cascade down through your component's template.
             </p>
 
             <code-block language="html">
-              <template id="theme-button">
-                <button class="btn">Click me</button>
-              </template>
+              &lt;template id="theme-button"&gt;
+                &lt;button class="btn"&gt;Click me&lt;/button&gt;
+              &lt;/template&gt;
 
-              <style>
+              &lt;style&gt;
                 .btn {
                   background-color: var(--btn-bg, #0284c7);
                   color: var(--btn-color, #ffffff);
                   padding: 0.5rem 1rem;
                   border-radius: 0.375rem;
                 }
-              </style>
+              &lt;/style&gt;
 
-              <script type="module">
-                import { defineComponent } from 'coralite'
-
-                export default defineComponent({
-                  attributes: {
-                    variant: {
-                      type: String,
-                      default: 'primary',
-                      values: ['primary', 'dark', 'outline']
-                    }
-                  },
-                  style: {
-                    // Dynamically drive CSS variables on the custom element host
-                    '--btn-bg': (state) => {
-                      if (state.variant === 'dark') {
-                        return '#0f172a'
-                      }
-                      if (state.variant === 'outline') {
-                        return 'transparent'
-                      }
-                      return '#0284c7'
-                    },
-                    '--btn-color': (state) => {
-                      if (state.variant === 'outline') {
-                        return '#0284c7'
-                      }
-                      return '#ffffff'
-                    }
+              &lt;script type="module"&gt;
+                export const attributes = {
+                  variant: {
+                    type: String,
+                    default: 'primary',
+                    values: ['primary', 'dark', 'outline']
                   }
-                })
-              </script>
+                }
+
+                export const style = {
+                  '--btn-bg': ({ state }) =&gt; {
+                    if (state.variant === 'dark') {
+                      return '#0f172a'
+                    }
+                    if (state.variant === 'outline') {
+                      return 'transparent'
+                    }
+                    return '#0284c7'
+                  },
+                  '--btn-color': ({ state }) =&gt; state.variant === 'outline' ? '#0284c7' : '#ffffff'
+                }
+              &lt;/script&gt;
             </code-block>
 
             <h3 id="style-removal-normalization-rules">Style Removal & Normalization Rules</h3>

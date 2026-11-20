@@ -32,6 +32,11 @@
       </div>
 
       <div class="lesson-body">
+        <div class="doc-callout doc-callout--info">
+          <strong>Web-target plugin</strong>
+          <p>The router is an optional client-side layer for browser navigation. It requires a URL bar, link clicks and history, so desktop and mobile shells only benefit when their adapter maps native navigation to the same history model. Core keeps the multi-page default.</p>
+        </div>
+
         <p>Coralite's default navigation model is multi-page: every route is a fully pre-rendered static HTML document, and transitions between full page loads are animated with native View Transitions. That model is the right default for content sites — it is simple, SEO-complete, and works behind any static host.</p>
             <p>The opt-in <strong>router plugin</strong> (<code>coralite/plugins/router</code>) turns an application into a true single-page app on top of that same static output: it intercepts same-origin link clicks and history navigation, fetches the target route's pre-built HTML, and swaps only the <em>outlet</em> region in the browser. Nothing you see on the server changes — every route is still a real file. The router is a client-side layer over the static site.</p>
 

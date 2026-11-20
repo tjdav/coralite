@@ -241,18 +241,15 @@
         <button ref="submitBtn">Submit</button>
 
         &lt;script type="module">
-          import { defineComponent } from 'coralite'
+          export const getters = {
+            fullName: ({ state }) =&gt; `${state.firstName} ${state.lastName}`
+          }
 
-          export default defineComponent({
-            getters: {
-              fullName: ({ state }) => `${state.firstName} ${state.lastName}`
-            },
-            client ({ refs, signal, state }) {
-              refs('submitBtn').addEventListener('click', () => {
-                state.submitted = true
-              }, { signal })
-            }
-          })
+          export function client ({ refs, signal, state }) {
+            refs('submitBtn').addEventListener('click', () =&gt; {
+              state.submitted = true
+            }, { signal })
+          }
         &lt;/script&gt;
             </code-block>
 
@@ -289,23 +286,18 @@
 
             <h2 id="6-serialization-boundary">6. Serialization Boundary</h2>
 
-            <p>Coralite draws a strict boundary between build-time server execution and browser client runtime execution. The <code>server()</code> function runs in Node.js during build/SSG and its return value is serialized to JSON. The <code>client()</code> function runs in the browser and cannot close over outer module scope variables populated during <code>server()</code> execution.</p>
+            <p>Coralite draws a strict boundary between build-time server execution and browser client runtime execution. The <code>server()</code> function runs in Node.js during the build and its return value is serialized to JSON. The <code>client()</code> function runs in the browser and cannot close over outer module scope variables populated during <code>server()</code> execution.</p>
 
             <code-block language="javascript" filename="Serialization Boundary">
-        import { defineComponent } from 'coralite'
-
-        export default defineComponent({
-          // 1. Runs at build-time in Node.js
-          server () {
-            return {
-              serverTime: new Date().toISOString()
-            }
-          },
-          // 2. Runs in the browser runtime; receives serialized state
-          client ({ state }) {
-            console.log('Server rendered at:', state.serverTime)
+        export function server () {
+          return {
+            serverTime: new Date().toISOString()
           }
-        })
+        }
+
+        export function client ({ state }) {
+          console.log('Server rendered at:', state.serverTime)
+        }
             </code-block>
 
             <h2 id="7-no-defensive-guards">7. No Defensive Guards</h2>
@@ -313,17 +305,12 @@
             <p>Coralite guarantees that all context parameters destructured in block function signatures exist. Authors must not write defensive guards (such as <code>if (!lists) return</code> or <code>if (state == null) return</code>) against destructured context keys or guaranteed framework properties.</p>
 
             <code-block language="javascript" filename="Direct Context Usage">
-        import { defineComponent } from 'coralite'
-
-        export default defineComponent({
-          // Correct: Destructure directly without defensive checks
-          client ({ state, refs, signal }) {
-            const btn = refs('button')
-            btn.addEventListener('click', () => {
-              state.count++
-            }, { signal })
-          }
-        })
+        export function client ({ state, refs, signal }) {
+          const btn = refs('button')
+          btn.addEventListener('click', () =&gt; {
+            state.count++
+          }, { signal })
+        }
             </code-block>
 
             <hr>
