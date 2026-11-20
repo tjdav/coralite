@@ -22,6 +22,18 @@
 /* General */
 .code-comment { font-style: italic; color: var(--text-muted); }
 
+/* JSDoc comments */
+.code-comment .code-doctag {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--accent-pink);
+}
+
+.code-comment .code-type {
+  font-style: normal;
+  color: var(--accent-amber);
+}
+
 /* CSS Tokens */
 .code-selector-class,
 .code-selector-id { color: var(--accent-cyan); }
