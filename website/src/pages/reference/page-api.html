@@ -101,6 +101,16 @@ export const meta = {
 
         <p>Values seed state, so a token or getter can read them. Keys are not restricted to SEO fields: <code>campaign</code>, <code>locale</code> or <code>version</code> are equally valid.</p>
 
+        <p>Precedence is deterministic:</p>
+
+        <ul>
+          <li><code>meta</code> defaults seed state and <code>page.meta</code>.</li>
+          <li>Literal <code>&lt;title&gt;</code> and <code>&lt;meta&gt;</code> tags in the page remain authoritative over defaults.</li>
+          <li>Existing render state and <code>onPageSet</code> or <code>onBeforePageRender</code> patches override the defaults. The <code>server()</code> return value overrides last.</li>
+          <li>Returned keys update state only. Mutate <code>page.meta</code> directly when a handler must change metadata.</li>
+          <li>A schema entry without a default creates no state key and no <code>page.meta</code> entry.</li>
+        </ul>
+
         <h2 id="server">server()</h2>
 
         <p>The page handler runs at build time with the page's context and returns an object merged into page state. Unlike a component, it can also stop the render and emit a redirect stub.</p>
@@ -219,7 +229,7 @@ export function client ({ refs, signal, emit }) {
         <h2 id="related">Related</h2>
 
         <ul>
-          <li><a href="/docs/reference/pages/">Pages guide and routing reference</a> for file-based routes and patterns.</li>
+          <li><a href="/docs/reference/routing/">Pages guide and routing reference</a> for file-based routes and patterns.</li>
           <li><a href="/docs/reference/components/">Component overview</a> for the layer a page composes.</li>
           <li><a href="/reference/server/">server</a> for build-time data patterns shared with components.</li>
         </ul>

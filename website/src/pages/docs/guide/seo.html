@@ -49,6 +49,8 @@
 
         <p>Only <code>name="..."</code> attributes are extracted. <code>property="og:..."</code> and <code>name="twitter:..."</code> tags pass through to the output untouched; section 3 shows how to build them.</p>
 
+        <p>Keys are stored verbatim, so <code>&lt;meta name="publishDate"&gt;</code> becomes <code>page.meta.publishDate</code> and a hyphenated key stays hyphenated. Templates only accept flat tokens, so map arbitrary keys to state in <code>server()</code> or a getter before rendering them.</p>
+
         <p>Components on the page read the result in <code>server()</code> or <code>getters</code>:</p>
 
         <code-block language="html" filename="src/components/page-header.html">

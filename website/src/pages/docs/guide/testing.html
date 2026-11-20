@@ -131,7 +131,7 @@
         })
             </code-block>
 
-            <p><strong>Scope:</strong> <code>loadComponent</code> and <code>loadPage</code> inject context into <code>server()</code> and <code>client()</code> wrappers. They do not execute the plugin's Phase 1/Phase 2 setup. For getters, style, slots, or top-level plugin context, use a stub plugin registered through <code>createCoralite</code> (see the <a href="/docs/guide/e2e-testing.html#plugin-mocking">Plugin Mocking</a> section of the E2E guide).</p>
+            <p><strong>Scope:</strong> <code>loadComponent</code> and <code>loadPage</code> inject context into <code>server()</code> and <code>client()</code> wrappers. They do not execute the plugin's Phase 1/Phase 2 setup. For getters, style, slots, or top-level plugin context, use a stub plugin registered through <code>createCoralite</code> (see the <a href="/docs/guide/e2e-testing/#plugin-mocking">Plugin Mocking</a> section of the E2E guide).</p>
 
             <code-block language="javascript" filename="Stub Plugin for Isomorphic Context">
         import { createCoralite, definePlugin } from 'coralite'
@@ -151,45 +151,11 @@
 
             <h2 id="2-end-to-end-e2e-testing">2. End-to-End (E2E) Testing</h2>
 
-            <p>For end-to-end verification in real browser environments (such as Playwright or Cypress), Coralite exposes hydration testing helpers when built in testing mode (<code>mode: 'testing'</code>).</p>
-
-            <h3 id="the-window-coralite-test-api">The window.__coralite__.test API</h3>
-
-            <p>When mode is set to <code>'testing'</code> (or when using <code>coralite test</code>), the browser exposes <code>window.__coralite__.test</code> on the global runtime namespace:</p>
-
-            <ul>
-              <li><code>window.__coralite__.test.ready</code>: A Promise resolving when <code>data-coralite-ready</code> is set on <code>&lt;html&gt;</code> and all initial component <code>client()</code> controllers finish execution.</li>
-              <li><code>window.__coralite__.test.reset()</code>: Clears <code>localStorage</code>, <code>sessionStorage</code>, IndexedDB databases, and service worker registrations without triggering a hard page reload.</li>
-              <li><code>window.__coralite__.test.flush()</code>: Awaits active microtask DOM batch updates across all custom element instances.</li>
-              <li><code>window.__coralite__.test.getComponent(element)</code>: Returns the testing harness for a hydrated custom element instance.</li>
-              <li><code>window.__coralite__.test.getInstances(tagName?)</code>: Returns all hydrated custom element instances in the document (or filtered by <code>tagName</code>).</li>
-              <li><code>window.__coralite__.test.getEvents()</code>: Returns the telemetry log of dispatched component <code>CustomEvent</code> instances.</li>
-              <li><code>window.__coralite__.test.getHydratedCount()</code>: Returns the total count of hydrated component instances on the page.</li>
-            </ul>
-
-            <h3 id="playwright-test-example">Playwright Test Example</h3>
-
-            <code-block language="javascript" filename="Playwright E2E Test Suite">
-        import { test, expect } from '@playwright/test'
-
-        test('counter button increments state post-hydration', async ({ page }) => {
-          await page.goto('http://localhost:4200/')
-
-          // 1. Wait for framework hydration readiness
-          await page.evaluate(() => window.__coralite__.test.ready)
-
-          // 2. Interact with hydrated component
-          const button = page.locator('button[ref="counter"]')
-          await button.click()
-
-          // 3. Assert updated state in DOM
-          await expect(button).toHaveText('Count: 1')
-        })
-            </code-block>
+            <p>E2E tests run against the testing server with <code>mode: 'testing'</code>. The runtime exposes <code>window.__coralite__.test</code> for hydration readiness, resets, DOM flushes, instance lookup and event telemetry. The <a href="/docs/guide/e2e-testing/">E2E Testing guide</a> covers the API, selector strategy, mocks and failure diagnostics in full.</p>
 
             <h3 id="test-fixtures-isolation">Test Fixtures Isolation</h3>
 
-            <p>Always place component test fixtures in a dedicated directory (such as <code>tests/fixtures/</code>) configured via <code>fixtures</code> in <code>coralite.config.js</code>. Never author test fixture pages inside <code>src/pages/</code>. In development and test servers (<code>coralite dev</code> and <code>coralite test</code>), fixtures are mounted under <code>/__fixtures__/&lt;name&gt;</code>. When building for production (<code>coralite build</code>), Coralite automatically excludes all test fixtures and test directories (e.g. <code>__test__</code>, <code>*.test.html</code>) to guarantee zero pollution in <code>dist/</code>.</p>
+            <p>Always place component test fixtures in a dedicated directory (such as <code>tests/fixtures/</code>) configured via <code>fixtures</code> in <code>coralite.config.js</code>. Never author test fixture pages inside <code>src/pages/</code>. In development and test servers (<code>coralite dev</code> and <code>coralite test</code>), fixtures are mounted under <code>/__fixtures__/&lt;name&gt;</code>. Production builds exclude all test fixtures and test directories, so <code>dist/</code> stays clean.</p>
 
             <h2 id="3-production-deployment">3. Production Deployment</h2>
 
@@ -237,35 +203,7 @@
 
             <h2 id="4-content-security-policy-csp">4. Content Security Policy (CSP)</h2>
 
-            <p>Content Security Policy is a web-target concern. Coralite can generate hashes or nonces to protect a site against Cross-Site Scripting (XSS) and code injection when the output is served to a browser over HTTP. Desktop and mobile shells may still use it, but the host decides whether the headers apply.</p>
-
-            <h3 id="csp-configuration">CSP Configuration</h3>
-
-            <p>Enable and configure CSP directly in <code>coralite.config.js</code>:</p>
-
-            <code-block language="javascript" filename="coralite.config.js CSP Configuration">
-        import { defineConfig } from 'coralite'
-
-        export default defineConfig({
-          csp: {
-            enabled: true,
-            hashAlgorithm: 'sha256',
-            injectMeta: true,
-            directives: {
-              'default-src': ["'self'"],
-              'script-src': ["'self'"],
-              'style-src': ["'self'"]
-            }
-          }
-        })
-            </code-block>
-
-            <h3 id="hash-mode-vs-nonce-mode">Hash Mode vs Nonce Mode</h3>
-
-            <ul>
-              <li><strong>Static Hash Mode (Default):</strong> During build, Coralite computes cryptographic hashes (SHA-256) for all inline scripts, import maps, and styles, injecting <code>&lt;meta http-equiv="Content-Security-Policy" content="..."&gt;</code> into the document head.</li>
-              <li><strong>SSR Nonce Mode:</strong> When rendering on demand, pass a per-request cryptographic <code>nonce</code> option to <code>coralite.build(url, { nonce })</code> to propagate nonce attributes across framework scripts.</li>
-            </ul>
+            <p>CSP is a web-target concern: the host controls the response headers, and Coralite generates the hashes or nonces. The <a href="/docs/guide/csp/">CSP guide</a> covers static hashing, request-time nonces, external-only mode and route-level overrides.</p>
 
             <hr>
 

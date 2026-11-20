@@ -77,7 +77,7 @@ export const formAssociated: boolean
 
         <h2 id="value-synchronization">Value synchronization</h2>
 
-        <p>The browser does not read component state. Call <code>setFormValue</code> whenever the submitted value changes, including once at mount, or the form submits the empty default. Keep the value in the same shape a native input would submit: a string, or a <code>File</code> / <code>FormData</code> for richer controls.</p>
+        <p>The browser does not read component state. Call <code>setFormValue</code> whenever the submitted value changes, including once at mount, or the form submits the empty default. It accepts a string, a <code>File</code> or <code>FormData</code> for richer controls, or <code>null</code> to clear the submitted value.</p>
 
         <code-block language="javascript" filename="value.js">
 export const formControl = true
@@ -115,6 +115,8 @@ function syncValidity ({ state, refs, setValidity }) {
         </code-block>
 
         <p>The anchor element is what the browser focuses and scrolls to when it reports the error. Point it at the visible input inside the component, not at the host, otherwise the tooltip has nowhere to attach.</p>
+
+        <p>There is one automatic bridge. If an attribute named <code>value</code> fails schema validation, Coralite maps <code>state.errors.value</code> to <code>{ customError: true }</code> unless <code>setValidity</code> has already been called manually. Every other attribute error stays in <code>state.errors</code> and the <code>error_*</code> tokens; map those to validity yourself when the browser must report them.</p>
 
         <h2 id="reset-and-disabled">Reset and disabled</h2>
 

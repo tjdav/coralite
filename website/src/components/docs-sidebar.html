@@ -8,7 +8,6 @@
       <a href="/docs/guide/ssr/" data-page="guide/ssr">Server-Side Rendering (SSR)</a>
       <a href="/docs/guide/components/" data-page="guide/components">Components</a>
       <a href="/docs/guide/dom-refs/" data-page="guide/dom-refs">Managing the DOM</a>
-      <a href="/docs/guide/page-metadata/" data-page="guide/page-metadata">Page Metadata</a>
       <a href="/docs/guide/page-variables/" data-page="guide/page-variables">Built-in Page Variables</a>
       <a href="/docs/guide/validation/" data-page="guide/validation">Self-Healing Code & Diagnostics</a>
       <a href="/docs/guide/csp/" data-page="guide/csp">Content Security Policy (CSP)</a>
@@ -33,20 +32,15 @@
     </div>
 
     <div class="docs-group docs-group--reference">
-      <h4>Reference</h4>
-      <a href="/docs/reference/cli/" data-page="reference/cli">Coralite CLI</a>
+      <h4>Internals</h4>
       <a href="/docs/reference/config/" data-page="reference/config">Configuration Reference</a>
-      <a href="/docs/reference/pages/" data-page="reference/pages">Pages & Routing Reference</a>
-      <a href="/docs/reference/components/" data-page="reference/components">Components Reference</a>
-      <a href="/docs/reference/define-component/" data-page="reference/define-component">Component API Reference</a>
+      <a href="/docs/reference/routing/" data-page="reference/routing">Routing Reference</a>
+      <a href="/docs/reference/components/" data-page="reference/components">Component Contract</a>
       <a href="/docs/reference/imperative-components/" data-page="reference/imperative-components">Imperative Components</a>
       <a href="/docs/reference/coralite-ignore/" data-page="reference/coralite-ignore">coralite-ignore Reference</a>
       <a href="/docs/reference/lists/" data-page="reference/lists">Lists & Store Reference</a>
-      <a href="/docs/reference/forms/" data-page="reference/forms">Forms Reference</a>
-      <a href="/docs/reference/plugins/" data-page="reference/plugins">Plugins Reference</a>
-      <a href="/docs/reference/define-plugin/" data-page="reference/define-plugin">definePlugin API</a>
+      <a href="/docs/reference/plugins/" data-page="reference/plugins">Built-in Plugins</a>
       <a href="/docs/reference/non-features/" data-page="reference/non-features">Non-Features Reference</a>
-      <a href="/docs/reference/e2e-testing/" data-page="reference/e2e-testing">Hydration Readiness & E2E Testing</a>
       <a href="/docs/reference/coralite-scripts/" data-page="reference/coralite-scripts">Coralite Scripts (Deprecated)</a>
       <a href="/docs/reference/dom/" data-page="reference/dom">Coralite DOM Structure</a>
       <a href="/docs/reference/types/" data-page="reference/types">Coralite Type Reference</a>
@@ -139,7 +133,6 @@
   :host([active="guide/ssr"]) [data-page="guide/ssr"],
   :host([active="guide/components"]) [data-page="guide/components"],
   :host([active="guide/dom-refs"]) [data-page="guide/dom-refs"],
-  :host([active="guide/page-metadata"]) [data-page="guide/page-metadata"],
   :host([active="guide/page-variables"]) [data-page="guide/page-variables"],
   :host([active="guide/validation"]) [data-page="guide/validation"],
   :host([active="guide/csp"]) [data-page="guide/csp"],
@@ -156,19 +149,14 @@
   :host([active="guide/core-concepts"]) [data-page="guide/core-concepts"],
   :host([active="concepts/reactivity"]) [data-page="concepts/reactivity"],
   :host([active="concepts/styling"]) [data-page="concepts/styling"],
-  :host([active="reference/cli"]) [data-page="reference/cli"],
   :host([active="reference/config"]) [data-page="reference/config"],
-  :host([active="reference/pages"]) [data-page="reference/pages"],
+  :host([active="reference/routing"]) [data-page="reference/routing"],
   :host([active="reference/components"]) [data-page="reference/components"],
-  :host([active="reference/define-component"]) [data-page="reference/define-component"],
   :host([active="reference/imperative-components"]) [data-page="reference/imperative-components"],
   :host([active="reference/coralite-ignore"]) [data-page="reference/coralite-ignore"],
   :host([active="reference/lists"]) [data-page="reference/lists"],
-  :host([active="reference/forms"]) [data-page="reference/forms"],
   :host([active="reference/plugins"]) [data-page="reference/plugins"],
-  :host([active="reference/define-plugin"]) [data-page="reference/define-plugin"],
   :host([active="reference/non-features"]) [data-page="reference/non-features"],
-  :host([active="reference/e2e-testing"]) [data-page="reference/e2e-testing"],
   :host([active="reference/coralite-scripts"]) [data-page="reference/coralite-scripts"],
   :host([active="reference/dom"]) [data-page="reference/dom"],
   :host([active="reference/types"]) [data-page="reference/types"],

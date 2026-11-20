@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="Routing Reference"
+    description="How file paths become routes: dynamic segments, path enumeration, URL conventions, navigation, the 404 convention and redirects."
+    section="Docs"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <docs-sidebar slot="sidebar" active="reference/routing"></docs-sidebar>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/docs/">Docs</a>
+        <span class="separator">/</span>
+        <a href="/docs/reference/">Internals</a>
+        <span class="separator">/</span>
+        <span>Routing</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>Routing Reference</h1>
+          <ui-badge variant="cyan">Reference</ui-badge>
+        </div>
+        <p class="subhead">How file paths become routes: dynamic segments, path enumeration, URL conventions, navigation, the 404 convention and redirects.</p>
+      </div>
+
+      <div class="lesson-body">
+        <p>Page exports, <code>meta</code>, <code>server()</code> and the page block contexts are specified in the <a href="/reference/page-api/">Page API reference</a>. This page covers routing only.</p>
+
+        <h2 id="1-page-structure">1. Page structure</h2>
+
+        <p>A page is an HTML document in <code>src/pages</code>. It may contain exactly one Coralite page controller <code>&lt;script&gt;</code>, which exports page blocks or uses <code>definePage</code>. That script is removed from the output. Normal inline and external scripts are allowed alongside it and are never evaluated as page modules.</p>
+
+        <p>Pages that need no dynamic data or path enumeration can be pure HTML. Coralite processes static pages during the build without a controller script.</p>
+
+        <p>More than one page controller fails the page with <code>CORALITE-E107</code>. For literal script or markup regions, see <a href="/docs/reference/coralite-ignore/"><code>coralite-ignore</code></a>.</p>
+
+        <h2 id="2-file-based-routing">2. File-based routing</h2>
+
+        <p>The file path below <code>src/pages</code> is the route:</p>
+
+        <ul>
+          <li><code>pages/about.html</code> becomes <code>/about</code></li>
+          <li><code>pages/index.html</code> becomes <code>/</code></li>
+          <li><code>pages/blog/index.html</code> becomes <code>/blog</code></li>
+        </ul>
+
+        <p>Subdirectories create nested paths. An <code>index.html</code> serves as the route for its directory.</p>
+
+        <h2 id="3-dynamic-routes">3. Dynamic routes</h2>
+
+        <p>Square brackets declare parameters in file or directory names. Values are extracted during routing and passed to page context through <code>route.params</code>.</p>
+
+        <ul>
+          <li><code>pages/posts/[id].html</code> becomes <code>/posts/:id</code>. <code>/posts/123</code> yields <code>route.params.id = '123'</code>.</li>
+          <li><code>pages/[year]/[month].html</code> becomes <code>/:year/:month</code>. <code>/2025/03</code> yields both parameters.</li>
+          <li><code>pages/posts/[id]/index.html</code> is the same route as <code>pages/posts/[id].html</code>.</li>
+          <li><code>pages/docs/[...slug].html</code> is a catch-all. It matches <code>/docs</code>, <code>/docs/a</code> and <code>/docs/a/b</code>, with <code>route.params.slug = 'a/b'</code> for the last case.</li>
+        </ul>
+
+        <p>When resolving a URL, static segments win over parameter segments, which win over catch-all segments, evaluated from left to right.</p>
+
+        <h2 id="4-enumeration-via-paths">4. Enumeration via paths</h2>
+
+        <p>Dynamic routes must enumerate the parameter combinations to build. Export a <code>paths</code> function returning an array of parameter objects. It receives <code>{ app }</code> and may be asynchronous.</p>
+
+        <code-block language="javascript" filename="src/pages/posts/[id].html">
+export async function paths () {
+  const fs = await import('node:fs/promises')
+  const files = await fs.readdir('src/data/posts')
+
+  return files.map((file) =&gt; ({
+    id: file.replace(/\.json$/, '')
+  }))
+}
+        </code-block>
+
+        <p>Return parameter objects, not paths. Every declared parameter must be present, values must be strings, and extra keys are rejected with <a href="/reference/diagnostics/#coralite-e402"><code>CORALITE-E402</code></a>. Plugins can contribute additional paths by returning <code>{ paths }</code> from <code>onPageSet</code>; duplicates across sources are a build error.</p>
+
+        <p>See the <a href="/reference/page-api/#paths">Page API reference</a> for the full contract.</p>
+
+        <h2 id="5-the-route-context-key">5. The route context key</h2>
+
+        <p><code>route</code> is available in page <code>server()</code>, getters, client and error boundaries:</p>
+
+        <code-block language="typescript" filename="route.ts">
+interface CoraliteRoute {
+  path: string
+  pattern: string
+  params: Record&lt;string, string&gt;
+  dynamic: boolean
+}
+        </code-block>
+
+        <code-block language="javascript" filename="reading-route.js">
+export const getters = {
+  activeTab: ({ route }) =&gt; route.params.id || 'overview'
+}
+
+export function client ({ route }) {
+  console.log('Page mounted at', route.path, route.params)
+}
+        </code-block>
+
+        <h2 id="6-url-conventions">6. URL conventions</h2>
+
+        <p>The <code>cleanUrls</code> option controls output filenames and <code>route.path</code>:</p>
+
+        <code-block language="javascript" filename="coralite.config.js">
+import { defineConfig } from 'coralite'
+
+export default defineConfig({
+  cleanUrls: true
+})
+        </code-block>
+
+        <ul>
+          <li><code>cleanUrls: true</code> (default): <code>pages/about.html</code> writes <code>dist/about/index.html</code> with <code>route.path = '/about'</code>.</li>
+          <li><code>cleanUrls: false</code>: the same page writes <code>dist/about.html</code> with <code>route.path = '/about.html'</code>.</li>
+          <li>Nested index pages represent their directory. <code>pages/docs/guide/index.html</code> writes <code>dist/docs/guide/index.html</code> with <code>route.path = '/docs/guide'</code> under the default.</li>
+          <li><code>pages/docs/guide.html</code> and <code>pages/docs/guide/index.html</code> produce the same route and cannot both exist.</li>
+          <li>The root page always writes <code>dist/index.html</code> with <code>route.path = '/'</code>.</li>
+        </ul>
+
+        <h2 id="7-navigation">7. Navigation</h2>
+
+        <p>Navigation uses standard anchors and full document loads, animated with native View Transitions when enabled:</p>
+
+        <code-block language="html">
+&lt;nav&gt;
+  &lt;a href="/"&gt;Home&lt;/a&gt;
+  &lt;a href="/about/"&gt;About&lt;/a&gt;
+  &lt;a href="/posts/123/"&gt;Read Post&lt;/a&gt;
+&lt;/nav&gt;
+        </code-block>
+
+        <p>Set <code>viewTransitions: true</code> in the project configuration to enable crossfades between full page loads. No client router is required.</p>
+
+        <h2 id="8-404-convention">8. 404 convention</h2>
+
+        <p>A root <code>pages/404.html</code> compiles to <code>dist/404.html</code> with <code>route.path = '/404'</code>, which static hosts use as the fallback page. Subdirectory 404 files are ordinary content pages.</p>
+
+        <h2 id="9-redirects">9. Redirects</h2>
+
+        <p>Host-level redirects are preferable in production. Pages can also emit a static redirect stub by returning <code>__redirect</code> from <code>server()</code>:</p>
+
+        <code-block language="javascript" filename="redirect.js">
+export function server ({ route }) {
+  return {
+    __redirect: {
+      to: '/docs/getting-started/',
+      status: 301
+    }
+  }
+}
+        </code-block>
+
+        <p>The value is an object with <code>to</code> and an optional <code>status</code> of <code>301</code> or <code>302</code>. Relative targets start with <code>/</code>; absolute HTTP and HTTPS targets are allowed. Coralite writes a small HTML stub with a meta refresh, canonical link and <code>location.replace()</code> fallback.</p>
+
+        <h2 id="10-spa-router">10. SPA router</h2>
+
+        <p>The optional <code>coralite/plugins/router</code> turns the same static output into a client-side router. Every route is still a real file; the plugin intercepts same-origin links and swaps only the outlet.</p>
+
+        <p>See the <a href="/docs/guide/spa-router/">SPA Router Guide</a> for patterns and the <a href="/docs/reference/plugins/router/">Router Plugin Reference</a> for configuration and the client API.</p>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/docs/reference/" variant="secondary">← Internals</ui-link>
+        <ui-link href="/reference/page-api/" variant="primary">Page API →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#1-page-structure">1. Page structure</a>
+        <a href="#2-file-based-routing">2. File-based routing</a>
+        <a href="#3-dynamic-routes">3. Dynamic routes</a>
+        <a href="#4-enumeration-via-paths">4. Enumeration via paths</a>
+        <a href="#5-the-route-context-key">5. The route context key</a>
+        <a href="#6-url-conventions">6. URL conventions</a>
+        <a href="#7-navigation">7. Navigation</a>
+        <a href="#8-404-convention">8. 404 convention</a>
+        <a href="#9-redirects">9. Redirects</a>
+        <a href="#10-spa-router">10. SPA router</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>
