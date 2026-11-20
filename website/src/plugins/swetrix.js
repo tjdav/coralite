@@ -187,52 +187,87 @@ function injectBootstrap (component, src) {
   relinkChildren(container)
 }
 
+const bootstrapPaths = new Map()
+
 /**
- * Creates the website's self-hosted Swetrix analytics plugin.
+ * Gets a stable key for a plugin configuration.
+ *
+ * @param {SwetrixOptions} config - Swetrix plugin configuration.
+ * @returns {string} Stable configuration key.
+ */
+function configKey (config) {
+  return JSON.stringify(config)
+}
+
+/**
+ * Website self-hosted Swetrix analytics plugin.
  *
  * The website is static, so the tracker is loaded through a generated
  * self-origin bootstrap rather than the Coralite client runtime.
- *
- * @param {SwetrixOptions} options - Swetrix project and self-hosting settings.
- * @returns {ReturnType<typeof definePlugin>} Configured website plugin.
  */
-export default function swetrixPlugin (options) {
-  if (!options?.projectId || !options.scriptSrc || !options.apiUrl) {
-    throw new Error('swetrixPlugin requires projectId, scriptSrc, and apiUrl')
-  }
-
-  let bootstrapPath = null
-
-  return definePlugin({
-    name: 'swetrix-analytics',
-    server: {
-      async onBeforeBuild ({ app }) {
-        const source = createBootstrap(options)
-        const filename = `swetrix-${createHash('sha256').update(source).digest('hex').slice(0, 8)}.js`
-        const assetPath = `assets/js/${filename}`
-        const base = (app.options.baseURL || '/').endsWith('/') ? app.options.baseURL : `${app.options.baseURL}/`
-
-        await app.writeFile(assetPath, source)
-        bootstrapPath = `${base}${assetPath}`
-      },
-      onBeforePageRender ({ component }) {
-        if (bootstrapPath) {
-          injectBootstrap(component, bootstrapPath)
-        }
-      }
+export const swetrixPlugin = definePlugin({
+  name: 'swetrix-analytics',
+  config: {
+    projectId: {
+      type: String,
+      required: true
     },
-    client: {
-      context: () => () => ({
-        analytics: {
-          track (name, meta) {
-            const coralite = window['__coralite__']
-            const api = coralite && coralite.plugins ? coralite.plugins.analytics : null
-            if (api) {
-              api.track(name, meta)
-            }
+    scriptSrc: {
+      type: String,
+      required: true
+    },
+    apiUrl: {
+      type: String,
+      required: true
+    },
+    trackLocalhost: {
+      type: Boolean,
+      default: false
+    },
+    respectDnt: {
+      type: Boolean,
+      default: true
+    },
+    respectGpc: {
+      type: Boolean,
+      default: true
+    },
+    exclude: {
+      type: Array,
+      default: []
+    }
+  },
+  server: {
+    async onBeforeBuild ({ app, config }) {
+      const source = createBootstrap(config)
+      const filename = `swetrix-${createHash('sha256').update(source).digest('hex').slice(0, 8)}.js`
+      const assetPath = `assets/js/${filename}`
+      const base = (app.options.baseURL || '/').endsWith('/') ? app.options.baseURL : `${app.options.baseURL}/`
+
+      await app.writeFile(assetPath, source)
+      bootstrapPaths.set(configKey(config), `${base}${assetPath}`)
+    },
+    onBeforePageRender ({ component, config }) {
+      const bootstrapPath = bootstrapPaths.get(configKey(config))
+      if (bootstrapPath) {
+        injectBootstrap(component, bootstrapPath)
+      }
+    }
+  },
+  client: {
+    context: () => () => ({
+      analytics: {
+        track (name, meta) {
+          const coralite = window['__coralite__']
+          const api = coralite && coralite.plugins ? coralite.plugins.analytics : null
+          if (api) {
+            api.track(name, meta)
           }
         }
-      })
-    }
-  })
-}
+      }
+    })
+  }
+})
+
+export default swetrixPlugin
+
