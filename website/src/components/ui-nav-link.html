@@ -11,8 +11,15 @@
   }
 
   export const getters = {
-    activeClass: ({ state }) => (state.active ? 'c-nav-link--active' : ''),
-    current: ({ state }) => (state.active ? 'page' : null)
+    activeClass: ({ state, route }) => (state.active || isCurrentPath(route, state.href) ? 'c-nav-link--active' : ''),
+    current: ({ state, route }) => (state.active || isCurrentPath(route, state.href) ? 'page' : null)
+  }
+
+  function isCurrentPath (route, href) {
+    if (!route || !route.path) {
+      return false
+    }
+    return route.path.replace(/\/+$/, '') === href.replace(/\/+$/, '')
   }
 </script>
 

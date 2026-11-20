@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="Reference — Coralite"
-    description="The complete contract for components, pages, plugins, and the CLI. Each page documents one export, its TypeScript signature, and the diagnostics that guard it."></page-meta>
+    description="The complete contract for components, pages, plugins, and the CLI. Every export with its signature, context and diagnostics."></page-meta>
 </head>
 <body>
   <site-header></site-header>
@@ -14,7 +14,7 @@
     <section class="hero-section">
       <ui-badge variant="cyan">API Reference</ui-badge>
       <h1>Every export, precisely specified.</h1>
-      <p class="subhead">The complete contract for components, pages, plugins, and the CLI. Each page documents one export, its TypeScript signature, and the diagnostics that guard it.</p>
+      <p class="subhead">The complete contract for components, pages, plugins, and the CLI. Each page documents one export, its signature, the context it receives, and the diagnostics that guard it.</p>
     </section>
 
     <section class="ref-section">
@@ -62,6 +62,24 @@
           <ui-card hoverable>
             <h3>formControl</h3>
             <p>Opt into native form association and constraint validation.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/provide-consume/">
+          <ui-card hoverable>
+            <h3>provide &amp; consume</h3>
+            <p>Share values with descendants through the W3C context protocol.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/list-strategy/">
+          <ui-card hoverable>
+            <h3>listStrategy</h3>
+            <p>Choose between a full reactive update and a direct DOM patch for list changes.</p>
+          </ui-card>
+        </a>
+        <a class="ref-card" href="/reference/on-error/">
+          <ui-card hoverable>
+            <h3>onError</h3>
+            <p>Render fallback markup when a component or page fails during the build.</p>
           </ui-card>
         </a>
       </div>

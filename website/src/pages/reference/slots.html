@@ -5,36 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="slots"
-    description="Intercept and transform projected child content on the server before it is rendered."
+    description="Transforms projected light-DOM children before they reach the slot, on the server and in the browser."
     section="Reference"></page-meta>
 </head>
 <body>
   <site-header></site-header>
 
   <docs-layout>
-    <div slot="sidebar">
-      <ui-accordion title="Component API" open>
-        <ui-nav-link href="/reference/attributes/">attributes</ui-nav-link>
-        <ui-nav-link href="/reference/client/">client</ui-nav-link>
-        <ui-nav-link href="/reference/server/">server</ui-nav-link>
-        <ui-nav-link href="/reference/getters/">getters</ui-nav-link>
-        <ui-nav-link href="/reference/style/">style</ui-nav-link>
-        <ui-nav-link href="/reference/slots/" active>slots</ui-nav-link>
-        <ui-nav-link href="/reference/form-control/">formControl</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Page API">
-        <ui-nav-link href="/reference/page-api/">paths & definePage</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Plugin API">
-        <ui-nav-link href="/reference/plugins/">definePlugin</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="CLI">
-        <ui-nav-link href="/reference/cli/">commands</ui-nav-link>
-      </ui-accordion>
-    </div>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
 
     <div slot="content">
       <ui-breadcrumb>
@@ -50,67 +28,136 @@
           <h1>slots</h1>
           <ui-badge variant="cyan">Stable</ui-badge>
         </div>
-        <p class="subhead">Intercept and transform projected child content on the server before it is rendered.</p>
+        <p class="subhead">Filters, sorts or rebuilds projected children before they are distributed into the template's slots.</p>
       </div>
 
       <div class="lesson-body">
-        <h2 id="typescript-signature">TypeScript Signature</h2>
+        <div class="doc-callout doc-callout--info">
+          <strong>Build time and browser.</strong>
+          <p>The server transform runs while the page is rendered. In the browser, slot content is re-evaluated when tracked state changes, so a transform that reads a counter and sorts by it stays live.</p>
+        </div>
+
+        <h2 id="signature">Signature</h2>
+
         <code-block language="typescript" filename="slots.ts">
-export const slots: Record&lt;string, (
-  context: {
-    nodes: any[];
-    state: Record&lt;string, any&gt;;
-    isServer: boolean;
-    isClient: boolean;
-    slots: Record&lt;string, any&gt;;
-  }
-) =&gt; any[] | undefined&gt;
+export const slots: Record&lt;string, (context: CoraliteSlotBuilderContext) =&gt; SlotResult&gt;
+
+interface CoraliteSlotBuilderContext {
+  name: string
+  nodes: Node[]
+  state: Readonly&lt;Record&lt;string, any&gt;&gt;
+  root: HTMLElement | null
+  refs: (name: string) =&gt; HTMLElement | null
+  signal: AbortSignal
+  isServer: boolean
+}
+
+type SlotResult =
+  | Node
+  | Node[]
+  | string
+  | null
+  | undefined
+  | Promise&lt;Node | Node[] | string | null | undefined&gt;
         </code-block>
 
-        <h2 id="server-side-transformation">Server-Side Transformation</h2>
-        <p>The <code>slots</code> export runs exclusively during the SSR build phase. It intercepts the raw DOM nodes projected into a <code>slot</code>, allows you to manipulate them (or extract text), and returns the transformed array of nodes that will be rendered into the final HTML.</p>
+        <p>Keys match slot names. <code>default</code> handles children without a <code>slot</code> attribute, and every other key handles <code>&lt;slot name="…"&gt;</code>. Content projected into a name the template never renders is dropped, so the slot element is the real contract.</p>
 
-        <p>This is how the <code>code-block</code> component applies syntax highlighting to its children.</p>
+        <h2 id="return-values">Return values</h2>
 
-        <code-block language="javascript" filename="highlight.js">
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Return</th>
+                <th scope="col">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>undefined</code></td><td>Leave the projected content untouched.</td></tr>
+              <tr><td>Array of nodes</td><td>Replace the projection with these nodes, in order.</td></tr>
+              <tr><td>Single node</td><td>Replace the projection with one node.</td></tr>
+              <tr><td>String</td><td>Replace the projection with parsed HTML (browser only).</td></tr>
+              <tr><td><code>null</code>, <code>''</code>, empty array</td><td>Remove the projection so the slot's fallback content renders.</td></tr>
+              <tr><td>Promise</td><td>Resolved on the client; the latest resolution wins and stale ones are discarded.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="filtering">Filtering</h2>
+
+        <p>Filtering is the common case: keep matching children, drop the rest. The transform receives parsed nodes, so <code>nodeType</code> and <code>matches</code> are available in both environments.</p>
+
+        <code-block language="javascript" filename="filter.js">
 export const slots = {
-  default: ({ nodes, state }) => {
-    // Guard against client execution
-    if (typeof window !== 'undefined') return
-
-    // Extract text and highlight it
-    let text = extractText(nodes)
-    const highlighted = hljs.highlight(text, { language: 'html' })
-    
-    // Return new AST nodes
-    return parseHTML(highlighted.value)
-  }
+  default: ({ nodes }) =&gt; nodes.filter((node) =&gt; {
+    if (node.nodeType !== 1) {
+      return true
+    }
+    return node.hasAttribute('data-visible')
+  })
 }
         </code-block>
 
-        <h2 id="the-code-block-example">The Code-Block Example</h2>
-        <p>The <code>code-block</code> component is the perfect case study for this API. It extracts the raw text from the slot, strips leading indentation, runs it through <code>highlight.js</code>, and replaces the original text nodes with syntax-highlighted HTML nodes.</p>
+        <h2 id="querying-slot-content">Querying slot content</h2>
 
-        <code-block language="javascript" filename="guard.js">
-export const slots = {
-  default: ({ nodes }) => {
-    // 1. Ensure this only runs on the server
-    if (typeof window !== 'undefined') return
+        <p>Outside a transform, read projected content through the <code>slots</code> helper on the getter or client context. It never renders anything; it answers questions about what the consumer passed.</p>
 
-    // 2. Process the content...
-    return processedNodes
-  }
-}
-        </code-block>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Member</th>
+                <th scope="col">Returns</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>slots.has(name?)</code></td><td><code>true</code> when at least one node was projected into the slot.</td></tr>
+              <tr><td><code>slots.get(name?)</code></td><td>The projected nodes as an array.</td></tr>
+              <tr><td><code>slots.count(name?)</code></td><td>The number of projected nodes.</td></tr>
+              <tr><td><code>slots.names</code></td><td>Slot names declared by the template.</td></tr>
+              <tr><td><code>slots.default</code></td><td>Projected nodes of the default slot.</td></tr>
+            </tbody>
+          </table>
+        </div>
 
-        <h2 id="checking-slot-presence">Checking Slot Presence</h2>
-        <p>Inside getters or client logic, you can check if a specific slot has content by using the <code>slots.has()</code> method on the context object.</p>
+        <p><code>name</code> defaults to <code>default</code>. Whitespace-only text nodes and framework comments are filtered out, so <code>has()</code> reflects authored content rather than formatting.</p>
 
-        <code-block language="javascript" filename="has.js">
+        <code-block language="javascript" filename="has-icon.js">
 export const getters = {
-  hasIcon: ({ slots }) => slots.has('icon')
+  iconOnly: ({ slots }) =&gt; slots.has('icon') &amp;&amp; !slots.has('default')
 }
         </code-block>
+
+        <h2 id="literal-content">Literal content</h2>
+
+        <p>Add <code>coralite-ignore</code> to a <code>&lt;slot&gt;</code> when projected content must stay exactly as authored: no token interpolation, no custom-element compilation, no hydration, no validation. This is how a <code>code-block</code> keeps source samples from being executed.</p>
+
+        <code-block language="html" filename="code-block.html">
+&lt;template id="code-block"&gt;
+  &lt;pre&gt;&lt;code&gt;&lt;slot coralite-ignore&gt;&lt;/slot&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/template&gt;
+        </code-block>
+
+        <p>The directive only affects the projection. Fallback content authored inside the slot is component content and is processed normally.</p>
+
+        <h2 id="asynchronous-slots">Asynchronous slots</h2>
+
+        <p>A transform may return a promise. It resolves in the browser after the initial render, so the server sends the untransformed projection and the client replaces it. Use this for content derived from client-only data, not for anything that must exist in the first paint.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e105"><code>CORALITE-E105</code></a> reports the legacy <code>(nodes, state)</code> parameter shape; destructure the context instead.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/docs/reference/coralite-ignore/">coralite-ignore reference</a> for the full opt-out rules.</li>
+          <li><a href="/reference/getters/">getters</a> for slot presence checks used in derived values.</li>
+          <li><a href="/docs/guide/components/">Components guide</a> for how light-DOM projection works.</li>
+        </ul>
       </div>
 
       <div class="lesson-navigation">
@@ -122,10 +169,14 @@ export const getters = {
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#typescript-signature">TypeScript Signature</a>
-        <a href="#server-side-transformation">Server-Side Transformation</a>
-        <a href="#the-code-block-example">The Code-Block Example</a>
-        <a href="#checking-slot-presence">Checking Slot Presence</a>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#return-values">Return values</a>
+        <a href="#filtering">Filtering</a>
+        <a href="#querying-slot-content">Querying slot content</a>
+        <a href="#literal-content">Literal content</a>
+        <a href="#asynchronous-slots">Asynchronous slots</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
       </div>
     </div>
   </docs-layout>

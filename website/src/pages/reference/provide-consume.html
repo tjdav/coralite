@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="provide &amp; consume"
+    description="Share values with descendants through the W3C context protocol, without prop drilling and without global state."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Component API</a>
+        <span class="separator">/</span>
+        <span>provide &amp; consume</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>provide &amp; consume</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">Ancestors broadcast a value, descendants subscribe to it. The context protocol replaces chains of attributes that exist only to reach a nested component.</p>
+      </div>
+
+      <div class="lesson-body">
+        <div class="doc-callout doc-callout--info">
+          <strong>Build time and browser.</strong>
+          <p>During SSR, providers are resolved into context frames and consumers read from the nearest ancestor. In the browser the same declarations use the <code>context-request</code> event, with live updates when a provider's value changes.</p>
+        </div>
+
+        <h2 id="signature">Signature</h2>
+
+        <code-block language="typescript" filename="context.ts">
+export const provide:
+  | Map&lt;ContextKey, ContextValue&gt;
+  | Record&lt;string | symbol, ContextValue&gt;
+
+export const consume:
+  | ContextKey[]
+  | Record&lt;string, ContextKey | { context: ContextKey, default?: any }&gt;
+
+type ContextKey = string | symbol
+type ContextValue = any | ((context: CoraliteContextProviderContext) =&gt; any)
+
+interface CoraliteContextProviderContext {
+  state: Readonly&lt;Record&lt;string, any&gt;&gt;
+  route: CoraliteRoute
+  root: HTMLElement | null
+  refs: (name: string) =&gt; HTMLElement | null
+  slots: CoraliteSlotsHelper
+  isServer: boolean
+  signal: AbortSignal
+}
+        </code-block>
+
+        <p><code>createContext(key?)</code> returns the key unchanged, or a fresh <code>Symbol</code> when called without an argument. Use a namespaced string such as <code>'acme:theme'</code> when the key must be shared between modules; a symbol only works when both sides import the same module instance.</p>
+
+        <h2 id="provider">Provider</h2>
+
+        <p><code>provide</code> is an object or a <code>Map</code>. Values can be constants or functions. A function is evaluated against the provider's context and re-evaluated when the state keys it read change, so the consumer receives the new value without any extra wiring.</p>
+
+        <code-block language="javascript" filename="src/components/theme-provider.html">
+export const attributes = {
+  theme: { type: String, default: 'dark' }
+}
+
+export const provide = {
+  'acme:theme': ({ state }) =&gt; state.theme
+}
+        </code-block>
+
+        <p>Prefer a function when the value comes from state. A constant is captured once and never updates, which is fine for configuration and a bug for anything interactive.</p>
+
+        <h2 id="consumer">Consumer</h2>
+
+        <p><code>consume</code> accepts an array of keys or an object that maps keys to local state properties. The array shorthand stores the value under the context key itself, which is why the docs examples read <code>state[ThemeContext]</code> for symbol keys.</p>
+
+        <p>The object form is easier to type and supports defaults:</p>
+
+        <code-block language="javascript" filename="src/components/theme-button.html">
+export const consume = {
+  theme: { context: 'acme:theme', default: 'light' }
+}
+
+export const getters = {
+  label: ({ state }) =&gt; `Switch to ${state.theme === 'dark' ? 'light' : 'dark'} mode`
+}
+        </code-block>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Form</th>
+                <th scope="col">State key</th>
+                <th scope="col">Default</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>['acme:theme']</code></td><td><code>'acme:theme'</code></td><td>None</td></tr>
+              <tr><td><code>{ theme: 'acme:theme' }</code></td><td><code>theme</code></td><td>None</td></tr>
+              <tr><td><code>{ theme: { context: 'acme:theme', default: 'light' } }</code></td><td><code>theme</code></td><td><code>'light'</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Defaults are applied when no ancestor provides the key. They are not a fallback for an undefined value from a provider that exists: a provider that returns <code>undefined</code> has still answered the request.</p>
+
+        <h2 id="resolution">Resolution</h2>
+
+        <p>Resolution walks ancestors from the consumer outward and stops at the nearest provider that declares the key. Nesting a provider inside another provider intentionally overrides it for that subtree, which is the point of the protocol.</p>
+
+        <p>Consumed values are hydrated into state during SSR, so the first render already sees the provided value. There is no client-only flash and no need to guard against a missing context in the template.</p>
+
+        <h2 id="reactivity">Reactivity</h2>
+
+        <p>When the provider is a function, Coralite tracks the state it reads. A change notifies every subscribed consumer with the new value, and the consumer's getters and template update through normal state reactivity. The consumer does not need a <code>client()</code> block for this.</p>
+
+        <p>The subscription is removed when the consumer disconnects. Long-lived providers do not keep detached consumers alive.</p>
+
+        <h2 id="when-to-use">When to use it</h2>
+
+        <ul>
+          <li><strong>Theme, locale and direction.</strong> Values every descendant needs and no intermediate component owns.</li>
+          <li><strong>Shared form state.</strong> A fieldset that validates its children without threading a controller through each one.</li>
+          <li><strong>Composition slots.</strong> A layout that lets a child know which region it is in.</li>
+        </ul>
+
+        <p>Do not use context as a global store. It follows the DOM tree, and two sibling subtrees does not mean one value. For application-wide data, use the configured <a href="/docs/reference/lists/">store</a> instead.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e106"><code>CORALITE-E106</code></a> reports a provider that is not an object or <code>Map</code>, or a consumer with an unsupported shape.</li>
+          <li><a href="/reference/diagnostics/#coralite-e104"><code>CORALITE-E104</code></a> reports a consumed property that collides with a framework-reserved context key.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/docs/reference/components/">Component overview</a> for the export contract.</li>
+          <li><a href="/reference/attributes/">attributes</a> for values that travel down one level.</li>
+          <li><a href="/reference/getters/">getters</a> for reading consumed state.</li>
+        </ul>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/form-control/" variant="secondary">← Previous: formControl</ui-link>
+        <ui-link href="/reference/list-strategy/" variant="primary">Next: listStrategy →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#provider">Provider</a>
+        <a href="#consumer">Consumer</a>
+        <a href="#resolution">Resolution</a>
+        <a href="#reactivity">Reactivity</a>
+        <a href="#when-to-use">When to use it</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

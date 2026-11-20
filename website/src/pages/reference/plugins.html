@@ -4,37 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
-    title="Plugins"
-    description="Extend Coralite with custom build-time behavior and inject context into components and pages."
+    title="definePlugin"
+    description="The plugin contract: configuration, context resolvers, build hooks, browser hooks, components, dependencies and modes."
     section="Reference"></page-meta>
 </head>
 <body>
   <site-header></site-header>
 
   <docs-layout>
-    <div slot="sidebar">
-      <ui-accordion title="Component API">
-        <ui-nav-link href="/reference/attributes/">attributes</ui-nav-link>
-        <ui-nav-link href="/reference/client/">client</ui-nav-link>
-        <ui-nav-link href="/reference/server/">server</ui-nav-link>
-        <ui-nav-link href="/reference/getters/">getters</ui-nav-link>
-        <ui-nav-link href="/reference/style/">style</ui-nav-link>
-        <ui-nav-link href="/reference/slots/">slots</ui-nav-link>
-        <ui-nav-link href="/reference/form-control/">formControl</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Page API">
-        <ui-nav-link href="/reference/page-api/">paths & definePage</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Plugin API" open>
-        <ui-nav-link href="/reference/plugins/" active>definePlugin</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="CLI">
-        <ui-nav-link href="/reference/cli/">commands</ui-nav-link>
-      </ui-accordion>
-    </div>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
 
     <div slot="content">
       <ui-breadcrumb>
@@ -50,67 +28,222 @@
           <h1>definePlugin</h1>
           <ui-badge variant="cyan">Stable</ui-badge>
         </div>
-        <p class="subhead">Extend Coralite with custom build-time behavior and inject context into components and pages.</p>
+        <p class="subhead">Extends the build and the browser runtime: configuration, injected context, lifecycle hooks and bundled components.</p>
       </div>
 
       <div class="lesson-body">
-        <h2 id="plugin-schema">Plugin Schema</h2>
-        <p>A plugin is a standard ES module that exports a configuration object via <code>definePlugin</code>. Plugins are registered in <code>coralite.config.js</code> and injected into the execution context of every component and page.</p>
+        <div class="doc-callout doc-callout--info">
+          <strong>Always wrap the object.</strong>
+          <p><code>export default definePlugin({ ... })</code> is the only accepted form. A bare object export is <a href="/reference/diagnostics/#coralite-p401"><code>CORALITE-P401</code></a>.</p>
+        </div>
 
-        <code-block language="javascript" filename="my-plugin.js">
+        <h2 id="signature">Signature</h2>
+
+        <code-block language="typescript" filename="plugin.ts">
+export default definePlugin({
+  name: string
+  config?: Record&lt;string, any&gt;
+  context?: (pluginContext: { app: CoraliteInstance, config: any })
+    =&gt; (instanceContext: CoralitePluginContext) =&gt; Record&lt;string, any&gt;
+  server?: CoralitePluginServer
+  client?: CoralitePluginClient
+  dependencies?: string[]
+  modes?: Array&lt;'development' | 'testing' | 'production'&gt;
+})
+        </code-block>
+
+        <h2 id="options">Options</h2>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Type</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>name</code></td><td>string</td><td>Required. Unique across the build and used as the context namespace. <a href="/reference/diagnostics/#coralite-p101"><code>P101</code></a> when missing, <a href="/reference/diagnostics/#coralite-p102"><code>P102</code></a> when reserved.</td></tr>
+              <tr><td><code>config</code></td><td>object</td><td>Shared configuration schema. Validated at definition time, then filled by calling the plugin with values. <a href="/reference/diagnostics/#coralite-p206"><code>P206</code></a> for an invalid schema, <a href="/reference/diagnostics/#coralite-p207"><code>P207</code></a> for an invalid value.</td></tr>
+              <tr><td><code>context</code></td><td>function</td><td>Ubiquitous two-phase resolver. Mutually exclusive with <code>server.context</code> and <code>client.context</code>.</td></tr>
+              <tr><td><code>server</code></td><td>object</td><td>Build-time hooks, components and context.</td></tr>
+              <tr><td><code>client</code></td><td>object</td><td>Browser hooks, init and context.</td></tr>
+              <tr><td><code>dependencies</code></td><td>string[]</td><td>Plugin names that must initialize first. <a href="/reference/diagnostics/#coralite-p205"><code>P205</code></a> for a malformed list, an unknown name or a cycle.</td></tr>
+              <tr><td><code>modes</code></td><td>string[]</td><td>Build modes the plugin is active in. Defaults to all three. <a href="/reference/diagnostics/#coralite-p204"><code>P204</code></a> for an invalid list.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p><code>depends</code> is not supported: it was renamed to <code>dependencies</code>, and the old key is <a href="/reference/diagnostics/#coralite-p206"><code>P206</code></a>. <code>rootDir</code> and <code>filePath</code> are resolved by the loader; do not set them by hand.</p>
+
+        <p>The value returned by <code>definePlugin</code> is callable. Calling it with values produces a configured instance, validated against the declared schemas, which is how a plugin is registered with project-specific settings:</p>
+
+        <code-block language="javascript" filename="coralite.config.js">
+import { defineConfig } from 'coralite'
+import feedback from './plugins/feedback.js'
+
+export default defineConfig({
+  plugins: [
+    feedback({ locale: 'de', endpoint: 'https://feedback.example.com' })
+  ]
+})
+        </code-block>
+
+        <p>A missing required value, an unknown key or a value of the wrong type is <a href="/reference/diagnostics/#coralite-p207"><code>P207</code></a>.</p>
+
+        <h2 id="context">Context</h2>
+
+        <p>There are two context mechanisms, and they are mutually exclusive. Mixing them is <a href="/reference/diagnostics/#coralite-p211"><code>P211</code></a>.</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Declaration</th>
+                <th scope="col">Available in</th>
+                <th scope="col">Use for</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>context</code></td><td><code>server</code>, <code>getters</code>, <code>client</code>, <code>slots</code>, <code>style</code></td><td>Pure helpers usable on both sides: formatters, translators, read-only clients.</td></tr>
+              <tr><td><code>server.context</code></td><td>Component and page <code>server()</code></td><td>Build-only clients: database handles, filesystem readers, API keys.</td></tr>
+              <tr><td><code>client.context</code></td><td>Component and page <code>client()</code></td><td>Browser-only helpers: DOM utilities, third-party widgets.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Both forms are curried. Phase one receives plugin-level context once; phase two runs per instance with the page, module and root in scope. Returning an object from phase one instead of a function is <a href="/reference/diagnostics/#coralite-p201"><code>P201</code></a>.</p>
+
+        <code-block language="javascript" filename="plugins/format.js">
 import { definePlugin } from 'coralite'
 
 export default definePlugin({
-  name: 'my-plugin',
-  context: (pluginContext) => (instanceContext) => ({
-    // Phase 1: Runs once at initialization
-    // Phase 2: Runs per component/page instance
-    $greet: (name) => `Hello, ${name}!`
+  name: 'format',
+  context: ({ config }) =&gt; () =&gt; ({
+    formatPrice: (value) =&gt; new Intl.NumberFormat(config.locale, {
+      style: 'currency',
+      currency: config.currency
+    }).format(value)
   })
 })
         </code-block>
 
-        <h2 id="the-two-phase-curried-context">The Two-Phase Curried Context</h2>
-        <p>The <code>context</code> function uses a curried signature. This ensures that expensive setup (Phase 1) runs only once, while the instance-specific context (Phase 2) is lazily resolved for each component or page.</p>
+        <p>Framework keys win. A plugin key that collides with <code>state</code>, <code>route</code>, <code>refs</code>, <code>signal</code>, <code>emit</code>, <code>observe</code> or <code>root</code> is ignored in favor of the core value, so namespacing is the safe default.</p>
 
-        <code-block language="javascript" filename="two-phase.js">
+        <h2 id="server-hooks">Server hooks</h2>
+
+        <p>All hooks are asynchronous and may return a patch. A hook that returns nothing leaves the pipeline untouched.</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Hook</th>
+                <th scope="col">Receives</th>
+                <th scope="col">Return</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>onBeforeBuild</code></td><td><code>app</code>, <code>buildId</code>, <code>options</code>, <code>addRenderQueue</code></td><td><code>{ options }</code> to patch the build, or nothing.</td></tr>
+              <tr><td><code>onAfterBuild</code></td><td><code>results</code>, <code>error</code>, <code>duration</code>, <code>app</code></td><td>Nothing; the build is already written.</td></tr>
+              <tr><td><code>onPageSet</code></td><td><code>elements</code>, <code>state</code>, <code>page</code>, <code>data</code></td><td>State patch. May return <code>paths</code> to enumerate routes.</td></tr>
+              <tr><td><code>onPageUpdate</code></td><td><code>elements</code>, <code>page</code>, <code>newValue</code>, <code>oldValue</code></td><td>State patch.</td></tr>
+              <tr><td><code>onPageDelete</code></td><td><code>data</code></td><td>Nothing.</td></tr>
+              <tr><td><code>onComponentSet</code></td><td><code>component</code></td><td>State patch.</td></tr>
+              <tr><td><code>onComponentUpdate</code></td><td><code>component</code></td><td>State patch.</td></tr>
+              <tr><td><code>onComponentDelete</code></td><td><code>component</code></td><td>Nothing.</td></tr>
+              <tr><td><code>onBeforePageRender</code></td><td><code>component</code>, <code>state</code>, <code>page</code>, <code>session</code></td><td>State patch.</td></tr>
+              <tr><td><code>onAfterPageRender</code></td><td><code>result</code>, <code>session</code></td><td>Extra <code>CoraliteResult</code> outputs to save.</td></tr>
+              <tr><td><code>onBeforeComponentRender</code></td><td><code>state</code>, <code>componentId</code>, <code>instanceId</code>, <code>refs</code>, <code>template</code></td><td>State patch merged before render.</td></tr>
+              <tr><td><code>onAfterComponentRender</code></td><td><code>result</code>, <code>state</code>, <code>componentId</code>, <code>instanceId</code></td><td>AST patch merged after render.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p><code>onPageSet</code> is the route contribution point: returning <code>{ paths: [...] }</code> adds parameter objects, and duplicates against the page's own <code>paths()</code> are a build error. A non-array value is <a href="/reference/diagnostics/#coralite-e407"><code>CORALITE-E407</code></a>. An unknown server property or a hook that is not a function is <a href="/reference/diagnostics/#coralite-p202"><code>P202</code></a>; Node-only imports in the client block are <a href="/reference/diagnostics/#coralite-p203"><code>P203</code></a>.</p>
+
+        <h2 id="client-hooks">Client hooks</h2>
+
+        <p>The <code>client</code> block is serialized into the browser bundle. It cannot reference module scope, so anything it needs must be imported inside the function or shipped through <code>client.config</code>.</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Hook</th>
+                <th scope="col">When</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>init</code></td><td>Once at runtime boot</td><td>Receives <code>{ config, runtime, app, route, onCleanup, store }</code>. Register global listeners and pass their removal to <code>onCleanup</code>.</td></tr>
+              <tr><td><code>context</code></td><td>Per instance</td><td>Two-phase resolver injected into <code>client()</code>. Phase one runs before the component loader is ready; create elements in phase two or <code>init</code>.</td></tr>
+              <tr><td><code>onBeforeComponentRender</code></td><td>Before a component renders</td><td>Can inspect state and refs; do not mutate the DOM yet.</td></tr>
+              <tr><td><code>onAfterComponentRender</code></td><td>After a component update</td><td>The place for post-render measurement or third-party attachment.</td></tr>
+              <tr><td><code>onDisconnected</code></td><td>When a component leaves the DOM</td><td>Release resources the plugin attached to that instance.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p><code>client.config</code> must be serializable JSON. A function at that position is <a href="/reference/diagnostics/#coralite-p302"><code>P302</code></a>, a non-serializable value is <a href="/reference/diagnostics/#coralite-p210"><code>P210</code></a>, replacing it whole is <a href="/reference/diagnostics/#coralite-p209"><code>P209</code></a>, and referencing module scope from a serialized client function is <a href="/reference/diagnostics/#coralite-p301"><code>P301</code></a>. An unknown client property is <a href="/reference/diagnostics/#coralite-p303"><code>P303</code></a>.</p>
+
+        <h2 id="components">Bundled components</h2>
+
+        <p><code>server.components</code> ships component files with the plugin, so a plugin can depend on its own custom elements without the host project copying them.</p>
+
+        <code-block language="javascript" filename="plugins/feedback.js">
 export default definePlugin({
-  name: 'analytics',
-  context: (pluginCtx) => (instanceCtx) => ({
-    track: (event) => {
-      // instanceCtx gives access to the component's state and route
-      console.log(`[${instanceCtx.route.path}] ${event}`)
-    }
-  })
-})
-        </code-block>
-
-        <h2 id="environment-specific-context">Environment-Specific Context</h2>
-        <p>For context that should only exist on the server or only in the browser, use the <code>server.context</code> and <code>client.context</code> sub-objects. They must use the same curried signature.</p>
-
-        <code-block language="javascript" filename="env-context.js">
-export default definePlugin({
-  name: 'server-only',
+  name: 'feedback',
   server: {
-    context: () => () => ({
-      queryDb: async (sql) => { /* ... */ }
-    })
-  },
-  client: {
-    context: () => () => ({
-      trackClick: (el) => { /* ... */ }
-    })
+    components: ['./components/feedback-button.html']
   }
 })
         </code-block>
 
-        <div class="diagnostic-callout">
-          <strong>CORALITE-P301: Single-Phase Context</strong>
-          <p>The <code>context</code> function must return a function, not an object. If you return <code>{ $greet: ... }</code> directly, Coralite throws <code>CORALITE-P301</code>. Always use the two-phase curried signature: <code>(pluginCtx) => (instanceCtx) => ({ ... })</code>.</p>
-        </div>
+        <p>A missing path fails the build when the component is registered. An invalid server property is <a href="/reference/diagnostics/#coralite-p202"><code>P202</code></a>.</p>
 
-        <h2 id="reserved-keys">Reserved Keys</h2>
-        <p>Coralite reserves several keys on the execution context: <code>state</code>, <code>route</code>, <code>app</code>, <code>session</code>, <code>signal</code>, <code>store</code>, <code>page</code>, <code>refs</code>, <code>emit</code>, <code>observe</code>, <code>updateComplete</code>. If your plugin exports a key with the same name, Coralite will preserve the framework key and emit a warning in development mode.</p>
+        <h2 id="dependencies-and-modes">Dependencies and modes</h2>
+
+        <p><code>dependencies</code> orders initialization: the named plugins run first and are available through phase-one context. Names must refer to plugins registered and active in the same mode; an unknown name or a dependency cycle is <a href="/reference/diagnostics/#coralite-p205"><code>P205</code></a>.</p>
+
+        <p><code>modes</code> limits the plugin to specific build modes. A dev-only overlay, for example, should not be active in production or in the E2E testing mode.</p>
+
+        <code-block language="javascript" filename="plugins/dev-overlay.js">
+export default definePlugin({
+  name: 'dev-overlay',
+  modes: ['development'],
+  client: {
+    init ({ onCleanup }) {
+      const badge = document.createElement('div')
+      badge.className = 'dev-overlay'
+      badge.textContent = 'dev'
+      document.body.append(badge)
+      onCleanup(() =&gt; badge.remove())
+    }
+  }
+})
+        </code-block>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e107"><code>CORALITE-E107</code></a> reports an unknown top-level block.</li>
+          <li><a href="/reference/diagnostics/#coralite-p101"><code>CORALITE-P101</code></a> and <a href="/reference/diagnostics/#coralite-p102"><code>P102</code></a> guard the plugin name.</li>
+          <li><a href="/reference/diagnostics/#coralite-p201"><code>CORALITE-P201</code></a> reports a single-phase context resolver.</li>
+          <li><a href="/reference/diagnostics/#coralite-p202"><code>CORALITE-P202</code></a> and <a href="/reference/diagnostics/#coralite-p303"><code>P303</code></a> report unknown server and client properties.</li>
+          <li><a href="/reference/diagnostics/#coralite-p204"><code>CORALITE-P204</code></a> and <a href="/reference/diagnostics/#coralite-p205"><code>P205</code></a> guard <code>modes</code> and <code>dependencies</code>.</li>
+          <li><a href="/reference/diagnostics/#coralite-p211"><code>CORALITE-P211</code></a> reports mixed context declarations.</li>
+          <li><a href="/reference/diagnostics/#coralite-p401"><code>CORALITE-P401</code></a> reports a bare plugin object.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/docs/reference/define-plugin/">Plugin authoring guide</a> for a complete walkthrough.</li>
+          <li><a href="/docs/guide/plugins/">Plugins guide</a> for project setup and registration.</li>
+          <li><a href="/reference/provide-consume/">provide and consume</a> for context that follows the DOM rather than the build.</li>
+        </ul>
       </div>
 
       <div class="lesson-navigation">
@@ -122,10 +255,15 @@ export default definePlugin({
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#plugin-schema">Plugin Schema</a>
-        <a href="#the-two-phase-curried-context">Two-Phase Curried Context</a>
-        <a href="#environment-specific-context" style="text-decoration: none;">Environment-Specific</a>
-        <a href="#reserved-keys">Reserved Keys</a>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#options">Options</a>
+        <a href="#context">Context</a>
+        <a href="#server-hooks">Server hooks</a>
+        <a href="#client-hooks">Client hooks</a>
+        <a href="#components">Bundled components</a>
+        <a href="#dependencies-and-modes">Dependencies and modes</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
       </div>
     </div>
   </docs-layout>

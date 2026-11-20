@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <page-meta no-hydration
+    title="listStrategy"
+    description="Chooses how observed array mutations are applied: a full reactive update, or a direct DOM patch for swaps and single removals."
+    section="Reference"></page-meta>
+</head>
+<body>
+  <site-header></site-header>
+
+  <docs-layout>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
+
+    <div slot="content">
+      <ui-breadcrumb>
+        <a href="/reference/">Reference</a>
+        <span class="separator">/</span>
+        <a href="/reference/">Component API</a>
+        <span class="separator">/</span>
+        <span>listStrategy</span>
+      </ui-breadcrumb>
+
+      <div class="lesson-header">
+        <div class="title-row">
+          <h1>listStrategy</h1>
+          <ui-badge variant="cyan">Stable</ui-badge>
+        </div>
+        <p class="subhead">Decides whether an observed array change triggers a normal reactive update or a direct DOM patch for the two patterns that can be applied in place.</p>
+      </div>
+
+      <div class="lesson-body">
+        <div class="doc-callout doc-callout--info">
+          <strong>Browser only.</strong>
+          <p>The strategy applies to observers that run in the browser. It has no effect during SSR, where every list is rendered from scratch.</p>
+        </div>
+
+        <h2 id="signature">Signature</h2>
+
+        <code-block language="typescript" filename="list-strategy.ts">
+export const listStrategy:
+  | 'full'
+  | 'minimal'
+  | {
+      mode: 'full' | 'minimal'
+      key?: (item: any) =&gt; any
+    }
+        </code-block>
+
+        <p><code>'full'</code> is the default. The observed value is handed to the observer and the component updates through normal reactivity.</p>
+
+        <p><code>'minimal'</code> inspects the old and new arrays first. When the change is a two-item swap or a single removal, Coralite patches the DOM container directly and skips the observer callback for that change. Anything else falls back to the full path.</p>
+
+        <h2 id="key-extraction">Key extraction</h2>
+
+        <p>Pattern detection compares items by key. The <code>key</code> function wins; without one, Coralite uses <code>item.id</code>, then <code>item.key</code>, then strict identity. Objects without either property can only be matched by reference.</p>
+
+        <code-block language="javascript" filename="rows.js">
+export const listStrategy = {
+  mode: 'minimal',
+  key: (row) =&gt; row.uuid
+}
+        </code-block>
+
+        <h2 id="precedence">Precedence</h2>
+
+        <p>The first value found wins:</p>
+
+        <ol>
+          <li>The component's <code>listStrategy</code> export.</li>
+          <li>The legacy <code>reconcile</code> and <code>key</code> exports, combined into one strategy.</li>
+          <li><code>config.listStrategy</code> on the global configuration.</li>
+          <li>The <code>CORALITE_LIST_STRATEGY</code> environment variable.</li>
+          <li><code>'full'</code>.</li>
+        </ol>
+
+        <p>Use the component export when only one list benefits. Use the config when a whole site renders large tables and the same trade-off applies everywhere.</p>
+
+        <h2 id="container">Container resolution</h2>
+
+        <p>For a patch, Coralite needs the element whose children are the rows. It looks for a ref matching the observed key, then <code>tbody</code>, <code>list</code> and <code>container</code> refs, then the first <code>tbody</code>, <code>ul</code>, <code>ol</code> or <code>[ref]</code> in the component, and finally the first child element.</p>
+
+        <p>Name the ref when the container is not obvious. A patch applied to the wrong element is worse than a full re-render:</p>
+
+        <code-block language="html" filename="rows.html">
+&lt;template id="data-table"&gt;
+  &lt;table&gt;
+    &lt;tbody ref="rows"&gt;&lt;/tbody&gt;
+  &lt;/table&gt;
+&lt;/template&gt;
+
+&lt;script type="module"&gt;
+  export const listStrategy = {
+    mode: 'minimal',
+    key: (row) =&gt; row.id
+  }
+&lt;/script&gt;
+        </code-block>
+
+        <h2 id="when-to-use">When minimal pays off</h2>
+
+        <p><code>minimal</code> avoids re-rendering rows that did not change, which matters for long tables where a swap would otherwise rebuild every cell. For short lists the difference is noise, and the full path is simpler to reason about.</p>
+
+        <p>The strategy only covers swaps and single removals. Appends, multiple removals and arbitrary reorderings still take the full path, so do not treat it as a general virtual DOM.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e107"><code>CORALITE-E107</code></a> reports a literal mode other than <code>'full'</code> or <code>'minimal'</code>. A malformed object fails registration before validation runs.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/docs/reference/lists/">Lists and store</a> for rendering collections and the lists plugin.</li>
+          <li><a href="/reference/client/">client</a> for <code>observe()</code>, which the strategy applies to.</li>
+          <li><a href="/docs/reference/config/">Configuration</a> for the global <code>listStrategy</code> default.</li>
+        </ul>
+      </div>
+
+      <div class="lesson-navigation">
+        <ui-link href="/reference/provide-consume/" variant="secondary">← Previous: provide &amp; consume</ui-link>
+        <ui-link href="/reference/on-error/" variant="primary">Next: onError →</ui-link>
+      </div>
+    </div>
+
+    <div slot="toc">
+      <div class="docs-toc">
+        <h4>On this page</h4>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#key-extraction">Key extraction</a>
+        <a href="#precedence">Precedence</a>
+        <a href="#container">Container resolution</a>
+        <a href="#when-to-use">When minimal pays off</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
+      </div>
+    </div>
+  </docs-layout>
+
+  <site-footer></site-footer>
+</body>
+</html>

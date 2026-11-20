@@ -5,36 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="server"
-    description="The build-time execution block. Fetch data in Node.js, then hydrate the component state."
+    description="Build-time data loading: runs in Node, returns state, and never reaches the browser bundle."
     section="Reference"></page-meta>
 </head>
 <body>
   <site-header></site-header>
 
   <docs-layout>
-    <div slot="sidebar">
-      <ui-accordion title="Component API" open>
-        <ui-nav-link href="/reference/attributes/">attributes</ui-nav-link>
-        <ui-nav-link href="/reference/client/">client</ui-nav-link>
-        <ui-nav-link href="/reference/server/" active>server</ui-nav-link>
-        <ui-nav-link href="/reference/getters/">getters</ui-nav-link>
-        <ui-nav-link href="/reference/style/">style</ui-nav-link>
-        <ui-nav-link href="/reference/slots/">slots</ui-nav-link>
-        <ui-nav-link href="/reference/form-control/">formControl</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Page API">
-        <ui-nav-link href="/reference/page-api/">paths & definePage</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Plugin API">
-        <ui-nav-link href="/reference/plugins/">definePlugin</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="CLI">
-        <ui-nav-link href="/reference/cli/">commands</ui-nav-link>
-      </ui-accordion>
-    </div>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
 
     <div slot="content">
       <ui-breadcrumb>
@@ -50,69 +28,137 @@
           <h1>server</h1>
           <ui-badge variant="cyan">Stable</ui-badge>
         </div>
-        <p class="subhead">The build-time execution block. Fetch data in Node.js, then hydrate the component state.</p>
+        <p class="subhead">Fetches data while the page is generated in Node. The block is stripped from the browser bundle and its return value becomes state.</p>
       </div>
 
       <div class="lesson-body">
-        <h2 id="typescript-signature">TypeScript Signature</h2>
-        <code-block language="typescript" filename="server.ts">
-export async function server (context: {
-  state: Record&lt;string, any&gt;;
-  route: CoraliteRoute;
-  page?: CoralitePage;
-  store?: CoraliteStore;
-  signal: AbortSignal;
-  // plus any ubiquitous plugin context
-}): Promise&lt;Record&lt;string, any&gt; | void&gt;
-        </code-block>
-
-        <h2 id="build-time-only">Build-Time Only</h2>
-        <p>The <code>server()</code> block runs in Node.js while the page is being generated. The compiler physically strips it from the module that ships to the browser, so credentials, database clients, and file paths never reach the client bundle.</p>
-
-        <p>The object you return is shallow-merged into <code>state</code> on top of the values produced by <code>attributes</code>. Anything returned here is available as a flat <code>{{ token }}</code> in the template and inside <code>getters</code>.</p>
-
-        <code-block language="javascript" filename="data.js">
-export function server ({ page }) {
-  return {
-    title: page.title,
-    posts: page.posts
-  }
-}
-        </code-block>
-
-        <h2 id="fetching-data">Fetching Data</h2>
-        <p>Because <code>server()</code> is asynchronous, you can await filesystem reads, database queries, or HTTP requests. Modules used only inside the block must be imported dynamically so they are never bundled for the browser.</p>
-
-        <code-block language="javascript" filename="fetch-posts.js">
-export async function server ({ state }) {
-  const fs = await import('node:fs/promises')
-  const raw = await fs.readFile('src/data/posts.json', 'utf8')
-  const posts = JSON.parse(raw)
-
-  return {
-    posts: posts.slice(0, state.limit)
-  }
-}
-        </code-block>
-
-        <h2 id="the-serialization-boundary">The Serialization Boundary</h2>
-        <p>Everything returned from <code>server()</code> crosses a JSON boundary into the hydration script. Return plain, serializable data: strings, numbers, booleans, arrays, and plain objects. Class instances, functions, <code>Date</code> objects, and cyclic references cannot be serialized.</p>
-
-        <code-block language="javascript" filename="serialization.js">
-// ✅ Plain data
-return { published: post.publishedAt.toISOString() }
-
-// ❌ Not serializable
-return { published: post.publishedAt }
-        </code-block>
-
-        <div class="diagnostic-callout">
-          <strong>CORALITE-E301: Static Build-Only Import</strong>
-          <p>A top-level <code>import</code> inside <code>server()</code> is rejected. Load Node-only modules with <code>await import('node:fs/promises')</code> inside the block so the bundler can exclude them from the client output.</p>
+        <div class="doc-callout doc-callout--info">
+          <strong>Build time only.</strong>
+          <p><code>server()</code> runs during <code>coralite build</code> and in the development server's render pass. The compiler removes it from the module that ships to the browser, so credentials, database clients and absolute paths never reach a client.</p>
         </div>
 
-        <h2 id="deterministic-output">Deterministic Output</h2>
-        <p>The build must be reproducible. Do not read wall-clock time, random values, or mutable global state directly in <code>server()</code>; feed that data in through the page context, a plugin, or the global <code>store</code> instead. The same inputs must always produce the same HTML.</p>
+        <h2 id="signature">Signature</h2>
+
+        <code-block language="typescript" filename="server.ts">
+export function server (context: CoraliteServerContext):
+  | Record&lt;string, any&gt;
+  | void
+  | Promise&lt;Record&lt;string, any&gt; | void&gt;
+
+interface CoraliteServerContext {
+  state: Record&lt;string, any&gt;
+  route: CoraliteRoute
+  root: object | null
+  page?: CoralitePage
+  session: CoraliteSession
+  store?: any
+  [pluginContext: string]: any
+}
+        </code-block>
+
+        <p>The block may be synchronous or asynchronous. Returning a promise is the common case because file reads and HTTP calls are asynchronous.</p>
+
+        <h2 id="context">Context</h2>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Type</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>state</code></td><td>object</td><td>Initial state from <code>attributes</code> plus any value passed by the page.</td></tr>
+              <tr><td><code>route</code></td><td><code>CoraliteRoute</code></td><td><code>path</code>, <code>params</code>, <code>pattern</code> and <code>dynamic</code> for the page being rendered.</td></tr>
+              <tr><td><code>root</code></td><td>AST node</td><td>The host element node in the render tree. Read-only; prefer state over mutating it.</td></tr>
+              <tr><td><code>page</code></td><td><code>CoralitePage</code></td><td>Page metadata, including the file path and the page's own exports.</td></tr>
+              <tr><td><code>session</code></td><td><code>CoraliteSession</code></td><td>The active build session: global state, collected scripts and styles, asset injection.</td></tr>
+              <tr><td><code>store</code></td><td>any</td><td>The store instance when <code>store</code> is configured for the build.</td></tr>
+              <tr><td>plugin keys</td><td>any</td><td>Isomorphic plugin context is resolved lazily on first access.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2 id="return-value">Return value</h2>
+
+        <p>The returned object is shallow-merged into component state, on top of attribute values. Each key becomes a flat template token and is available to <a href="/reference/getters/">getters</a>. Returning nothing, or returning an empty object, leaves state untouched.</p>
+
+        <code-block language="javascript" filename="post-meta.js">
+export async function server ({ state, route }) {
+  const posts = await loadPosts()
+
+  return {
+    post: posts.find((post) =&gt; post.slug === route.params.slug),
+    total: posts.length
+  }
+}
+
+async function loadPosts () {
+  const fs = await import('node:fs/promises')
+  return JSON.parse(await fs.readFile('src/data/posts.json', 'utf8'))
+}
+        </code-block>
+
+        <p>A non-object return value fails the build. Arrays are rejected too. Wrap a collection in a key: <code>return { posts }</code>, not <code>return posts</code>.</p>
+
+        <h2 id="fetching-data">Fetching data</h2>
+
+        <p>Load modules that only the server needs with a dynamic <code>await import()</code> inside the block. A static top-level import would be pulled into the component bundle, defeating the point of the boundary.</p>
+
+        <code-block language="javascript" filename="fetch-releases.js">
+export async function server ({ state }) {
+  const response = await fetch('https://api.github.com/repos/tjdav/coralite/releases/latest', {
+    headers: { accept: 'application/vnd.github+json' }
+  })
+
+  if (!response.ok) {
+    throw new Error(`Release request failed: ${response.status}`)
+  }
+
+  const release = await response.json()
+  return { release: { tag: release.tag_name, url: release.html_url } }
+}
+        </code-block>
+
+        <p>Failures throw and stop the page render. When a failure is acceptable, catch it here and return a documented fallback state instead of letting the build break. A component-level <a href="/reference/on-error/"><code>onError</code></a> boundary can also render fallback UI in production.</p>
+
+        <h2 id="serialization-boundary">Serialization boundary</h2>
+
+        <p>Everything assigned to state crosses into the hydration payload. Return plain data only: strings, numbers, booleans, arrays, plain objects and <code>null</code>. Functions, class instances, <code>Map</code>, <code>Set</code>, <code>Date</code> and cyclic references cannot be serialized.</p>
+
+        <code-block language="javascript" filename="serialize.js">
+const updated = new Date()
+
+return {
+  publishedAt: updated.toISOString(),
+  publishedLabel: updated.toLocaleDateString('en-GB')
+}
+        </code-block>
+
+        <p>Convert once, in the block. Deriving a display string during render keeps the value stable and avoids repeating locale work in getters.</p>
+
+        <h2 id="determinism">Determinism</h2>
+
+        <p>A build must be reproducible: the same inputs produce byte-identical HTML. Do not read the wall clock, random values or mutable module state here. Inject dates, feature flags and test data through the page, a plugin or the global store, and keep the conversion inside <code>server()</code>.</p>
+
+        <p>If content changes over time, that is cache invalidation, not rendering. Refresh it through the store or an incremental build rather than by calling <code>Date.now()</code> during a render.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e401"><code>CORALITE-E401</code></a> reports <code>request</code> or <code>response</code> globals, which Coralite does not provide.</li>
+          <li><a href="/reference/diagnostics/#coralite-w401"><code>CORALITE-W401</code></a> reports state written by <code>server()</code> that nothing reads.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/reference/attributes/">attributes</a> for the state keys available before the block runs.</li>
+          <li><a href="/reference/getters/">getters</a> for deriving values from the returned state.</li>
+          <li><a href="/docs/guide/building/">Building guide</a> for the full render pipeline.</li>
+        </ul>
       </div>
 
       <div class="lesson-navigation">
@@ -124,11 +170,14 @@ return { published: post.publishedAt }
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#typescript-signature">TypeScript Signature</a>
-        <a href="#build-time-only">Build-Time Only</a>
-        <a href="#fetching-data">Fetching Data</a>
-        <a href="#the-serialization-boundary">The Serialization Boundary</a>
-        <a href="#deterministic-output">Deterministic Output</a>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#context">Context</a>
+        <a href="#return-value">Return value</a>
+        <a href="#fetching-data">Fetching data</a>
+        <a href="#serialization-boundary">Serialization boundary</a>
+        <a href="#determinism">Determinism</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
       </div>
     </div>
   </docs-layout>

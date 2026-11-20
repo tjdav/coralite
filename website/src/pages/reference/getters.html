@@ -5,36 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <page-meta no-hydration
     title="getters"
-    description="Isomorphic, synchronous derivation of state. The only place logic belongs before rendering."
+    description="Isomorphic derived state: synchronous on the server, reactive in the browser, and never a passthrough."
     section="Reference"></page-meta>
 </head>
 <body>
   <site-header></site-header>
 
   <docs-layout>
-    <div slot="sidebar">
-      <ui-accordion title="Component API" open>
-        <ui-nav-link href="/reference/attributes/">attributes</ui-nav-link>
-        <ui-nav-link href="/reference/client/">client</ui-nav-link>
-        <ui-nav-link href="/reference/server/">server</ui-nav-link>
-        <ui-nav-link href="/reference/getters/">getters</ui-nav-link>
-        <ui-nav-link href="/reference/style/">style</ui-nav-link>
-        <ui-nav-link href="/reference/slots/">slots</ui-nav-link>
-        <ui-nav-link href="/reference/form-control/">formControl</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Page API">
-        <ui-nav-link href="/reference/page-api/">paths & definePage</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="Plugin API">
-        <ui-nav-link href="/reference/plugins/">definePlugin</ui-nav-link>
-      </ui-accordion>
-
-      <ui-accordion title="CLI">
-        <ui-nav-link href="/reference/cli/">commands</ui-nav-link>
-      </ui-accordion>
-    </div>
+    <reference-sidebar slot="sidebar"></reference-sidebar>
 
     <div slot="content">
       <ui-breadcrumb>
@@ -50,58 +28,147 @@
           <h1>getters</h1>
           <ui-badge variant="cyan">Stable</ui-badge>
         </div>
-        <p class="subhead">Isomorphic, synchronous derivation of state. The only place logic belongs before rendering.</p>
+        <p class="subhead">Derived state shared by the server render and the browser. Getters read state and compute values; they never store them.</p>
       </div>
 
       <div class="lesson-body">
-        <h2 id="typescript-signature">TypeScript Signature</h2>
-        <code-block language="typescript" filename="getters.ts">
-export const getters: Record&lt;string, (context: {
-  state: Readonly&lt;Record&lt;string, any&gt;&gt;;
-  root: HTMLElement | null;
-  refs: (id: string) =&gt; HTMLElement | null;
-  slots: any;
-  signal: AbortSignal;
-}) =&gt; any&gt;
-        </code-block>
-
-        <h2 id="isomorphic-execution">Isomorphic Execution</h2>
-        <p>Getters are pure functions. They run during SSR (on the server) to generate the initial HTML, and they run again in the browser when reactive state changes. Because they must execute in both environments, they must be strictly synchronous.</p>
-
-        <div class="diagnostic-callout">
-          <strong>CORALITE-E303: Asynchronous Getter</strong>
-          <p>You cannot use <code>async/await</code> or return a <code>Promise</code> from a getter. If you need asynchronous data, fetch it in <code>server()</code> and place the result in <code>state</code>.</p>
+        <div class="doc-callout doc-callout--info">
+          <strong>Build time and browser.</strong>
+          <p>Getters evaluate while the page is rendered and again in the browser whenever a tracked state key changes. Keep them pure: the same state must produce the same value in both environments.</p>
         </div>
 
-        <h2 id="smart-state-dumb-templates">Smart State, Dumb Templates</h2>
-        <p coralite-ignore>Coralite templates do not allow complex expressions. You cannot write <code>{{ firstName + ' ' + lastName }}</code>. All logic must be lifted into a getter.</p>
+        <h2 id="signature">Signature</h2>
 
-        <code-block language="javascript" filename="combine.js">
-export const getters = {
-  fullName: ({ state }) => `${state.firstName} ${state.lastName}`
+        <code-block language="typescript" filename="getters.ts">
+export const getters: Record&lt;string, (context: CoraliteGetterContext) =&gt; any&gt;
+
+interface CoraliteGetterContext {
+  state: Readonly&lt;Record&lt;string, any&gt;&gt;
+  route: CoraliteRoute
+  root: HTMLElement | null
+  refs: (name: string) =&gt; HTMLElement | null
+  slots: CoraliteSlotsHelper
+  isServer: boolean
+  signal: AbortSignal
+  store?: any
+  [pluginContext: string]: any
 }
         </code-block>
 
-        <h2 id="no-passthrough-getters">No Passthrough Getters</h2>
-        <p coralite-ignore>Do not write a getter just to alias a state field. It adds unnecessary overhead and bloats the component. If the getter body is just <code>state.foo</code>, use the template token <code>{{ foo }}</code> directly.</p>
+        <h2 id="context">Context</h2>
 
-        <h2 id="forbidden-vs-required">Forbidden vs. Required</h2>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead>
+              <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Build</th>
+                <th scope="col">Browser</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>state</code></td><td>Merged state, read-only</td><td>Reactive read-only proxy</td></tr>
+              <tr><td><code>route</code></td><td>The matched route</td><td>The active route</td></tr>
+              <tr><td><code>root</code></td><td>AST node or <code>null</code></td><td>The host element</td></tr>
+              <tr><td><code>refs</code></td><td>Returns <code>null</code></td><td>Resolves <code>ref="name"</code></td></tr>
+              <tr><td><code>slots</code></td><td>Server helper</td><td>Client helper</td></tr>
+              <tr><td><code>isServer</code></td><td><code>true</code></td><td><code>false</code></td></tr>
+              <tr><td><code>signal</code></td><td>No-op signal</td><td>Aborts on disconnect</td></tr>
+              <tr><td><code>store</code></td><td>Server store when configured</td><td>Global store when configured</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Because <code>refs</code> and <code>root</code> differ between environments, a getter that reads them produces different values on the server and in the browser. That is a hydration mismatch by definition. Use them only in values that are intentionally client-only, or branch explicitly on <code>isServer</code>.</p>
+
+        <h2 id="execution">Execution</h2>
+
+        <p>During the build every getter runs once, in declaration order, and the result is written to state before the template is rendered. In the browser, a getter re-evaluates when a key it read changes. Reading another getter from <code>state</code> links the dependency chain, so a change deep in state invalidates both.</p>
+
+        <p><code>state</code> is read-only inside a getter. Assignment throws. If a value must be stored, compute it in <code>server()</code> or write it from <code>client()</code>.</p>
+
+        <h2 id="asynchronous-getters">Asynchronous getters</h2>
+
+        <p>A getter declared <code>async</code> is skipped on the server: the key is set to <code>undefined</code> and the initial HTML renders without it. In the browser it resolves through the async getter cache, tracks dependencies across <code>await</code> points, and discards stale resolutions when state changes mid-flight.</p>
+
+        <code-block language="javascript" filename="async-getter.js">
+export const attributes = { query: { type: String, default: '' } }
+
+export const getters = {
+  results: async ({ state, signal }) =&gt; {
+    if (!state.query) {
+      return []
+    }
+    const response = await fetch(`/api/search?q=${encodeURIComponent(state.query)}`, { signal })
+    return response.json()
+  }
+}
+        </code-block>
+
+        <div class="doc-callout doc-callout--warning">
+          <strong>Async getters do not exist on the server.</strong>
+          <p>The rendered HTML contains empty output for that token, and reactive DOM updates arrive after the fetch resolves. For data that must be present at first paint, load it in <code>server()</code>; for interaction-driven data, an async getter is the correct tool.</p>
+        </div>
+
+        <h2 id="no-passthrough-getters">No passthrough getters</h2>
+
+        <p>A getter whose body is <code>state.someField</code> is dead code. The field is already a flat template token, so use <code>{{ someField }}</code> directly. Keep getters for values that are actually computed.</p>
+
         <div class="split-code">
           <div class="forbidden">
             <code-block language="javascript" filename="forbidden.js">
 export const getters = {
-  // ❌ Passthrough (Dead code)
-  displayName: ({ state }) => state.name
+  displayName: ({ state }) =&gt; state.name
 }
             </code-block>
           </div>
           <div class="required">
             <code-block language="html" filename="required.html">
-<!-- ✅ Direct token usage in template -->
-<span>{{ name }}</span>
+&lt;span&gt;{{ name }}&lt;/span&gt;
             </code-block>
           </div>
         </div>
+
+        <h2 id="shape">Parameter shape</h2>
+
+        <p>Getters receive one context object. Destructure it, or name the parameter and read from it. Naming it <code>state</code> without destructuring is the common mistake: the parameter is the context, not state, and is reported as <a href="/reference/diagnostics/#coralite-e105"><code>CORALITE-E105</code></a>.</p>
+
+        <div class="split-code">
+          <div class="forbidden">
+            <code-block language="javascript" filename="forbidden.js">
+export const getters = {
+  total: (state) =&gt; state.items.length
+}
+            </code-block>
+          </div>
+          <div class="required">
+            <code-block language="javascript" filename="required.js">
+export const getters = {
+  total: ({ state }) =&gt; state.items.length,
+  label: (context) =&gt; `${context.state.total} items`
+}
+            </code-block>
+          </div>
+        </div>
+
+        <h2 id="plugin-context">Plugin context</h2>
+
+        <p>Isomorphic plugin keys from top-level <code>context</code> are available on the getter context. Server-only plugin context is not: values it produced must be written to state in <code>server()</code> and read from state here. Development builds warn when a getter reaches for a server-only plugin key.</p>
+
+        <h2 id="diagnostics">Diagnostics</h2>
+
+        <ul>
+          <li><a href="/reference/diagnostics/#coralite-e105"><code>CORALITE-E105</code></a> reports the wrong parameter shape or <code>context.attributes</code>.</li>
+          <li><a href="/reference/diagnostics/#coralite-w401"><code>CORALITE-W401</code></a> reports a getter that nothing reads.</li>
+        </ul>
+
+        <h2 id="related">Related</h2>
+
+        <ul>
+          <li><a href="/reference/style/">style</a> for values that become CSS custom properties instead of text.</li>
+          <li><a href="/reference/slots/">slots</a> for the <code>slots</code> helper used in getters.</li>
+          <li><a href="/docs/guide/components/">Components guide</a> for the full module contract.</li>
+        </ul>
       </div>
 
       <div class="lesson-navigation">
@@ -113,11 +180,15 @@ export const getters = {
     <div slot="toc">
       <div class="docs-toc">
         <h4>On this page</h4>
-        <a class="active" href="#typescript-signature">TypeScript Signature</a>
-        <a href="#isomorphic-execution">Isomorphic Execution</a>
-        <a href="#smart-state-dumb-templates">Smart State, Dumb Templates</a>
-        <a href="#no-passthrough-getters">No Passthrough</a>
-        <a href="#forbidden-vs-required">Forbidden vs. Required</a>
+        <a class="active" href="#signature">Signature</a>
+        <a href="#context">Context</a>
+        <a href="#execution">Execution</a>
+        <a href="#asynchronous-getters">Asynchronous getters</a>
+        <a href="#no-passthrough-getters">No passthrough getters</a>
+        <a href="#shape">Parameter shape</a>
+        <a href="#plugin-context">Plugin context</a>
+        <a href="#diagnostics">Diagnostics</a>
+        <a href="#related">Related</a>
       </div>
     </div>
   </docs-layout>

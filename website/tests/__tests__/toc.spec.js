@@ -75,6 +75,6 @@ test('TOC follows the scroll position and links jump to their section', async ({
   expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
 
   await page.evaluate(() => window.scrollTo(0, 0))
-  await expect(page.locator('.docs-toc a[href="#typescript-signature"]')).toHaveClass(/active/)
+  await expect(page.locator('.docs-toc a[href="#signature"]')).toHaveClass(/active/)
   await expect(page.locator('.docs-toc a.active')).toHaveCount(1)
 })

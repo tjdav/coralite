@@ -150,7 +150,6 @@
  * Context passed to component client() lifecycle function.
  * @template {Record<string, any>} [TState=Record<string, any>]
  * @typedef {Object} CoraliteClientContext
- * @property {string} id - Unique instance identifier.
  * @property {string} instanceId - Unique instance identifier.
  * @property {HTMLElement} root - The custom element instance.
  * @property {TState} state - Reactive proxy of component state.
