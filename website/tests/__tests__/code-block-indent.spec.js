@@ -21,3 +21,13 @@ test('multi-line code blocks keep their authored indentation after hydration', a
   const flagLines = (await flags.locator('pre').textContent()).split('\n').filter(line => line.trim())
   expect(flagLines.map(indentOf)).toEqual([0, 2, 2, 2, 2])
 })
+
+test('reference code blocks dedent inline-authored samples correctly', async ({ page }) => {
+  await page.goto('/docs/reference/coralite/')
+  await page.waitForLoadState('networkidle')
+
+  const block = page.locator('code-block').filter({ hasText: 'createCoralite' }).first()
+  const lines = (await block.locator('pre').textContent()).split('\n').filter(line => line.trim())
+
+  expect(lines.map(indentOf)).toEqual([0, 0, 2, 2, 2, 2, 0])
+})
