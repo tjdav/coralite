@@ -14,10 +14,14 @@ import { createCoraliteElement, findHeadAndBody, relinkChildren } from 'coralite
 /**
  * Resolves the tracker configuration derived from plugin options.
  *
- * @param {GoatCounterOptions} options - Analytics configuration.
+ * @param {Partial<GoatCounterOptions>} options - Analytics configuration.
  * @returns {{scriptSrc: string, endpoint: string, trackLocalhost: boolean, respectDnt: boolean, respectGpc: boolean, exclude: string[]}} Resolved configuration.
  */
 function resolveOptions (options) {
+  if (!options.site) {
+    throw new Error('goatCounterPlugin requires a "site" option')
+  }
+
   const site = String(options.site).replace(/\/+$/, '')
 
   return {
@@ -37,11 +41,11 @@ function resolveOptions (options) {
  * load the Coralite client runtime, and it loads the tracker itself so the
  * settings object is always defined before `count.js` executes.
  *
- * @param {GoatCounterOptions} options - Analytics configuration.
+ * @param {{scriptSrc: string, endpoint: string, trackLocalhost: boolean, respectDnt: boolean, respectGpc: boolean, exclude: string[]}} options - Resolved analytics configuration.
  * @returns {string} Bootstrap source.
  */
 function createBootstrap (options) {
-  const config = JSON.stringify(resolveOptions(options))
+  const config = JSON.stringify(options)
 
   return `(function () {
   var config = ${config};
@@ -203,80 +207,48 @@ function injectBootstrap (component, src) {
   relinkChildren(container)
 }
 
-const bootstrapPaths = new Map()
-
 /**
- * Gets a stable key for a plugin configuration.
- *
- * @param {GoatCounterOptions} config - GoatCounter plugin configuration.
- * @returns {string} Stable configuration key.
- */
-function configKey (config) {
-  return JSON.stringify(config)
-}
-
-/**
- * Website GoatCounter analytics plugin.
+ * Creates the website GoatCounter analytics plugin.
  *
  * The website is static, so the tracker is loaded through a generated
  * self-origin bootstrap rather than the Coralite client runtime.
+ *
+ * @param {Partial<GoatCounterOptions>} [options={}] - Analytics configuration.
+ * @returns {import('coralite').CoralitePlugin} Configured plugin instance.
  */
-export const goatCounterPlugin = definePlugin({
-  name: 'goatcounter-analytics',
-  config: {
-    site: {
-      type: String,
-      required: true
-    },
-    scriptSrc: {
-      type: String
-    },
-    trackLocalhost: {
-      type: Boolean,
-      default: false
-    },
-    respectDnt: {
-      type: Boolean,
-      default: true
-    },
-    respectGpc: {
-      type: Boolean,
-      default: true
-    },
-    exclude: {
-      type: Array,
-      default: []
-    }
-  },
-  server: {
-    async onBeforeBuild ({ app, config }) {
-      const source = createBootstrap(config)
-      const assetPath = 'assets/js/goatcounter.js'
-      const base = (app.options.baseURL || '/').endsWith('/') ? app.options.baseURL : `${app.options.baseURL}/`
+export default function goatCounterPlugin (options = {}) {
+  const resolved = resolveOptions(options)
+  let bootstrapPath = null
 
-      await app.writeFile(assetPath, source)
-      bootstrapPaths.set(configKey(config), `${base}${assetPath}`)
-    },
-    onBeforePageRender ({ component, config }) {
-      const bootstrapPath = bootstrapPaths.get(configKey(config))
-      if (bootstrapPath) {
-        injectBootstrap(component, bootstrapPath)
-      }
-    }
-  },
-  client: {
-    context: () => () => ({
-      analytics: {
-        track (name, meta) {
-          const coralite = window['__coralite__']
-          const api = coralite && coralite.plugins ? coralite.plugins.analytics : null
-          if (api) {
-            api.track(name, meta)
-          }
+  return definePlugin({
+    name: 'goatcounter-analytics',
+    server: {
+      async onBeforeBuild ({ app }) {
+        const source = createBootstrap(resolved)
+        const assetPath = 'assets/js/goatcounter.js'
+        const base = (app.options.baseURL || '/').endsWith('/') ? app.options.baseURL : `${app.options.baseURL}/`
+
+        await app.writeFile(assetPath, source)
+        bootstrapPath = `${base}${assetPath}`
+      },
+      onBeforePageRender ({ component }) {
+        if (bootstrapPath) {
+          injectBootstrap(component, bootstrapPath)
         }
       }
-    })
-  }
-})
-
-export default goatCounterPlugin
+    },
+    client: {
+      context: () => () => ({
+        analytics: {
+          track (name, meta) {
+            const coralite = window['__coralite__']
+            const api = coralite && coralite.plugins ? coralite.plugins.analytics : null
+            if (api) {
+              api.track(name, meta)
+            }
+          }
+        }
+      })
+    }
+  })
+}
