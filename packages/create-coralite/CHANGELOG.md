@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.4.0
+
+> Comparing `create-coralite-v1.3.1` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🔨 Other Changes
+
+- release(coralite): version 1.4.0 ([240cb8b](https://github.com/tjdav/coralite/commit/240cb8ba412b34045a8204c742d2f6f111b082ec))
+
+
 ## v1.3.1
 
 > Comparing `create-coralite-v1.3.0` to `HEAD`
