@@ -65,4 +65,3 @@ jobs:
         run: |
           node scripts/smoke.js coralite
           node scripts/smoke.js create-coralite
-          node scripts/smoke.js coralite-scripts

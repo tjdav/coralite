@@ -21,7 +21,6 @@ export const TOPOLOGICAL_ORDER = [
 
 // Packages strictly excluded from release and publishing automation
 export const EXCLUDED_RELEASE_PACKAGES = [
-  'coralite-scripts',
   'coralite-release'
 ]
 

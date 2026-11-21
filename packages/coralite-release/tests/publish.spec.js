@@ -21,8 +21,8 @@ describe('coralite-publish utility functions', () => {
         version: '0.48.0-rc.0'
       })
 
-      assert.deepEqual(parseTagRef('refs/tags/coralite-scripts-v1.2.3'), {
-        packageName: 'coralite-scripts',
+      assert.deepEqual(parseTagRef('refs/tags/coralite-release-v1.2.3'), {
+        packageName: 'coralite-release',
         version: '1.2.3'
       })
 
@@ -119,14 +119,14 @@ describe('coralite-publish utility functions', () => {
 
     it('executes dry-run with tag-ref for prerelease tag resolution', () => {
       const output = execSync(
-        'node --experimental-vm-modules packages/coralite-release/bin/publish.js --tag-ref coralite-scripts-v1.0.0-rc.3 --dry-run --registry codeberg --skip-build',
+        'node --experimental-vm-modules packages/coralite-release/bin/publish.js --tag-ref create-coralite-v1.0.0-rc.3 --dry-run --registry codeberg --skip-build',
         {
           cwd: rootDir,
           encoding: 'utf8'
         }
       )
 
-      assert.match(output, /\[DRY RUN\] Would publish coralite-scripts@1.0.0-rc.3 to codeberg with tag "rc"/)
+      assert.match(output, /\[DRY RUN\] Would publish create-coralite@1.0.0-rc.3 to codeberg with tag "rc"/)
     })
 
     it('fails with clear error message when auth token is missing for live publish', () => {

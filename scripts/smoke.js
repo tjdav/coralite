@@ -44,17 +44,6 @@ function cleanup () {
       rmSync(join(PACKAGE_ROOT, file), { force: true })
     }
 
-    // For coralite-scripts, we might have a coralite tarball in coralite package
-    if (targetPackageName === 'coralite-scripts') {
-      const coraliteRoot = resolve(PACKAGES_DIR, 'coralite')
-      if (existsSync(coraliteRoot)) {
-        const cTarballs = readdirSync(coraliteRoot).filter(f => f.endsWith('.tgz'))
-        for (const file of cTarballs) {
-          rmSync(join(coraliteRoot, file), { force: true })
-        }
-      }
-    }
-
   } catch (e) {
     console.error('Error during cleanup:', e)
   }
@@ -93,24 +82,6 @@ try {
   }
   console.log(`Packed: ${tarballPath}`)
 
-  // Special handling for dependencies
-  const extraTarballs = []
-  if (targetPackageName === 'coralite-scripts') {
-    console.log('Building and Packing dependency: coralite...')
-    const coraliteRoot = resolve(PACKAGES_DIR, 'coralite')
-    if (!existsSync(coraliteRoot)) {
-      throw new Error(`Coralite root not found at ${coraliteRoot}`)
-    }
-    execSync('pnpm run build', {
-      cwd: coraliteRoot,
-      stdio: 'inherit'
-    })
-    const cPackOutput = execSync('pnpm pack', { cwd: coraliteRoot }).toString().trim()
-    const cTarballName = cPackOutput.split(/\r?\n/).pop().trim()
-    const cTarballPath = resolve(coraliteRoot, cTarballName)
-    extraTarballs.push(cTarballPath)
-  }
-
   // Create temp environment
   console.log(`Creating temp env at ${TEMP_DIR}...`)
   mkdirSync(TEMP_DIR, { recursive: true })
@@ -121,7 +92,7 @@ try {
 
   // Install
   console.log('Installing package(s)...')
-  const allTarballs = [tarballPath, ...extraTarballs].map(p => `"${p}"`).join(' ')
+  const allTarballs = `"${tarballPath}"`
   // Use npm install to verify package integrity
   execSync(`npm install ${allTarballs}`, {
     cwd: TEMP_DIR,
@@ -167,16 +138,6 @@ try {
     if (!helpOutput.includes('Usage: create-coralite')) {
       throw new Error(`CLI help output verification failed. Output: ${helpOutput}`)
     }
-    console.log('CLI verification passed.')
-  } else if (targetPackageName === 'coralite-scripts') {
-    console.log('Verifying CLI...')
-    const cliPath = join(TEMP_DIR, 'node_modules', '.bin', binName)
-    const helpOutput = execSync(`"${cliPath}" --help`, { cwd: TEMP_DIR }).toString()
-
-    if (!helpOutput.includes('Usage: coralite-scripts') && !helpOutput.includes('Usage: Coralite scripts')) {
-      throw new Error(`CLI help output verification failed. Output: ${helpOutput}`)
-    }
-
     console.log('CLI verification passed.')
   } else {
     throw new Error(`Unknown package: ${targetPackageName}`)
