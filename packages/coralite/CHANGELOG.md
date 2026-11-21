@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.4.0
+
+> Comparing `coralite-v1.3.1` to `HEAD`
+
+**Summary:** 7 commits
+
+### ✨ Features
+
+- publish the diagnostic catalogue (cli) ([67234ad](https://github.com/tjdav/coralite/commit/67234ad958787da9c34e0ac9e586d80639967f68))
+
+### 🐛 Bug Fixes
+
+- seed required attributes during base evaluation (component) ([2cc9315](https://github.com/tjdav/coralite/commit/2cc9315a7a7b0f5a3e0efa32eac94843c01df8f1))
+- drop undocumented id from the client context type (component) ([a75432c](https://github.com/tjdav/coralite/commit/a75432c84fc8db05408be342050deb59672b3339))
+- apply E301 to flat exported client handlers (component) ([c5b4dac](https://github.com/tjdav/coralite/commit/c5b4dac67a966af86f41b37b2db11bb058b9f206))
+- keep inline attributes working when style-src allows them (renderer) ([15a7fb1](https://github.com/tjdav/coralite/commit/15a7fb18d95d9d41dbd8e7de23c3e18a7f2e933e))
+- deduplicate page state in hydration payload (hydration) ([28a15c7](https://github.com/tjdav/coralite/commit/28a15c77a9f61dd3153113b28b0cfbdcc2f9ebd5))
+
+### ⚡ Performance Improvements
+
+- add client payload size benchmark (hydration) ([99620b4](https://github.com/tjdav/coralite/commit/99620b411476f9f03677cfb8e8ae069beb06c70a))
+
+
 ## v1.3.1
 
 > Comparing `coralite-v1.3.0` to `HEAD`
