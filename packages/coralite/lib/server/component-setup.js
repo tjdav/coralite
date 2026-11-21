@@ -276,7 +276,25 @@ function _resolveContextConsumers (state, consume, contextFrames = []) {
   }
 }
 
-function _validateInitialAttributes (normalizedAttributes, state, app, module) {
+/**
+ * Resolves the placeholder value used for a missing required attribute during
+ * base evaluation, when no authoring input exists yet.
+ *
+ * @param {Object} schema - Normalized attribute schema.
+ * @returns {string|number|boolean} Placeholder value for the declared type.
+ */
+function _baseAttributeValue (schema) {
+  const type = schema.type
+  if (type === Boolean || type === 'Boolean') {
+    return false
+  }
+  if (type === Number || type === 'Number') {
+    return 0
+  }
+  return ''
+}
+
+function _validateInitialAttributes (normalizedAttributes, state, app, module, { baseEvaluation = false } = {}) {
   for (const [key, schema] of Object.entries(normalizedAttributes)) {
     const camelName = kebabToCamel(key)
     const kebabName = camelToKebab(camelName)
@@ -286,6 +304,11 @@ function _validateInitialAttributes (normalizedAttributes, state, app, module) {
       graceful: true
     })
     if (res.error) {
+      if (baseEvaluation) {
+        state[camelName] = _baseAttributeValue(schema)
+        continue
+      }
+
       state.errors[camelName] = res.error
       state['error_' + camelName] = res.error
       state['error_' + kebabName] = res.error
@@ -741,6 +764,7 @@ export function createComponentDefinition ({ app }) {
       onError
     } = options || {}
     const { state: initialState, module, root } = context
+    const isBaseEvaluation = context?.session?.buildId === 'base-evaluation'
 
     if (formControl !== undefined && typeof formControl !== 'boolean') {
       throw new CoraliteError(`Component "${module.id}": option "formControl" must be a boolean. Received: ${typeof formControl}`, {
@@ -857,7 +881,7 @@ export function createComponentDefinition ({ app }) {
       onError: typeof onError === 'function' ? onError : null
     }
 
-    _validateInitialAttributes(normalizedAttributes, state, app, module)
+    _validateInitialAttributes(normalizedAttributes, state, app, module, { baseEvaluation: isBaseEvaluation })
     await _executeServerFunction(server, state, context, initialState, app, module)
     await _executeServerGetters(getters, state, root, context, app, module)
     await _processServerSlots(slots, state, root, context, app, module)

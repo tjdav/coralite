@@ -450,5 +450,88 @@ describe('Component Attribute validate Feature', () => {
         console.warn = originalWarn
       }
     })
+
+    it('base evaluation supplies type placeholders for missing required attributes without warnings', async () => {
+      const errorsReported = []
+      const mockApp = {
+        createComponentElement: () => null,
+        options: { mode: 'development' },
+        onError: (errData) => {
+          errorsReported.push(errData)
+        }
+      }
+      const defineComponent = createComponentDefinition({ app: mockApp })
+
+      const baseContext = {
+        state: {},
+        module: {
+          id: 'nav-link',
+          path: { pathname: '/nav-link.html' }
+        },
+        root: null,
+        session: { buildId: 'base-evaluation' }
+      }
+
+      const result = await defineComponent({
+        attributes: {
+          href: {
+            type: String,
+            required: true
+          },
+          count: {
+            type: Number,
+            required: true
+          },
+          active: {
+            type: Boolean,
+            required: true
+          }
+        },
+        getters: {
+          normalizedHref: ({ state }) => state.href.replace(/\/+$/, ''),
+          doubleCount: ({ state }) => state.count * 2,
+          activeLabel: ({ state }) => (state.active ? 'yes' : 'no')
+        }
+      }, baseContext)
+
+      assert.deepEqual(errorsReported, [])
+      assert.strictEqual(result.href, '')
+      assert.strictEqual(result.count, 0)
+      assert.strictEqual(result.active, false)
+      assert.strictEqual(result.normalizedHref, '')
+      assert.strictEqual(result.doubleCount, 0)
+      assert.strictEqual(result.activeLabel, 'no')
+    })
+
+    it('page evaluation still reports missing required attributes', async () => {
+      const errorsReported = []
+      const mockApp = {
+        createComponentElement: () => null,
+        options: { mode: 'development' },
+        onError: (errData) => {
+          errorsReported.push(errData)
+        }
+      }
+      const defineComponent = createComponentDefinition({ app: mockApp })
+
+      await defineComponent({
+        attributes: {
+          href: {
+            type: String,
+            required: true
+          }
+        }
+      }, {
+        state: {},
+        module: {
+          id: 'nav-link',
+          path: { pathname: '/nav-link.html' }
+        },
+        root: null
+      })
+
+      assert.strictEqual(errorsReported.length, 1)
+      assert.ok(errorsReported[0].message.includes('Attribute "href" is required.'))
+    })
   })
 })
