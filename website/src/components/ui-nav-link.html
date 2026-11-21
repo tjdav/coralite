@@ -11,15 +11,18 @@
   }
 
   export const getters = {
-    activeClass: ({ state, route }) => (state.active || isCurrentPath(route, state.href) ? 'c-nav-link--active' : ''),
-    current: ({ state, route }) => (state.active || isCurrentPath(route, state.href) ? 'page' : null)
-  }
-
-  function isCurrentPath (route, href) {
-    if (!route || !route.path) {
-      return false
+    activeClass: ({ state, route }) => {
+      if (state.active) {
+        return 'c-nav-link--active'
+      }
+      return route.path.replace(/\/+$/, '') === state.href.replace(/\/+$/, '') ? 'c-nav-link--active' : ''
+    },
+    current: ({ state, route }) => {
+      if (state.active) {
+        return 'page'
+      }
+      return route.path.replace(/\/+$/, '') === state.href.replace(/\/+$/, '') ? 'page' : null
     }
-    return route.path.replace(/\/+$/, '') === href.replace(/\/+$/, '')
   }
 </script>
 
