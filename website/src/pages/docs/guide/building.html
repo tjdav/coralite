@@ -44,6 +44,7 @@
           <li><strong>No client JavaScript by default:</strong> a component with no <code>client()</code>, no reactive state and no slots ships markup and CSS.</li>
           <li><strong>Server code is removed:</strong> <code>server()</code> runs at build time and is stripped from the browser bundle.</li>
           <li><strong>Assets are content-addressed:</strong> stylesheets and scripts are hashed so a target can cache them aggressively.</li>
+          <li><strong>Incremental builds are route-aware:</strong> each dynamic output records a cache key derived from its route params and resolved <code>server()</code> state, so changing one data record rebuilds only the affected output.</li>
         </ul>
 
         <p>Everything after this point is about how the artifact is served and which platform APIs the app can reach.</p>

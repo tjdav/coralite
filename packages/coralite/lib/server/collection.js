@@ -324,6 +324,11 @@ CoraliteCollection.prototype.updateItem = async function (value) {
   // update ISR related fields
   if (item.cacheKey !== undefined) {
     originalValue.cacheKey = item.cacheKey
+  } else if (item.revision !== undefined) {
+    originalValue.cacheKey = String(item.revision)
+  }
+  if (item.revision !== undefined) {
+    originalValue.revision = item.revision
   }
   if (item.volatile !== undefined) {
     originalValue.volatile = item.volatile

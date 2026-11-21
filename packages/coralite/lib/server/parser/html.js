@@ -345,7 +345,7 @@ function analyzePageScript (scriptContent, rawContent, filePath) {
     }
 
     if (!ALLOWED_PAGE_BLOCKS.has(keyName) && !rawContent.includes('coralite-ignore E107')) {
-      throw new CoraliteError(`Unknown block "${keyName}" in definePage. Valid blocks are: paths, server, meta, getters, style, provide, client, onError.`, {
+      throw new CoraliteError(`Unknown block "${keyName}" in definePage. Valid blocks are: paths, server, cacheKey, meta, getters, style, provide, client, onError.`, {
         code: 'CORALITE-E107',
         filePath
       })

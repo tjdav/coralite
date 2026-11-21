@@ -1,12 +1,12 @@
 /**
  * Creates an onBeforeBuild plugin that queues a virtual page for rendering
- * via `app.addRenderQueue({ pathname, content, cacheKey?, volatile? }, buildId)`.
+ * via `app.addRenderQueue({ pathname, content, cacheKey?, revision?, volatile? }, buildId)`.
  *
- * The `cacheKey` and `volatile` options are read lazily (at hook time), so
- * tests may mutate the options object between builds to simulate changes.
+ * The `cacheKey`, `revision`, and `volatile` options are read lazily (at hook
+ * time), so tests may mutate the options object between builds to simulate changes.
  *
  * @param {string} pathname - Pathname of the virtual page (e.g. 'virtual.html')
- * @param {{ content?: string, cacheKey?: string, volatile?: boolean }} [options] - Virtual page rendering configuration options.
+ * @param {{ content?: string, cacheKey?: string, revision?: string | number, volatile?: boolean }} [options] - Virtual page rendering configuration options.
  * @returns {{ name: string, server: { onBeforeBuild: Function } }} Coralite plugin
  */
 export function virtualPagePlugin (pathname, options = {}) {
@@ -20,6 +20,9 @@ export function virtualPagePlugin (pathname, options = {}) {
         }
         if (options.cacheKey !== undefined) {
           item.cacheKey = options.cacheKey
+        }
+        if (options.revision !== undefined) {
+          item.revision = options.revision
         }
         if (options.volatile !== undefined) {
           item.volatile = options.volatile

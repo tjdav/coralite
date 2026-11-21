@@ -197,14 +197,21 @@
               app.getPagePathsUsingCustomElement(path)</code-block>
 
             <h2 id="add-render-queue">Add Render Queue</h2>
-            <p>Adds a page (physical or virtual) to the current render queue. Virtual pages must be added during the <code>onBeforeBuild</code> hook.</p>
+            <p>Adds a page (physical or virtual) to the current render queue. Virtual pages must be added during the <code>onBeforeBuild</code> hook. A virtual page may pass <code>cacheKey</code> (or its numeric/string alias <code>revision</code>) to control incremental invalidation, and <code>volatile: true</code> to rebuild on every build.</p>
 
             <code-block language="JavaScript">
               /**
                * @param {string | Object} value - Page path or virtual page object.
                * @param {string} buildId - The current build ID.
                */
-              await app.addRenderQueue(value, buildId)</code-block>
+              await app.addRenderQueue(value, buildId)
+
+              // Virtual pagination entry
+              await app.addRenderQueue({
+                pathname: 'blog/page-2.html',
+                content: html,
+                revision: postListVersion
+              }, buildId)</code-block>
 
             <h2 id="create-component">Create Component</h2>
             <p>Imperatively creates a component element for inclusion in the AST.</p>
