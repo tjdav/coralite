@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import path from 'node:path'
-import { access, unlink, readFile } from 'node:fs/promises'
+import { access, unlink, readFile, mkdir, writeFile } from 'node:fs/promises'
 import { createCLIProject } from '../utils/project.js'
 
 describe('Coralite CLI Build Integration', () => {
@@ -177,6 +177,46 @@ describe('Coralite CLI Build Integration', () => {
     const { stdout } = await project.runBuild(['--no-incremental', '--verbose'])
 
     assert.ok(stdout.includes('index.html'), `Should not skip index.html when --no-incremental is passed, got: ${stdout}`)
+  })
+
+  it('should rebuild only affected dynamic outputs and remove stale ones', async () => {
+    const dataDir = path.join(project.testDir, 'data')
+    await mkdir(dataDir, { recursive: true })
+    await mkdir(path.join(project.pagesDir, 'posts'), { recursive: true })
+    await writeFile(path.join(dataDir, 'alpha.json'), JSON.stringify({ title: 'Alpha v1' }))
+    await writeFile(path.join(dataDir, 'beta.json'), JSON.stringify({ title: 'Beta v1' }))
+
+    await project.writePage('posts/[id].html', `<!DOCTYPE html>
+<html><head><title>{{ title }}</title></head><body><h1>{{ title }}</h1></body></html>
+<script type="module">
+  export async function paths ({ app }) {
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+    const files = await fs.readdir(path.join(app.options.projectRoot, 'data'))
+    return files.filter(function (file) { return file.endsWith('.json') }).map(function (file) { return { id: file.replace('.json', '') } })
+  }
+  export async function server ({ route, app }) {
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+    const raw = await fs.readFile(path.join(app.options.projectRoot, 'data', route.params.id + '.json'), 'utf8')
+    return { title: JSON.parse(raw).title }
+  }
+</script>`)
+
+    await project.runBuild(['--verbose'])
+    await access(path.join(project.outputDir, 'posts', 'alpha.html'))
+    await access(path.join(project.outputDir, 'posts', 'beta.html'))
+
+    await writeFile(path.join(dataDir, 'alpha.json'), JSON.stringify({ title: 'Alpha v2' }))
+    const changed = await project.runBuild(['--verbose'])
+    assert.ok(/\d+\.\d+ms[^\n]*src\/pages\/posts\/alpha\.html/.test(changed.stdout), `Changed output should rebuild, got: ${changed.stdout}`)
+    assert.ok(!/\d+\.\d+ms[^\n]*src\/pages\/posts\/beta\.html/.test(changed.stdout), `Unchanged output should skip, got: ${changed.stdout}`)
+
+    await unlink(path.join(dataDir, 'beta.json'))
+    const removed = await project.runBuild(['--verbose'])
+    assert.ok(removed.stdout.includes('Deleted stale file'), `Removed dynamic output should be cleaned up, got: ${removed.stdout}`)
+    await assert.rejects(access(path.join(project.outputDir, 'posts', 'beta.html')))
+    await access(path.join(project.outputDir, 'posts', 'alpha.html'))
   })
 
   it('should perform a full rebuild when incremental: false is set in config', async () => {

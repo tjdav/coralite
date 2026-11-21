@@ -5,6 +5,13 @@ import xxhash from 'xxhash-wasm'
  * @import { XXHashAPI } from 'xxhash-wasm'
  */
 
+/**
+ * Current incremental manifest schema version.
+ * Bump whenever stored cache metadata becomes incompatible.
+ * @type {number}
+ */
+export const MANIFEST_VERSION = 2
+
 /** @type {XXHashAPI['h64Raw'] | undefined} */
 let hasher
 

@@ -18,6 +18,7 @@
  * @property {string} [content] - The raw HTML string contents of the file (optional, may be omitted for templates).
  * @property {boolean} [virtual] - Indicates if the file is virtual (in-memory) rather than from the filesystem.
  * @property {string} [cacheKey] - Cache key for ISR.
+ * @property {string | number} [revision] - Revision alias for the virtual page cache key.
  * @property {boolean} [volatile] - Volatile flag for ISR.
  */
 
@@ -226,6 +227,7 @@
  * @property {'skipped' | 'failed'} [status] - Optional status if the build was skipped via ISR or failed.
  * @property {Error} [error] - Error diagnostic if rendering failed.
  * @property {Object} [route] - The route object for this page output.
+ * @property {string} [cacheKey] - The incremental cache key resolved for this output.
  */
 
 /**
@@ -322,11 +324,20 @@
  */
 
 /**
+ * Context provided to page cacheKey({ route, state }) execution.
+ *
+ * @typedef {Object} CoralitePageCacheKeyContext
+ * @property {import('./globals.js').CoraliteRoute} route - The concrete route for this output.
+ * @property {any} state - Resolved page state after server().
+ */
+
+/**
  * Options accepted by definePage.
  *
  * @typedef {Object} CoralitePageConfig
  * @property {Function} [paths] - Enumerated route paths.
  * @property {Function} [server] - Server-side page data loader.
+ * @property {Function} [cacheKey] - Computes the incremental cache key for each output.
  * @property {Object} [getters] - Isomorphic page getters.
  * @property {Object} [style] - Reactive page style definitions.
  * @property {Object} [provide] - W3C context providers.
@@ -415,7 +426,7 @@
  * @property {(pathOrOptions?: string | string[] | CoraliteBuildCallback, optionsOrCallback?: CoraliteBuildOptions | CoraliteBuildCallback, callback?: CoraliteBuildCallback) => Promise<CoraliteBuildResult[]>} build - The function that builds the project or specific pages.
  * @property {(savePath?: string | string[], saveOptions?: CoraliteBuildOptions) => Promise<CoraliteSaveResult[]>} save - The function that builds and saves the project or specific pages to disk.
  * @property {(root: CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[], options?: DomSerializerOptions) => string} transform - The function that transforms an AST back into an HTML string.
- * @property {(value: string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, volatile?: boolean }, buildId: string) => Promise<void>} addRenderQueue - The function that adds a page to the current render queue.
+ * @property {(value: string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, revision?: string | number, volatile?: boolean }, buildId: string) => Promise<void>} addRenderQueue - The function that adds a page to the current render queue.
  * @property {(targetPath: string) => string[]} getPagePathsUsingCustomElement - The function that retrieves all page paths using a specific custom element.
  * @property {(options: ComponentElementOptions) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement - The function that creates a component element from its definition.
  * @property {(path: string) => void} trackOutputFile - Registers an output file path for the build cleanup whitelist.

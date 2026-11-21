@@ -60,7 +60,8 @@ import { CoraliteError, CoraliteBuildError } from '../shared/errors.js'
 import { RESERVED_DOM_ATTRIBUTES } from '../shared/attributes.js'
 import { applyAstBoundAttribute } from '../shared/tags.js'
 import { resolvePageMetaDefaults } from '../shared/page-meta.js'
-import { checkFileChange, hash } from './utils/manifest.js'
+import { checkFileChange, hash, MANIFEST_VERSION } from './utils/manifest.js'
+import { createPageCacheKey } from './utils/cache-key.js'
 import {
   isCoraliteElement,
   isCoraliteNode,
@@ -1477,7 +1478,7 @@ export function createRenderer ({
     }
   }
 
-  const _renderSinglePage = async (pageItem, buildId, state = {}, buildOptions = {}, targetRoute = null, targetOutPath = null) => {
+  const _renderSinglePage = async (pageItem, buildId, state = {}, buildOptions = {}, targetRoute = null, targetOutPath = null, incrementalCache = null) => {
     const isProduction = normalizedOptions.mode === 'production'
     const startTime = performance.now()
     const buildSignal = buildOptions?.buildSignal || buildOptions?.signal || NOOP_SIGNAL
@@ -2146,6 +2147,8 @@ export function createRenderer ({
       }
     }
 
+    let pageCacheKey = null
+
     try {
       if (pageExports) {
         if (typeof pageExports.server === 'function') {
@@ -2186,6 +2189,39 @@ export function createRenderer ({
           }
         }
 
+        const shouldResolveCacheKey = Boolean(targetRoute?.dynamic || (pageExports && typeof pageExports.cacheKey === 'function'))
+        if (shouldResolveCacheKey) {
+          pageCacheKey = await createPageCacheKey({
+            pageExports,
+            route: routeObj,
+            state: activePageState,
+            page: pageContext
+          })
+        }
+
+        if (
+          pageCacheKey !== null &&
+          incrementalCache?.existingMeta &&
+          String(incrementalCache.existingMeta.cacheKey) === String(pageCacheKey)
+        ) {
+          const skippedOutPath = targetOutPath || mappedComponent.path.pathname
+          /** @type {CoraliteBuildResult} */
+          const skippedResult = {
+            type: 'page',
+            path: {
+              ...mappedComponent.path,
+              pathname: skippedOutPath,
+              dirname: dirname(skippedOutPath),
+              filename: basename(skippedOutPath)
+            },
+            sourcePath: pageItem.path?.pathname || pageItem.file?.pathname || mappedComponent.path?.pathname,
+            route: routeObj,
+            status: 'skipped',
+            cacheKey: pageCacheKey
+          }
+          return skippedResult
+        }
+
         if (activePageState.__redirect !== undefined) {
           const { to } = validateAndNormalizeRedirect(
             activePageState.__redirect,
@@ -2210,6 +2246,9 @@ export function createRenderer ({
             session: mappedSessionObject,
             route: routeObj,
             runtimeChunk: null
+          }
+          if (pageCacheKey !== null) {
+            result.cacheKey = pageCacheKey
           }
           return result
         }
@@ -3139,6 +3178,10 @@ export function createRenderer ({
       route: routeObj
     }
 
+    if (pageCacheKey !== null) {
+      result.cacheKey = pageCacheKey
+    }
+
     if (runtimeChunkPath !== null) {
       result.runtimeChunk = runtimeChunkPath
     } else {
@@ -3182,7 +3225,7 @@ export function createRenderer ({
   /**
    * Adds a page or a collection item to the current render queue.
    *
-   * @param {string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, volatile?: boolean }} value - The ID of the page or the collection item to add.
+   * @param {string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, revision?: string | number, volatile?: boolean }} value - The ID of the page or the collection item to add.
    * @param {string} buildId - The unique identifier for the current build session.
    * @throws {Error} If the buildId is missing or invalid, or if the page ID is not found.
    * @returns {Promise<void>}
@@ -3210,12 +3253,19 @@ export function createRenderer ({
       item = await app.pages.setItem(value)
     } else if (value && typeof value === 'object' && 'pathname' in value) {
       const pathname = value.pathname
+      let cacheKey
+      if (value.cacheKey !== undefined) {
+        cacheKey = value.cacheKey
+      } else if (value.revision !== undefined) {
+        cacheKey = String(value.revision)
+      }
       /** @type {HTMLData} */
       const itemData = {
         type: 'page',
         content: value.content,
         virtual: true,
-        cacheKey: value.cacheKey,
+        cacheKey,
+        revision: value.revision,
         volatile: value.volatile,
         path: {
           pathname,
@@ -3233,7 +3283,8 @@ export function createRenderer ({
       // Force properties directly on the item that resolvePageQueue might return
       item.content = value.content
       item.virtual = true
-      item.cacheKey = value.cacheKey
+      item.cacheKey = cacheKey
+      item.revision = value.revision
       item.volatile = value.volatile
 
       // Also ensure the collection item itself has these
@@ -3241,7 +3292,8 @@ export function createRenderer ({
       if (collectionItem) {
         collectionItem.content = value.content
         collectionItem.virtual = true
-        collectionItem.cacheKey = value.cacheKey
+        collectionItem.cacheKey = cacheKey
+        collectionItem.revision = value.revision
         collectionItem.volatile = value.volatile
       }
     }
@@ -3293,6 +3345,7 @@ export function createRenderer ({
     const cacheDir = normalizedOptions.cacheDir || join(projectRoot, '.coralite')
     const manifestPath = join(cacheDir, 'manifest.json')
     let manifest = {
+      version: MANIFEST_VERSION,
       physical: {},
       virtual: {},
       dependencies: {},
@@ -3301,9 +3354,12 @@ export function createRenderer ({
 
     try {
       const content = await readFile(manifestPath, 'utf8')
-      manifest = JSON.parse(content)
-      if (!manifest.components) {
-        manifest.components = {}
+      const parsed = JSON.parse(content)
+      if (parsed && parsed.version === MANIFEST_VERSION) {
+        manifest = parsed
+        if (!manifest.components) {
+          manifest.components = {}
+        }
       }
     } catch (e) {
       // Manifest missing (cold start) or corrupt, use default
@@ -3527,6 +3583,7 @@ export function createRenderer ({
     const pagesToRender = []
     const skippedPages = []
     const newManifest = {
+      version: MANIFEST_VERSION,
       physical: {},
       virtual: {},
       dependencies: {},
@@ -3670,6 +3727,41 @@ export function createRenderer ({
       }
 
       return false
+    }
+
+    const pageMetaForwardKeys = [
+      'runtimeChunk',
+      'pageScript',
+      'pageScriptHash',
+      'pageStyle',
+      'pageStyleHash',
+      'componentHashes',
+      'injectedAssets',
+      'dependencies'
+    ]
+
+    const carryForwardPageMeta = (targetMeta, existingMeta) => {
+      if (!targetMeta || !existingMeta) {
+        return
+      }
+
+      for (const key of pageMetaForwardKeys) {
+        if (existingMeta[key] !== undefined) {
+          targetMeta[key] = existingMeta[key]
+        }
+      }
+
+      if (existingMeta.pageScript && app.trackOutputFile) {
+        app.trackOutputFile(join(outputDir, existingMeta.pageScript))
+      }
+      if (existingMeta.pageStyle && app.trackOutputFile) {
+        app.trackOutputFile(join(outputDir, existingMeta.pageStyle))
+      }
+      if (existingMeta.injectedAssets && app.trackOutputFile) {
+        for (const assetRef of existingMeta.injectedAssets) {
+          app.trackOutputFile(join(outputDir, assetRef.dest))
+        }
+      }
     }
 
     const failedPages = []
@@ -3868,45 +3960,7 @@ export function createRenderer ({
           }
 
           skippedPages.push(skippedResult)
-
-          if (existingVirtualMeta) {
-            if (existingVirtualMeta.runtimeChunk !== undefined) {
-              newManifest.virtual[targetOutPath].runtimeChunk = existingVirtualMeta.runtimeChunk
-            }
-            if (existingVirtualMeta.pageScript) {
-              newManifest.virtual[targetOutPath].pageScript = existingVirtualMeta.pageScript
-            }
-            if (existingVirtualMeta.pageScriptHash) {
-              newManifest.virtual[targetOutPath].pageScriptHash = existingVirtualMeta.pageScriptHash
-            }
-            if (existingVirtualMeta.pageStyle) {
-              newManifest.virtual[targetOutPath].pageStyle = existingVirtualMeta.pageStyle
-            }
-            if (existingVirtualMeta.pageStyleHash) {
-              newManifest.virtual[targetOutPath].pageStyleHash = existingVirtualMeta.pageStyleHash
-            }
-            if (existingVirtualMeta.componentHashes) {
-              newManifest.virtual[targetOutPath].componentHashes = existingVirtualMeta.componentHashes
-            }
-            if (existingVirtualMeta.injectedAssets) {
-              newManifest.virtual[targetOutPath].injectedAssets = existingVirtualMeta.injectedAssets
-            }
-            if (existingVirtualMeta.dependencies) {
-              newManifest.virtual[targetOutPath].dependencies = existingVirtualMeta.dependencies
-            }
-
-            if (existingVirtualMeta.pageScript && app.trackOutputFile) {
-              app.trackOutputFile(join(outputDir, existingVirtualMeta.pageScript))
-            }
-            if (existingVirtualMeta.pageStyle && app.trackOutputFile) {
-              app.trackOutputFile(join(outputDir, existingVirtualMeta.pageStyle))
-            }
-            if (existingVirtualMeta.injectedAssets && app.trackOutputFile) {
-              for (const assetRef of existingVirtualMeta.injectedAssets) {
-                app.trackOutputFile(join(outputDir, assetRef.dest))
-              }
-            }
-          }
+          carryForwardPageMeta(newManifest.virtual[targetOutPath], existingVirtualMeta)
         } else {
           tasksToRender.push(task)
         }
@@ -3924,7 +3978,14 @@ export function createRenderer ({
           shouldRebuild = await checkPageAssetsAndManifest(existingPageMeta)
         }
 
-        if (!isIncremental || changed || shouldRebuild || normalizedOptions.mode === 'development') {
+        const pageExports = pageItem.result?.page?.exports || pageItem.value?.page?.exports || pageItem.page?.exports || null
+        const cacheEligible = Boolean(targetRoute?.dynamic || (pageExports && typeof pageExports.cacheKey === 'function'))
+        const missingCacheKey = cacheEligible && Boolean(existingPageMeta) && existingPageMeta.cacheKey === undefined
+
+        if (!isIncremental || changed || shouldRebuild || normalizedOptions.mode === 'development' || missingCacheKey) {
+          tasksToRender.push(task)
+        } else if (cacheEligible && existingPageMeta) {
+          task.incrementalCache = { existingMeta: existingPageMeta }
           tasksToRender.push(task)
         } else {
           /** @type {CoraliteBuildResult} */
@@ -3944,45 +4005,7 @@ export function createRenderer ({
             status: 'skipped'
           }
 
-          if (existingPageMeta) {
-            if (existingPageMeta.runtimeChunk !== undefined) {
-              newManifest.physical[targetOutPath].runtimeChunk = existingPageMeta.runtimeChunk
-            }
-            if (existingPageMeta.pageScript) {
-              newManifest.physical[targetOutPath].pageScript = existingPageMeta.pageScript
-            }
-            if (existingPageMeta.pageScriptHash) {
-              newManifest.physical[targetOutPath].pageScriptHash = existingPageMeta.pageScriptHash
-            }
-            if (existingPageMeta.pageStyle) {
-              newManifest.physical[targetOutPath].pageStyle = existingPageMeta.pageStyle
-            }
-            if (existingPageMeta.pageStyleHash) {
-              newManifest.physical[targetOutPath].pageStyleHash = existingPageMeta.pageStyleHash
-            }
-            if (existingPageMeta.componentHashes) {
-              newManifest.physical[targetOutPath].componentHashes = existingPageMeta.componentHashes
-            }
-            if (existingPageMeta.injectedAssets) {
-              newManifest.physical[targetOutPath].injectedAssets = existingPageMeta.injectedAssets
-            }
-            if (existingPageMeta.dependencies) {
-              newManifest.physical[targetOutPath].dependencies = existingPageMeta.dependencies
-            }
-
-            if (existingPageMeta.pageScript && app.trackOutputFile) {
-              app.trackOutputFile(join(outputDir, existingPageMeta.pageScript))
-            }
-            if (existingPageMeta.pageStyle && app.trackOutputFile) {
-              app.trackOutputFile(join(outputDir, existingPageMeta.pageStyle))
-            }
-            if (existingPageMeta.injectedAssets && app.trackOutputFile) {
-              for (const assetRef of existingPageMeta.injectedAssets) {
-                app.trackOutputFile(join(outputDir, assetRef.dest))
-              }
-            }
-          }
-
+          carryForwardPageMeta(newManifest.physical[targetOutPath], existingPageMeta)
           skippedPages.push(skippedResult)
         }
       }
@@ -4066,7 +4089,8 @@ export function createRenderer ({
                 buildSignal: combinedSignal
               },
               task.targetRoute,
-              task.targetOutPath
+              task.targetOutPath,
+              task.incrementalCache || null
             )
           } catch (err) {
             if (combinedSignal.aborted) {
@@ -4118,6 +4142,35 @@ export function createRenderer ({
             throw combinedSignal.reason
           }
 
+          if (pageResult.status === 'skipped') {
+            const skippedPath = pageResult.path.pathname
+            const skippedMeta = newManifest.physical[skippedPath] || newManifest.virtual[skippedPath]
+            const previousMeta = task.pageItem.virtual
+              ? manifest.virtual?.[skippedPath]
+              : manifest.physical?.[skippedPath]
+
+            if (skippedMeta) {
+              carryForwardPageMeta(skippedMeta, previousMeta)
+              if (pageResult.cacheKey !== undefined) {
+                skippedMeta.cacheKey = pageResult.cacheKey
+              }
+            }
+
+            skippedPages.push(pageResult)
+
+            const skippedSession = pageResult.session
+            if (skippedSession) {
+              skippedSession.state = null
+              skippedSession.styles = null
+              skippedSession.scripts = null
+              if (skippedSession.source) {
+                skippedSession.source.contextInstances = null
+                skippedSession.source = null
+              }
+            }
+            return
+          }
+
           await hooks.triggerAggregate('onAfterPageRender', {
             result: pageResult,
             session: pageResult.session,
@@ -4127,6 +4180,9 @@ export function createRenderer ({
           const pagePath = pageResult.path.pathname
           const targetMeta = newManifest.physical[pagePath] || newManifest.virtual[pagePath]
           if (targetMeta) {
+            if (pageResult.cacheKey !== undefined) {
+              targetMeta.cacheKey = pageResult.cacheKey
+            }
             if (pageResult.injectedAssets) {
               targetMeta.injectedAssets = pageResult.injectedAssets
             }

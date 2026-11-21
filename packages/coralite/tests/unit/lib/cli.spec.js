@@ -420,7 +420,7 @@ export default {
       const output = runCli('diagnostics --format json').toString()
       const report = JSON.parse(output)
 
-      assert.equal(report.total, 52)
+      assert.equal(report.total, 53)
       assert.equal(report.errors + report.warnings, report.total)
       assert.equal(report.fixable, report.codes.filter(entry => entry.fixable).length)
 
