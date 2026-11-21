@@ -274,6 +274,15 @@ export const DIAGNOSTIC_CATALOG = [
     fix: 'Check the relative path or package name, and confirm the file exists on disk.'
   },
   {
+    code: 'CORALITE-E404',
+    title: 'Invalid page cacheKey() result',
+    family: 'page',
+    severity: 'error',
+    fixable: false,
+    summary: 'A page cacheKey() block returned something other than a string or number.',
+    fix: 'Return a stable string or number that changes when the rendered output changes.'
+  },
+  {
     code: 'CORALITE-E407',
     title: 'Invalid plugin paths() result',
     family: 'plugin',

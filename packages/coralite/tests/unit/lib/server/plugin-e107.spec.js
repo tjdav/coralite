@@ -154,7 +154,7 @@ describe('CORALITE-E107: Unified define* entry point block validation', () => {
           assert.strictEqual(err.code, 'CORALITE-E107')
           assert.strictEqual(
             err.message,
-            'Unknown block "unknownPageBlock" in definePage. Valid blocks are: paths, server, meta, getters, style, provide, client, onError.'
+            'Unknown block "unknownPageBlock" in definePage. Valid blocks are: paths, server, cacheKey, meta, getters, style, provide, client, onError.'
           )
           return true
         }

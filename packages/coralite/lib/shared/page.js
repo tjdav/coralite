@@ -5,6 +5,7 @@
 export const PAGE_EXPORTS = [
   'paths',
   'server',
+  'cacheKey',
   'meta',
   'getters',
   'style',
@@ -20,6 +21,7 @@ export const PAGE_EXPORTS = [
 export const PAGE_HANDLER_EXPORTS = new Set([
   'paths',
   'server',
+  'cacheKey',
   'client',
   'onError'
 ])

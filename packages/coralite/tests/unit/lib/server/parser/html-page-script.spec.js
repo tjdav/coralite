@@ -142,7 +142,7 @@ describe('html.js (extractPageScript)', () => {
       (err) => {
         return (
           err.code === 'CORALITE-E107' &&
-          err.message.includes('Unknown block "unknownBlock" in definePage. Valid blocks are: paths, server, meta, getters, style, provide, client, onError.')
+          err.message.includes('Unknown block "unknownBlock" in definePage. Valid blocks are: paths, server, cacheKey, meta, getters, style, provide, client, onError.')
         )
       }
     )

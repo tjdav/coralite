@@ -28,7 +28,7 @@ test('changelog converts legacy markup into site components', async ({ page }) =
   expect(headings.length).toBeGreaterThan(0)
   expect(headings.every(Boolean)).toBe(true)
 
-  await expect(page.locator('.changelog-body code-block').first()).toContainText('template')
+  await expect(page.locator('.changelog-body code-block', { hasText: 'template' }).first()).toBeVisible()
 
   const summaries = await page.locator('.changelog-summary').allTextContents()
   expect(summaries.length).toBeGreaterThan(0)
