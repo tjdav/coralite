@@ -73,6 +73,7 @@ import { createStore, createServerStore } from '../utils/store.js'
 import { validateLateBoundClientConfig } from '../utils/plugin-config-schema.js'
 import { buildRouteTable } from './routes/build-table.js'
 import { validateRouteTable, buildConcreteUrl } from './routes/validate.js'
+import { routeParamsKey } from './route.js'
 import { validateAndNormalizeRedirect, generateRedirectStub } from './redirect.js'
 
 /**
@@ -3674,6 +3675,10 @@ export function createRenderer ({
 
     const failedPages = []
     const renderTasks = []
+    const requestedDynamicPaths = Array.isArray(buildOptions?.dynamicPaths) ? buildOptions.dynamicPaths : null
+    const requestedDynamicKeys = requestedDynamicPaths
+      ? new Set(requestedDynamicPaths.map(routeParamsKey))
+      : null
     for (const pageItem of queue) {
       const pageObj = pageItem.result?.page || pageItem.value?.page || pageItem.page || pageItem
       const routePattern = pageObj?.routePattern || '/'
@@ -3707,13 +3712,19 @@ export function createRenderer ({
         if (enumeratedPaths.length === 0) {
           continue
         }
+        const selectedPaths = requestedDynamicKeys
+          ? enumeratedPaths.filter(paramObj => requestedDynamicKeys.has(routeParamsKey(paramObj)))
+          : enumeratedPaths
+        if (selectedPaths.length === 0) {
+          continue
+        }
         const patternEntry = {
           pattern: routePattern,
           params: routeParams,
           segments: routeSegments
         }
         const pagesRoot = normalizedOptions.path.pages
-        const pathTasks = enumeratedPaths.map(paramObj => {
+        const pathTasks = selectedPaths.map(paramObj => {
           const concretePath = buildConcreteUrl(patternEntry, paramObj)
           const { routePath, targetOutPath } = computeRouteAndOutputPath(concretePath, normalizedOptions.cleanUrls, pagesRoot)
           const targetRoute = {

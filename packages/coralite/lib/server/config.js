@@ -267,6 +267,21 @@ export function defineConfig (options, { onError } = {}) {
     }
   }
 
+  if (options.dev !== undefined) {
+    if (typeof options.dev !== 'object' || options.dev === null) {
+      throw new CoraliteError('Config property "dev" must be an object')
+    }
+    for (const key of ['maxPages', 'limit', 'maxCacheEntries']) {
+      const value = options.dev[key]
+      if (value !== undefined && (!Number.isInteger(value) || value < 0)) {
+        throw new CoraliteError(`Config property "dev.${key}" must be a non-negative integer`)
+      }
+    }
+    if (options.dev.routeFilter !== undefined && typeof options.dev.routeFilter !== 'function') {
+      throw new CoraliteError('Config property "dev.routeFilter" must be a function')
+    }
+  }
+
   if (options.styles !== undefined) {
     if (typeof options.styles !== 'object' || options.styles === null) {
       throw new CoraliteError('Config property "styles" must be an object')

@@ -128,6 +128,58 @@
                 </table>
               </div>
 
+            <h3 id="development-server-options">Development server options</h3>
+
+            <p>The <code>dev</code> block controls how <code>coralite dev</code> handles large dynamic route sets. It is ignored by production builds. Dynamic outputs render lazily on request by default; use these options when you also want to reduce the set of routes exposed in development.</p>
+
+            <code-block language="javascript" filename="coralite.config.js">
+import { defineConfig } from 'coralite'
+
+export default defineConfig({
+  // ...
+  dev: {
+    maxPages: 1000,
+    maxCacheEntries: 256,
+    routeFilter: ({ params }) => params.id.startsWith('public-')
+  }
+})
+            </code-block>
+
+            <div tabindex="0" role="region" aria-label="Scrollable table" class="docs-table-wrap">
+                <table class="docs-table">
+                <thead>
+                  <tr>
+                <th scope="col">Option</th>
+                <th scope="col">Type</th>
+                <th scope="col">Default</th>
+                <th scope="col">Description</th>
+              </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                <td><code>maxPages</code></td>
+                <td><code>number</code></td>
+                <td>uncapped</td>
+                <td>Maximum dynamic outputs exposed across all page sources in development. Routes beyond the cap return 404 in dev. <code>limit</code> is an alias.</td>
+              </tr>
+                  <tr>
+                <td><code>routeFilter</code></td>
+                <td><code>function</code></td>
+                <td>none</td>
+                <td>Predicate receiving <code>{ params, page, index, app }</code>. Return <code>false</code> to exclude an enumerated dynamic path before the cap applies.</td>
+              </tr>
+                  <tr>
+                <td><code>maxCacheEntries</code></td>
+                <td><code>number</code></td>
+                <td><code>256</code></td>
+                <td>Maximum rendered page entries retained by the dev server's LRU cache. <code>0</code> disables caching.</td>
+              </tr>
+                </tbody>
+                </table>
+              </div>
+
+            <p><code>paths({ app })</code> can also return fewer entries when <code>app.options.mode === 'development'</code>; that keeps the authoring-level route set small without configuring a global filter.</p>
+
             <h2 id="4-extended-options">4. Extended Options</h2>
 
             <p>Extended configuration options allow declaring global store state, injecting stylesheets, registering plugins, and setting Content Security Policies:</p>
@@ -250,6 +302,7 @@
         <a class="active" href="#1-the-coralite-config-js-file">1. The coralite.config.js File</a>
         <a href="#2-required-keys">2. Required Keys</a>
         <a href="#3-core-options">3. Core Options</a>
+        <a href="#development-server-options">Development server options</a>
         <a href="#4-extended-options">4. Extended Options</a>
         <a href="#5-asset-injection">5. Asset Injection</a>
         <a href="#6-test-fixtures-page-exclusions">6. Test Fixtures &amp; Page Exclusions</a>

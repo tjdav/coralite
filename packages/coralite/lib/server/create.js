@@ -40,6 +40,7 @@ import {
   bindPlugins
 } from './hooks.js'
 import CoraliteCollection from './collection.js'
+import { applyDevRouteLimits } from './route.js'
 
 /**
  * Normalizes fixtures configuration into directory paths and route prefix.
@@ -131,6 +132,7 @@ export async function createCoralite ({
   mode = 'production',
   output,
   testing,
+  dev,
   incremental = true,
   csp,
   cleanUrls = true,
@@ -227,6 +229,7 @@ export async function createCoralite ({
     output: output ? normalize(output) : undefined,
     onComponentBuild,
     testing,
+    dev,
     incremental,
     csp,
     cleanUrls: effectiveCleanUrls,
@@ -754,6 +757,17 @@ export async function createCoralite ({
         collection: app.fixtures
       })
     }
+  }
+
+  if (app.options.mode === 'development' && app.options.dev) {
+    applyDevRouteLimits(
+      [app.pages, app.fixtures].filter(Boolean),
+      {
+        maxPages: app.options.dev.maxPages ?? app.options.dev.limit,
+        routeFilter: app.options.dev.routeFilter,
+        app
+      }
+    )
   }
 
   return app
