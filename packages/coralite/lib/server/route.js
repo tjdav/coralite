@@ -113,7 +113,7 @@ export function validateEnumeratedPaths (rawPaths, routeParams = [], filePath = 
  * @param {Object} obj - The parameter object
  * @returns {string} Unique parameter key
  */
-function paramsKey (obj) {
+export function routeParamsKey (obj) {
   if (!obj || typeof obj !== 'object') {
     return ''
   }
@@ -147,7 +147,7 @@ export function deduplicateEnumeratedPaths (contributions, filePath = '') {
       if (!paramObj || typeof paramObj !== 'object') {
         continue
       }
-      const key = paramsKey(paramObj)
+      const key = routeParamsKey(paramObj)
 
       if (!seen.has(key)) {
         seen.set(key, {
@@ -181,6 +181,71 @@ export function deduplicateEnumeratedPaths (contributions, filePath = '') {
   }
 
   return result
+}
+
+/**
+ * Applies development-only route filters and a global enumerated-path budget.
+ *
+ * Mutates `page.enumeratedPaths` on page collection items. Only dynamic pages
+ * carry enumerated paths, so static pages are unaffected. The budget is shared
+ * across every supplied collection in iteration order.
+ *
+ * @param {Array<any>} collections - Page collections to update.
+ * @param {Object} options - Dev route options.
+ * @param {number} [options.maxPages] - Maximum dynamic outputs to keep.
+ * @param {Function} [options.routeFilter] - Filter receiving `{ params, page, index, app }`.
+ * @param {any} [options.app] - Coralite instance.
+ * @returns {void}
+ */
+export function applyDevRouteLimits (collections, options = {}) {
+  const { maxPages, routeFilter, app } = options
+  let remaining = Number.isFinite(maxPages) ? Math.max(0, Math.floor(maxPages)) : Infinity
+  const pageFilter = typeof routeFilter === 'function' ? routeFilter : null
+  const list = Array.isArray(collections) ? collections : [collections]
+
+  for (const collection of list) {
+    const items = collection && Array.isArray(collection.list) ? collection.list : []
+    for (const item of items) {
+      const page = item?.result?.page || item?.value?.page || item?.page || null
+      if (!page || !Array.isArray(page.enumeratedPaths)) {
+        continue
+      }
+
+      if (!Object.hasOwn(page, '_allEnumeratedPaths')) {
+        Object.defineProperty(page, '_allEnumeratedPaths', {
+          value: page.enumeratedPaths.slice(),
+          enumerable: false,
+          writable: true,
+          configurable: true
+        })
+      }
+
+      let paths = page._allEnumeratedPaths
+      if (pageFilter) {
+        paths = paths.filter((params, index) => pageFilter({
+          params,
+          page,
+          index,
+          app
+        }))
+      }
+      if (Number.isFinite(remaining)) {
+        paths = paths.slice(0, remaining)
+        remaining -= paths.length
+      }
+
+      page.enumeratedPaths = paths
+      if (item.result?.page && item.result.page !== page) {
+        item.result.page.enumeratedPaths = paths
+      }
+      if (item.value?.page && item.value.page !== page) {
+        item.value.page.enumeratedPaths = paths
+      }
+      if (item.page && item.page !== page) {
+        item.page.enumeratedPaths = paths
+      }
+    }
+  }
 }
 
 /**

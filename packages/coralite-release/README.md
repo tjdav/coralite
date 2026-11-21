@@ -146,7 +146,7 @@ coralite-release-post --agy
 coralite-release-post --json > release_data.json
 
 # Run non-interactively using the TEST_NON_INTERACTIVE env variable with agy
-TEST_NON_INTERACTIVE=true coralite-release-post --package coralite-scripts --from coralite-scripts-v0.27.0 --to coralite-scripts-v0.28.0 --agy
+TEST_NON_INTERACTIVE=true coralite-release-post --package create-coralite --from create-coralite-v0.27.0 --to create-coralite-v0.28.0 --agy
 ```
 
 ### coralite-github-release

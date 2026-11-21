@@ -24,7 +24,6 @@ This repository is a monorepo managed with `pnpm`. It contains the following pac
 * [`create-coralite`](./packages/create-coralite) - Scaffolding tool to initialize new Coralite applications and plugins (`--template plugin`).
 
 ### Tooling & Release
-* [`coralite-scripts`](./packages/coralite-scripts) - Development server and build CLI.
 * [`coralite-release`](./packages/coralite-release) - Internal monorepo release and changelog management.
 
 ---

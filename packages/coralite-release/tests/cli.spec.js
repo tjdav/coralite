@@ -320,7 +320,6 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.match(output, /Release Plan:/)
       assert.match(output, /coralite:/)
       assert.match(output, /create-coralite:/)
-      assert.doesNotMatch(output, /coralite-scripts:/)
 
       const gitDiff = execFileSync('git', ['diff', '--', 'packages/*/package.json', 'packages/*/templates/*/package.json'], {
         cwd: repoRoot,

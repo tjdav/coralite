@@ -9,8 +9,10 @@ import { access, constants, mkdir, readFile, writeFile } from 'fs/promises'
 import { createCoralite, resolveCspConfig } from 'coralite'
 import { buildRouteTable } from '../server/routes/build-table.js'
 import { matchRoute } from '../server/routes/match.js'
+import { applyDevRouteLimits } from '../server/route.js'
 import { copyStaticAssets } from '../../plugins/static-assets.js'
 import portfinder from 'portfinder'
+import { createPageCache } from './page-cache.js'
 
 /**
  * @import {CoraliteConfig, CoraliteCliOptions} from '../../types/index.js'
@@ -102,7 +104,7 @@ function getPageRequestKeys (absolutePath, pagesRoot) {
  * @param {CoraliteConfig} config - The Coralite configuration.
  * @param {any} coralite - The Coralite instance.
  * @param {Map<string, string>} memoryPageSource - Map of in-memory page sources.
- * @returns {Promise<{pathname: string, key: string, isFixture?: boolean}|null>}
+ * @returns {Promise<{pathname: string, key: string, isFixture?: boolean, routeParams?: Object}|null>}
  */
 export async function resolveSource (reqPath, extension, config, coralite, memoryPageSource) {
   const candidates = []
@@ -289,6 +291,7 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
               return {
                 pathname: match.pagePath,
                 key: normalizedKey,
+                routeParams: match.params,
                 isFixture: isFixtureRequest
               }
             }
@@ -327,7 +330,9 @@ async function server (config, options, runMode = 'dev') {
 
     // track active connections.
     const clients = new Set()
-    const pageCache = new Map()
+    const pageCache = createPageCache({
+      maxEntries: config.dev?.maxCacheEntries ?? 256
+    })
     const memoryPageSource = new Map()
     let compilePromise = Promise.resolve()
 
@@ -478,9 +483,7 @@ The dev asset cache is stale. Restart the dev server or remove ${JSON.stringify(
         html,
         managedAssets: null
       }
-      for (const key of keys) {
-        pageCache.set(key, entry)
-      }
+      pageCache.set(keys, entry)
     }
 
     const getPageCache = (key) => {
@@ -740,6 +743,7 @@ The dev asset cache is stale. Restart the dev server or remove ${JSON.stringify(
       }
       displayInfo('Initializing Coralite...')
 
+      pageCache.setMaxEntries(currentConfig.dev?.maxCacheEntries ?? 256)
       pageCache.clear()
       emittedAssets.clear()
       reportedMissingAssets.clear()
@@ -766,6 +770,7 @@ The dev asset cache is stale. Restart the dev server or remove ${JSON.stringify(
         projectRoot: currentConfig.projectRoot || projectRoot,
         cacheDir: currentConfig.cacheDir || modeCacheDir,
         mode: runMode === 'test' ? 'testing' : 'development',
+        dev: currentConfig.dev,
         output: currentConfig.output,
         onError: ({ level, message, error }) => {
           if (level === 'ERR') {
@@ -785,7 +790,7 @@ The dev asset cache is stale. Restart the dev server or remove ${JSON.stringify(
         compilePromise = compilePromise.then(async () => {
           try {
             const rebuildScript = buildLiveReloadScript(currentConfig)
-            await coralite.build(async (buildResult) => {
+            await coralite.build(null, { dynamicPaths: [] }, async (buildResult) => {
               if (!buildResult || !buildResult.content) {
                 return buildResult
               }
@@ -845,6 +850,20 @@ The dev asset cache is stale. Restart the dev server or remove ${JSON.stringify(
     }
 
     await initCoralite()
+
+    const reapplyDevRouteLimits = () => {
+      if (!coralite || !currentConfig.dev) {
+        return
+      }
+      applyDevRouteLimits(
+        [coralite.pages, coralite.fixtures].filter(Boolean),
+        {
+          maxPages: currentConfig.dev.maxPages ?? currentConfig.dev.limit,
+          routeFilter: currentConfig.dev.routeFilter,
+          app: coralite
+        }
+      )
+    }
 
     const watchPath = [
       process.cwd() + '/coralite.config.js',
@@ -960,10 +979,11 @@ The dev asset cache is stale. Restart the dev server or remove ${JSON.stringify(
         return
       }
 
-      const { pathname, key: cacheKey } = result
+      const { pathname, key: cacheKey, routeParams } = result
       const cleanCacheKey = (cacheKey.endsWith('.html') && cacheKey !== 'index.html' && !cacheKey.endsWith('/index.html'))
         ? cacheKey.slice(0, -5) + '/index.html'
         : cacheKey
+      const requestBuildOptions = routeParams ? { dynamicPaths: [routeParams] } : undefined
 
       const cached = getPageCache(cacheKey) || getPageCache(cleanCacheKey)
       if (cached) {
@@ -1067,11 +1087,17 @@ The dev asset cache is stale. Restart the dev server or remove ${JSON.stringify(
             })
 
             const buildDocuments = async (buildOptions) => {
-              if (buildOptions) {
-                if (item) {
-                  return coralite.build(pathname, buildOptions, buildCallback)
+              const effectiveOptions = buildOptions
+                ? {
+                  ...requestBuildOptions,
+                  ...buildOptions
                 }
-                return coralite.build(buildOptions, buildCallback)
+                : requestBuildOptions
+              if (effectiveOptions) {
+                if (item) {
+                  return coralite.build(pathname, effectiveOptions, buildCallback)
+                }
+                return coralite.build(effectiveOptions, buildCallback)
               }
               if (item) {
                 return coralite.build(pathname, buildCallback)
@@ -1164,6 +1190,10 @@ The dev asset cache is stale. Restart the dev server or remove ${JSON.stringify(
 
           // Group changes by type
           const pagesChanges = changes.filter(p => p.startsWith(pagesPath))
+          const fixturesPagesPath = effectiveFixtures?.pages ? normalize(effectiveFixtures.pages) : null
+          const fixturePageChanges = fixturesPagesPath
+            ? changes.filter(p => p.startsWith(fixturesPagesPath))
+            : []
           const componentChanges = changes.filter(p => p.startsWith(componentPath))
           const stylesChanges = changes.filter(p => {
             if (!currentConfig.styles?.input) {
@@ -1208,6 +1238,24 @@ The dev asset cache is stale. Restart the dev server or remove ${JSON.stringify(
             // Handle component changes
             for (const path of componentChanges) {
               await coralite.components.setItem(path)
+            }
+
+            // Refresh changed page sources so the next request does not
+            // render from a stale collection item. Replacing through delete +
+            // set re-evaluates the page module and rebuilds its non-enumerable
+            // exports (server, paths, cacheKey, ...).
+            for (const path of pagesChanges) {
+              await coralite.pages.deleteItem(path)
+              await coralite.pages.setItem(path)
+            }
+            if (coralite.fixtures) {
+              for (const path of fixturePageChanges) {
+                await coralite.fixtures.deleteItem(path)
+                await coralite.fixtures.setItem(path)
+              }
+            }
+            if (pagesChanges.length > 0 || fixturePageChanges.length > 0) {
+              reapplyDevRouteLimits()
             }
 
             // Handle STYLES changes - rebuild all STYLES files once

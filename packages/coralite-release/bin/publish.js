@@ -30,7 +30,7 @@ function printHelp () {
 Usage: coralite-publish [options]
 
 Options:
-  --package <name>    Specify package to publish (e.g. coralite, coralite-scripts)
+  --package <name>    Specify package to publish (e.g. coralite, create-coralite)
   --registry <name>   Registry to publish to: "npmjs" (default) or "codeberg"
   --tag <tag>         Override dist-tag (e.g. latest, rc, beta)
   --tag-ref <ref>     Git tag reference (e.g. coralite-v0.48.0-rc.0)

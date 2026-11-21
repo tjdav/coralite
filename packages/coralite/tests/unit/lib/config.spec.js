@@ -436,5 +436,58 @@ describe('config.js', () => {
         }), /Mock server context for plugin "my-plugin" must be an object/)
       })
     })
+
+    describe('dev options', () => {
+      const base = {
+        output: './dist',
+        components: './components',
+        pages: './pages'
+      }
+
+      it('accepts valid dev options', () => {
+        const config = defineConfig({
+          ...base,
+          dev: {
+            maxPages: 100,
+            limit: 50,
+            maxCacheEntries: 0,
+            routeFilter: () => true
+          }
+        })
+        assert.equal(config.dev.maxPages, 100)
+        assert.equal(config.dev.limit, 50)
+        assert.equal(config.dev.maxCacheEntries, 0)
+        assert.equal(typeof config.dev.routeFilter, 'function')
+      })
+
+      it('rejects non-object dev config', () => {
+        assert.throws(() => defineConfig({
+          ...base,
+          dev: 'nope'
+        }), /Config property "dev" must be an object/)
+      })
+
+      it('rejects invalid cap and cache values', () => {
+        assert.throws(() => defineConfig({
+          ...base,
+          dev: { maxPages: -1 }
+        }), /Config property "dev.maxPages" must be a non-negative integer/)
+        assert.throws(() => defineConfig({
+          ...base,
+          dev: { limit: 1.5 }
+        }), /Config property "dev.limit" must be a non-negative integer/)
+        assert.throws(() => defineConfig({
+          ...base,
+          dev: { maxCacheEntries: 'many' }
+        }), /Config property "dev.maxCacheEntries" must be a non-negative integer/)
+      })
+
+      it('rejects a non-function routeFilter', () => {
+        assert.throws(() => defineConfig({
+          ...base,
+          dev: { routeFilter: true }
+        }), /Config property "dev.routeFilter" must be a function/)
+      })
+    })
   })
 })

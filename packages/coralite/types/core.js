@@ -176,9 +176,20 @@
  * @property {string} [cacheDir] - Directory used to persist the incremental build manifest. Defaults to `<projectRoot>/.coralite`.
  * @property {CoralitePath} [path] - Internal path mapping.
  * @property {{ port?: number, host?: string }} [server] - Script-specific server options.
+ * @property {CoraliteDevConfig} [dev] - Development-server route and cache controls.
  * @property {{ input?: string[], processors?: Object }} [styles] - Script-specific styles options.
  * @property {{ concurrency?: number }} [build] - Script-specific build options.
  * @property {Record<string, any>} [store] - Global store config shape and initial values.
+ */
+
+/**
+ * Development-server route and cache controls. Ignored by production builds.
+ *
+ * @typedef {Object} CoraliteDevConfig
+ * @property {number} [maxPages] - Maximum dynamic outputs exposed in development.
+ * @property {number} [limit] - Alias for maxPages.
+ * @property {number} [maxCacheEntries=256] - Maximum rendered page entries retained. `0` disables caching.
+ * @property {(context: { params: Object, page: Object, index: number, app: CoraliteInstance }) => boolean} [routeFilter] - Predicate that filters enumerated dynamic paths before the cap is applied.
  */
 
 /**
@@ -202,6 +213,7 @@
  * @property {number} [maxConcurrent] - The maximum number of concurrent page render and write operations.
  * @property {AbortSignal} [signal] - An AbortSignal to cancel the build operation.
  * @property {Object.<string, any>} [variables] - Local variables for the page
+ * @property {Object[]} [dynamicPaths] - Internal development filter for enumerated dynamic outputs.
  * @property {boolean} [incremental] - Override configuration setting for skipping unchanged builds.
  * @property {boolean} [failOnError=true] - Whether to throw CoraliteBuildError if any page rendering fails.
  * @property {boolean} [continueOnError] - Alias for failOnError: false.

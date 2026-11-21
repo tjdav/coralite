@@ -49,6 +49,27 @@
 
         <p>Everything after this point is about how the artifact is served and which platform APIs the app can reach.</p>
 
+        <h3 id="development-server">Development server</h3>
+
+        <p><code>coralite dev</code> does not pre-render dynamic outputs. Static, virtual, and plugin-generated pages build at startup; each dynamic route renders on request and enters a bounded LRU cache. Production builds remain uncapped and render every enumerated path.</p>
+
+        <p>Large data-driven sites can reduce the development route set explicitly:</p>
+
+        <code-block language="javascript" filename="coralite.config.js">
+import { defineConfig } from 'coralite'
+
+export default defineConfig({
+  // ...
+  dev: {
+    maxPages: 1000,
+    maxCacheEntries: 256,
+    routeFilter: ({ params }) => params.id.startsWith('public-')
+  }
+})
+        </code-block>
+
+        <p><code>routeFilter</code> runs before <code>maxPages</code> and receives <code>{ params, page, index, app }</code>. Routes excluded by the filter or beyond the cap return 404 in development only. <code>paths({ app })</code> can also branch on <code>app.options.mode</code> to return a smaller set in development.</p>
+
         <h2 id="2-web-target">2. Web target</h2>
 
         <h3 id="static-output">Static output</h3>
@@ -237,6 +258,7 @@ const [page] = await coralite.build('/dashboard/', { nonce })
       <div class="docs-toc">
         <h4>On this page</h4>
         <a class="active" href="#1-the-build-artifact">1. The build artifact</a>
+        <a href="#development-server">Development server</a>
         <a href="#2-web-target">2. Web target</a>
         <a href="#3-installed-web">3. Installed web</a>
         <a href="#4-desktop-shell">4. Desktop shell</a>
