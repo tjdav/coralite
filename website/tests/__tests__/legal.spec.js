@@ -6,27 +6,32 @@ const PAGES = [
   {
     path: '/legal/',
     title: 'Legal Notice — Coralite',
-    heading: 'Legal Notice'
+    heading: 'Legal Notice',
+    updated: '2026-11-18'
   },
   {
     path: '/privacy/',
     title: 'Privacy Policy — Coralite',
-    heading: 'Privacy Policy'
+    heading: 'Privacy Policy',
+    updated: '2026-11-21'
   },
   {
     path: '/terms/',
     title: 'Terms of Use — Coralite',
-    heading: 'Terms of Use'
+    heading: 'Terms of Use',
+    updated: '2026-11-18'
   },
   {
     path: '/license/',
     title: 'Licensing — Coralite',
-    heading: 'Licensing'
+    heading: 'Licensing',
+    updated: '2026-11-18'
   },
   {
     path: '/accessibility/',
     title: 'Accessibility — Coralite',
-    heading: 'Accessibility'
+    heading: 'Accessibility',
+    updated: '2026-11-18'
   }
 ]
 
@@ -41,7 +46,7 @@ test.describe('legal pages', () => {
       await expect(page).toHaveTitle(entry.title)
       await expect(page.locator('main h1')).toHaveText(entry.heading)
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `https://coralite.dev${entry.path}`)
-      await expect(page.locator('.legal-updated time')).toHaveAttribute('datetime', '2026-11-18')
+      await expect(page.locator('.legal-updated time')).toHaveAttribute('datetime', entry.updated)
     })
   }
 

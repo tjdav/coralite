@@ -10,6 +10,9 @@
 /assets/js/manifest.js
     Cache-Control: public, max-age=0, must-revalidate
 
+/assets/js/goatcounter.js
+    Cache-Control: public, max-age=0, must-revalidate
+
 /fonts/*
     Cache-Control: public, max-age=604800
 

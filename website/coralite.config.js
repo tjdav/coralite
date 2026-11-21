@@ -8,6 +8,7 @@ import changelogPlugin from './src/plugins/changelog.js'
 import diagnosticsPlugin from './src/plugins/diagnostics.js'
 import ogImagesPlugin from './src/plugins/og-images.js'
 import siteVersionPlugin from './src/plugins/site-version.js'
+import goatCounterPlugin from './src/plugins/goatcounter.js'
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3333
 
@@ -66,7 +67,8 @@ export default defineConfig({
     sitemapPlugin({ customFiles: llmsFiles }),
     searchPlugin,
     diagnosticsPlugin,
-    ogImagesPlugin
+    ogImagesPlugin,
+    goatCounterPlugin({ site: 'https://stats.coralite.dev' })
   ],
   csp: {
     enabled: true,
@@ -80,11 +82,11 @@ export default defineConfig({
       'default-src': ["'self'"],
       // The Coralite client runtime revives serialized page controller
       // functions with new Function(), which requires 'unsafe-eval'.
-      'script-src': ["'self'", "'unsafe-eval'"],
+      'script-src': ["'self'", "'unsafe-eval'", 'https://stats.coralite.dev'],
       'style-src': ["'self'", "'unsafe-inline'"],
-      'img-src': ["'self'", 'data:'],
+      'img-src': ["'self'", 'data:', 'https://stats.coralite.dev'],
       'font-src': ["'self'"],
-      'connect-src': ["'self'"]
+      'connect-src': ["'self'", 'https://stats.coralite.dev']
     }
   },
   server: {

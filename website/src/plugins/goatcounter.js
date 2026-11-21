@@ -1,12 +1,10 @@
-import { createHash } from 'node:crypto'
 import { definePlugin } from 'coralite'
 import { createCoraliteElement, findHeadAndBody, relinkChildren } from 'coralite/utils/server'
 
 /**
- * @typedef {Object} SwetrixOptions
- * @property {string} projectId - Swetrix project ID.
- * @property {string} scriptSrc - Self-hosted Swetrix tracker URL.
- * @property {string} apiUrl - Self-hosted Swetrix API URL, e.g. `https://stats.example.com/backend/v1/log`.
+ * @typedef {Object} GoatCounterOptions
+ * @property {string} site - GoatCounter origin, e.g. `https://stats.example.com`.
+ * @property {string} [scriptSrc] - Tracker script URL. Defaults to `<site>/count.js`.
  * @property {boolean} [trackLocalhost=false] - Send pageviews from localhost.
  * @property {boolean} [respectDnt=true] - Skip tracking when Do Not Track is enabled.
  * @property {boolean} [respectGpc=true] - Skip tracking when Global Privacy Control is enabled.
@@ -14,24 +12,36 @@ import { createCoraliteElement, findHeadAndBody, relinkChildren } from 'coralite
  */
 
 /**
- * Creates the self-hosted Swetrix bootstrap.
+ * Resolves the tracker configuration derived from plugin options.
  *
- * The bootstrap is an external asset so it runs on static pages that do not
- * load the Coralite client runtime.
- *
- * @param {SwetrixOptions} options - Analytics configuration.
- * @returns {string} Bootstrap source.
+ * @param {GoatCounterOptions} options - Analytics configuration.
+ * @returns {{scriptSrc: string, endpoint: string, trackLocalhost: boolean, respectDnt: boolean, respectGpc: boolean, exclude: string[]}} Resolved configuration.
  */
-function createBootstrap (options) {
-  const config = JSON.stringify({
-    projectId: options.projectId,
-    scriptSrc: options.scriptSrc,
-    apiUrl: options.apiUrl,
+function resolveOptions (options) {
+  const site = String(options.site).replace(/\/+$/, '')
+
+  return {
+    scriptSrc: options.scriptSrc || `${site}/count.js`,
+    endpoint: `${site}/count`,
     trackLocalhost: Boolean(options.trackLocalhost),
     respectDnt: options.respectDnt !== false,
     respectGpc: options.respectGpc !== false,
     exclude: Array.isArray(options.exclude) ? options.exclude : []
-  })
+  }
+}
+
+/**
+ * Creates the self-hosted GoatCounter bootstrap.
+ *
+ * The bootstrap is an external asset so it runs on static pages that do not
+ * load the Coralite client runtime, and it loads the tracker itself so the
+ * settings object is always defined before `count.js` executes.
+ *
+ * @param {GoatCounterOptions} options - Analytics configuration.
+ * @returns {string} Bootstrap source.
+ */
+function createBootstrap (options) {
+  const config = JSON.stringify(resolveOptions(options))
 
   return `(function () {
   var config = ${config};
@@ -69,17 +79,18 @@ function createBootstrap (options) {
   }
 
   var queue = [];
-  var ready = false;
   var api = {
     track: function (name, meta) {
       if (disabled || typeof name !== 'string' || !name) {
         return;
       }
-      if (ready && window.swetrix) {
-        window.swetrix.track({ ev: name, meta: meta || {} });
-        return;
+      var vars = { path: name, event: true };
+      if (meta && typeof meta.title === 'string') {
+        vars.title = meta.title;
       }
-      queue.push({ name: name, meta: meta || {} });
+      if (!send(vars)) {
+        queue.push(vars);
+      }
     }
   };
 
@@ -91,47 +102,52 @@ function createBootstrap (options) {
     return;
   }
 
-  function initialize () {
-    if (!window.swetrix) {
+  function send (vars) {
+    var goatcounter = window.goatcounter;
+    if (!goatcounter || typeof goatcounter.count !== 'function') {
+      return false;
+    }
+    goatcounter.count(vars);
+    return true;
+  }
+
+  function flush () {
+    if (!window.goatcounter || typeof window.goatcounter.count !== 'function') {
       return;
     }
-
-    try {
-      window.swetrix.init(config.projectId, {
-        apiURL: config.apiUrl,
-        devMode: config.trackLocalhost,
-        respectDNT: config.respectDnt
-      });
-      window.swetrix.trackViews({
-        search: false,
-        hash: false,
-        callback: function (payload) {
-          if (!payload || isExcluded(payload.pg)) {
-            return false;
-          }
-          return payload;
-        }
-      });
-      ready = true;
-      while (queue.length > 0) {
-        var item = queue.shift();
-        window.swetrix.track({ ev: item.name, meta: item.meta });
-      }
-    } catch (error) {
-      // Analytics must never break the page.
+    while (queue.length > 0) {
+      send(queue.shift());
     }
   }
 
-  if (window.swetrix) {
-    initialize();
-    return;
+  function load () {
+    if (window.goatcounter && typeof window.goatcounter.count === 'function') {
+      flush();
+      return;
+    }
+    window.goatcounter = {
+      allow_local: config.trackLocalhost,
+      path: function (path) {
+        if (isExcluded(path)) {
+          return null;
+        }
+        return path;
+      }
+    };
+    var script = document.createElement('script');
+    script.async = true;
+    script.src = config.scriptSrc;
+    script.setAttribute('data-goatcounter', config.endpoint);
+    script.addEventListener('load', flush);
+    document.head.appendChild(script);
   }
 
-  var script = document.createElement('script');
-  script.src = config.scriptSrc;
-  script.defer = true;
-  script.addEventListener('load', initialize);
-  document.head.appendChild(script);
+  window.addEventListener('coralite:navigated', function () {
+    queue.push({});
+    flush();
+  });
+
+  load();
 })();`
 }
 
@@ -192,7 +208,7 @@ const bootstrapPaths = new Map()
 /**
  * Gets a stable key for a plugin configuration.
  *
- * @param {SwetrixOptions} config - Swetrix plugin configuration.
+ * @param {GoatCounterOptions} config - GoatCounter plugin configuration.
  * @returns {string} Stable configuration key.
  */
 function configKey (config) {
@@ -200,25 +216,20 @@ function configKey (config) {
 }
 
 /**
- * Website self-hosted Swetrix analytics plugin.
+ * Website GoatCounter analytics plugin.
  *
  * The website is static, so the tracker is loaded through a generated
  * self-origin bootstrap rather than the Coralite client runtime.
  */
-export const swetrixPlugin = definePlugin({
-  name: 'swetrix-analytics',
+export const goatCounterPlugin = definePlugin({
+  name: 'goatcounter-analytics',
   config: {
-    projectId: {
+    site: {
       type: String,
       required: true
     },
     scriptSrc: {
-      type: String,
-      required: true
-    },
-    apiUrl: {
-      type: String,
-      required: true
+      type: String
     },
     trackLocalhost: {
       type: Boolean,
@@ -240,8 +251,7 @@ export const swetrixPlugin = definePlugin({
   server: {
     async onBeforeBuild ({ app, config }) {
       const source = createBootstrap(config)
-      const filename = `swetrix-${createHash('sha256').update(source).digest('hex').slice(0, 8)}.js`
-      const assetPath = `assets/js/${filename}`
+      const assetPath = 'assets/js/goatcounter.js'
       const base = (app.options.baseURL || '/').endsWith('/') ? app.options.baseURL : `${app.options.baseURL}/`
 
       await app.writeFile(assetPath, source)
@@ -269,5 +279,4 @@ export const swetrixPlugin = definePlugin({
   }
 })
 
-export default swetrixPlugin
-
+export default goatCounterPlugin
