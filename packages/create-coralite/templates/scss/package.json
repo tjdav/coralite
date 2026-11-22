@@ -11,6 +11,6 @@
     "fix": "coralite fix"
   },
   "devDependencies": {
-    "coralite": "^1.4.0"
+    "coralite": "^1.5.0"
   }
 }

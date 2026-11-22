@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.5.0
+
+> Comparing `coralite-v1.4.0` to `HEAD`
+
+**Summary:** 5 commits
+
+### 🐛 Bug Fixes
+
+- render dynamic routes lazily in development (cli) ([8438126](https://github.com/tjdav/coralite/commit/84381264ec6bc85ef25038030c3607b42be0994e))
+- add route-aware cache keys for dynamic outputs (renderer) ([48e13e9](https://github.com/tjdav/coralite/commit/48e13e966c1a8ab557213e77f1bab719aed30d7e))
+
+### 📚 Documentation
+
+- align READMEs with current project state (docs) ([fd69e9e](https://github.com/tjdav/coralite/commit/fd69e9e5435ca6afe4b220528cd434853b5ac191))
+- update release changelog timeline [skip ci] (website) ([ad2ec39](https://github.com/tjdav/coralite/commit/ad2ec399f74f5e75f2b17e07be58e34b08943d38))
+
+### 🔨 Other Changes
+
+- Merge origin/main into fix/dev-lazy-dynamic-rendering ([586997d](https://github.com/tjdav/coralite/commit/586997d79227f252c888c3505b6482da89df98de))
+
+
 ## v1.4.0
 
 > Comparing `coralite-v1.3.1` to `HEAD`
