@@ -6,15 +6,17 @@ Coralite is a static-first Web Component framework that compiles HTML modules in
 
 ### Key Features
 
-* **Static HTML by Default**: Components without client logic emit pure static HTML and scoped CSS at build time with zero browser JavaScript overhead.
+* **Zero-JS Static Components**: Components without client lifecycle code emit pure static HTML and scoped CSS at build time with zero browser JavaScript overhead. Their module still ships for imperative hydration, but no `client()` runs.
 * **Native Web Components via Named Exports**: Author components in `.html` files using standard ES module exports (`export const`, `export function`) rather than boilerplate class syntax.
 * **Light DOM Scoped CSS**: Scoped styling using compiler-generated instance identifiers and CSS `@layer` without requiring Shadow DOM boundaries.
 * **Isomorphic Server Execution**: Fetch data or compute state at build/SSR time in `server()`. Initial state serializes to the client while server code is stripped from the browser bundle.
 * **Opt-Out Hydration**: Mark components with `no-hydration` to render markup statically and bypass client runtime hydration entirely.
 * **Declarative Reactive Styling (`style`)**: Define reactive inline styles and CSS Custom Properties (`--*`) directly in component declarations with zero-cost SSR emission.
 * **Reactive Slot Transformations (`slots`)**: Intercept and project slotted children isomorphically across SSR and client updates.
-* **Declarative Templates & Pure Getters**: Templates read flat tokens (`{{ token }}`) while UI transformations live in pure, synchronous getter functions.
-* **Microtask DOM Reactivity**: Mutate state in `client()` controllers and Coralite schedules batched DOM updates in the microtask queue without a virtual DOM.
+* **Declarative Templates & Pure Getters**: Templates read flat tokens (`{{ token }}`) while UI transformations live in pure getter functions, including client-only async getters.
+* **Signal-Backed Reactivity**: Mutate state in `client()` controllers or derive it through signals. Batched DOM updates run without a virtual DOM, while `observe()` and `updateComplete` handle side effects and render synchronization.
+* **Built-in Plugins**: `refs`, metadata, static assets, testing, virtualized lists, and an opt-in SPA router ship with the framework.
+* **Global Store**: A reactive `store` declared in `coralite.config.js` shares application-wide state across components and survives SPA navigation.
 * **Async Race-Condition Protection**: Built-in version locks ensure stale asynchronous promise resolutions never overwrite newer state.
 
 ---
@@ -26,7 +28,7 @@ The easiest way to start a new Coralite project is to use the official scaffoldi
 ```bash
 npm create coralite@latest my-coralite-app
 cd my-coralite-app
-npm run start
+npm run dev
 ```
 
 #### Key Features
@@ -38,15 +40,15 @@ npm run start
 * **Production Optimization** - Clean builds with optimized output.
 * **Plugin Integration** - Full support for Coralite plugins.
 
-> Learn more about the scaffolding process in the [Coralite scripts reference](https://coralite.dev/docs/reference/coralite-scripts.html).
+> Learn more about the scaffolding process in the [Quick Start guide](https://coralite.dev/docs/guide/quick-start/) and the [CLI reference](https://coralite.dev/reference/cli/).
 
 ---
 
 ## AI-Assisted Development (`llms.txt`)
 
-Coralite includes an authoritative, zero-token [`llms.txt`](https://coralite.dev/llms.txt) specification in the root of the published npm package (`node_modules/coralite/llms.txt`).
+Coralite includes an authoritative [`llms.txt`](https://coralite.dev/llms.txt) specification in the root of the published npm package (`node_modules/coralite/llms.txt`), alongside `llms-full.txt`.
 
-When using modern AI coding assistants (Claude Code, Cursor, GitHub Copilot, Antigravity, Jules), the model automatically discovers Coralite's specific architectural invariants (dumb templates, serialization boundaries, two-phase plugins, isomorphic state proxy, imperative component tracking), ensuring accurate, hallucination-free code generation.
+When using modern AI coding assistants (Claude Code, Cursor, GitHub Copilot, Antigravity, Jules), the model automatically discovers Coralite's specific architectural invariants (dumb templates, serialization boundaries, two-phase plugin context, signal-backed state, imperative component tracking), ensuring accurate, hallucination-free code generation.
 
 ---
 
@@ -76,7 +78,7 @@ npx coralite fix
 
 ---
 
-## Manual Installation & Compiler CLI
+## Manual Installation & CLI
 
 If you are adding Coralite to an existing project or building from scratch manually, install the core package:
 
@@ -84,25 +86,20 @@ If you are adding Coralite to an existing project or building from scratch manua
 npm install coralite
 ```
 
-Coralite ships with a built-in CLI to manage direct build operations:
+The `coralite` binary resolves `coralite.config.js` from the current directory upward, so commands need no path arguments in a standard project:
 
-```bash
-npx coralite [options]
-```
+| Command | Purpose |
+| :--- | :--- |
+| `coralite dev` | Development server with incremental rebuilds |
+| `coralite build` | Production build into `dist/` |
+| `coralite test` | Deterministic build served for E2E tests |
+| `coralite check` | Unified validation across components, pages, and plugins |
+| `coralite fix` | Apply safe AST auto-fixes (`--dry-run` to preview) |
+| `coralite diagnostics` | List every diagnostic code and its metadata |
+| `coralite init-agent` | Scaffold `AGENTS.md` and AI IDE config aliases |
+| `coralite validate-*` | Scope validation to components, pages, or plugins |
 
-### Required CLI Options
-
-* **`-c` or `--components`**: The path to your components directory (e.g., `-c src/components`).
-* **`-p` or `--pages`**: The path to your pages directory (e.g., `-p src/pages`).
-* **`--output` or `-o`**: The output directory for the generated site (e.g., `--output dist`).
-
-### Additional CLI Options
-
-* **`-m` or `--mode`**: Build mode: `development`, `production`, or `testing` (defaults to `production`).
-* **`-i` or `--ignore-attribute`**: Ignore elements by attribute name value pair (format: `key=value`).
-* **`-s` or `--skip-render-attribute`**: Parse elements but exclude them from final render output.
-* **`-d` or `--dry-run`**: Preview the actions that would be performed without generating output.
-* **`-a` or `--assets`**: Static assets to copy. Format: `pkg:path:dest` (or `pkg:path`).
+`dev`, `build`, and `test` share `--clean`, `--verbose`, `--no-incremental`, and `--assets`. See the [CLI reference](https://coralite.dev/reference/cli/) for filters, type-check flags, exit codes, and the diagnostic catalogue.
 
 ---
 
@@ -130,7 +127,7 @@ export default defineConfig({
 
 Coralite components are single-file HTML modules containing a `<template>`, an optional `<style>`, and a `<script type="module">`. Behavior is defined through top-level named exports (`export function`, `export const`).
 
-> Notice how the HTML template remains strictly declarative, reading flat properties from the unified state proxy, while all complex logic is pushed into the `getters` block.
+> Notice how the HTML template remains strictly declarative, reading flat properties from signal-backed state, while all complex logic is pushed into the `getters` block.
 
 **`src/components/user-card.html`**
 
@@ -160,8 +157,6 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
 </style>
 
 <script type="module">
-  import { userService } from './services.js'
-
   // ATTRIBUTES: Public API, coerced from HTML (String, Number, Boolean)
   export const attributes = {
     userId: { type: Number, default: 0 },
@@ -171,6 +166,7 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
 
   // SERVER: Async server-side initialization (Stripped from client bundle!)
   export async function server ({ state }) {
+    const { userService } = await import('./services.js')
     const user = await userService.getById(state.userId)
     return {
       firstName: user.firstName,
@@ -222,12 +218,17 @@ Computed slots (`slots: { [name]: (nodes, context) => ... }`) run during both Se
 
 ## Extending the Engine (`definePlugin`)
 
-Coralite features a strictly isomorphic plugin architecture where plugins are divided into `server` (Node.js/Build) and `client` (Browser/Runtime) blocks.
+Coralite plugins use `definePlugin` and separate build-time (`server`) from browser-time (`client`) work. Context is declared in one of two mutually exclusive ways:
 
-Both layers utilize a **Two-Phase Curried Context** pattern `(pluginContext) => (instanceContext) => ({ ... })` that provides a clear separation between global setup and instance-scoped execution:
+* **Ubiquitous `context`**: Injected into component and page `server`, `getters`, `client`, `slots`, and `style`. Use it for pure helpers that must run on both sides, such as formatters, translators, or read-only clients.
+* **Environment-specific `server.context` / `client.context`**: Injected only into `server()` or `client()` respectively. Use `server.context` for build-only clients (database handles, filesystem readers, API keys) and `client.context` for browser-only helpers (DOM utilities, third-party widgets).
 
-1. **Phase 1: Global Setup (`pluginContext`)**: Runs **once** during framework/plugin registration. Use this to initialize shared resources (e.g. database pools, in-memory caches, global event buses). Properties attached to `pluginContext` are shared across the entire server build or client runtime.
-2. **Phase 2: Instance Resolver (`instanceContext`)**: Runs for **each component instance**. Receives instance metadata (`instanceId`, `componentId`, `page`, `root`) and allows lazy cross-plugin resolution. The returned object is automatically injected into that component's `server()` or `client()` block under the plugin's namespace.
+Both forms are curried as `(pluginContext) => (instanceContext) => ({ ... })`:
+
+1. **Phase 1: Global Setup (`pluginContext`)**: Runs **once** during registration. Use it to initialize shared resources (e.g. database pools, in-memory caches, global event buses). Values assigned to `pluginContext` are shared across the server build or client runtime.
+2. **Phase 2: Instance Resolver (`instanceContext`)**: Runs for **each component instance**. Receives instance metadata (`instanceId`, `componentId`, `page`, `root`) and allows lazy cross-plugin resolution. The returned object is injected under the plugin's `name` namespace, and core keys (`state`, `route`, `refs`, `signal`, `emit`, `observe`, `root`) always win.
+
+Mixing a ubiquitous `context` with `server.context` or `client.context` is a validation error.
 
 ```javascript
 import { definePlugin } from 'coralite'
@@ -343,7 +344,7 @@ We welcome community contributions! Coralite is managed as a monorepo.
 ### 1. Prerequisites
 
 * **Node.js**: >=22.22.2 (ESM native)
-* **pnpm**: v11+
+* **pnpm**: v12+
 
 ### 2. Fork & Clone
 
@@ -370,16 +371,18 @@ cd packages/coralite
 # Run the unit test suite
 pnpm run test:unit
 
-# Run the strict deterministic E2E test suite
+# Run the deterministic E2E test suite
 pnpm run test:e2e
 
-# Run the performance benchmarks
-pnpm run bench
+# Run the fast internal regression benchmarks
+pnpm run bench:internal
 ```
+
+For canonical external harness runs, use `pnpm run bench:external` from the repository root. See [`benchmarks/README.md`](../../benchmarks/README.md).
 
 ## Documentation
 
-For a deep dive into advanced features, imperative slot rendering, end-to-end testing strategies, and full API references, check out the [official documentation](https://coralite.dev/docs/guide/getting-started.html).
+For a deep dive into advanced features, imperative slot rendering, end-to-end testing strategies, and full API references, check out the [official documentation](https://coralite.dev/docs/guide/getting-started/).
 
 ## License
 
