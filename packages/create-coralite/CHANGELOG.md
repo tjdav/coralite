@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.5.0
+
+> Comparing `create-coralite-v1.4.0` to `HEAD`
+
+**Summary:** 2 commits
+
+### 📚 Documentation
+
+- update release changelog timeline [skip ci] (website) ([ad2ec39](https://github.com/tjdav/coralite/commit/ad2ec399f74f5e75f2b17e07be58e34b08943d38))
+
+### 🔨 Other Changes
+
+- release(coralite): version 1.5.0 ([e2267d3](https://github.com/tjdav/coralite/commit/e2267d33e05b2be8414fe92ee9f0177bd398dcf1))
+
+
 ## v1.4.0
 
 > Comparing `create-coralite-v1.3.1` to `HEAD`
