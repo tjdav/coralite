@@ -13,6 +13,113 @@ import { CoraliteError, defaultOnError } from '../../shared/errors.js'
  * @property {boolean} [splitSlotted=false] - Whether to split output into regular and slotted CSS objects
  */
 
+const HOST_SELECTOR_PATTERN = /:host(?:-context)?\b/
+
+/**
+ * Returns the flattened selector nodes of a functional pseudo-class argument list.
+ * @param {import('postcss-selector-parser').Pseudo} pseudo - Functional pseudo-class node.
+ * @returns {Array<import('postcss-selector-parser').Node>} Flattened argument nodes.
+ */
+function flattenPseudoArgs (pseudo) {
+  const flattened = []
+  if (!pseudo.nodes) {
+    return flattened
+  }
+  for (const innerSelector of pseudo.nodes) {
+    for (const node of innerSelector.nodes) {
+      flattened.push(node)
+    }
+  }
+  return flattened
+}
+
+/**
+ * Appends the argument selector nodes of a parameterized `:host()` pseudo directly after its replacement.
+ * @param {import('postcss-selector-parser').Container} container - Selector node list that owns the replacement.
+ * @param {import('postcss-selector-parser').Node} anchor - Replacement node inserted into the container.
+ * @param {import('postcss-selector-parser').Pseudo} hostNode - Original `:host` pseudo node.
+ */
+function appendHostArgs (container, anchor, hostNode) {
+  if (!hostNode.nodes) {
+    return
+  }
+
+  let lastInserted = anchor
+  for (const innerSelector of hostNode.nodes) {
+    for (const child of innerSelector.nodes) {
+      const clone = child.clone()
+      container.insertAfter(lastInserted, clone)
+      lastInserted = clone
+    }
+  }
+}
+
+/**
+ * Recursively rewrites `:host` and `:host-context()` pseudo-classes, including occurrences nested
+ * inside functional pseudo-classes such as `:is()`, `:where()`, `:not()` and `:has()`.
+ * @param {import('postcss-selector-parser').Container} container - Selector node list to rewrite in place.
+ * @param {'nesting' | 'scope'} mode - Transformation mode.
+ */
+function rewriteHostPseudos (container, mode) {
+  const nestedSelectors = []
+  container.each((node) => {
+    if (node.type !== 'pseudo' || !node.nodes || node.nodes.length === 0) {
+      return
+    }
+    if (node.value === ':host' || node.value === ':host-context') {
+      return
+    }
+    nestedSelectors.push(...node.nodes)
+  })
+  nestedSelectors.forEach(innerSelector => rewriteHostPseudos(innerSelector, mode))
+
+  const hostNodes = []
+  const hostContextNodes = []
+  container.each((node) => {
+    if (node.type !== 'pseudo') {
+      return
+    }
+    if (node.value === ':host') {
+      hostNodes.push(node)
+    } else if (node.value === ':host-context') {
+      hostContextNodes.push(node)
+    }
+  })
+
+  if (hostNodes.length === 0 && hostContextNodes.length === 0) {
+    return
+  }
+
+  const createHostReplacement = () => (mode === 'scope'
+    ? selectorParser.pseudo({ value: ':scope' })
+    : selectorParser.nesting())
+
+  if (hostContextNodes.length > 0) {
+    const targetFirst = container.first
+    for (const contextNode of hostContextNodes) {
+      for (const contextChild of flattenPseudoArgs(contextNode)) {
+        container.insertBefore(targetFirst, contextChild.clone())
+      }
+      container.insertBefore(targetFirst, selectorParser.combinator({ value: ' ' }))
+    }
+  }
+
+  for (const hostNode of hostNodes) {
+    const replacement = createHostReplacement()
+    hostNode.replaceWith(replacement)
+    appendHostArgs(container, replacement, hostNode)
+  }
+
+  for (const contextNode of hostContextNodes) {
+    if (hostNodes.length > 0) {
+      contextNode.remove()
+      continue
+    }
+    const replacement = createHostReplacement()
+    contextNode.replaceWith(replacement)
+  }
+}
+
 /**
  * Helper to determine if a PostCSS node contains effective declarations or rules.
  * @param {import('postcss').Node | import('postcss').Container} node - The PostCSS node or container to check.
@@ -122,6 +229,8 @@ function partitionAst (root) {
  * - In 'nesting' mode: Unwraps top-level pure :host rules into declarations; converts parameterized :host(...) to &.class; converts ::slotted(selector) to (& > slot > selector, & > selector[slot]).
  * - In 'scope' mode: Converts top-level pure :host rules to :scope; converts parameterized :host(...) to :scope.class; converts ::slotted(selector) to (:scope > slot > selector, :scope > selector[slot]).
  * - Converts :host-context(...) to ancestor context selectors (<context> & or <context> :scope).
+ * - Rewrites :host and :host-context() inside :is(), :where(), :not(), :has() and other functional pseudo-classes.
+ * - Hoists nested rules that contain :host, :host-context() or :global() out of their parent rule.
  * - Converts :global(selector) by unwrapping inner selectors and hoisting nested rules out of scoped selectors.
  * - Preserves @container queries, scoping their child selectors appropriately.
  * - Preserves @keyframes definitions intact without selector prefixing or mangling.
@@ -145,8 +254,8 @@ export async function transformCss (css, onError, options = {}) {
           return
         }
 
-        // Ignore standard rules nested inside other rules unless they contain :global
-        if (rule.parent.type === 'rule' && !rule.selector.includes(':global')) {
+        // Ignore standard rules nested inside other rules unless they contain :global or a host rewrite
+        if (rule.parent.type === 'rule' && !rule.selector.includes(':global') && !HOST_SELECTOR_PATTERN.test(rule.selector)) {
           return
         }
 
@@ -174,82 +283,13 @@ export async function transformCss (css, onError, options = {}) {
               return
             }
 
-            const firstNode = selector.first
-
             // Skip if empty
-            if (!firstNode) {
+            if (!selector.first) {
               return
             }
 
-            // 1. Transform :host and :host-context in selector first
-            let hostContextNode = null
-            let hostNode = null
-
-            for (let i = 0; i < selector.nodes.length; i++) {
-              const node = selector.nodes[i]
-              if (node.type === 'pseudo') {
-                if (node.value === ':host-context') {
-                  if (!hostContextNode) {
-                    hostContextNode = node
-                  }
-                } else if (node.value === ':host') {
-                  if (!hostNode) {
-                    hostNode = node
-                  }
-                }
-                if (hostContextNode && hostNode) {
-                  break
-                }
-              }
-            }
-
-            if (hostContextNode || hostNode) {
-              const hostReplacement = mode === 'scope'
-                ? selectorParser.pseudo({ value: ':scope' })
-                : selectorParser.nesting()
-
-              if (hostContextNode) {
-                const space = selectorParser.combinator({ value: ' ' })
-                const targetFirst = selector.first
-
-                if (hostContextNode.nodes && hostContextNode.nodes.length > 0) {
-                  const insertBeforeTarget = targetFirst
-                  for (const innerSel of hostContextNode.nodes) {
-                    for (const child of innerSel.nodes) {
-                      selector.insertBefore(insertBeforeTarget, child.clone())
-                    }
-                  }
-                  selector.insertBefore(targetFirst, space)
-                }
-
-                if (hostNode) {
-                  hostNode.replaceWith(hostReplacement)
-                  if (hostNode.nodes && hostNode.nodes.length > 0) {
-                    let lastInserted = hostReplacement
-                    for (const innerSel of hostNode.nodes) {
-                      for (const child of innerSel.nodes) {
-                        selector.insertAfter(lastInserted, child.clone())
-                        lastInserted = child
-                      }
-                    }
-                  }
-                  hostContextNode.remove()
-                } else {
-                  hostContextNode.replaceWith(hostReplacement)
-                }
-              } else if (hostNode) {
-                hostNode.replaceWith(hostReplacement)
-                if (hostNode.nodes && hostNode.nodes.length > 0) {
-                  let lastInserted = hostReplacement
-                  for (const innerSel of hostNode.nodes) {
-                    for (const child of innerSel.nodes) {
-                      selector.insertAfter(lastInserted, child.clone())
-                      lastInserted = child
-                    }
-                  }
-                }
-              }
-            }
+            // 1. Transform :host and :host-context, including nested functional pseudo-classes
+            rewriteHostPseudos(selector, mode)
 
             // 2. Transform ::slotted(selector) to Light DOM slot projections
             const slottedPseudo = selector.nodes.find(n => n.type === 'pseudo' && n.value === '::slotted')
@@ -337,7 +377,7 @@ export async function transformCss (css, onError, options = {}) {
         try {
           transformSelector.processSync(rule, { updateSelector: true })
 
-          // If rule was nested inside another rule and contains :global, hoist it out to root/atrule
+          // Nested rules containing :global or a host rewrite are hoisted out to the root/atrule
           if (rule.parent.type === 'rule') {
             let target = rule.parent
             while (target.parent && target.parent.type === 'rule') {
