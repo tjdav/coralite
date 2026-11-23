@@ -257,6 +257,10 @@
               </style>
             </code-block>
 
+            <p>
+              Host selectors are also rewritten inside functional pseudo-classes, so conditional root states such as <code>:not(:host([open]))</code>, <code>:is(:host([open]), :host(.pinned))</code>, and <code>:where(:host-context(.dark))</code> work as authored.
+            </p>
+
             <h3 id="when-host-is-not-required">When :host is NOT Required</h3>
 
             <p>

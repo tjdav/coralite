@@ -155,6 +155,61 @@ test('Style Transformation Logic', async (t) => {
     assert.match(result, /@media\s+\(min-width:\s*768px\)\s*\{\s*&\s*\{\s*display:\s*flex;?\s*\}\s*\}/)
   })
 
+  await t.test('transformCss rewrites :host and :host-context() inside functional pseudo-classes', async () => {
+    const css = `
+      :not(:host([open])) { display: none; }
+      :is(:host([open]), :host(.pinned)) { display: flex; }
+      :where(:host-context(.dark)) { color: white; }
+      :has(:host([open])) .panel { display: flex; }
+      :not(:host([open]):not([disabled])) { opacity: 0.5; }
+    `
+
+    const nestingResult = await transformCss(css, null, { mode: 'nesting' })
+    assert.match(nestingResult, /:not\(&\[open\]\)\s*\{\s*display:\s*none;?\s*\}/)
+    assert.match(nestingResult, /:is\(&\[open\],\s*&\.pinned\)\s*\{\s*display:\s*flex;?\s*\}/)
+    assert.match(nestingResult, /:where\(\.dark\s+&\)\s*\{\s*color:\s*white;?\s*\}/)
+    assert.match(nestingResult, /:has\(&\[open\]\)\s+\.panel\s*\{\s*display:\s*flex;?\s*\}/)
+    assert.match(nestingResult, /:not\(&\[open\]:not\(\[disabled\]\)\)\s*\{\s*opacity:\s*0\.5;?\s*\}/)
+    assert.doesNotMatch(nestingResult, /:host/)
+
+    const scopeResult = await transformCss(css, null, { mode: 'scope' })
+    assert.match(scopeResult, /:not\(:scope\[open\]\)\s*\{\s*display:\s*none;?\s*\}/)
+    assert.match(scopeResult, /:is\(:scope\[open\],\s*:scope\.pinned\)\s*\{\s*display:\s*flex;?\s*\}/)
+    assert.match(scopeResult, /:where\(\.dark\s+:scope\)\s*\{\s*color:\s*white;?\s*\}/)
+    assert.match(scopeResult, /:has\(:scope\[open\]\)\s+\.panel\s*\{\s*display:\s*flex;?\s*\}/)
+    assert.match(scopeResult, /:not\(:scope\[open\]:not\(\[disabled\]\)\)\s*\{\s*opacity:\s*0\.5;?\s*\}/)
+    assert.doesNotMatch(scopeResult, /:host/)
+  })
+
+  await t.test('transformCss preserves argument order for multi-argument :host() selectors', async () => {
+    const css = ':host([open]:not([disabled])) .panel { display: flex; }'
+
+    const nestingResult = await transformCss(css, null, { mode: 'nesting' })
+    assert.match(nestingResult, /&\[open\]:not\(\[disabled\]\)\s+\.panel/)
+    assert.doesNotMatch(nestingResult, /:not\(\[disabled\]\)&/)
+
+    const scopeResult = await transformCss(css, null, { mode: 'scope' })
+    assert.match(scopeResult, /:scope\[open\]:not\(\[disabled\]\)\s+\.panel/)
+    assert.doesNotMatch(scopeResult, /:not\(\[disabled\]\):scope/)
+  })
+
+  await t.test('transformCss hoists nested rules containing :host out of their parent rule', async () => {
+    const css = `
+      .card {
+        padding: 1rem;
+        .title { color: red; }
+        :host([open]) { display: flex; }
+      }
+    `
+
+    const nestingResult = await transformCss(css, null, { mode: 'nesting' })
+    assert.match(nestingResult, /\.card\s*\{\s*padding:\s*1rem;?\s*\.title\s*\{\s*color:\s*red;?\s*\}\s*\}\s*&\[open\]\s*\{\s*display:\s*flex;?\s*\}/)
+    assert.doesNotMatch(nestingResult, /\.card\s*\{\s*padding:\s*1rem;?\s*\.title\s*\{\s*color:\s*red;?\s*\}\s*:host/)
+
+    const scopeResult = await transformCss(css, null, { mode: 'scope' })
+    assert.match(scopeResult, /\.card\s*\{\s*padding:\s*1rem;?\s*\.title\s*\{\s*color:\s*red;?\s*\}\s*\}\s*:scope\[open\]\s*\{\s*display:\s*flex;?\s*\}/)
+  })
+
   await t.test('transformCss transforms ::slotted(selector) into dual Light DOM slot projection branches', async () => {
     const css = `
       ::slotted(img) { border-radius: 4px; }
