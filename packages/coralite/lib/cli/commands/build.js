@@ -112,15 +112,15 @@ export async function buildCommand (config, options, logger = null) {
     const onComponentBuild = async (info) => {
       if (options.verbose) {
         for (const detail of info.details) {
-          const status = detail.status === 'built' ? colours.green('[+] built:  ') : colours.gray('[-] skipped: ')
+          const status = detail.status === 'built' ? colours.green('[+] recompiled: ') : colours.gray('[-] cached:     ')
           const reason = detail.reason ? colours.gray(` (${detail.reason})`) : ''
           log(toTime() + status + detail.id + reason + '\n')
         }
       } else if (componentSpinner) {
         if (info.skipped > 0) {
-          componentSpinner.succeed(`Components built (${info.completed} completed, ${info.skipped} skipped)`)
+          componentSpinner.succeed(`Components built (${info.completed} recompiled, ${info.skipped} cached)`)
         } else {
-          componentSpinner.succeed(`Components built (${info.completed} completed)`)
+          componentSpinner.succeed(`Components built (${info.completed} recompiled)`)
         }
       }
 
@@ -135,9 +135,9 @@ export async function buildCommand (config, options, logger = null) {
 
     const updateSpinnerText = () => {
       if (skippedCount > 0) {
-        spinner.text = `Building pages... (${pageCount} completed, ${skippedCount} skipped)`
+        spinner.text = `Building pages... (${pageCount} rendered, ${skippedCount} cached)`
       } else {
-        spinner.text = `Building pages... (${pageCount} completed)`
+        spinner.text = `Building pages... (${pageCount} rendered)`
       }
     }
 
@@ -151,7 +151,7 @@ export async function buildCommand (config, options, logger = null) {
       if (result.status === 'skipped') {
         skippedCount++
         if (options.verbose) {
-          log(toTime() + colours.gray('[-] skipped: ') + result.path.pathname + '\n')
+          log(toTime() + colours.gray('[-] cached: ') + result.path.pathname + '\n')
         } else {
           updateSpinnerText()
         }
@@ -225,9 +225,9 @@ export async function buildCommand (config, options, logger = null) {
 
     if (!options.verbose && spinner) {
       if (skippedCount > 0) {
-        spinner.succeed(`Pages built (${pageCount} completed, ${skippedCount} skipped)`)
+        spinner.succeed(`Pages built (${pageCount} rendered, ${skippedCount} cached)`)
       } else {
-        spinner.succeed(`Pages built (${pageCount} completed)`)
+        spinner.succeed(`Pages built (${pageCount} rendered)`)
       }
     }
 

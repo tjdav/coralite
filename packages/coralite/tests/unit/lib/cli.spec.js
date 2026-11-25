@@ -1,6 +1,6 @@
 import { test, describe, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdirSync, writeFileSync, mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync, mkdtempSync, rmSync, existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execSync } from 'node:child_process'
@@ -362,7 +362,7 @@ export default {
         stdio: 'pipe'
       }).toString()
 
-      assert.match(build2, /\[-\] skipped:/)
+      assert.match(build2, /\[-\] cached:/)
       assert.strictEqual(existsSync(join(distDir, 'index.html')), true, 'index.html must not be deleted on incremental build')
       assert.strictEqual(existsSync(join(distDir, 'about/index.html')), true, 'about/index.html must not be deleted on incremental build')
 
@@ -379,6 +379,73 @@ export default {
       assert.strictEqual(existsSync(join(distDir, 'about/index.html')), false, 'about/index.html must be deleted as stale file')
       assert.strictEqual(existsSync(join(distDir, 'about')), false, 'empty about directory must be removed')
       assert.match(build3, /Deleted stale file/)
+    })
+
+    test('regenerates outputs deleted while keeping the incremental cache', () => {
+      const compDir = join(tmpDir, 'components')
+      const pageDir = join(tmpDir, 'pages')
+      const distDir = join(tmpDir, 'dist')
+      const manifestPath = join(tmpDir, '.coralite', 'build', 'manifest.json')
+
+      mkdirSync(compDir, { recursive: true })
+      mkdirSync(pageDir, { recursive: true })
+      writeFileSync(join(tmpDir, 'coralite.config.js'), `
+export default {
+  components: 'components',
+  pages: 'pages',
+  output: 'dist'
+}
+`)
+      writeFileSync(join(compDir, 'hello-card.html'), `
+<template id="hello-card">
+  <div>Hello World</div>
+</template>
+<script type="module">
+  export async function client ({ root }) {
+    root.dataset.hydrated = 'true'
+  }
+</script>
+`)
+      writeFileSync(join(pageDir, 'index.html'), '<!DOCTYPE html><html><body><hello-card></hello-card></body></html>')
+
+      /* Initial full build */
+      runCli('build', {
+        cwd: tmpDir,
+        stdio: 'pipe'
+      })
+
+      const componentAssets = () => readdirSync(join(distDir, 'assets', 'js')).filter(file => file.startsWith('hello-card-'))
+
+      assert.strictEqual(existsSync(join(distDir, 'index.html')), true)
+      assert.strictEqual(existsSync(manifestPath), true)
+      assert.ok(componentAssets().length > 0, 'initial build must emit the component asset')
+
+      /* Delete the whole output directory but keep the incremental cache */
+      rmSync(distDir, {
+        recursive: true,
+        force: true
+      })
+
+      const rebuild = runCli('build --verbose', {
+        cwd: tmpDir,
+        stdio: 'pipe'
+      }).toString()
+
+      assert.strictEqual(existsSync(manifestPath), true, 'incremental cache must be retained')
+      assert.strictEqual(existsSync(join(distDir, 'index.html')), true, 'deleted page output must be regenerated')
+      assert.match(readFileSync(join(distDir, 'index.html'), 'utf8'), /Hello World/)
+      assert.ok(componentAssets().length > 0, 'deleted component asset must be regenerated')
+      assert.doesNotMatch(rebuild, /\[-\] cached: .*index\.html/)
+
+      /* Delete a single page output while leaving the rest of dist intact */
+      rmSync(join(distDir, 'index.html'))
+
+      runCli('build', {
+        cwd: tmpDir,
+        stdio: 'pipe'
+      })
+
+      assert.strictEqual(existsSync(join(distDir, 'index.html')), true, 'single deleted page output must be regenerated')
     })
 
     test('errors when invoked with retired low-level flags -p or -o', () => {
