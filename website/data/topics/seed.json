@@ -1,0 +1,491 @@
+[
+  {
+    "keyword": "ai agent build time guardrails",
+    "cluster": "ai-workflow",
+    "intent": "informational",
+    "communityQuery": "ai coding agent guardrails",
+    "docs": null,
+    "evidence": [
+      "AGENTS invariants",
+      "validator contract tests"
+    ],
+    "action": "blog-only",
+    "format": "essay",
+    "source": "manual"
+  },
+  {
+    "keyword": "astro alternative",
+    "cluster": "comparisons",
+    "intent": "commercial",
+    "communityQuery": "astro alternative",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "generated"
+  },
+  {
+    "keyword": "build time data fetching web components",
+    "cluster": "recipes",
+    "intent": "informational",
+    "communityQuery": "build time data fetching",
+    "docs": "/docs/guide/ssr/",
+    "evidence": [
+      "server() execution pipeline",
+      "docs/guide/ssr.html"
+    ],
+    "action": "docs+post",
+    "format": "how-to",
+    "source": "manual"
+  },
+  {
+    "keyword": "build time validation web components",
+    "cluster": "validation",
+    "intent": "informational",
+    "communityQuery": "build time validation web components",
+    "docs": "/docs/guide/validation/",
+    "evidence": [
+      "validator passes",
+      "53 diagnostics"
+    ],
+    "action": "docs+post",
+    "format": "data",
+    "source": "manual"
+  },
+  {
+    "keyword": "content security policy web components",
+    "cluster": "recipes",
+    "intent": "informational",
+    "communityQuery": "content security policy web components",
+    "docs": "/docs/guide/csp/",
+    "evidence": [
+      "docs/guide/csp.html",
+      "csp hash injection"
+    ],
+    "action": "docs+post",
+    "format": "how-to",
+    "source": "manual"
+  },
+  {
+    "keyword": "coralite cli cookbook",
+    "cluster": "recipes",
+    "intent": "informational",
+    "communityQuery": "static site cli build check",
+    "docs": "/reference/cli/",
+    "evidence": [
+      "CLI commands",
+      "docs/guide/testing.html"
+    ],
+    "action": "docs+post",
+    "format": "qa",
+    "source": "manual"
+  },
+  {
+    "keyword": "coralite diagnostics error codes",
+    "cluster": "validation",
+    "intent": "informational",
+    "communityQuery": "build time error diagnostics",
+    "docs": "/reference/diagnostics/",
+    "evidence": [
+      "diagnostic catalog",
+      "llms/diagnostics.md"
+    ],
+    "action": "docs-first",
+    "format": "qa",
+    "source": "manual"
+  },
+  {
+    "keyword": "coralite production readiness",
+    "cluster": "trust",
+    "intent": "commercial",
+    "communityQuery": "static site generator production ready",
+    "docs": null,
+    "evidence": [
+      "release history",
+      "cross-platform smoke tests"
+    ],
+    "action": "blog-only",
+    "format": "decision",
+    "source": "manual"
+  },
+  {
+    "keyword": "coralite v1 migration named exports",
+    "cluster": "migrations",
+    "intent": "informational",
+    "communityQuery": "coralite v1 migration",
+    "docs": "/docs/guide/authoring/",
+    "evidence": [
+      "named export authoring contract",
+      "coralite fix codemods"
+    ],
+    "action": "docs+post",
+    "format": "migration",
+    "source": "manual"
+  },
+  {
+    "keyword": "coralite vs astro",
+    "cluster": "comparisons",
+    "intent": "informational",
+    "communityQuery": "astro vs eleventy",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "manual"
+  },
+  {
+    "keyword": "coralite vs eleventy",
+    "cluster": "comparisons",
+    "intent": "informational",
+    "communityQuery": "eleventy vs hugo",
+    "docs": null,
+    "evidence": [
+      "lumeland benchmark adapter",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "manual"
+  },
+  {
+    "keyword": "coralite vs hugo",
+    "cluster": "comparisons",
+    "intent": "informational",
+    "communityQuery": "hugo alternative",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "generated"
+  },
+  {
+    "keyword": "coralite vs lit",
+    "cluster": "comparisons",
+    "intent": "informational",
+    "communityQuery": "lit alternative",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "generated"
+  },
+  {
+    "keyword": "coralite vs nextjs",
+    "cluster": "comparisons",
+    "intent": "informational",
+    "communityQuery": "nextjs alternative",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "generated"
+  },
+  {
+    "keyword": "coralite vs stencil",
+    "cluster": "comparisons",
+    "intent": "informational",
+    "communityQuery": "stencil alternative",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "generated"
+  },
+  {
+    "keyword": "css @scope vs shadow dom",
+    "cluster": "light-dom",
+    "intent": "informational",
+    "communityQuery": "css @scope shadow dom",
+    "docs": "/docs/concepts/styling/",
+    "evidence": [
+      "formatComponentCss dual scope",
+      "lib/server/utils/style.js"
+    ],
+    "action": "docs+post",
+    "format": "head-to-head",
+    "source": "manual"
+  },
+  {
+    "keyword": "deploy static site nginx cloudflare",
+    "cluster": "recipes",
+    "intent": "informational",
+    "communityQuery": "deploy static site nginx",
+    "docs": null,
+    "evidence": [
+      "euroloom deploy script",
+      "coralite build output"
+    ],
+    "action": "docs-first",
+    "format": "how-to",
+    "source": "manual"
+  },
+  {
+    "keyword": "eleventy alternative",
+    "cluster": "comparisons",
+    "intent": "commercial",
+    "communityQuery": "eleventy alternative",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "generated"
+  },
+  {
+    "keyword": "form associated web components light dom",
+    "cluster": "recipes",
+    "intent": "informational",
+    "communityQuery": "form associated custom elements",
+    "docs": "/reference/form-control/",
+    "evidence": [
+      "formControl export",
+      "component contract tests"
+    ],
+    "action": "docs+post",
+    "format": "how-to",
+    "source": "manual"
+  },
+  {
+    "keyword": "hugo alternative",
+    "cluster": "comparisons",
+    "intent": "commercial",
+    "communityQuery": "hugo alternative",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "generated"
+  },
+  {
+    "keyword": "hydration free static html",
+    "cluster": "ssr",
+    "intent": "informational",
+    "communityQuery": "hydration free static site",
+    "docs": "/docs/guide/e2e-testing/",
+    "evidence": [
+      "hydration readiness hook",
+      "zero-JS static components"
+    ],
+    "action": "docs-first",
+    "format": "explainer",
+    "source": "manual"
+  },
+  {
+    "keyword": "light dom slots vs shadow dom slots",
+    "cluster": "light-dom",
+    "intent": "informational",
+    "communityQuery": "light dom slots",
+    "docs": "/reference/slots/",
+    "evidence": [
+      "::slotted transform",
+      "slot projection tests"
+    ],
+    "action": "docs+post",
+    "format": "explainer",
+    "source": "manual"
+  },
+  {
+    "keyword": "lit alternative",
+    "cluster": "comparisons",
+    "intent": "commercial",
+    "communityQuery": "lit alternative",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "generated"
+  },
+  {
+    "keyword": "nextjs alternative",
+    "cluster": "comparisons",
+    "intent": "commercial",
+    "communityQuery": "nextjs alternative",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "generated"
+  },
+  {
+    "keyword": "replace react islands with web components",
+    "cluster": "migrations",
+    "intent": "informational",
+    "communityQuery": "react islands web components",
+    "docs": null,
+    "evidence": [
+      "hydration payload benchmarks",
+      "zero-JS static components"
+    ],
+    "action": "blog-only",
+    "format": "migration",
+    "source": "manual"
+  },
+  {
+    "keyword": "spa router without react",
+    "cluster": "recipes",
+    "intent": "informational",
+    "communityQuery": "spa router without react",
+    "docs": "/docs/guide/spa-router/",
+    "evidence": [
+      "router plugin",
+      "docs/reference/plugins/router.html"
+    ],
+    "action": "docs+post",
+    "format": "how-to",
+    "source": "manual"
+  },
+  {
+    "keyword": "spec driven ai development",
+    "cluster": "ai-workflow",
+    "intent": "informational",
+    "communityQuery": "spec driven development",
+    "docs": null,
+    "evidence": [
+      "Corallum multi-agent pipeline",
+      "typed artifacts"
+    ],
+    "action": "blog-only",
+    "format": "essay",
+    "source": "manual"
+  },
+  {
+    "keyword": "ssr web components without react",
+    "cluster": "ssr",
+    "intent": "informational",
+    "communityQuery": "ssr web components",
+    "docs": "/docs/guide/ssr/",
+    "evidence": [
+      "server-side DOM",
+      "docs/guide/ssr.html"
+    ],
+    "action": "docs+post",
+    "format": "explainer",
+    "source": "manual"
+  },
+  {
+    "keyword": "static site generator benchmark",
+    "cluster": "performance",
+    "intent": "informational",
+    "communityQuery": "static site generator benchmark",
+    "docs": null,
+    "evidence": [
+      "benchmarks/results",
+      "internal hydration suites"
+    ],
+    "action": "blog-only",
+    "format": "data",
+    "source": "manual"
+  },
+  {
+    "keyword": "static site generator build time comparison",
+    "cluster": "performance",
+    "intent": "informational",
+    "communityQuery": "static site generator build time",
+    "docs": null,
+    "evidence": [
+      "lumeland benchmark adapter",
+      "benchmarks/results/external"
+    ],
+    "action": "blog-only",
+    "format": "data",
+    "source": "manual"
+  },
+  {
+    "keyword": "static site i18n at build time",
+    "cluster": "recipes",
+    "intent": "informational",
+    "communityQuery": "static site i18n build time",
+    "docs": "/docs/guide/i18n/",
+    "evidence": [
+      "docs/guide/i18n.html",
+      "i18n page tests"
+    ],
+    "action": "docs+post",
+    "format": "how-to",
+    "source": "manual"
+  },
+  {
+    "keyword": "stencil alternative",
+    "cluster": "comparisons",
+    "intent": "commercial",
+    "communityQuery": "stencil alternative",
+    "docs": null,
+    "evidence": [
+      "external benchmark harness",
+      "benchmarks/README.md"
+    ],
+    "action": "blog-only",
+    "format": "head-to-head",
+    "source": "generated"
+  },
+  {
+    "keyword": "web components without shadow dom",
+    "cluster": "light-dom",
+    "intent": "informational",
+    "communityQuery": "web components light dom",
+    "docs": "/docs/concepts/styling/",
+    "evidence": [
+      "lib/server/utils/style.js",
+      "docs/concepts/styling.html"
+    ],
+    "action": "docs+post",
+    "format": "explainer",
+    "source": "manual"
+  },
+  {
+    "keyword": "when not to use a custom element",
+    "cluster": "trust",
+    "intent": "informational",
+    "communityQuery": "when to use custom elements",
+    "docs": "/docs/reference/non-features/",
+    "evidence": [
+      "docs/reference/non-features.html"
+    ],
+    "action": "docs+post",
+    "format": "decision",
+    "source": "manual"
+  },
+  {
+    "keyword": "zero javascript web components",
+    "cluster": "light-dom",
+    "intent": "informational",
+    "communityQuery": "zero javascript web components",
+    "docs": "/docs/guide/components/",
+    "evidence": [
+      "zero-JS static contract",
+      "build output without client lifecycle"
+    ],
+    "action": "docs+post",
+    "format": "explainer",
+    "source": "manual"
+  }
+]

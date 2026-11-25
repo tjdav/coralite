@@ -1,0 +1,1429 @@
+{
+  "generatedAt": "2026-11-25T15:11:08.627Z",
+  "settings": {
+    "keywordVolumes": false,
+    "keywordRows": 0,
+    "searchConsoleRows": 0,
+    "communityRows": 35,
+    "serpRows": 35,
+    "transcriptRows": 0,
+    "docsPages": 71,
+    "blogPosts": 102,
+    "blogReleases": 100
+  },
+  "topics": [
+    {
+      "keyword": "spa router without react",
+      "cluster": "recipes",
+      "intent": "informational",
+      "format": "how-to",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 65,
+        "communitySources": {
+          "hackerNews": 4,
+          "stackExchange": 58,
+          "github": 63720,
+          "githubContribution": 3
+        },
+        "serpDensity": 8,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/guide/spa-router/",
+      "coverageKind": "docs",
+      "evidence": [
+        "router plugin",
+        "docs/reference/plugins/router.html"
+      ],
+      "serpWeakness": 4,
+      "serpNotes": "directory 4 · forum 2 · other 2 · mean 0.77 · density 8",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 48,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/docs/guide/spa-router/",
+      "rank": 1
+    },
+    {
+      "keyword": "ssr web components without react",
+      "cluster": "ssr",
+      "intent": "informational",
+      "format": "explainer",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 211,
+        "communitySources": {
+          "hackerNews": 26,
+          "stackExchange": 182,
+          "github": 206147,
+          "githubContribution": 3
+        },
+        "serpDensity": 8,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/guide/ssr/",
+      "coverageKind": "docs",
+      "evidence": [
+        "server-side DOM",
+        "docs/guide/ssr.html"
+      ],
+      "serpWeakness": 4,
+      "serpNotes": "directory 3 · forum 3 · other 3 · mean 0.77 · density 8",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 48,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/docs/guide/ssr/",
+      "rank": 2
+    },
+    {
+      "keyword": "static site i18n at build time",
+      "cluster": "recipes",
+      "intent": "informational",
+      "format": "how-to",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 71,
+        "communitySources": {
+          "hackerNews": 0,
+          "stackExchange": 68,
+          "github": 115380,
+          "githubContribution": 3
+        },
+        "serpDensity": 9,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/guide/i18n/",
+      "coverageKind": "docs",
+      "evidence": [
+        "docs/guide/i18n.html",
+        "i18n page tests"
+      ],
+      "serpWeakness": 4,
+      "serpNotes": "directory 3 · forum 2 · other 4 · mean 0.72 · density 9",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 48,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/docs/guide/i18n/",
+      "rank": 3
+    },
+    {
+      "keyword": "coralite cli cookbook",
+      "cluster": "recipes",
+      "intent": "informational",
+      "format": "qa",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 26,
+        "communitySources": {
+          "hackerNews": 1,
+          "stackExchange": 22,
+          "github": 666033,
+          "githubContribution": 3
+        },
+        "serpDensity": 9,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/reference/cli/",
+      "coverageKind": "docs",
+      "evidence": [
+        "CLI commands",
+        "docs/guide/testing.html"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "forum 1 · vendor 1 · other 7 · mean 0.58 · density 9",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 36,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/reference/cli/",
+      "rank": 4
+    },
+    {
+      "keyword": "coralite v1 migration named exports",
+      "cluster": "migrations",
+      "intent": "informational",
+      "format": "migration",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 0,
+        "communitySources": {
+          "hackerNews": 0,
+          "stackExchange": 0,
+          "github": 0,
+          "githubContribution": 0
+        },
+        "serpDensity": 9,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/guide/authoring/",
+      "coverageKind": "docs",
+      "evidence": [
+        "named export authoring contract",
+        "coralite fix codemods"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "directory 2 · forum 1 · vendor 2 · other 4 · mean 0.63 · density 9",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 36,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/docs/guide/authoring/",
+      "rank": 5
+    },
+    {
+      "keyword": "form associated web components light dom",
+      "cluster": "recipes",
+      "intent": "informational",
+      "format": "how-to",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 156,
+        "communitySources": {
+          "hackerNews": 1,
+          "stackExchange": 152,
+          "github": 205935,
+          "githubContribution": 3
+        },
+        "serpDensity": 9,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/reference/form-control/",
+      "coverageKind": "docs",
+      "evidence": [
+        "formControl export",
+        "component contract tests"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "directory 1 · forum 2 · vendor 1 · other 5 · mean 0.66 · density 9",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 36,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/reference/form-control/",
+      "rank": 6
+    },
+    {
+      "keyword": "build time data fetching web components",
+      "cluster": "recipes",
+      "intent": "informational",
+      "format": "how-to",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 2090,
+        "communitySources": {
+          "hackerNews": 23,
+          "stackExchange": 2064,
+          "github": 592254,
+          "githubContribution": 3
+        },
+        "serpDensity": 7,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/guide/ssr/",
+      "coverageKind": "docs",
+      "evidence": [
+        "server() execution pipeline",
+        "docs/guide/ssr.html"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · peer 1 · directory 3 · forum 2 · other 1 · mean 0.67 · density 7",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 32,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/docs/guide/ssr/",
+      "rank": 7
+    },
+    {
+      "keyword": "build time validation web components",
+      "cluster": "validation",
+      "intent": "informational",
+      "format": "data",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 59,
+        "communitySources": {
+          "hackerNews": 6,
+          "stackExchange": 50,
+          "github": 516001,
+          "githubContribution": 3
+        },
+        "serpDensity": 7,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/guide/validation/",
+      "coverageKind": "docs",
+      "evidence": [
+        "validator passes",
+        "53 diagnostics"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "authority 1 · directory 3 · forum 2 · other 2 · mean 0.69 · density 7",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 32,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/docs/guide/validation/",
+      "rank": 8
+    },
+    {
+      "keyword": "coralite production readiness",
+      "cluster": "trust",
+      "intent": "commercial",
+      "format": "decision",
+      "action": "blog-only",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 20,
+        "communitySources": {
+          "hackerNews": 3,
+          "stackExchange": 14,
+          "github": 55698,
+          "githubContribution": 3
+        },
+        "serpDensity": 7,
+        "transcriptMentions": 0
+      },
+      "coverage": "partial",
+      "coveragePage": "/docs/guide/dom-refs/",
+      "coverageKind": "docs",
+      "evidence": [
+        "release history",
+        "cross-platform smoke tests"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "other 9 · mean 0.55 · density 7",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 32,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": null,
+      "rank": 9
+    },
+    {
+      "keyword": "light dom slots vs shadow dom slots",
+      "cluster": "light-dom",
+      "intent": "informational",
+      "format": "explainer",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 86,
+        "communitySources": {
+          "hackerNews": 40,
+          "stackExchange": 43,
+          "github": 47509,
+          "githubContribution": 3
+        },
+        "serpDensity": 6,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/reference/slots/",
+      "coverageKind": "docs",
+      "evidence": [
+        "::slotted transform",
+        "slot projection tests"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "authority 1 · directory 2 · forum 1 · other 3 · mean 0.62 · density 6",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 32,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/reference/slots/",
+      "rank": 10
+    },
+    {
+      "keyword": "web components without shadow dom",
+      "cluster": "light-dom",
+      "intent": "informational",
+      "format": "explainer",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 80,
+        "communitySources": {
+          "hackerNews": 10,
+          "stackExchange": 67,
+          "github": 122936,
+          "githubContribution": 3
+        },
+        "serpDensity": 7,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/concepts/styling/",
+      "coverageKind": "docs",
+      "evidence": [
+        "lib/server/utils/style.js",
+        "docs/concepts/styling.html"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · authority 1 · directory 1 · forum 1 · other 5 · mean 0.52 · density 7",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 32,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/docs/concepts/styling/",
+      "rank": 11
+    },
+    {
+      "keyword": "zero javascript web components",
+      "cluster": "light-dom",
+      "intent": "informational",
+      "format": "explainer",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 43,
+        "communitySources": {
+          "hackerNews": 6,
+          "stackExchange": 34,
+          "github": 89883,
+          "githubContribution": 3
+        },
+        "serpDensity": 6,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/guide/components/",
+      "coverageKind": "docs",
+      "evidence": [
+        "zero-JS static contract",
+        "build output without client lifecycle"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · directory 4 · forum 1 · other 2 · mean 0.66 · density 6",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 32,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/docs/guide/components/",
+      "rank": 12
+    },
+    {
+      "keyword": "coralite diagnostics error codes",
+      "cluster": "validation",
+      "intent": "informational",
+      "format": "qa",
+      "action": "docs-first",
+      "source": "manual",
+      "demand": 4,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 363,
+        "communitySources": {
+          "hackerNews": 9,
+          "stackExchange": 351,
+          "github": 1009244,
+          "githubContribution": 3
+        },
+        "serpDensity": 3,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/reference/diagnostics/",
+      "coverageKind": "docs",
+      "evidence": [
+        "diagnostic catalog",
+        "llms/diagnostics.md"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "forum 1 · other 8 · mean 0.59 · density 3",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 29,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/reference/diagnostics/",
+      "rank": 13
+    },
+    {
+      "keyword": "hydration free static html",
+      "cluster": "ssr",
+      "intent": "informational",
+      "format": "explainer",
+      "action": "docs-first",
+      "source": "manual",
+      "demand": 4,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 3,
+        "communitySources": {
+          "hackerNews": 0,
+          "stackExchange": 0,
+          "github": 34399,
+          "githubContribution": 3
+        },
+        "serpDensity": 8,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/guide/e2e-testing/",
+      "coverageKind": "docs",
+      "evidence": [
+        "hydration readiness hook",
+        "zero-JS static components"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · peer 2 · directory 1 · forum 1 · other 4 · mean 0.55 · density 8",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 29,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/docs/guide/e2e-testing/",
+      "rank": 14
+    },
+    {
+      "keyword": "when not to use a custom element",
+      "cluster": "trust",
+      "intent": "informational",
+      "format": "decision",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 13758,
+        "communitySources": {
+          "hackerNews": 50,
+          "stackExchange": 13705,
+          "github": 2208717,
+          "githubContribution": 3
+        },
+        "serpDensity": 7,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/reference/non-features/",
+      "coverageKind": "docs",
+      "evidence": [
+        "docs/reference/non-features.html"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · authority 1 · directory 1 · forum 3 · other 3 · mean 0.61 · density 7",
+      "answerability": 4,
+      "editorialMultiplier": 1,
+      "score": 26,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": "/docs/reference/non-features/",
+      "rank": 15
+    },
+    {
+      "keyword": "coralite vs hugo",
+      "cluster": "comparisons",
+      "intent": "informational",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "generated",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 251,
+        "communitySources": {
+          "hackerNews": 228,
+          "stackExchange": 20,
+          "github": 37454,
+          "githubContribution": 3
+        },
+        "serpDensity": 9,
+        "transcriptMentions": 0
+      },
+      "coverage": "partial",
+      "coveragePage": "/docs/guide/e2e-testing/",
+      "coverageKind": "docs",
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "forum 1 · other 8 · mean 0.59 · density 9",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 22,
+      "status": "ready",
+      "blockers": [],
+      "strategic": false,
+      "docs": null,
+      "rank": 16
+    },
+    {
+      "keyword": "coralite vs nextjs",
+      "cluster": "comparisons",
+      "intent": "informational",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "generated",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 203,
+        "communitySources": {
+          "hackerNews": 41,
+          "stackExchange": 159,
+          "github": 59911,
+          "githubContribution": 3
+        },
+        "serpDensity": 8,
+        "transcriptMentions": 0
+      },
+      "coverage": "partial",
+      "coveragePage": "/docs/guide/e2e-testing/",
+      "coverageKind": "docs",
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · forum 2 · other 6 · mean 0.58 · density 8",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 22,
+      "status": "ready",
+      "blockers": [],
+      "strategic": false,
+      "docs": null,
+      "rank": 17
+    },
+    {
+      "keyword": "static site generator benchmark",
+      "cluster": "performance",
+      "intent": "informational",
+      "format": "data",
+      "action": "blog-only",
+      "source": "manual",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 17,
+        "communitySources": {
+          "hackerNews": 3,
+          "stackExchange": 11,
+          "github": 84278,
+          "githubContribution": 3
+        },
+        "serpDensity": 9,
+        "transcriptMentions": 0
+      },
+      "coverage": "partial",
+      "coveragePage": "/docs/guide/components/",
+      "coverageKind": "docs",
+      "evidence": [
+        "benchmarks/results",
+        "internal hydration suites"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "competitor 1 · directory 2 · other 6 · mean 0.62 · density 9",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 22,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": null,
+      "rank": 18
+    },
+    {
+      "keyword": "static site generator build time comparison",
+      "cluster": "performance",
+      "intent": "informational",
+      "format": "data",
+      "action": "blog-only",
+      "source": "manual",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 244,
+        "communitySources": {
+          "hackerNews": 24,
+          "stackExchange": 217,
+          "github": 192177,
+          "githubContribution": 3
+        },
+        "serpDensity": 8,
+        "transcriptMentions": 0
+      },
+      "coverage": "partial",
+      "coveragePage": "/docs/guide/building/",
+      "coverageKind": "docs",
+      "evidence": [
+        "lumeland benchmark adapter",
+        "benchmarks/results/external"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · competitor 1 · forum 1 · other 6 · mean 0.55 · density 8",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 22,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": null,
+      "rank": 19
+    },
+    {
+      "keyword": "content security policy web components",
+      "cluster": "recipes",
+      "intent": "informational",
+      "format": "how-to",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 44,
+        "communitySources": {
+          "hackerNews": 1,
+          "stackExchange": 40,
+          "github": 369719,
+          "githubContribution": 3
+        },
+        "serpDensity": 6,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/guide/csp/",
+      "coverageKind": "docs",
+      "evidence": [
+        "docs/guide/csp.html",
+        "csp hash injection"
+      ],
+      "serpWeakness": 2,
+      "serpNotes": "giant 1 · authority 2 · directory 1 · other 5 · mean 0.43 · density 6",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 22,
+      "status": "ready",
+      "blockers": [
+        "competitive-serp"
+      ],
+      "strategic": true,
+      "docs": "/docs/guide/csp/",
+      "rank": 20
+    },
+    {
+      "keyword": "css @scope vs shadow dom",
+      "cluster": "light-dom",
+      "intent": "informational",
+      "format": "head-to-head",
+      "action": "docs+post",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 46,
+        "communitySources": {
+          "hackerNews": 1,
+          "stackExchange": 45,
+          "github": 0,
+          "githubContribution": 0
+        },
+        "serpDensity": 5,
+        "transcriptMentions": 0
+      },
+      "coverage": "canonical",
+      "coveragePage": "/docs/concepts/styling/",
+      "coverageKind": "docs",
+      "evidence": [
+        "formatComponentCss dual scope",
+        "lib/server/utils/style.js"
+      ],
+      "serpWeakness": 2,
+      "serpNotes": "giant 1 · authority 2 · other 5 · mean 0.38 · density 5",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 22,
+      "status": "ready",
+      "blockers": [
+        "competitive-serp"
+      ],
+      "strategic": true,
+      "docs": "/docs/concepts/styling/",
+      "rank": 21
+    },
+    {
+      "keyword": "coralite vs astro",
+      "cluster": "comparisons",
+      "intent": "informational",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 4,
+        "communitySources": {
+          "hackerNews": 1,
+          "stackExchange": 0,
+          "github": 2918,
+          "githubContribution": 3
+        },
+        "serpDensity": 9,
+        "transcriptMentions": 0
+      },
+      "coverage": "partial",
+      "coveragePage": "/docs/guide/e2e-testing/",
+      "coverageKind": "docs",
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "directory 1 · forum 1 · other 7 · mean 0.62 · density 9",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 19,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": null,
+      "rank": 22
+    },
+    {
+      "keyword": "coralite vs eleventy",
+      "cluster": "comparisons",
+      "intent": "informational",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 4,
+        "communitySources": {
+          "hackerNews": 1,
+          "stackExchange": 0,
+          "github": 256,
+          "githubContribution": 3
+        },
+        "serpDensity": 8,
+        "transcriptMentions": 0
+      },
+      "coverage": "partial",
+      "coveragePage": "/docs/guide/e2e-testing/",
+      "coverageKind": "docs",
+      "evidence": [
+        "lumeland benchmark adapter",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · peer 1 · forum 2 · other 5 · mean 0.57 · density 8",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 19,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": null,
+      "rank": 23
+    },
+    {
+      "keyword": "coralite vs lit",
+      "cluster": "comparisons",
+      "intent": "informational",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "generated",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 70,
+        "communitySources": {
+          "hackerNews": 15,
+          "stackExchange": 52,
+          "github": 38136,
+          "githubContribution": 3
+        },
+        "serpDensity": 6,
+        "transcriptMentions": 0
+      },
+      "coverage": "partial",
+      "coveragePage": "/docs/guide/e2e-testing/",
+      "coverageKind": "docs",
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 2,
+      "serpNotes": "giant 1 · other 7 · mean 0.48 · density 6",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 13,
+      "status": "skip",
+      "blockers": [
+        "weak-intent-or-serp"
+      ],
+      "strategic": false,
+      "docs": null,
+      "rank": 24
+    },
+    {
+      "keyword": "coralite vs stencil",
+      "cluster": "comparisons",
+      "intent": "informational",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "generated",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 45,
+        "communitySources": {
+          "hackerNews": 4,
+          "stackExchange": 38,
+          "github": 7521,
+          "githubContribution": 3
+        },
+        "serpDensity": 5,
+        "transcriptMentions": 0
+      },
+      "coverage": "partial",
+      "coveragePage": "/docs/guide/e2e-testing/",
+      "coverageKind": "docs",
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 2,
+      "serpNotes": "giant 3 · other 5 · mean 0.34 · density 5",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 13,
+      "status": "skip",
+      "blockers": [
+        "weak-intent-or-serp"
+      ],
+      "strategic": false,
+      "docs": null,
+      "rank": 25
+    },
+    {
+      "keyword": "astro alternative",
+      "cluster": "comparisons",
+      "intent": "commercial",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "generated",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 36,
+        "communitySources": {
+          "hackerNews": 23,
+          "stackExchange": 10,
+          "github": 80963,
+          "githubContribution": 3
+        },
+        "serpDensity": 9,
+        "transcriptMentions": 0
+      },
+      "coverage": "none",
+      "coveragePage": null,
+      "coverageKind": null,
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "directory 3 · forum 1 · other 5 · mean 0.68 · density 9",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 12,
+      "status": "ready",
+      "blockers": [],
+      "strategic": false,
+      "docs": null,
+      "rank": 26
+    },
+    {
+      "keyword": "eleventy alternative",
+      "cluster": "comparisons",
+      "intent": "commercial",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "generated",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 7,
+        "communitySources": {
+          "hackerNews": 1,
+          "stackExchange": 3,
+          "github": 2775,
+          "githubContribution": 3
+        },
+        "serpDensity": 8,
+        "transcriptMentions": 0
+      },
+      "coverage": "none",
+      "coveragePage": null,
+      "coverageKind": null,
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · peer 1 · directory 1 · forum 1 · other 5 · mean 0.56 · density 8",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 12,
+      "status": "ready",
+      "blockers": [],
+      "strategic": false,
+      "docs": null,
+      "rank": 27
+    },
+    {
+      "keyword": "hugo alternative",
+      "cluster": "comparisons",
+      "intent": "commercial",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "generated",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 251,
+        "communitySources": {
+          "hackerNews": 228,
+          "stackExchange": 20,
+          "github": 37454,
+          "githubContribution": 3
+        },
+        "serpDensity": 9,
+        "transcriptMentions": 0
+      },
+      "coverage": "none",
+      "coveragePage": null,
+      "coverageKind": null,
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "competitor 2 · forum 1 · other 6 · mean 0.63 · density 9",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 12,
+      "status": "ready",
+      "blockers": [],
+      "strategic": false,
+      "docs": null,
+      "rank": 28
+    },
+    {
+      "keyword": "lit alternative",
+      "cluster": "comparisons",
+      "intent": "commercial",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "generated",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 70,
+        "communitySources": {
+          "hackerNews": 15,
+          "stackExchange": 52,
+          "github": 38136,
+          "githubContribution": 3
+        },
+        "serpDensity": 8,
+        "transcriptMentions": 0
+      },
+      "coverage": "none",
+      "coveragePage": null,
+      "coverageKind": null,
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "authority 1 · peer 1 · directory 3 · forum 1 · other 3 · mean 0.63 · density 8",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 12,
+      "status": "ready",
+      "blockers": [],
+      "strategic": false,
+      "docs": null,
+      "rank": 29
+    },
+    {
+      "keyword": "nextjs alternative",
+      "cluster": "comparisons",
+      "intent": "commercial",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "generated",
+      "demand": 5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 203,
+        "communitySources": {
+          "hackerNews": 41,
+          "stackExchange": 159,
+          "github": 59911,
+          "githubContribution": 3
+        },
+        "serpDensity": 8,
+        "transcriptMentions": 0
+      },
+      "coverage": "none",
+      "coveragePage": null,
+      "coverageKind": null,
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · directory 2 · forum 1 · other 5 · mean 0.59 · density 8",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 12,
+      "status": "ready",
+      "blockers": [],
+      "strategic": false,
+      "docs": null,
+      "rank": 30
+    },
+    {
+      "keyword": "stencil alternative",
+      "cluster": "comparisons",
+      "intent": "commercial",
+      "format": "head-to-head",
+      "action": "blog-only",
+      "source": "generated",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 45,
+        "communitySources": {
+          "hackerNews": 4,
+          "stackExchange": 38,
+          "github": 7521,
+          "githubContribution": 3
+        },
+        "serpDensity": 6,
+        "transcriptMentions": 0
+      },
+      "coverage": "none",
+      "coveragePage": null,
+      "coverageKind": null,
+      "evidence": [
+        "external benchmark harness",
+        "benchmarks/README.md"
+      ],
+      "serpWeakness": 2,
+      "serpNotes": "giant 2 · forum 1 · other 5 · mean 0.46 · density 6",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 7,
+      "status": "skip",
+      "blockers": [
+        "weak-intent-or-serp"
+      ],
+      "strategic": false,
+      "docs": null,
+      "rank": 31
+    },
+    {
+      "keyword": "ai agent build time guardrails",
+      "cluster": "ai-workflow",
+      "intent": "informational",
+      "format": "essay",
+      "action": "blog-only",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 58,
+        "communitySources": {
+          "hackerNews": 55,
+          "stackExchange": 0,
+          "github": 55548,
+          "githubContribution": 3
+        },
+        "serpDensity": 6,
+        "transcriptMentions": 0
+      },
+      "coverage": "none",
+      "coveragePage": null,
+      "coverageKind": null,
+      "evidence": [
+        "AGENTS invariants",
+        "validator contract tests"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "giant 1 · directory 1 · forum 3 · other 4 · mean 0.65 · density 6",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 6,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": null,
+      "rank": 32
+    },
+    {
+      "keyword": "deploy static site nginx cloudflare",
+      "cluster": "recipes",
+      "intent": "informational",
+      "format": "how-to",
+      "action": "docs-first",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 192,
+        "communitySources": {
+          "hackerNews": 3,
+          "stackExchange": 186,
+          "github": 34790,
+          "githubContribution": 3
+        },
+        "serpDensity": 7,
+        "transcriptMentions": 0
+      },
+      "coverage": "none",
+      "coveragePage": null,
+      "coverageKind": null,
+      "evidence": [
+        "euroloom deploy script",
+        "coralite build output"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "directory 1 · forum 1 · other 6 · mean 0.63 · density 7",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 6,
+      "status": "needs-docs",
+      "blockers": [
+        "needs-docs"
+      ],
+      "strategic": true,
+      "docs": null,
+      "rank": 33
+    },
+    {
+      "keyword": "replace react islands with web components",
+      "cluster": "migrations",
+      "intent": "informational",
+      "format": "migration",
+      "action": "blog-only",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 6,
+        "communitySources": {
+          "hackerNews": 1,
+          "stackExchange": 2,
+          "github": 7459,
+          "githubContribution": 3
+        },
+        "serpDensity": 8,
+        "transcriptMentions": 0
+      },
+      "coverage": "none",
+      "coveragePage": null,
+      "coverageKind": null,
+      "evidence": [
+        "hydration payload benchmarks",
+        "zero-JS static components"
+      ],
+      "serpWeakness": 3,
+      "serpNotes": "directory 3 · forum 1 · other 4 · mean 0.69 · density 8",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 6,
+      "status": "ready",
+      "blockers": [],
+      "strategic": true,
+      "docs": null,
+      "rank": 34
+    },
+    {
+      "keyword": "spec driven ai development",
+      "cluster": "ai-workflow",
+      "intent": "informational",
+      "format": "essay",
+      "action": "blog-only",
+      "source": "manual",
+      "demand": 4.5,
+      "demandSignals": {
+        "volume": 0,
+        "volumeSource": "",
+        "impressions": 0,
+        "communityMentions": 267,
+        "communitySources": {
+          "hackerNews": 199,
+          "stackExchange": 65,
+          "github": 177549,
+          "githubContribution": 3
+        },
+        "serpDensity": 7,
+        "transcriptMentions": 0
+      },
+      "coverage": "none",
+      "coveragePage": null,
+      "coverageKind": null,
+      "evidence": [
+        "Corallum multi-agent pipeline",
+        "typed artifacts"
+      ],
+      "serpWeakness": 2,
+      "serpNotes": "giant 2 · directory 1 · vendor 1 · other 5 · mean 0.44 · density 7",
+      "answerability": 5,
+      "editorialMultiplier": 1,
+      "score": 4,
+      "status": "ready",
+      "blockers": [
+        "competitive-serp"
+      ],
+      "strategic": true,
+      "docs": null,
+      "rank": 35
+    }
+  ]
+}

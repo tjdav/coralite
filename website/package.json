@@ -22,12 +22,14 @@
     "lint:css": "stylelint 'src/css/*.css'",
     "lint:css:fix": "stylelint --fix 'src/css/*.css'",
     "check:redirects": "node scripts/check-redirects.js",
+    "topic-research": "node scripts/topic-research.js",
     "a11y:full": "pnpm build && A11Y_FULL=1 playwright test tests/__tests__/a11y-full.spec.js",
     "perf": "pnpm build && node scripts/perf.js",
     "perf:assert": "pnpm build && node scripts/perf.js --assert"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
+    "@dotenvx/dotenvx": "^1.75.1",
     "@playwright/test": "^1.65.0",
     "@resvg/resvg-js": "^2.6.2",
     "@solar-icons/js": "^2.3.4",

@@ -95,3 +95,15 @@ examples/
 RELEASE_POST.md
 # Local design references
 website/mockup/
+
+# Topic research local data (see website/TOPIC_RESEARCH.md)
+website/data/topics/keyword-planner/
+website/data/topics/transcripts/*
+!website/data/topics/transcripts/README.md
+website/data/topics/*.csv
+website/data/topics/backlog.md
+website/data/topics/community.json
+website/data/topics/serp-results.json
+website/data/topics/coverage.json
+website/data/topics/transcriptMentions.json
+website/data/topics/transcripts-candidates.json
