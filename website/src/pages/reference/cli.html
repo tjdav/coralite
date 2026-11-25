@@ -62,6 +62,8 @@ coralite build \
 
         <p><code>--assets</code> accepts <code>pkg:path:dest</code> for package files and <code>src:dest</code> for local paths that start with <code>.</code>, <code>..</code> or <code>/</code>. Multiple mappings can be passed in one flag, and a CLI mapping wins over a config asset with the same destination.</p>
 
+        <p>Incremental builds revalidate the files they expect to find. If a page, page script, stylesheet or generated asset is missing from the output directory, the next build regenerates it even when the source is unchanged. Use <code>--clean</code> to empty the output directory before building; it leaves the <code>.coralite/</code> build cache intact, which is safe and avoids unnecessary recompilation.</p>
+
         <h2 id="validation-options">Validation Options</h2>
         <p><code>coralite check</code> reports AST diagnostics and TypeScript errors together. Use the filters to focus on one concern in CI or in an editor loop.</p>
 
