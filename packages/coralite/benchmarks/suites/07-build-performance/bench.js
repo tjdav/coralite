@@ -51,11 +51,12 @@ async function writeFixture (fixture, rows) {
     return { title: record.title, revision: record.revision }
   }
 
-  export function preRenderKey ({ route }) {
-    return route.params.id + ':' + globalThis.__coralite__.bench.revisions[route.params.id]
+  export function shouldSkipRender ({ route, cachedKey }) {
+    const key = route.params.id + ':' + globalThis.__coralite__.bench.revisions[route.params.id]
+    return key === cachedKey
   }
 
-  export function cacheKey ({ route, state }) {
+  export function contentKey ({ route, state }) {
     return route.params.id + ':' + state.revision
   }
 </script>`

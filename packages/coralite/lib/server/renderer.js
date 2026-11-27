@@ -61,7 +61,7 @@ import { RESERVED_DOM_ATTRIBUTES } from '../shared/attributes.js'
 import { applyAstBoundAttribute } from '../shared/tags.js'
 import { resolvePageMetaDefaults } from '../shared/page-meta.js'
 import { checkFileChange, hash, MANIFEST_VERSION } from './utils/manifest.js'
-import { createPageCacheKey, createPreRenderKey } from './utils/cache-key.js'
+import { createPageCacheKey, shouldSkipPage } from './utils/cache-key.js'
 import {
   isCoraliteElement,
   isCoraliteNode,
@@ -2191,7 +2191,9 @@ export function createRenderer ({
         }
 
         const shouldResolveCacheKey = Boolean(targetRoute?.dynamic
-          || (pageExports && (typeof pageExports.cacheKey === 'function' || typeof pageExports.preRenderKey === 'function')))
+          || (pageExports && (typeof pageExports.contentKey === 'function'
+            || typeof pageExports.cacheKey === 'function'
+            || typeof pageExports.shouldSkipRender === 'function')))
         if (shouldResolveCacheKey) {
           pageCacheKey = await createPageCacheKey({
             pageExports,
@@ -3991,31 +3993,34 @@ export function createRenderer ({
         }
 
         const pageExports = pageItem.result?.page?.exports || pageItem.value?.page?.exports || pageItem.page?.exports || null
-        const hasPreRenderKey = Boolean(pageExports && typeof pageExports.preRenderKey === 'function')
+        const hasSkipPredicate = Boolean(pageExports && typeof pageExports.shouldSkipRender === 'function')
         const cacheEligible = Boolean(targetRoute?.dynamic
-          || (pageExports && (typeof pageExports.cacheKey === 'function' || hasPreRenderKey)))
+          || (pageExports && (typeof pageExports.contentKey === 'function'
+            || typeof pageExports.cacheKey === 'function'
+            || hasSkipPredicate)))
         const missingCacheKey = cacheEligible && Boolean(existingPageMeta) && existingPageMeta.cacheKey === undefined
 
         if (!isIncremental || changed || shouldRebuild || normalizedOptions.mode === 'development' || missingCacheKey) {
           tasksToRender.push(task)
-        } else if (hasPreRenderKey && existingPageMeta) {
-          let earlyKey = null
+        } else if (hasSkipPredicate && existingPageMeta) {
+          let skip = false
           try {
-            earlyKey = await createPreRenderKey({
+            skip = await shouldSkipPage({
               pageExports,
               route: targetRoute,
-              page: pageItem.result?.page || pageItem.page || null
+              page: pageItem.result?.page || pageItem.page || null,
+              cachedKey: existingPageMeta.cacheKey
             })
           } catch (error) {
             handleError({
               level: 'WARN',
-              message: `[Page Pre-Render Key Failed] ${targetOutPath}: ${error.message}`,
+              message: `[Page Skip Check Failed] ${targetOutPath}: ${error.message}`,
               error,
               pagePath: targetOutPath
             })
           }
 
-          if (earlyKey !== null && String(existingPageMeta.cacheKey) === String(earlyKey)) {
+          if (skip) {
             /** @type {CoraliteBuildResult} */
             const skippedResult = {
               type: 'page',
@@ -4031,9 +4036,9 @@ export function createRenderer ({
               sourcePath: pageItem.path?.pathname || pageItem.file?.pathname,
               route: targetRoute,
               status: 'skipped',
-              cacheKey: earlyKey
+              cacheKey: existingPageMeta.cacheKey
             }
-            newManifest.physical[targetOutPath].cacheKey = earlyKey
+            newManifest.physical[targetOutPath].cacheKey = existingPageMeta.cacheKey
             carryForwardPageMeta(newManifest.physical[targetOutPath], existingPageMeta)
             skippedPages.push(skippedResult)
           } else {

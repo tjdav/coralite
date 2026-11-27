@@ -349,8 +349,9 @@
  * @typedef {Object} CoralitePageConfig
  * @property {Function} [paths] - Enumerated route paths.
  * @property {Function} [server] - Server-side page data loader.
- * @property {Function} [cacheKey] - Computes the incremental cache key for each output.
- * @property {Function} [preRenderKey] - Computes a state-independent key before server() runs.
+ * @property {Function} [contentKey] - Computes the content identity of each output after server().
+ * @property {Function} [cacheKey] - Deprecated alias for contentKey().
+ * @property {Function} [shouldSkipRender] - Decides whether a cached output can be reused before server() runs.
  * @property {Object} [getters] - Isomorphic page getters.
  * @property {Object} [style] - Reactive page style definitions.
  * @property {Object} [provide] - W3C context providers.

@@ -1,8 +1,8 @@
 {
   "taskId": "bench-01-build-performance-after",
   "phase": "after",
-  "commit": "13cd3cd4",
-  "runAt": "2026-11-27T12:47:32.964Z",
+  "commit": "717aa43b",
+  "runAt": "2026-11-27T13:54:49.139Z",
   "machine": {
     "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
     "cores": 24,
@@ -12,29 +12,29 @@
   "results": {
     "build-performance": {
       "cold": {
-        "wallMs": 633.3,
+        "wallMs": 640.3,
         "serverCalls": 2000,
         "skippedPages": 0,
         "renderedPages": 2002,
-        "manifestBytes": 527636,
+        "manifestBytes": 525634,
         "outputHtmlFiles": 2002,
         "rows": 2000
       },
       "warm": {
-        "wallMs": 106.9,
+        "wallMs": 107.9,
         "serverCalls": 0,
         "skippedPages": 2002,
         "renderedPages": 0,
-        "manifestBytes": 527636,
+        "manifestBytes": 525634,
         "outputHtmlFiles": 2002,
         "rows": 2000
       },
       "oneRecordChange": {
-        "wallMs": 108.9,
+        "wallMs": 104.8,
         "serverCalls": 1,
         "skippedPages": 2001,
         "renderedPages": 1,
-        "manifestBytes": 527642,
+        "manifestBytes": 525640,
         "outputHtmlFiles": 2002,
         "rows": 2000
       }

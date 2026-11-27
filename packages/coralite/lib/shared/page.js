@@ -6,7 +6,8 @@ export const PAGE_EXPORTS = [
   'paths',
   'server',
   'cacheKey',
-  'preRenderKey',
+  'contentKey',
+  'shouldSkipRender',
   'meta',
   'getters',
   'style',
@@ -23,7 +24,8 @@ export const PAGE_HANDLER_EXPORTS = new Set([
   'paths',
   'server',
   'cacheKey',
-  'preRenderKey',
+  'contentKey',
+  'shouldSkipRender',
   'client',
   'onError'
 ])

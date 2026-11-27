@@ -43,12 +43,12 @@ function dataDrivenPage (options = {}) {
 }
 
 /**
- * Builds a dynamic page whose pre-render key is independent of server() state.
+ * Builds a dynamic page whose skip predicate is independent of server() state.
  *
- * @param {boolean} withCacheKey - Whether to also declare a state-based cacheKey().
+ * @param {string} keyHook - Name of the content-identity hook to declare.
  * @returns {string} Page HTML.
  */
-function preRenderKeyPage (withCacheKey) {
+function skipRenderPage (keyHook) {
   return `<!DOCTYPE html>
 <html><head><title>{{ title }}</title></head><body><h1>{{ title }}</h1></body></html>
 
@@ -63,8 +63,9 @@ function preRenderKeyPage (withCacheKey) {
       .map(function (file) { return { id: file.replace('.json', '') } })
   }
 
-  export function preRenderKey ({ route }) {
-    return route.params.id + ':' + globalThis.__coralite__.isrRevisions[route.params.id]
+  export function shouldSkipRender ({ route, cachedKey }) {
+    const key = route.params.id + ':' + globalThis.__coralite__.isrRevisions[route.params.id]
+    return key === cachedKey
   }
 
   export async function server ({ route, app }) {
@@ -72,11 +73,11 @@ function preRenderKeyPage (withCacheKey) {
     const path = await import('node:path')
     const raw = await fs.readFile(path.join(app.options.projectRoot, 'data', route.params.id + '.json'), 'utf8')
     const record = JSON.parse(raw)
-    globalThis.__coralite__.isrPreRenderKeyCalls++
+    globalThis.__coralite__.isrSkipCalls++
     return { title: record.title, revision: record.revision }
   }
 
-  ${withCacheKey ? 'export function cacheKey ({ route, state }) { return route.params.id + ":" + state.revision }' : ''}
+  export function ${keyHook} ({ route, state }) { return route.params.id + ':' + state.revision }
 </script>`
 }
 
@@ -336,7 +337,7 @@ describe('Route-aware incremental builds', () => {
     )
   })
 
-  it('skips server() on warm builds when preRenderKey() matches the stored key', async () => {
+  it('skips server() on warm builds when shouldSkipRender() returns true', async () => {
     await writeRecord('alpha', {
       title: 'Alpha v1',
       revision: 'r1'
@@ -352,18 +353,18 @@ describe('Route-aware incremental builds', () => {
       alpha: 'r1',
       beta: 'r1'
     }
-    coraliteGlobal.isrPreRenderKeyCalls = 0
+    coraliteGlobal.isrSkipCalls = 0
 
-    await project.writePage('posts/[id].html', preRenderKeyPage(true))
+    await project.writePage('posts/[id].html', skipRenderPage('contentKey'))
     const coralite = await project.createCoralite({ output: undefined })
 
     const first = await coralite.build()
     assert.equal(first.length, 2)
-    assert.equal(coraliteGlobal.isrPreRenderKeyCalls, 2)
+    assert.equal(coraliteGlobal.isrSkipCalls, 2)
 
     const warm = await coralite.build()
     assert.ok(warm.every(result => result.status === 'skipped'))
-    assert.equal(coraliteGlobal.isrPreRenderKeyCalls, 2)
+    assert.equal(coraliteGlobal.isrSkipCalls, 2)
 
     coraliteGlobal.isrRevisions.beta = 'r2'
     await writeRecord('beta', {
@@ -376,10 +377,10 @@ describe('Route-aware incremental builds', () => {
     assert.equal(alpha.status, 'skipped')
     assert.equal(beta.status, undefined)
     assert.ok(beta.content.includes('Beta v2'))
-    assert.equal(coraliteGlobal.isrPreRenderKeyCalls, 3)
+    assert.equal(coraliteGlobal.isrSkipCalls, 3)
   })
 
-  it('persists preRenderKey() as the cache key when cacheKey() is absent', async () => {
+  it('honors the legacy cacheKey() alias with shouldSkipRender()', async () => {
     await writeRecord('alpha', {
       title: 'Alpha v1',
       revision: 'r1'
@@ -388,17 +389,17 @@ describe('Route-aware incremental builds', () => {
 
     const coraliteGlobal = globalThis.__coralite__ || (globalThis.__coralite__ = {})
     coraliteGlobal.isrRevisions = { alpha: 'r1' }
-    coraliteGlobal.isrPreRenderKeyCalls = 0
+    coraliteGlobal.isrSkipCalls = 0
 
-    await project.writePage('posts/[id].html', preRenderKeyPage(false))
+    await project.writePage('posts/[id].html', skipRenderPage('cacheKey'))
     const coralite = await project.createCoralite({ output: undefined })
 
     await coralite.build()
-    assert.equal(coraliteGlobal.isrPreRenderKeyCalls, 1)
+    assert.equal(coraliteGlobal.isrSkipCalls, 1)
 
     const warm = await coralite.build()
     assert.equal(warm[0].status, 'skipped')
-    assert.equal(coraliteGlobal.isrPreRenderKeyCalls, 1)
+    assert.equal(coraliteGlobal.isrSkipCalls, 1)
   })
 
   it('accepts a revision alias for virtual pagination entries', async () => {
