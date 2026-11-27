@@ -38,7 +38,14 @@ const HEADER_LABELS = {
   initialHeapMB: 'Initial Heap (MB)',
   finalHeapMB: 'Final Heap (MB)',
   netRetentionMB: 'Net Retention (MB)',
-  status: 'Status'
+  status: 'Status',
+  wallMs: 'Wall (ms)',
+  serverCalls: 'server() Calls',
+  skippedPages: 'Skipped Pages',
+  renderedPages: 'Rendered Pages',
+  manifestBytes: 'Manifest (bytes)',
+  outputHtmlFiles: 'Output HTML',
+  rows: 'Rows'
 }
 
 /**
@@ -148,7 +155,13 @@ export function generateMarkdownTable (suiteName, suiteResults) {
   const metrics = Object.keys(firstVal)
   const displayHeaders = metrics.map(m => HEADER_LABELS[m] || m)
 
-  const firstColHeader = suiteName === 'ssrThroughput' || suiteName === 'ssr-throughput' ? 'Workload' : 'Framework'
+  let firstColHeader = 'Framework'
+  if (suiteName === 'ssrThroughput' || suiteName === 'ssr-throughput') {
+    firstColHeader = 'Workload'
+  }
+  if (suiteName === 'build-performance') {
+    firstColHeader = 'Scenario'
+  }
 
   md += `| ${firstColHeader} | ${displayHeaders.join(' | ')} |\n`
   md += `| ${'--- | '.repeat(metrics.length + 1).slice(0, -1)}\n`
