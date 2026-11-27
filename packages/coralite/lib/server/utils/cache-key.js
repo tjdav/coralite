@@ -107,6 +107,46 @@ export function stableSerialize (value, seen = new WeakSet()) {
 }
 
 /**
+ * Resolves a state-independent pre-render cache key.
+ *
+ * @param {Object} options - Pre-render key options.
+ * @param {any} [options.pageExports] - Evaluated page exports.
+ * @param {any} [options.route] - Concrete route for this output.
+ * @param {any} [options.page] - Page context.
+ * @returns {Promise<string|null>} Resolved key, or null when no hook is declared.
+ * @throws {CoraliteError} CORALITE-E404 when a custom key returns an invalid type.
+ */
+export async function createPreRenderKey ({ pageExports = null, route = null, page = null } = {}) {
+  if (!pageExports || typeof pageExports.preRenderKey !== 'function') {
+    return null
+  }
+
+  const value = await pageExports.preRenderKey({
+    route,
+    page
+  })
+
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    /** @type {string} */
+    let received = typeof value
+    if (value === null) {
+      received = 'null'
+    } else if (Array.isArray(value)) {
+      received = 'array'
+    }
+    throw new CoraliteError(
+      `Page preRenderKey() must return a string or number, received ${received}.`,
+      {
+        code: 'CORALITE-E404',
+        filePath: page?.file?.pathname
+      }
+    )
+  }
+
+  return String(value)
+}
+
+/**
  * Creates the page-state snapshot used by the default cache key.
  *
  * The framework `page` object is excluded because it holds exports and file
@@ -140,8 +180,10 @@ function createStateSnapshot (state, page) {
  * Resolves the incremental cache key for a page output.
  *
  * A page-level `cacheKey()` handler replaces the default key entirely. Without
- * one, the key is an xxHash of the sorted route parameters, route path and
- * pattern, and the stable serialization of resolved page state.
+ * one, a `preRenderKey()` handler is used when declared, so state-independent
+ * keys stay stable across builds. Otherwise the key is an xxHash of the sorted
+ * route parameters, route path and pattern, and the stable serialization of
+ * resolved page state.
  *
  * @param {Object} options - Cache-key options.
  * @param {any} [options.pageExports] - Evaluated page exports.
@@ -176,6 +218,15 @@ export async function createPageCacheKey ({ pageExports = null, route = null, st
     }
 
     return String(value)
+  }
+
+  const preRenderKey = await createPreRenderKey({
+    pageExports,
+    route,
+    page
+  })
+  if (preRenderKey !== null) {
+    return preRenderKey
   }
 
   return hash(stableSerialize({

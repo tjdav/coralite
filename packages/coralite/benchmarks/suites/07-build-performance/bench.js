@@ -51,6 +51,10 @@ async function writeFixture (fixture, rows) {
     return { title: record.title, revision: record.revision }
   }
 
+  export function preRenderKey ({ route }) {
+    return route.params.id + ':' + globalThis.__coralite__.bench.revisions[route.params.id]
+  }
+
   export function cacheKey ({ route, state }) {
     return route.params.id + ':' + state.revision
   }
@@ -191,7 +195,10 @@ function summarize (samples) {
 export async function runBuildPerformanceSuite ({ rows = 2000 } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'coralite-build-bench-'))
   const coraliteGlobal = globalThis.__coralite__ || (globalThis.__coralite__ = {})
-  coraliteGlobal.bench = { serverCalls: 0 }
+  coraliteGlobal.bench = { serverCalls: 0, revisions: {} }
+  for (let index = 0; index < rows; index++) {
+    coraliteGlobal.bench.revisions[`item-${String(index).padStart(5, '0')}`] = 'r1'
+  }
 
   const fixture = {
     root,
@@ -218,6 +225,7 @@ export async function runBuildPerformanceSuite ({ rows = 2000 } = {}) {
       const record = JSON.parse(await fs.readFile(recordPath, 'utf8'))
       record.revision = `change-${iteration}`
       await fs.writeFile(recordPath, JSON.stringify(record))
+      coraliteGlobal.bench.revisions['item-00000'] = record.revision
       changeSamples.push(await runBuild(fixture))
     }
 

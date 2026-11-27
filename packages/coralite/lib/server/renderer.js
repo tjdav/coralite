@@ -61,7 +61,7 @@ import { RESERVED_DOM_ATTRIBUTES } from '../shared/attributes.js'
 import { applyAstBoundAttribute } from '../shared/tags.js'
 import { resolvePageMetaDefaults } from '../shared/page-meta.js'
 import { checkFileChange, hash, MANIFEST_VERSION } from './utils/manifest.js'
-import { createPageCacheKey } from './utils/cache-key.js'
+import { createPageCacheKey, createPreRenderKey } from './utils/cache-key.js'
 import {
   isCoraliteElement,
   isCoraliteNode,
@@ -2190,7 +2190,8 @@ export function createRenderer ({
           }
         }
 
-        const shouldResolveCacheKey = Boolean(targetRoute?.dynamic || (pageExports && typeof pageExports.cacheKey === 'function'))
+        const shouldResolveCacheKey = Boolean(targetRoute?.dynamic
+          || (pageExports && (typeof pageExports.cacheKey === 'function' || typeof pageExports.preRenderKey === 'function')))
         if (shouldResolveCacheKey) {
           pageCacheKey = await createPageCacheKey({
             pageExports,
@@ -3990,11 +3991,55 @@ export function createRenderer ({
         }
 
         const pageExports = pageItem.result?.page?.exports || pageItem.value?.page?.exports || pageItem.page?.exports || null
-        const cacheEligible = Boolean(targetRoute?.dynamic || (pageExports && typeof pageExports.cacheKey === 'function'))
+        const hasPreRenderKey = Boolean(pageExports && typeof pageExports.preRenderKey === 'function')
+        const cacheEligible = Boolean(targetRoute?.dynamic
+          || (pageExports && (typeof pageExports.cacheKey === 'function' || hasPreRenderKey)))
         const missingCacheKey = cacheEligible && Boolean(existingPageMeta) && existingPageMeta.cacheKey === undefined
 
         if (!isIncremental || changed || shouldRebuild || normalizedOptions.mode === 'development' || missingCacheKey) {
           tasksToRender.push(task)
+        } else if (hasPreRenderKey && existingPageMeta) {
+          let earlyKey = null
+          try {
+            earlyKey = await createPreRenderKey({
+              pageExports,
+              route: targetRoute,
+              page: pageItem.result?.page || pageItem.page || null
+            })
+          } catch (error) {
+            handleError({
+              level: 'WARN',
+              message: `[Page Pre-Render Key Failed] ${targetOutPath}: ${error.message}`,
+              error,
+              pagePath: targetOutPath
+            })
+          }
+
+          if (earlyKey !== null && String(existingPageMeta.cacheKey) === String(earlyKey)) {
+            /** @type {CoraliteBuildResult} */
+            const skippedResult = {
+              type: 'page',
+              // @ts-ignore
+              path: {
+                ...pageItem.path,
+                pathname: targetOutPath,
+                dirname: dirname(targetOutPath),
+                filename: basename(targetOutPath),
+                pages: normalizedOptions.path.pages,
+                components: normalizedOptions.path.components
+              },
+              sourcePath: pageItem.path?.pathname || pageItem.file?.pathname,
+              route: targetRoute,
+              status: 'skipped',
+              cacheKey: earlyKey
+            }
+            newManifest.physical[targetOutPath].cacheKey = earlyKey
+            carryForwardPageMeta(newManifest.physical[targetOutPath], existingPageMeta)
+            skippedPages.push(skippedResult)
+          } else {
+            task.incrementalCache = { existingMeta: existingPageMeta }
+            tasksToRender.push(task)
+          }
         } else if (cacheEligible && existingPageMeta) {
           task.incrementalCache = { existingMeta: existingPageMeta }
           tasksToRender.push(task)

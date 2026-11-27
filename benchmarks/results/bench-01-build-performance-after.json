@@ -1,0 +1,43 @@
+{
+  "taskId": "bench-01-build-performance-after",
+  "phase": "after",
+  "commit": "13cd3cd4",
+  "runAt": "2026-11-27T12:47:32.964Z",
+  "machine": {
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "cores": 24,
+    "os": "Linux 7.0.0-44-generic",
+    "nodeVersion": "v24.16.0"
+  },
+  "results": {
+    "build-performance": {
+      "cold": {
+        "wallMs": 633.3,
+        "serverCalls": 2000,
+        "skippedPages": 0,
+        "renderedPages": 2002,
+        "manifestBytes": 527636,
+        "outputHtmlFiles": 2002,
+        "rows": 2000
+      },
+      "warm": {
+        "wallMs": 106.9,
+        "serverCalls": 0,
+        "skippedPages": 2002,
+        "renderedPages": 0,
+        "manifestBytes": 527636,
+        "outputHtmlFiles": 2002,
+        "rows": 2000
+      },
+      "oneRecordChange": {
+        "wallMs": 108.9,
+        "serverCalls": 1,
+        "skippedPages": 2001,
+        "renderedPages": 1,
+        "manifestBytes": 527642,
+        "outputHtmlFiles": 2002,
+        "rows": 2000
+      }
+    }
+  }
+}
