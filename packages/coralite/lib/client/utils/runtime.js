@@ -260,6 +260,20 @@ export function generateClientRuntime ({
     const processed = typeof formatCoraliteHTML === 'function'
       ? formatCoraliteHTML(html, instanceId, ${shouldStripTestId})
       : html;
+
+    if (!processed.includes('<')) return processed;
+
+    if (!coralite.dom._customElementPattern) {
+      const tags = Object.keys(componentManifest);
+      coralite.dom._customElementPattern = tags.length
+        ? new RegExp('<' + tags.map((tag) => tag.toLowerCase()).join('|') + '(?=[\\\\s/>])', 'i')
+        : null;
+    }
+
+    if (!coralite.dom._customElementPattern || !coralite.dom._customElementPattern.test(processed)) {
+      return processed;
+    }
+
     const matches = processed.matchAll(/<([a-zA-Z0-9-]+)/g);
     for (const match of matches) {
       const tag = match[1].toLowerCase();
