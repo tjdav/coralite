@@ -177,6 +177,10 @@ export function formatCoraliteHTML (html, instanceId, shouldStripTestId = false)
     return html
   }
 
+  if (!html.includes('{{') && !html.includes('ref') && !html.includes('test')) {
+    return html
+  }
+
   const sanitizedHtml = sanitizeTokenAttributes(html)
 
   if (!instanceId && !shouldStripTestId && !/test/i.test(sanitizedHtml)) {

@@ -5,7 +5,8 @@ import { generateClientRuntime } from '../../../lib/client/utils/runtime.js'
 import { formatCoraliteHTML } from '../../../lib/client/utils/inject.js'
 import serialize from 'serialize-javascript'
 
-function getProcessHTML (mode) {
+function getProcessHTML (mode, componentManifest = {}, loadComponent = () => {
+}) {
   const runtimeCode = generateClientRuntime({
     base: '/',
     sharedChunkPath: 'shared.js',
@@ -30,12 +31,8 @@ function getProcessHTML (mode) {
     mode,
     dom: {}
   }
-  const componentManifestMock = {}
-  const loadComponentMock = () => {
-  }
-
   const run = new Function('coralite', 'componentManifest', 'loadComponent', 'formatCoraliteHTML', `${fnCode}\nreturn coralite.dom.processHTML;`)
-  return run(coralite, componentManifestMock, loadComponentMock, formatCoraliteHTML)
+  return run(coralite, componentManifest, loadComponent, formatCoraliteHTML)
 }
 
 describe('generateClientRuntime inlinedStyles initialization', () => {
@@ -231,6 +228,23 @@ describe('client-side processHTML', () => {
       const output3 = processHTML(input3, 'comp-0')
       assert.strictEqual(output3, '<button ref="comp-0__myBtn" data-coralite-owner="comp-0">Click</button>')
     }
+  })
+
+  it('returns plain HTML unchanged when there are no tokens, refs or test attributes', () => {
+    const html = '<tr data-id="1" class="row"><td class="lbl">Item 1</td></tr>'
+    assert.strictEqual(formatCoraliteHTML(html, 'comp-0'), html)
+  })
+
+  it('only loads registered custom elements present in the HTML', () => {
+    const loaded = []
+    const processHTML = getProcessHTML('production', { 'x-widget': { js: 'widget.js' } }, (tag) => loaded.push(tag))
+
+    const plain = '<tr data-id="1"><td class="lbl">Item 1</td></tr>'
+    assert.strictEqual(processHTML(plain, 'comp-0'), plain)
+    assert.deepStrictEqual(loaded, [])
+
+    assert.strictEqual(processHTML('<x-widget></x-widget>', 'comp-0'), '<x-widget></x-widget>')
+    assert.deepStrictEqual(loaded, ['x-widget'])
   })
 })
 
