@@ -4,6 +4,7 @@ import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import { createCoralite } from '../../../lib/index.js'
 import { definePlugin } from '../../../lib/server/plugin/define.js'
+import { calculateMedian } from '../../utils/stats.js'
 
 const pageSource = `<!DOCTYPE html>
 <html lang="en"><head><title>{{ title }}</title></head><body><h1>{{ title }}</h1></body></html>
@@ -82,16 +83,36 @@ async function measureStrategy ({ root, strategy }) {
  *
  * @param {Object} options - Suite options.
  * @param {string} [options.mode] - Strategy to run: plain, locales or all.
+ * @param {number} [options.iterations] - Samples per strategy.
  * @returns {Promise<Object>} Strategy metrics.
  */
-export async function runLocaleChunksSuite ({ mode = 'all' } = {}) {
+export async function runLocaleChunksSuite ({ mode = 'all', iterations = 3 } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'coralite-locale-bench-'))
   const strategies = mode === 'all' ? ['plain', 'locales'] : [mode]
+
+  const summarize = (samples) => {
+    const median = key => +calculateMedian(samples.map(sample => sample[key])).toFixed(1)
+    const spread = key => +(Math.max(...samples.map(sample => sample[key])) - Math.min(...samples.map(sample => sample[key]))).toFixed(1)
+    return {
+      warmMs: median('warmMs'),
+      warmSpreadMs: spread('warmMs'),
+      editMs: median('editMs'),
+      editSpreadMs: spread('editMs'),
+      renderedOnEdit: Math.round(median('renderedOnEdit')),
+      skippedOnEdit: Math.round(median('skippedOnEdit')),
+      runtimeChunkStable: samples.every(sample => sample.runtimeChunkStable),
+      enChunkStable: samples.every(sample => sample.enChunkStable)
+    }
+  }
 
   try {
     const results = {}
     for (const strategy of strategies) {
-      results[strategy] = await measureStrategy({ root, strategy })
+      const samples = []
+      for (let iteration = 0; iteration < iterations; iteration++) {
+        samples.push(await measureStrategy({ root: path.join(root, `${strategy}-${iteration}`), strategy }))
+      }
+      results[strategy] = summarize(samples)
     }
     return results
   } finally {

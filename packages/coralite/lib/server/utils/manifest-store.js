@@ -159,6 +159,10 @@ export function createManifestStore ({
   async function save (manifest) {
     if (shardCount === 1) {
       await writeJsonAtomic(legacyPath, manifest)
+      await rm(shardDir, {
+        recursive: true,
+        force: true
+      })
       return
     }
 

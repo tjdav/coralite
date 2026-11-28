@@ -5,16 +5,16 @@ import { performance } from 'node:perf_hooks'
 import { createCoralite } from '../../../lib/index.js'
 import { calculateMedian } from '../../utils/stats.js'
 
-const ITERATIONS = 3
 
 /**
  * Writes the fixture files for a synthetic dynamic-route site.
  *
  * @param {Object} fixture - Fixture directories.
  * @param {number} rows - Number of dynamic records to generate.
+ * @param {string} variant - legacy (cacheKey only) or current (skip predicate).
  * @returns {Promise<void>} Resolves when all fixture files exist.
  */
-async function writeFixture (fixture, rows) {
+async function writeFixture (fixture, rows, variant) {
   await fs.mkdir(fixture.dataDir, { recursive: true })
   await fs.mkdir(fixture.pagesDir, { recursive: true })
   await fs.mkdir(fixture.componentsDir, { recursive: true })
@@ -24,6 +24,19 @@ async function writeFixture (fixture, rows) {
     const record = { title: `Item ${index}`, revision: 'r1' }
     await fs.writeFile(path.join(fixture.dataDir, `${id}.json`), JSON.stringify(record))
   }
+
+  const keyHooks = variant === 'legacy'
+    ? `export function cacheKey ({ route, state }) {
+    return route.params.id + ':' + state.revision
+  }`
+    : `export function shouldSkipRender ({ route, previousContentKey }) {
+    const key = route.params.id + ':' + globalThis.__coralite__.bench.revisions[route.params.id]
+    return key === previousContentKey
+  }
+
+  export function contentKey ({ route, state }) {
+    return route.params.id + ':' + state.revision
+  }`
 
   const pageSource = `<!DOCTYPE html>
 <html lang="en">
@@ -51,14 +64,7 @@ async function writeFixture (fixture, rows) {
     return { title: record.title, revision: record.revision }
   }
 
-  export function shouldSkipRender ({ route, previousContentKey }) {
-    const key = route.params.id + ':' + globalThis.__coralite__.bench.revisions[route.params.id]
-    return key === previousContentKey
-  }
-
-  export function contentKey ({ route, state }) {
-    return route.params.id + ':' + state.revision
-  }
+  ${keyHooks}
 </script>`
 
   await fs.mkdir(path.join(fixture.pagesDir, 'products'), { recursive: true })
@@ -176,8 +182,11 @@ async function runBuild (fixture) {
 function summarize (samples) {
   const median = key => +calculateMedian(samples.map(sample => sample[key])).toFixed(1)
 
+  const wallValues = samples.map(sample => sample.wallMs)
+
   return {
     wallMs: median('wallMs'),
+    wallSpreadMs: +(Math.max(...wallValues) - Math.min(...wallValues)).toFixed(1),
     serverCalls: Math.round(median('serverCalls')),
     skippedPages: Math.round(median('skippedPages')),
     renderedPages: Math.round(median('renderedPages')),
@@ -191,9 +200,11 @@ function summarize (samples) {
  *
  * @param {Object} options - Suite options.
  * @param {number} [options.rows] - Number of dynamic records to generate.
+ * @param {number} [options.iterations] - Warm and change samples to collect.
+ * @param {string} [options.variant] - legacy or current page hook variant.
  * @returns {Promise<Object>} Scenario metrics keyed by scenario name.
  */
-export async function runBuildPerformanceSuite ({ rows = 2000 } = {}) {
+export async function runBuildPerformanceSuite ({ rows = 2000, iterations = 3, variant = 'current' } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'coralite-build-bench-'))
   const coraliteGlobal = globalThis.__coralite__ || (globalThis.__coralite__ = {})
   coraliteGlobal.bench = { serverCalls: 0, revisions: {} }
@@ -211,17 +222,17 @@ export async function runBuildPerformanceSuite ({ rows = 2000 } = {}) {
   }
 
   try {
-    await writeFixture(fixture, rows)
+    await writeFixture(fixture, rows, variant)
 
     const cold = await runBuild(fixture)
 
     const warmSamples = []
-    for (let iteration = 0; iteration < ITERATIONS; iteration++) {
+    for (let iteration = 0; iteration < iterations; iteration++) {
       warmSamples.push(await runBuild(fixture))
     }
 
     const changeSamples = []
-    for (let iteration = 0; iteration < ITERATIONS; iteration++) {
+    for (let iteration = 0; iteration < iterations; iteration++) {
       const recordPath = path.join(fixture.dataDir, 'item-00000.json')
       const record = JSON.parse(await fs.readFile(recordPath, 'utf8'))
       record.revision = `change-${iteration}`

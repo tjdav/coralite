@@ -2,12 +2,10 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
-import { createManifestStore, createEmptyManifest } from '../../../lib/server/utils/manifest-store.js'
 import { calculateMedian } from '../../utils/stats.js'
 
 const ENTRIES = 45000
 const SHARDS = 16
-const ITERATIONS = 3
 
 /**
  * Creates a manifest shaped like a large content site's incremental cache.
@@ -16,7 +14,13 @@ const ITERATIONS = 3
  * @returns {Object} A populated manifest.
  */
 function createLargeManifest (entries) {
-  const manifest = createEmptyManifest()
+  const manifest = {
+    version: 2,
+    physical: {},
+    virtual: {},
+    dependencies: {},
+    components: {}
+  }
   const dependencies = ['x-card', 'x-badge', 'x-price']
 
   for (let index = 0; index < entries; index++) {
@@ -56,9 +60,10 @@ function createLargeManifest (entries) {
  * @param {string} options.root - Temporary directory root.
  * @param {string} options.strategy - Strategy name.
  * @param {Object} options.manifest - Manifest to persist.
+ * @param {number} options.iterations - Samples to collect.
  * @returns {Promise<Object>} Median load/save times and total bytes.
  */
-async function measureStrategy ({ root, strategy, manifest }) {
+async function measureStrategy ({ root, strategy, manifest, iterations }) {
   const cacheDir = path.join(root, strategy)
   await fs.mkdir(cacheDir, { recursive: true })
 
@@ -66,7 +71,7 @@ async function measureStrategy ({ root, strategy, manifest }) {
   const saveSamples = []
   let bytes = 0
 
-  for (let iteration = 0; iteration < ITERATIONS; iteration++) {
+  for (let iteration = 0; iteration < iterations; iteration++) {
     if (strategy === 'legacy') {
       const filePath = path.join(cacheDir, 'manifest.json')
       let started = performance.now()
@@ -77,6 +82,7 @@ async function measureStrategy ({ root, strategy, manifest }) {
       JSON.parse(await fs.readFile(filePath, 'utf8'))
       loadSamples.push(performance.now() - started)
     } else {
+      const { createManifestStore } = await import('../../../lib/server/utils/manifest-store.js')
       const store = createManifestStore({ cacheDir, shards: strategy === 'sharded' ? SHARDS : 1 })
       let started = performance.now()
       await store.save(manifest)
@@ -98,7 +104,9 @@ async function measureStrategy ({ root, strategy, manifest }) {
 
   return {
     loadMs: +calculateMedian(loadSamples).toFixed(1),
+    loadSpreadMs: +(Math.max(...loadSamples) - Math.min(...loadSamples)).toFixed(1),
     saveMs: +calculateMedian(saveSamples).toFixed(1),
+    saveSpreadMs: +(Math.max(...saveSamples) - Math.min(...saveSamples)).toFixed(1),
     bytes,
     entries: ENTRIES,
     shards: strategy === 'sharded' ? SHARDS : 1
@@ -110,9 +118,10 @@ async function measureStrategy ({ root, strategy, manifest }) {
  *
  * @param {Object} options - Suite options.
  * @param {string} [options.store] - Strategy to run: legacy, compact, sharded or all.
+ * @param {number} [options.iterations] - Samples per strategy.
  * @returns {Promise<Object>} Strategy metrics.
  */
-export async function runManifestStoreSuite ({ store = 'all' } = {}) {
+export async function runManifestStoreSuite ({ store = 'all', iterations = 3 } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'coralite-manifest-bench-'))
   const manifest = createLargeManifest(ENTRIES)
   const strategies = store === 'all' ? ['legacy', 'compact', 'sharded'] : [store]
@@ -120,7 +129,7 @@ export async function runManifestStoreSuite ({ store = 'all' } = {}) {
   try {
     const results = {}
     for (const strategy of strategies) {
-      results[strategy] = await measureStrategy({ root, strategy, manifest })
+      results[strategy] = await measureStrategy({ root, strategy, manifest, iterations })
     }
     return results
   } finally {

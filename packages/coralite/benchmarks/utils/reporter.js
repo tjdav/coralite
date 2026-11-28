@@ -54,7 +54,12 @@ const HEADER_LABELS = {
   renderedOnEdit: 'Rendered On Edit',
   skippedOnEdit: 'Skipped On Edit',
   runtimeChunkStable: 'Runtime Stable',
-  enChunkStable: 'EN Chunk Stable'
+  enChunkStable: 'EN Chunk Stable',
+  wallSpreadMs: 'Wall Spread (ms)',
+  loadSpreadMs: 'Load Spread (ms)',
+  saveSpreadMs: 'Save Spread (ms)',
+  warmSpreadMs: 'Warm Spread (ms)',
+  editSpreadMs: 'Edit Spread (ms)'
 }
 
 /**

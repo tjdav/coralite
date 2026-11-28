@@ -49,24 +49,26 @@ Selecting a prebuilt chunk inside `initPlugins` (as was considered for Issue 4) 
 
 1. **Worker pool around `_renderSinglePage`** — rejected. Requires re-creating the framework context in every worker, marshalling every per-page hook back to the parent, replaying `trackOutputFile`/`registerComponent` side effects, and merging results deterministically. Effectively a rewrite of the renderer with a high risk of byte drift.
 2. **Pure leaf work in workers** — `formatComponentCss` (`lib/server/utils/style.js:509-562`), `transformNode` (`lib/server/parser/html.js:21-27`), `generateClientRuntime` and hashing are pure and cloneable, but they are already cached or too small to matter. No meaningful wall-clock reduction.
-3. **Process sharding via `dynamicPaths`** — plausible but bounded: use `buildOptions.dynamicPaths` (`renderer.js:3375-3393`) to split enumerated outputs across separate full builds in child processes, with hooks disabled inside workers and a deterministic parent-side merge of `dist/` and manifest entries. Static pages, hooks, asset writes and `onAfterBuild` stay in the parent. Risks: plugins that aggregate in `onAfterBuild` see partial results, plugin contexts with external handles must be recreated per worker, and merge order must be fixed to keep output bytes identical. This is a separate project, not a config flag.
+3. **Process sharding via `dynamicPaths`** — viable but bounded: use `buildOptions.dynamicPaths` (filter at `renderer.js:3839-3881`) to split enumerated outputs across separate full builds in child processes, with aggregate hooks run only in the parent and a deterministic parent-side merge of `dist/` and manifest entries. Each child calls `createCoralite()` afresh, so no live context crosses the process boundary. Static pages are built unconditionally by every child, so this only helps dynamic-route-heavy sites. Risks: plugins that aggregate across pages in `onAfterBuild` see partial results, plugin contexts with external handles must be recreated per worker, and merge order must be fixed to keep output bytes identical. This is a separate project, not a config flag.
 
 ## Recommendation
 
-Do not implement `build.workers` as described. The performance work that actually paid off is already in place on this branch:
+Do not implement `build.workers` as a config flag. The performance work already in place mainly helps *incremental* builds:
 
-- `perf(renderer): skip SSR work for unchanged cached pages` — warm builds call `server()` zero times for unchanged pages.
-- `perf(manifest): add sharded incremental manifest storage` — compact default, optional hash-bucketed shards.
-- `perf(plugin): partition locale config into hashed chunks` — a dictionary edit rebuilds only its locale.
+- `perf(renderer): skip SSR work for unchanged cached pages` — pages that declare `shouldSkipRender` avoid `server()` on warm builds.
+- `perf(manifest): add sharded incremental manifest storage` — the compact single-file default is the measured win; sharded writes are opt-in and slower in current benchmarks.
+- `perf(plugin): partition locale config into hashed chunks` — edits to `client.config.locales` rebuild only the matching locale.
 
-Before revisiting process-level parallelism, reproduce the original bottleneck against current code. The before/after result files under `benchmarks/results/` (`bench-01-*`, `bench-03-*`, `bench-04-*`) are the baseline for that decision.
+None of these improve *cold* builds. Before revisiting process-level parallelism, re-measure the cold-build bottleneck with an auditable benchmark: the result files under `benchmarks/results/` were produced before provenance hashing was added and cannot be reproduced from the commits they name.
 
-Any future attempt must be gated by:
+If a prototype is attempted, start with an internal `shard: { index, total, paths }` build option, enumerate dynamic params once in the orchestrator, spawn children with disjoint `dynamicPaths`, use a per-shard `cacheDir`, and merge outputs, manifest entries and results deterministically in the parent. Validate with full-dist byte equality, not just in-memory `content`.
 
-- `tests/unit/lib/concurrent-build.spec.js:60-91` — byte-identical output at different concurrency levels;
+Any attempt must be gated by:
+
+- `tests/unit/lib/concurrent-build.spec.js:60-91` — byte-identical output at different concurrency levels (extend to dynamic pages and full dist trees);
 - `tests/unit/lib/concurrent-build.spec.js:93-160` and `:209-298` — hook order, state isolation and session lifetime;
 - `tests/unit/lib/coralite.spec.js:75-108`, `:276-347` — `onBeforeBuild` option handling and `onAfterBuild` results.
 
 ## Conclusion
 
-Issue 2 is **blocked by architecture**, not by a missing config option. No framework code was changed for it.
+The *worker-pool-around-`_renderSinglePage`* design is blocked by architecture. Issue 2 itself should be reopened as a bounded process-sharding prototype. No framework code was changed for it.

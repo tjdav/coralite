@@ -31,7 +31,7 @@ pnpm bench:internal --suite=build-performance --rows=2000 --task-id=bench-01-bui
 Manifest storage comparison (the `legacy` strategy reproduces the previous pretty-printed single file):
 
 ```sh
-pnpm bench:internal --suite=manifest-store --store=sharded --task-id=bench-03-manifest-store-after --phase=after --save
+pnpm bench:internal --suite=manifest-store --store=all --task-id=bench-03-manifest-store-after --phase=after --save
 ```
 
 ### Suites removed in rc.6

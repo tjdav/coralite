@@ -219,7 +219,12 @@ export async function createCoralite ({
     plugins: uniquePlugins,
     concurrency: typeof concurrency === 'number' && concurrency > 0 ? Math.floor(concurrency) : undefined,
     manifestShards: Number.isInteger(manifestShards) && manifestShards > 0 ? manifestShards : undefined,
-    i18n,
+    i18n: i18n && typeof i18n === 'object'
+      ? {
+        ...i18n,
+        defaultLocale: i18n.defaultLocale || 'en'
+      }
+      : undefined,
     assets,
     externalStyles,
     styles,

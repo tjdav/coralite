@@ -111,6 +111,22 @@ describe('Manifest Store', () => {
     assert.ok(files.some(name => name.startsWith('shard-')))
   })
 
+  it('does not resurrect stale shards after switching shard counts', async () => {
+    const cacheDir = join(project.testDir, 'switch')
+    await createManifestStore({
+      cacheDir,
+      shards: 4
+    }).save(populatedManifest(4))
+    const current = populatedManifest(2)
+    await createManifestStore({ cacheDir }).save(current)
+
+    const reloaded = await createManifestStore({
+      cacheDir,
+      shards: 4
+    }).load()
+    assert.deepEqual(reloaded, current)
+  })
+
   it('starts fresh when the stored manifest version is stale', async () => {
     const cacheDir = join(project.testDir, 'stale')
     const stale = populatedManifest(2)
