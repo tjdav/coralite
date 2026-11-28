@@ -51,9 +51,9 @@ async function writeFixture (fixture, rows) {
     return { title: record.title, revision: record.revision }
   }
 
-  export function shouldSkipRender ({ route, cachedKey }) {
+  export function shouldSkipRender ({ route, previousContentKey }) {
     const key = route.params.id + ':' + globalThis.__coralite__.bench.revisions[route.params.id]
-    return key === cachedKey
+    return key === previousContentKey
   }
 
   export function contentKey ({ route, state }) {

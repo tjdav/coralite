@@ -63,9 +63,9 @@ function skipRenderPage (keyHook) {
       .map(function (file) { return { id: file.replace('.json', '') } })
   }
 
-  export function shouldSkipRender ({ route, cachedKey }) {
+  export function shouldSkipRender ({ route, previousContentKey }) {
     const key = route.params.id + ':' + globalThis.__coralite__.isrRevisions[route.params.id]
-    return key === cachedKey
+    return key === previousContentKey
   }
 
   export async function server ({ route, app }) {

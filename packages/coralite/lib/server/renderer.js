@@ -4009,7 +4009,7 @@ export function createRenderer ({
               pageExports,
               route: targetRoute,
               page: pageItem.result?.page || pageItem.page || null,
-              cachedKey: existingPageMeta.cacheKey
+              previousContentKey: existingPageMeta.cacheKey
             })
           } catch (error) {
             handleError({

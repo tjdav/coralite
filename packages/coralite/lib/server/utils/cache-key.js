@@ -113,11 +113,11 @@ export function stableSerialize (value, seen = new WeakSet()) {
  * @param {any} [options.pageExports] - Evaluated page exports.
  * @param {any} [options.route] - Concrete route for this output.
  * @param {any} [options.page] - Page context.
- * @param {any} [options.cachedKey] - Content key stored in the manifest.
+ * @param {any} [options.previousContentKey] - Content key stored by the previous build.
  * @returns {Promise<boolean>} True when the cached output can be reused.
  * @throws {CoraliteError} CORALITE-E404 when the predicate returns a non-boolean.
  */
-export async function shouldSkipPage ({ pageExports = null, route = null, page = null, cachedKey } = {}) {
+export async function shouldSkipPage ({ pageExports = null, route = null, page = null, previousContentKey } = {}) {
   if (!pageExports || typeof pageExports.shouldSkipRender !== 'function') {
     return false
   }
@@ -125,7 +125,7 @@ export async function shouldSkipPage ({ pageExports = null, route = null, page =
   const value = await pageExports.shouldSkipRender({
     route,
     page,
-    cachedKey
+    previousContentKey
   })
 
   if (typeof value !== 'boolean') {

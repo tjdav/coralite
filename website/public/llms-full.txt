@@ -1577,3 +1577,10 @@ await updateComplete
 ```
 
 Never rely on arbitrary `setTimeout` or `requestAnimationFrame` for DOM synchronization.
+
+### 20.6 Build-Time Cache Hooks
+Incremental builds identify each dynamic output with a content key stored in the manifest. By default that key hashes the route params, path, pattern and the state resolved by `server()`. Declare `contentKey({ route, state })` (a string or number) to replace the default when state is large, non-serializable or incomplete; `cacheKey()` is a deprecated alias with identical behavior.
+
+A warm build still calls `server()` for every cache-eligible output even when every output is skipped. Declare `shouldSkipRender({ route, page, previousContentKey })` to decide before rendering: `previousContentKey` is the key recorded by the last successful build, and returning `true` reuses the cached output without running `server()`, getters or component rendering. Returning `false` takes the normal build path.
+
+The predicate cannot see state resolved by `server()`, so read every input that can change the output from the route or page context, and declare `contentKey()` with the same key formula so the stored value can match. The handler may be asynchronous and must return a boolean; other return types raise `CORALITE-E404`.
