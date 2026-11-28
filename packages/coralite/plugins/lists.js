@@ -101,7 +101,7 @@ export const listsPlugin = definePlugin({
           }
 
           if (itemsMap.has(k)) {
-            const idx = itemsArray.findIndex((it) => getKey(it) === k)
+            const idx = itemsArray.indexOf(itemsMap.get(k))
             if (idx !== -1) {
               itemsArray.splice(idx, 1)
             }
@@ -200,7 +200,7 @@ export const listsPlugin = definePlugin({
             }
 
             itemsMap.set(id, newItem)
-            const idx = itemsArray.findIndex((it) => getKey(it) === id)
+            const idx = itemsArray.indexOf(oldItem)
             if (idx !== -1) {
               itemsArray[idx] = newItem
             }
@@ -218,8 +218,9 @@ export const listsPlugin = definePlugin({
               return false
             }
 
+            const oldItem = itemsMap.get(id)
             itemsMap.delete(id)
-            const idx = itemsArray.findIndex((it) => getKey(it) === id)
+            const idx = itemsArray.indexOf(oldItem)
             if (idx !== -1) {
               itemsArray.splice(idx, 1)
             }
@@ -253,8 +254,8 @@ export const listsPlugin = definePlugin({
             if (!itemsMap.has(idA) || !itemsMap.has(idB)) {
               return false
             }
-            const idxA = itemsArray.findIndex((it) => getKey(it) === idA)
-            const idxB = itemsArray.findIndex((it) => getKey(it) === idB)
+            const idxA = itemsArray.indexOf(itemsMap.get(idA))
+            const idxB = itemsArray.indexOf(itemsMap.get(idB))
             if (idxA === -1 || idxB === -1) {
               return false
             }
@@ -279,6 +280,11 @@ export const listsPlugin = definePlugin({
           all () {
             void versionSignal.value
             return [...itemsArray]
+          },
+
+          values () {
+            void versionSignal.value
+            return itemsArray
           },
 
           get size () {
@@ -974,7 +980,7 @@ export const listsPlugin = definePlugin({
 
         const isDynamicMeasure = true
 
-        let rawItems = store.all()
+        let rawItems = store.values()
         let { flatItems: items, groups } = groupItems(rawItems, groupBy)
 
         function getContainerWidth () {
@@ -1369,7 +1375,7 @@ export const listsPlugin = definePlugin({
           }
 
           const oldPositions = positions
-          rawItems = store.all()
+          rawItems = store.values()
           const { flatItems: nextItems, groups: nextGroups } = groupItems(rawItems, groupBy)
           items = nextItems
           groups = nextGroups
@@ -1570,7 +1576,7 @@ export const listsPlugin = definePlugin({
 
         let effectiveVirtual = virtual
         if (effectiveVirtual === 'auto') {
-          const count = store && typeof store.all === 'function' ? store.all().length : 0
+          const count = store && typeof store.all === 'function' ? store.values().length : 0
           if (count >= 100) {
             effectiveVirtual = 'window'
           } else {
@@ -1602,7 +1608,7 @@ export const listsPlugin = definePlugin({
         let destroyed = false
         const elementMap = new Map()
 
-        let rawItems = store.all()
+        let rawItems = store.values()
         let { flatItems: items } = groupItems(rawItems, groupBy)
 
         function shouldFollow () {
@@ -1699,7 +1705,7 @@ export const listsPlugin = definePlugin({
             }
           }
 
-          rawItems = store.all()
+          rawItems = store.values()
           const regroup = groupItems(rawItems, groupBy)
           items = regroup.flatItems
 
