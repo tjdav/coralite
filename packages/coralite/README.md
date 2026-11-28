@@ -2,22 +2,17 @@
 
 ## Build for the Web, With the Web
 
-Coralite is a static-first Web Component framework that compiles HTML modules into static HTML at build time with zero client JavaScript by default. When interactivity or dynamic data is required, Coralite progressively adds server-side rendering (SSR), fine-grained client-side hydration, and single-page application (SPA) routing using standard native Web Components.
+Coralite compiles HTML modules into static HTML at build time. Components with no client lifecycle code emit pure markup and scoped CSS — no browser JavaScript runs for them. When a page needs interactivity, Coralite adds SSR, fine-grained hydration and optional SPA routing using real Web Components.
 
-### Key Features
+## Why Coralite
 
-* **Zero-JS Static Components**: Components without client lifecycle code emit pure static HTML and scoped CSS at build time with zero browser JavaScript overhead. Their module still ships for imperative hydration, but no `client()` runs.
-* **Native Web Components via Named Exports**: Author components in `.html` files using standard ES module exports (`export const`, `export function`) rather than boilerplate class syntax.
-* **Light DOM Scoped CSS**: Scoped styling using compiler-generated instance identifiers and CSS `@layer` without requiring Shadow DOM boundaries.
-* **Isomorphic Server Execution**: Fetch data or compute state at build/SSR time in `server()`. Initial state serializes to the client while server code is stripped from the browser bundle.
-* **Opt-Out Hydration**: Mark components with `no-hydration` to render markup statically and bypass client runtime hydration entirely.
-* **Declarative Reactive Styling (`style`)**: Define reactive inline styles and CSS Custom Properties (`--*`) directly in component declarations with zero-cost SSR emission.
-* **Reactive Slot Transformations (`slots`)**: Intercept and project slotted children isomorphically across SSR and client updates.
-* **Declarative Templates & Pure Getters**: Templates read flat tokens (`{{ token }}`) while UI transformations live in pure getter functions, including client-only async getters.
-* **Signal-Backed Reactivity**: Mutate state in `client()` controllers or derive it through signals. Batched DOM updates run without a virtual DOM, while `observe()` and `updateComplete` handle side effects and render synchronization.
-* **Built-in Plugins**: `refs`, metadata, static assets, testing, virtualized lists, and an opt-in SPA router ship with the framework.
-* **Global Store**: A reactive `store` declared in `coralite.config.js` shares application-wide state across components and survives SPA navigation.
-* **Async Race-Condition Protection**: Built-in version locks ensure stale asynchronous promise resolutions never overwrite newer state.
+* **Deterministic and fail-fast.** Validation runs before output is written, builds fail on the first error by default, and diagnostics are stable, machine-readable and auto-fixable where safe. The same input produces the same output.
+* **Native-first.** Real `customElements`, Light DOM, CSS `@layer` scoping and standard ES modules. Templates are flat `{{ token }}` placeholders; all logic lives in named exports — no proprietary template language.
+* **Optimized for humans and AI assistants.** Flat templates, named exports, explicit serialization boundaries and `AGENTS.md` conventions make the code easy to read and easy for models to generate correctly. `coralite init-agent` scaffolds agent rules, and published packages include `llms.txt` and `llms-full.txt`.
+* **Rapid development.** One CLI covers `dev`, `build`, `test`, `check`, `fix` and `diagnostics`. File watching with SSE reload, incremental rebuilds and deterministic fixers keep the feedback loop short.
+* **Performance by default.** Static components ship no client lifecycle code, hydration is opt-out per element, and incremental builds reuse unchanged output. In a 2,000-page benchmark, a warm build went from 425 ms to 110 ms once unchanged pages could skip SSR work ([results](../../benchmarks/results/bench-01-build-performance-after.json)).
+
+> Guides: [getting started](https://coralite.dev/docs/guide/getting-started/) · [reference](https://coralite.dev/reference/)
 
 ---
 
@@ -31,14 +26,12 @@ cd my-coralite-app
 npm run dev
 ```
 
-#### Key Features
+#### What the dev workflow gives you
 
-* **Live Reload** - Automatic browser refresh on HTML, template, and asset changes.
-* **Hot CSS Updates** - Instant CSS injection without page refresh via Server-Sent Events.
-* **Sass/SCSS Support** - Compile Sass files with source maps and auto-prefixing.
-* **File Watching** - Monitors all source directories for changes.
-* **Production Optimization** - Clean builds with optimized output.
-* **Plugin Integration** - Full support for Coralite plugins.
+* **File watching with automatic browser reload** over pages, components and assets (SSE).
+* **Sass/SCSS support** in the scaffold, with source maps and auto-prefixing.
+* **Incremental production builds** into the configured `output` directory.
+* **Plugin integration** across components, pages and plugins.
 
 > Learn more about the scaffolding process in the [Quick Start guide](https://coralite.dev/docs/guide/quick-start/) and the [CLI reference](https://coralite.dev/reference/cli/).
 
@@ -46,7 +39,7 @@ npm run dev
 
 ## AI-Assisted Development (`llms.txt`)
 
-Coralite includes an authoritative [`llms.txt`](https://coralite.dev/llms.txt) specification in the root of the published npm package (`node_modules/coralite/llms.txt`), alongside `llms-full.txt`.
+Coralite ships an authoritative [`llms.txt`](https://coralite.dev/llms.txt) specification alongside `llms-full.txt` in the published npm package (`node_modules/coralite/llms.txt`). In this repository the sources live in `website/public/` and are copied into the package at publish time.
 
 When using modern AI coding assistants (Claude Code, Cursor, GitHub Copilot, Antigravity, Jules), the model automatically discovers Coralite's specific architectural invariants (dumb templates, serialization boundaries, two-phase plugin context, signal-backed state, imperative component tracking), ensuring accurate, hallucination-free code generation.
 
@@ -91,7 +84,7 @@ The `coralite` binary resolves `coralite.config.js` from the current directory u
 | Command | Purpose |
 | :--- | :--- |
 | `coralite dev` | Development server with incremental rebuilds |
-| `coralite build` | Production build into `dist/` |
+| `coralite build` | Production build into the configured `output` directory (`dist/` in scaffolds) |
 | `coralite test` | Deterministic build served for E2E tests |
 | `coralite check` | Unified validation across components, pages, and plugins |
 | `coralite fix` | Apply safe AST auto-fixes (`--dry-run` to preview) |
@@ -189,7 +182,7 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
 
   // SLOTS: Transform or build projected slot content
   export const slots = {
-    default: (nodes) => nodes
+    default: ({ nodes }) => nodes
   }
 
   // CLIENT: Client-side controller and side-effects
@@ -207,7 +200,7 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
 
 ### Computed Slots & Isomorphic DOM Compatibility
 
-Computed slots (`slots: { [name]: (nodes, context) => ... }`) run during both Server-Side Rendering (SSR) and client runtime state updates:
+Computed slots (`slots: { [name]: ({ nodes, state }) => ... }`) render projected content at build time and are re-evaluated on client state updates:
 
 * **First-Class DOM Compatibility on Server**: Coralite equips server-side AST nodes with a full DOM-emulation layer. Properties such as `node.textContent`, `node.nodeType`, `node.childNodes`, `node.getAttribute()`, `node.hasAttribute()`, `node.tagName`, and `node.classList` are fully supported on the server.
 * **Write Standard DOM Code**: Because of this compatibility layer, you do **not** need to branch on server-specific AST properties (like `.data` or `.type`). Writing standard DOM operations like `nodes.map(n => n.textContent).join('')` or checking `node.nodeType === 1` runs 100% isomorphically across both Node.js SSR and the browser.
@@ -218,71 +211,43 @@ Computed slots (`slots: { [name]: (nodes, context) => ... }`) run during both Se
 
 ## Extending the Engine (`definePlugin`)
 
-Coralite plugins use `definePlugin` and separate build-time (`server`) from browser-time (`client`) work. Context is declared in one of two mutually exclusive ways:
-
-* **Ubiquitous `context`**: Injected into component and page `server`, `getters`, `client`, `slots`, and `style`. Use it for pure helpers that must run on both sides, such as formatters, translators, or read-only clients.
-* **Environment-specific `server.context` / `client.context`**: Injected only into `server()` or `client()` respectively. Use `server.context` for build-only clients (database handles, filesystem readers, API keys) and `client.context` for browser-only helpers (DOM utilities, third-party widgets).
-
-Both forms are curried as `(pluginContext) => (instanceContext) => ({ ... })`:
-
-1. **Phase 1: Global Setup (`pluginContext`)**: Runs **once** during registration. Use it to initialize shared resources (e.g. database pools, in-memory caches, global event buses). Values assigned to `pluginContext` are shared across the server build or client runtime.
-2. **Phase 2: Instance Resolver (`instanceContext`)**: Runs for **each component instance**. Receives instance metadata (`instanceId`, `componentId`, `page`, `root`) and allows lazy cross-plugin resolution. The returned object is injected under the plugin's `name` namespace, and core keys (`state`, `route`, `refs`, `signal`, `emit`, `observe`, `root`) always win.
-
-Mixing a ubiquitous `context` with `server.context` or `client.context` is a validation error.
+Plugins contribute helpers and build hooks under a namespace derived from their `name`. The canonical form is a single default export:
 
 ```javascript
 import { definePlugin } from 'coralite'
 
-export default function telemetryPlugin(options = {}) {
-  return definePlugin({
-    name: 'telemetry', // Namespaces the context in components: context.telemetry
+export default definePlugin({
+  name: 'formatters', // injected as `formatters` in component and page context
 
-    server: {
-      // Phase 1 (pluginContext): Runs ONCE on server startup
-      // Phase 2 (instanceContext): Runs per component to inject instance-scoped APIs
-      context: (pluginContext) => {
-        const buildMetrics = new Map()
-        pluginContext.metrics = buildMetrics // Shared globally across server plugins
+  context: () => () => ({
+    greeting: (name) => `Hello, ${name}`
+  }),
 
-        return (instanceContext) => ({
-          trackServerEvent: (name, data = {}) => {
-            buildMetrics.set(`${instanceContext.componentId}:${instanceContext.instanceId}`, {
-              event: name,
-              route: instanceContext.page?.url,
-              timestamp: Date.now(),
-              ...data
-            })
-          }
-        })
-      }
-    },
+  server: {
+    context: () => () => ({
+      readTitle: (page) => page.meta?.title ?? ''
+    })
+  },
 
-    client: {
-      // Phase 1 (pluginContext): Initializes shared client resources (e.g. centralized EventBus)
-      // Phase 2 (instanceContext): Injects instance-scoped tracking tagged with component metadata
-      context: (pluginContext) => {
-        const sharedBus = new EventTarget()
-        pluginContext.bus = sharedBus // Shared across all component instances in browser
-
-        return (instanceContext) => ({
-          emitEvent: (type, detail = {}) => {
-            sharedBus.dispatchEvent(new CustomEvent(type, {
-              detail: {
-                ...detail,
-                originId: instanceContext.instanceId,
-                originTag: instanceContext.componentId
-              }
-            }))
-          },
-          onEvent: (type, handler) => {
-            sharedBus.addEventListener(type, handler)
-          }
-        })
-      }
+  client: {
+    context: () => () => ({
+      notify: (message) => console.info(message)
+    }),
+    init: ({ config }) => {
+      // one-time browser setup
     }
-  })
-}
+  }
+})
 ```
+
+Rules worth knowing:
+
+* `context` is ubiquitous — available to component and page `server`, `getters`, `client`, `slots` and `style`. `server.context` and `client.context` are environment-specific and **may be used together**. A top-level `context` cannot be combined with either.
+* Every context is curried: `(pluginContext) => (instanceContext) => ({ ... })`. Phase 1 runs once at plugin setup; phase 2 resolves per component instance. In the browser, phase 1 receives a shallow copy of the runtime, so share state through closures captured by phase 2 rather than assigning to `pluginContext`.
+* Phase 2 receives `id`, `module`, `page`, `root`, `state`, `session`, `app` and `route`. Core keys (`state`, `route`, `app`, `session`, `signal`, `store`, `page`) take precedence over plugin keys.
+* Config lives in `config`, `server.config` or `client.config`; a key may appear in only one block. Plugins can declare build hooks such as `onBeforeBuild`, `onAfterBuild`, `onPageSet` and `onBeforePageRender`, plus `client.init`. Use `dependencies` for plugin ordering; `depends` is rejected.
+
+See the [plugin reference](https://coralite.dev/reference/plugins/) for the full hook list and validation rules.
 
 ### Consuming Plugin Context in Components
 
@@ -290,19 +255,14 @@ Components access the injected APIs directly via destructuring in `server()` and
 
 ```html
 <script type="module">
-  // Sourced from server Phase 2 resolver
-  export async function server ({ telemetry, state }) {
-    telemetry.trackServerEvent('user_rendered', { userId: state.userId })
-    return {}
+  // Sourced from the server Phase 2 resolver
+  export function server ({ formatters, state }) {
+    return { heading: formatters.greeting(state.userName) }
   }
 
-  // Sourced from client Phase 2 resolver
-  export function client ({ telemetry, state, signal }) {
-    telemetry.onEvent('cart:updated', (e) => {
-      console.log('Cart updated from component', e.detail.originTag)
-    })
-
-    telemetry.emitEvent('item_viewed', { itemId: state.userId })
+  // Sourced from the client Phase 2 resolver
+  export function client ({ formatters, state }) {
+    formatters.notify(`Welcome back, ${state.userName}`)
   }
 </script>
 ```

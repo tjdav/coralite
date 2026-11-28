@@ -1,20 +1,16 @@
 # 🪸 Coralite
 
-Coralite is a static-first Web Component framework built on native Web Platform standards. It compiles HTML modules into static HTML at build time with zero client JavaScript by default, and progressively adds server-side rendering (SSR), signal-backed fine-grained reactivity, client-side hydration, and single-page application (SPA) routing when a page needs interactivity or dynamic data.
+Coralite compiles HTML modules into static HTML at build time, then adds interactivity only where a page needs it. Components are real Web Components authored with named ES exports; the output is Light DOM, scoped CSS and standard HTML — no proprietary template language.
 
-## Key Features
+## Why Coralite
 
-* **Static HTML by Default**: Components without client logic emit pure static HTML and scoped CSS at build time with zero browser JavaScript overhead. A "zero-JS" component still ships its module for imperative hydration, but no `client()` lifecycle runs.
-* **Native Web Components via Named Exports**: Author components and pages in `.html` files using standard ES module exports (`export const`, `export function`) instead of class boilerplate. `definePage` remains for legacy compatibility only.
-* **Signal-Backed Reactivity**: Fine-grained signals drive state updates. Getters can be synchronous or `async`, while `observe()`, `updateComplete`, and the global `store` cover side effects, DOM synchronization, and app-wide state.
-* **Light DOM Scoped CSS**: Compiler-generated instance identifiers and CSS `@layer` scope styles without Shadow DOM. Declarative `style` exports add reactive inline CSS and CSS custom properties.
-* **Isomorphic Server Execution**: Fetch data or compute state at build/SSR time in `server()`. Initial state serializes to the client while server code is stripped from the browser bundle.
-* **Opt-Out Hydration**: Mark components or regions with `no-hydration` to render markup statically and bypass client runtime hydration entirely.
-* **Declarative Templates & Pure Getters**: Templates read flat tokens (`{{ token }}`) while derived state lives in pure getter functions. Computed `slots` transform projected content isomorphically across SSR and client updates.
-* **Built-in Plugins**: `refs`, metadata, static assets, testing, and virtualized lists ship with the framework. The SPA router is opt-in and preserves state outside the outlet across navigation.
-* **Unified CLI & Static Auditing**: One `coralite` binary covers `dev`, `build`, `test`, `check`, `fix`, `diagnostics`, and granular validators. `coralite check` includes a Volar-bridged TypeScript pass by default; `--no-types` skips it.
-* **Single Opt-Out Directive**: `coralite-ignore` keeps code samples, third-party widgets, slots, scripts, and templates literal while skipping token interpolation, compilation, hydration, and validation.
-* **Async Race-Condition Protection**: Version locks prevent stale asynchronous responses, including superseded async getters, from overwriting newer state.
+* **Deterministic and fail-fast.** Validation runs before output is written, builds fail on the first error by default, and diagnostics are stable, machine-readable and auto-fixable where safe. The same input produces the same output.
+* **Native-first.** Real `customElements`, Light DOM, CSS `@layer` and standard ES modules. Templates use flat `{{ token }}` placeholders; all logic lives in named exports.
+* **Optimized for humans and AI assistants.** Flat templates, named exports, explicit serialization boundaries and `AGENTS.md` conventions are easy to read and to generate correctly. `coralite init-agent` scaffolds agent rules; published packages include `llms.txt` and `llms-full.txt`.
+* **Rapid development.** A single CLI covers `dev`, `build`, `test`, `check`, `fix` and `diagnostics`. File watching with SSE reload, incremental builds and deterministic fixers keep the loop short.
+* **Performance by default.** Static components ship no client lifecycle code, hydration is opt-out per element, and incremental builds reuse unchanged output. In a 2,000-page benchmark a warm build fell from 425 ms to 110 ms once unchanged pages could skip SSR work ([results](./benchmarks/results/bench-01-build-performance-after.json)).
+
+Start with the [package README](./packages/coralite) for the authoring model, or the [official documentation](https://coralite.dev/docs/guide/getting-started/).
 
 ---
 
@@ -124,15 +120,14 @@ Run the following workspace-wide scripts from the root directory:
 
 ### 3. Verification Before a Pull Request
 
-Run the ordered verification workflow from `packages/coralite`:
+Run the ordered verification workflow from the repository root:
 
 ```bash
-cd packages/coralite
-pnpm lint:format
+pnpm format
 pnpm lint
 pnpm build
-pnpm build:html:dev
-pnpm test:smoke
+pnpm --filter coralite build:html:dev
+pnpm --filter coralite test:smoke
 ```
 
 All commands must exit clean.
@@ -146,7 +141,7 @@ The single `coralite` binary covers development, builds, and static analysis:
 | Command | Purpose |
 | :--- | :--- |
 | `coralite dev` | Development server with incremental rebuilds |
-| `coralite build` | Production build into `dist/` |
+| `coralite build` | Production build into the configured `output` directory (`dist/` in scaffolds) |
 | `coralite test` | Deterministic build served for E2E tests |
 | `coralite check` | Unified validation across components, pages, and plugins |
 | `coralite fix` | Apply safe AST auto-fixes (preview with `--dry-run`) |
@@ -164,7 +159,7 @@ The single `coralite` binary covers development, builds, and static analysis:
 
 For guides, concept deep dives, and full API references, start at the [official documentation](https://coralite.dev/docs/guide/getting-started/). The export-level API lives in the [reference](https://coralite.dev/reference/).
 
-Coralite also ships `llms.txt` and `llms-full.txt` in the published package for AI coding assistants that discover project conventions automatically.
+Coralite also ships `llms.txt` and `llms-full.txt` in the published package for AI coding assistants that discover project conventions automatically. In this repository their sources live in `website/public/` and are copied into the package at publish time.
 
 ## License
 
