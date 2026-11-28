@@ -175,6 +175,7 @@
  * @property {string} [projectRoot] - The root directory of the project.
  * @property {string} [cacheDir] - Directory used to persist the incremental build manifest. Defaults to `<projectRoot>/.coralite`.
  * @property {number} [manifestShards] - Hash buckets for sharded manifest storage; 1 keeps a single JSON file.
+ * @property {CoraliteI18nConfig} [i18n] - Locale chunks for plugin client config overrides.
  * @property {CoralitePath} [path] - Internal path mapping.
  * @property {{ port?: number, host?: string }} [server] - Script-specific server options.
  * @property {CoraliteDevConfig} [dev] - Development-server route and cache controls.
@@ -191,6 +192,14 @@
  * @property {number} [limit] - Alias for maxPages.
  * @property {number} [maxCacheEntries=256] - Maximum rendered page entries retained. `0` disables caching.
  * @property {(context: { params: Object, page: Object, index: number, app: CoraliteInstance }) => boolean} [routeFilter] - Predicate that filters enumerated dynamic paths before the cap is applied.
+ */
+
+/**
+ * Locale-specific client config chunking.
+ *
+ * @typedef {Object} CoraliteI18nConfig
+ * @property {string[]} [locales] - Locales that get a dedicated config chunk.
+ * @property {string} [defaultLocale='en'] - Locale used by pages without a route locale.
  */
 
 /**
@@ -241,6 +250,7 @@
  * @property {Error} [error] - Error diagnostic if rendering failed.
  * @property {Object} [route] - The route object for this page output.
  * @property {string} [cacheKey] - The incremental cache key resolved for this output.
+ * @property {string} [localeChunk] - Locale config chunk referenced by this output.
  */
 
 /**

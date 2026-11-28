@@ -1,0 +1,24 @@
+{
+  "taskId": "bench-04-locale-chunks-after",
+  "phase": "after",
+  "commit": "92e25f0c",
+  "runAt": "2026-11-28T07:06:05.668Z",
+  "machine": {
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "cores": 24,
+    "os": "Linux 7.0.0-44-generic",
+    "nodeVersion": "v24.16.0"
+  },
+  "results": {
+    "locale-chunks": {
+      "locales": {
+        "warmMs": 21.5,
+        "editMs": 20.8,
+        "renderedOnEdit": 1,
+        "skippedOnEdit": 1,
+        "runtimeChunkStable": true,
+        "enChunkStable": true
+      }
+    }
+  }
+}

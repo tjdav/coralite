@@ -13,6 +13,7 @@ import { runStressLifecycleSuite } from './suites/05-stress-lifecycle/bench.js'
 import { runHydrationPayloadSuite } from './suites/06-hydration-payload/bench.js'
 import { runBuildPerformanceSuite } from './suites/07-build-performance/bench.js'
 import { runManifestStoreSuite } from './suites/08-manifest-store/bench.js'
+import { runLocaleChunksSuite } from './suites/09-locale-chunks/bench.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -37,7 +38,8 @@ function parseArgs () {
     phase: 'after',
     save: false,
     frameworks: null,
-    store: 'all'
+    store: 'all',
+    mode: 'all'
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -50,6 +52,8 @@ function parseArgs () {
       flags.suite = args[++i]
     } else if (arg.startsWith('--store=')) {
       flags.store = arg.split('=')[1]
+    } else if (arg.startsWith('--mode=')) {
+      flags.mode = arg.split('=')[1]
     } else if (arg.startsWith('--frameworks=')) {
       flags.frameworks = arg.split('=')[1].split(',').map(s => s.trim()).filter(Boolean)
     } else if (arg === '--frameworks' && i + 1 < args.length) {
@@ -101,6 +105,7 @@ Options:
   --suite=<name>, -s  Run a specific benchmark suite (bundle-hydration, hydration-payload, internal, stress, build-performance, or all [default: all])
   --frameworks=<list> Comma-separated list of frameworks to include in bundle-hydration (coraliteDynamic, react, vue, svelte)
   --store=<name>      Manifest store strategy for the manifest-store suite (legacy, compact, sharded, all)
+  --mode=<name>       Strategy for the locale-chunks suite (plain, locales, all)
   --task-id=<id>      Identifier for the result file (default: adhoc)
   --phase=<phase>     Phase of run: before, after, baseline (default: after)
   --save              Write results to benchmarks/results/<task-id>.json
@@ -224,6 +229,21 @@ function formatTaskResults (resultsData, taskId, phase) {
     }
   }
 
+  const localeChunks = resultsData.suites?.['locale-chunks']
+  if (localeChunks) {
+    results['locale-chunks'] = {}
+    for (const [strategy, metrics] of Object.entries(localeChunks)) {
+      results['locale-chunks'][strategy] = {
+        warmMs: metrics.warmMs,
+        editMs: metrics.editMs,
+        renderedOnEdit: metrics.renderedOnEdit,
+        skippedOnEdit: metrics.skippedOnEdit,
+        runtimeChunkStable: metrics.runtimeChunkStable,
+        enChunkStable: metrics.enChunkStable
+      }
+    }
+  }
+
   return {
     taskId,
     phase,
@@ -260,7 +280,7 @@ async function main () {
   }
 
   const selectedSuite = flags.suite.toLowerCase()
-  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle', 'hydration-payload', 'payload', 'build-performance', 'manifest-store']
+  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle', 'hydration-payload', 'payload', 'build-performance', 'manifest-store', 'locale-chunks']
 
   if (!VALID_SUITES.includes(selectedSuite)) {
     console.error(`\n❌ Error: Unknown suite "${flags.suite}".`)
@@ -306,6 +326,12 @@ async function main () {
   if (selectedSuite === 'manifest-store') {
     const manifestStoreResults = await runManifestStoreSuite({ store: flags.store })
     resultsData.suites['manifest-store'] = manifestStoreResults
+    triggerGC()
+  }
+
+  if (selectedSuite === 'locale-chunks') {
+    const localeChunksResults = await runLocaleChunksSuite({ mode: flags.mode })
+    resultsData.suites['locale-chunks'] = localeChunksResults
     triggerGC()
   }
 

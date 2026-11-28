@@ -166,6 +166,54 @@ const createManifestOutputFile = (manifest, stylesheetManifest) => ({
 })
 
 /**
+ * Emits one hashed JS chunk per locale carrying plugin config overrides.
+ *
+ * @param {any} scriptResult - Compiled script manager result.
+ * @param {Object} outputFiles - Build output registry.
+ * @param {(filePath: string) => void} [track] - Optional output tracker.
+ * @returns {Object} Map of locale to emitted chunk filename.
+ */
+function emitLocaleChunks (scriptResult, outputFiles, track) {
+  const chunks = {}
+  const localeConfigs = scriptResult?.localeConfigs
+  if (!localeConfigs) {
+    return chunks
+  }
+
+  for (const [locale, config] of Object.entries(localeConfigs)) {
+    const text = `export default ${serialize(config)};\n`
+    const hashedPath = `locale-${locale}-${hash(text).slice(0, 8)}.js`
+    const fullPath = `assets/js/${hashedPath}`
+    outputFiles[fullPath] = {
+      path: fullPath,
+      hashedPath,
+      text
+    }
+    if (typeof track === 'function') {
+      track(fullPath)
+    }
+    chunks[locale] = hashedPath
+  }
+  return chunks
+}
+
+/**
+ * Resolves the locale config chunk for a concrete route.
+ *
+ * @param {any} route - Concrete route object.
+ * @param {Object} [localeChunks] - Available locale chunks.
+ * @param {string} [defaultLocale] - Fallback locale.
+ * @returns {string|null} Chunk filename, or null when no locale applies.
+ */
+function resolveLocaleChunk (route, localeChunks, defaultLocale) {
+  if (!localeChunks) {
+    return null
+  }
+  const locale = route?.params?.lang || route?.params?.locale || defaultLocale
+  return localeChunks[locale] || (defaultLocale ? localeChunks[defaultLocale] : null) || null
+}
+
+/**
  * Stamps the owning component instance onto a binding marker target.
  *
  * @param {any} node - AST node carrying a binding marker.
@@ -232,6 +280,7 @@ export function createRenderer ({
   const sriDigestCache = new Map()
   const inFlightCss = new Map()
   let activeBuilds = 0
+  /** @type {any} */
   let globalScriptResult = null
   let siteWideBundlePromise = null
 
@@ -2150,6 +2199,7 @@ export function createRenderer ({
     }
 
     let pageCacheKey = null
+    let localeChunkPath = null
 
     try {
       if (pageExports) {
@@ -2958,6 +3008,7 @@ export function createRenderer ({
       } else {
         runtimeChunkPath = scriptResult.manifest['coralite-runtime']
       }
+      localeChunkPath = resolveLocaleChunk(routeObj, scriptResult.localeChunks, normalizedOptions.i18n?.defaultLocale)
 
       const { content: readyContent } = injectReadinessScript(mappedComponent.root, headElement, true, normalizedOptions.mode, {
         nonce,
@@ -3029,6 +3080,7 @@ export function createRenderer ({
       const scriptContent = generateClientRuntime({
         base,
         sharedChunkPath: scriptResult.manifest['coralite-runtime'],
+        localeChunkPath,
         declarativeTags: Array.from(declarativeTags),
         hydrationData: serialize(hydrationData),
         routeData: routeObj ? serialize(routeObj) : 'undefined',
@@ -3191,6 +3243,10 @@ export function createRenderer ({
       result.runtimeChunk = runtimeChunkPath
     } else {
       result.runtimeChunk = null
+    }
+
+    if (localeChunkPath) {
+      result.localeChunk = localeChunkPath
     }
 
     if (pageScriptPath) {
@@ -3369,6 +3425,11 @@ export function createRenderer ({
       globalScriptResult = await scriptManager.compileComponents(normalizedOptions.mode)
 
       Object.assign(outputFiles, globalScriptResult.outputFiles)
+      globalScriptResult.localeChunks = emitLocaleChunks(globalScriptResult, outputFiles, filePath => {
+        if (app.trackOutputFile) {
+          app.trackOutputFile(join(normalizedOptions.output || '', filePath))
+        }
+      })
 
       if (globalScriptResult.manifest) {
         outputFiles['manifest.js'] = createManifestOutputFile(globalScriptResult.manifest, globalScriptResult.stylesheetManifest)
@@ -3421,6 +3482,7 @@ export function createRenderer ({
       // Atomic site-wide rebuild for development
       if (!siteWideBundlePromise) {
         const bundlePromise = (async () => {
+          /** @type {any} */
           const result = await scriptManager.compileComponents(normalizedOptions.mode)
 
           // Only update if this is still the active build session
@@ -3431,6 +3493,11 @@ export function createRenderer ({
               delete outputFiles[key]
             }
             Object.assign(outputFiles, result.outputFiles)
+            result.localeChunks = emitLocaleChunks(result, outputFiles, filePath => {
+              if (app.trackOutputFile) {
+                app.trackOutputFile(join(normalizedOptions.output || '', filePath))
+              }
+            })
 
             if (result.manifest) {
               outputFiles['manifest.js'] = createManifestOutputFile(result.manifest, result.stylesheetManifest)
@@ -3632,7 +3699,7 @@ export function createRenderer ({
 
     const outputDir = normalizedOptions.output || join(normalizedOptions.projectRoot || process.cwd(), 'dist')
 
-    const checkPageAssetsAndManifest = async (existingPageMeta) => {
+    const checkPageAssetsAndManifest = async (existingPageMeta, localeChunkPath = null) => {
       if (!existingPageMeta) {
         return false
       }
@@ -3655,6 +3722,18 @@ export function createRenderer ({
           } catch {
             return true
           }
+        }
+      }
+
+      // Locale config chunk check
+      if ((existingPageMeta.localeChunk ?? null) !== localeChunkPath) {
+        return true
+      }
+      if (localeChunkPath && normalizedOptions.output) {
+        try {
+          await access(join(outputDir, 'assets/js', localeChunkPath))
+        } catch {
+          return true
         }
       }
 
@@ -3718,6 +3797,7 @@ export function createRenderer ({
 
     const pageMetaForwardKeys = [
       'runtimeChunk',
+      'localeChunk',
       'pageScript',
       'pageScriptHash',
       'pageStyle',
@@ -3738,6 +3818,9 @@ export function createRenderer ({
         }
       }
 
+      if (existingMeta.localeChunk && app.trackOutputFile) {
+        app.trackOutputFile(join(outputDir, 'assets/js', existingMeta.localeChunk))
+      }
       if (existingMeta.pageScript && app.trackOutputFile) {
         app.trackOutputFile(join(outputDir, existingMeta.pageScript))
       }
@@ -3928,7 +4011,7 @@ export function createRenderer ({
       if (pageItem.virtual) {
         const existingVirtualMeta = existingMeta
         if (!shouldRebuild) {
-          shouldRebuild = await checkPageAssetsAndManifest(existingVirtualMeta)
+          shouldRebuild = await checkPageAssetsAndManifest(existingVirtualMeta, resolveLocaleChunk(targetRoute, globalScriptResult?.localeChunks, normalizedOptions.i18n?.defaultLocale))
         }
 
         const shouldRebuildVirtual = !isIncremental || shouldRebuild || pageItem.volatile || !existingVirtualMeta || String(existingVirtualMeta.cacheKey) !== String(pageItem.cacheKey) || normalizedOptions.mode === 'development'
@@ -3972,7 +4055,7 @@ export function createRenderer ({
         }
 
         if (!shouldRebuild) {
-          shouldRebuild = await checkPageAssetsAndManifest(existingPageMeta)
+          shouldRebuild = await checkPageAssetsAndManifest(existingPageMeta, resolveLocaleChunk(targetRoute, globalScriptResult?.localeChunks, normalizedOptions.i18n?.defaultLocale))
         }
 
         const pageExports = pageItem.result?.page?.exports || pageItem.value?.page?.exports || pageItem.page?.exports || null
@@ -4232,6 +4315,9 @@ export function createRenderer ({
             }
             if (pageResult.runtimeChunk !== undefined) {
               targetMeta.runtimeChunk = pageResult.runtimeChunk
+            }
+            if (pageResult.localeChunk !== undefined) {
+              targetMeta.localeChunk = pageResult.localeChunk
             }
             if (pageResult.pageScript) {
               targetMeta.pageScript = pageResult.pageScript

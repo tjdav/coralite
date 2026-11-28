@@ -60,6 +60,28 @@ export function getPluginConfig (module) {
 }
 
 /**
+ * Splits per-locale overrides out of a plugin config when i18n chunking is on.
+ *
+ * @param {any} config - Raw plugin config.
+ * @param {boolean} enabled - Whether locale chunking is enabled.
+ * @returns {{ config: any, locales: Object }} Base config and locale overrides.
+ */
+export function splitLocaleConfig (config, enabled) {
+  if (!enabled || !config || typeof config !== 'object' || Array.isArray(config) || !config.locales || typeof config.locales !== 'object' || Array.isArray(config.locales)) {
+    return {
+      config,
+      locales: {}
+    }
+  }
+
+  const { locales, ...base } = config
+  return {
+    config: base,
+    locales
+  }
+}
+
+/**
  * Normalizes and rewrites the browser-side functions of a plugin module.
  *
  * @param {any} module - Registered script module
@@ -766,10 +788,17 @@ ScriptManager.prototype.disposeContext = async function () {
  * Compiles and bundles all registered components and the coralite-runtime client module using esbuild.
  * Eagerly bundles the entire component registry to support declarative rendering and lazy imperative loading.
  * @param {string} [mode='production'] - Build mode ('development', 'production', or 'testing')
- * @returns {Promise<{ manifest: Object, stylesheetManifest: Object, outputFiles: Object, importMap: Object }>}
+ * @returns {Promise<{ manifest: Object, stylesheetManifest: Object, outputFiles: Object, importMap: Object, localeConfigs: Object|null }>}
  */
 ScriptManager.prototype.compileComponents = async function (mode = 'production') {
   const entryCodeParts = []
+  const i18nEnabled = Boolean(this.options.i18n?.locales?.length)
+  const localeConfigs = {}
+  if (i18nEnabled) {
+    for (const locale of this.options.i18n.locales) {
+      localeConfigs[locale] = {}
+    }
+  }
   const moduleNamespace = 'coralite-script-module:'
   const componentNamespace = 'coralite-component:'
   const cssNamespace = 'coralite-css:'
@@ -792,7 +821,15 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
         }
       )
     }
-    clientPluginConfigs[pluginName] = rawConfig
+    const split = splitLocaleConfig(rawConfig, i18nEnabled)
+    clientPluginConfigs[pluginName] = split.config
+    if (i18nEnabled) {
+      for (const [locale, overrides] of Object.entries(split.locales)) {
+        if (localeConfigs[locale] && overrides && typeof overrides === 'object') {
+          localeConfigs[locale][pluginName] = overrides
+        }
+      }
+    }
   }
 
   // Generate ESM imports for each script module
@@ -971,9 +1008,14 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
     onDisconnected: [${this.scriptModules.map((_, i) => `onDisconnected_${i}`).join(', ')}].filter(Boolean)
   };\n`)
 
-  entryCodeParts.push(`const initPlugins = async () => {
+  const initPluginsSignature = i18nEnabled ? 'const initPlugins = async (localeConfig) => {' : 'const initPlugins = async () => {'
+  const pluginConfigFor = (name) => (i18nEnabled
+    ? `{ ...(clientPluginConfigs[${JSON.stringify(name)}] || {}), ...((localeConfig && localeConfig[${JSON.stringify(name)}]) || {}) }`
+    : `clientPluginConfigs[${JSON.stringify(name)}] || {}`)
+
+  entryCodeParts.push(`${initPluginsSignature}
     const plugins = [
-      ${this.scriptModules.map((m, i) => `{ name: ${JSON.stringify(m.client?.name || m.name || `plugin-${i}`)}, init: init_${i}, config: clientPluginConfigs[${JSON.stringify(m.client?.name || m.name || `plugin-${i}`)}] || {} }`).join(',\n')}
+      ${this.scriptModules.map((m, i) => `{ name: ${JSON.stringify(m.client?.name || m.name || `plugin-${i}`)}, init: init_${i}, config: ${pluginConfigFor(m.client?.name || m.name || `plugin-${i}`)} }`).join(',\n')}
     ];
     const cleanupFns = [];
     const onCleanup = (fn) => {
@@ -1523,7 +1565,7 @@ export default {
 
               const sources = module._pluginSources || createPluginFunctionSources(module)
               let contents = ''
-              const rawClientConfig = getPluginConfig(module)
+              const rawClientConfig = splitLocaleConfig(getPluginConfig(module), i18nEnabled).config
               const configContent = `const pluginConfig = Object.freeze(${serialize(rawClientConfig)});`
 
               contents += configContent + '\n'
@@ -1647,7 +1689,7 @@ export default {
               const sources = module._pluginSources || createPluginFunctionSources(module)
               let contents = ''
 
-              const rawClientConfig = getPluginConfig(module)
+              const rawClientConfig = splitLocaleConfig(getPluginConfig(module), i18nEnabled).config
               const configContent = `const pluginConfig = Object.freeze(${serialize(rawClientConfig)});`
 
               contents += configContent + '\n'
@@ -1985,6 +2027,7 @@ export default {
     manifest,
     stylesheetManifest: stylesheetResult.manifest,
     outputFiles,
-    importMap: resolvedImportMap
+    importMap: resolvedImportMap,
+    localeConfigs: i18nEnabled ? localeConfigs : null
   }
 }

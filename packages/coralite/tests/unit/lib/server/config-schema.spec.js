@@ -350,6 +350,32 @@ describe('config-schema.spec.js - Unified config schema validation', () => {
     )
   })
 
+  it('validates i18n locale chunk configuration', () => {
+    const valid = defineConfig({
+      output: 'dist',
+      components: 'components',
+      pages: 'pages',
+      i18n: {
+        locales: ['en', 'fr'],
+        defaultLocale: 'en'
+      }
+    })
+    assert.deepStrictEqual(valid.i18n, {
+      locales: ['en', 'fr'],
+      defaultLocale: 'en'
+    })
+
+    assert.throws(
+      () => defineConfig({
+        output: 'dist',
+        components: 'components',
+        pages: 'pages',
+        i18n: { locales: 'en' }
+      }),
+      /Config property "i18n\.locales" must be an array of strings/
+    )
+  })
+
   it('script-specific keys are ignored when passed to createCoralite without throwing', async () => {
     const tmpDir = await mkdtemp(join(tmpdir(), 'coralite-config-schema-test-'))
     const compDir = join(tmpDir, 'components')

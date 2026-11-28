@@ -12,6 +12,7 @@ Fast local checks (~30–60s) for regressions during development. Runs the survi
 - **`05-stress-lifecycle`** — selective hydration island scaling, state streaming, mount/unmount lifecycle
 - **`07-build-performance`** — cold, warm and one-record-change production builds of a synthetic `paths()` site, including `server()` call counts and manifest size. Explicit `--suite=build-performance` only; it is not part of `all`.
 - **`08-manifest-store`** — load/save cost of legacy pretty-printed, compact and sharded manifests at 45,000 entries. Use `--store=legacy|compact|sharded|all`; explicit suite only.
+- **`09-locale-chunks`** — warm build and one-locale dictionary edit with and without locale chunks. Use `--mode=plain|locales|all`; explicit suite only.
 
 Run only the payload suite:
 

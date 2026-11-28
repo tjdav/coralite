@@ -50,7 +50,11 @@ const HEADER_LABELS = {
   saveMs: 'Save (ms)',
   bytes: 'Bytes',
   entries: 'Entries',
-  shards: 'Shards'
+  shards: 'Shards',
+  renderedOnEdit: 'Rendered On Edit',
+  skippedOnEdit: 'Skipped On Edit',
+  runtimeChunkStable: 'Runtime Stable',
+  enChunkStable: 'EN Chunk Stable'
 }
 
 /**
@@ -167,7 +171,7 @@ export function generateMarkdownTable (suiteName, suiteResults) {
   if (suiteName === 'build-performance') {
     firstColHeader = 'Scenario'
   }
-  if (suiteName === 'manifest-store') {
+  if (suiteName === 'manifest-store' || suiteName === 'locale-chunks') {
     firstColHeader = 'Strategy'
   }
 

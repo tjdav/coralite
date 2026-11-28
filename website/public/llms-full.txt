@@ -1587,3 +1587,6 @@ The predicate cannot see state resolved by `server()`, so read every input that 
 
 ### 20.7 Manifest Storage
 By default the incremental manifest is written to `.coralite/build/manifest.json` as a single compact JSON document. For very large sites, set `build.manifestShards` in `defineConfig` to a positive integer to store the manifest as one small `meta.json` plus that many hash-bucketed shard files under `.coralite/build/manifest-shards/`. An existing single-file manifest is migrated on the first sharded build without invalidating cached pages. Sharding changes storage layout only; cache keys, invalidation rules and output bytes are unchanged.
+
+### 20.8 Locale Config Chunks
+Set `i18n: { locales, defaultLocale }` in `defineConfig` to keep plugin dictionary edits from invalidating every locale. Move per-locale values into a `locales` field on a plugin's `client.config`; Coralite emits one small hashed chunk per locale and merges the matching values into the `config` passed to that plugin's browser `init()`. A copy edit changes only that locale's chunk and the pages whose route carries `route.params.lang` or `route.params.locale`; other locales stay cached. Without this option the plugin config is baked into the shared runtime chunk as before. Dictionaries used by getters should still come from page state, because plugin context reads the base config.
