@@ -325,6 +325,21 @@ export function defineConfig (options, { onError } = {}) {
     if (options.build.concurrency !== undefined && (typeof options.build.concurrency !== 'number' || options.build.concurrency <= 0)) {
       throw new CoraliteError('Config property "build.concurrency" must be a positive number')
     }
+    if (options.build.manifestShards !== undefined && (!Number.isInteger(options.build.manifestShards) || options.build.manifestShards < 1)) {
+      throw new CoraliteError('Config property "build.manifestShards" must be a positive integer')
+    }
+  }
+
+  if (options.i18n !== undefined) {
+    if (typeof options.i18n !== 'object' || options.i18n === null) {
+      throw new CoraliteError('Config property "i18n" must be an object')
+    }
+    if (options.i18n.locales !== undefined && (!Array.isArray(options.i18n.locales) || options.i18n.locales.some(locale => typeof locale !== 'string'))) {
+      throw new CoraliteError('Config property "i18n.locales" must be an array of strings')
+    }
+    if (options.i18n.defaultLocale !== undefined && typeof options.i18n.defaultLocale !== 'string') {
+      throw new CoraliteError('Config property "i18n.defaultLocale" must be a string')
+    }
   }
 
   // Validate csp config

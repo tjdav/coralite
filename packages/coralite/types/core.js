@@ -174,11 +174,13 @@
  * @property {'full' | 'minimal'} [listStrategy='full'] - Reconciliation strategy.
  * @property {string} [projectRoot] - The root directory of the project.
  * @property {string} [cacheDir] - Directory used to persist the incremental build manifest. Defaults to `<projectRoot>/.coralite`.
+ * @property {number} [manifestShards] - Experimental hash buckets for sharded manifest storage; 1 keeps a single compact JSON file. Current benchmarks show no wall-clock benefit over the compact default.
+ * @property {CoraliteI18nConfig} [i18n] - Locale chunks for plugin client config overrides.
  * @property {CoralitePath} [path] - Internal path mapping.
  * @property {{ port?: number, host?: string }} [server] - Script-specific server options.
  * @property {CoraliteDevConfig} [dev] - Development-server route and cache controls.
  * @property {{ input?: string[], processors?: Object }} [styles] - Script-specific styles options.
- * @property {{ concurrency?: number }} [build] - Script-specific build options.
+ * @property {{ concurrency?: number, manifestShards?: number }} [build] - Script-specific build options.
  * @property {Record<string, any>} [store] - Global store config shape and initial values.
  */
 
@@ -190,6 +192,14 @@
  * @property {number} [limit] - Alias for maxPages.
  * @property {number} [maxCacheEntries=256] - Maximum rendered page entries retained. `0` disables caching.
  * @property {(context: { params: Object, page: Object, index: number, app: CoraliteInstance }) => boolean} [routeFilter] - Predicate that filters enumerated dynamic paths before the cap is applied.
+ */
+
+/**
+ * Locale-specific client config chunking.
+ *
+ * @typedef {Object} CoraliteI18nConfig
+ * @property {string[]} [locales] - Locales that get a dedicated config chunk.
+ * @property {string} [defaultLocale='en'] - Locale used by pages without a route locale.
  */
 
 /**
@@ -240,6 +250,7 @@
  * @property {Error} [error] - Error diagnostic if rendering failed.
  * @property {Object} [route] - The route object for this page output.
  * @property {string} [cacheKey] - The incremental cache key resolved for this output.
+ * @property {string} [localeChunk] - Locale config chunk referenced by this output.
  */
 
 /**
@@ -349,7 +360,9 @@
  * @typedef {Object} CoralitePageConfig
  * @property {Function} [paths] - Enumerated route paths.
  * @property {Function} [server] - Server-side page data loader.
- * @property {Function} [cacheKey] - Computes the incremental cache key for each output.
+ * @property {Function} [contentKey] - Computes the content identity of each output after server().
+ * @property {Function} [cacheKey] - Deprecated alias for contentKey().
+ * @property {Function} [shouldSkipRender] - Decides whether a cached output can be reused before server() runs.
  * @property {Object} [getters] - Isomorphic page getters.
  * @property {Object} [style] - Reactive page style definitions.
  * @property {Object} [provide] - W3C context providers.

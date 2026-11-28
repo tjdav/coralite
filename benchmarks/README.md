@@ -10,6 +10,9 @@ Fast local checks (~30–60s) for regressions during development. Runs the survi
 - **`06-hydration-payload`** — client HTML, hydration payload, and generated JS sizes across dynamic and static component-heavy pages
 - **`04-internal`** — micro-benchmarks via mitata (AST interpolation, Lazy Proxy, AST DOM creation)
 - **`05-stress-lifecycle`** — selective hydration island scaling, state streaming, mount/unmount lifecycle
+- **`07-build-performance`** — cold, warm and one-record-change production builds of a synthetic `paths()` site, including `server()` call counts and manifest size. Explicit `--suite=build-performance` only; it is not part of `all`.
+- **`08-manifest-store`** — load/save cost of legacy pretty-printed, compact and sharded manifests at 45,000 entries. Use `--store=legacy|compact|sharded|all`; explicit suite only.
+- **`09-locale-chunks`** — warm build and one-locale dictionary edit with and without locale chunks. Use `--mode=plain|locales|all`; explicit suite only.
 
 Run only the payload suite:
 
@@ -18,6 +21,18 @@ pnpm bench:internal --suite=hydration-payload --task-id hydration-payload --phas
 ```
 
 Used per Phase 3 tasks (see `AGENTS.md`). Writes results to `benchmarks/results/<task-id>.json` when run with `--task-id` and `--save`.
+
+Build performance example (use distinct task-ids for before/after — `--phase` is metadata only and the same task-id overwrites its file):
+
+```sh
+pnpm bench:internal --suite=build-performance --rows=2000 --task-id=bench-01-build-performance-before --phase=before --save
+```
+
+Manifest storage comparison (the `legacy` strategy reproduces the previous pretty-printed single file):
+
+```sh
+pnpm bench:internal --suite=manifest-store --store=all --task-id=bench-03-manifest-store-after --phase=after --save
+```
 
 ### Suites removed in rc.6
 

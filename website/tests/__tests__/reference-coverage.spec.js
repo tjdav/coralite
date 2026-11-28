@@ -33,6 +33,8 @@ const PAGE_EXPORT_PAGES = {
   paths: 'page-api',
   server: 'page-api',
   cacheKey: 'page-api',
+  contentKey: 'page-api',
+  shouldSkipRender: 'page-api',
   meta: 'page-api',
   getters: 'page-api',
   style: 'page-api',

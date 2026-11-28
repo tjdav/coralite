@@ -8,6 +8,9 @@ The benchmark suite measures key performance characteristics of Coralite:
 1. **02-bundle-hydration**: Production JS bundle payload size (raw & gzipped), client hydration duration, and Time to Interactive (TTI) compared against React 19, Vue 3, and Svelte 5.
 2. **04-internal**: High-precision internal engine micro-benchmarks powered by `mitata`.
 3. **05-stress-lifecycle**: Real-world stress, high-frequency streaming, selective hydration island scaling, and mount/unmount memory leak lifecycle benchmarks.
+4. **07-build-performance**: Cold, warm and one-record-change production builds of a synthetic `paths()` site. Reports wall time, `server()` calls, skipped/rendered counts, manifest bytes and output HTML count. Run explicitly with `--suite=build-performance`; it is not part of `all`.
+5. **08-manifest-store**: Load/save cost of legacy, compact and sharded manifests at 45,000 entries. Use `--store=legacy|compact|sharded|all`; explicit suite only.
+6. **09-locale-chunks**: Warm build and one-locale dictionary edit with and without locale chunks. Use `--mode=plain|locales|all`; explicit suite only.
 
 ---
 
@@ -42,6 +45,9 @@ node --expose-gc --experimental-vm-modules ./packages/coralite/benchmarks/runner
 
 # Run Stress, Streaming & Lifecycle suite
 node --expose-gc --experimental-vm-modules ./packages/coralite/benchmarks/runner.js --suite=stress
+
+# Run Build Performance suite at 2,000 dynamic records
+node --expose-gc --experimental-vm-modules ./packages/coralite/benchmarks/runner.js --suite=build-performance --rows=2000
 ```
 
 ### CLI Flags
@@ -55,6 +61,10 @@ node --expose-gc --experimental-vm-modules ./packages/coralite/benchmarks/runner
 | `--warn-only` | - | Print performance regression warnings without exiting with code 1 | `false` |
 | `--save-baseline` | - | Overwrite `baselines/baseline.json` with current run results | `false` |
 | `--iterations=<n>` | `-i <n>` | Iteration count per browser test | `9` |
+| `--rows=<n>` | `-r <n>` | Dynamic record count for the build-performance suite | `2000` |
+| `--task-id=<id>` | - | Result identifier used as the filename in `benchmarks/results/` | `adhoc` |
+| `--phase=<phase>` | - | Metadata only; does not change the output filename | `after` |
+| `--save` | - | Write the task result JSON to `benchmarks/results/<task-id>.json` | `false` |
 
 ---
 

@@ -38,7 +38,28 @@ const HEADER_LABELS = {
   initialHeapMB: 'Initial Heap (MB)',
   finalHeapMB: 'Final Heap (MB)',
   netRetentionMB: 'Net Retention (MB)',
-  status: 'Status'
+  status: 'Status',
+  wallMs: 'Wall (ms)',
+  serverCalls: 'server() Calls',
+  skippedPages: 'Skipped Pages',
+  renderedPages: 'Rendered Pages',
+  manifestBytes: 'Manifest (bytes)',
+  outputHtmlFiles: 'Output HTML',
+  rows: 'Rows',
+  loadMs: 'Load (ms)',
+  saveMs: 'Save (ms)',
+  bytes: 'Bytes',
+  entries: 'Entries',
+  shards: 'Shards',
+  renderedOnEdit: 'Rendered On Edit',
+  skippedOnEdit: 'Skipped On Edit',
+  runtimeChunkStable: 'Runtime Stable',
+  enChunkStable: 'EN Chunk Stable',
+  wallSpreadMs: 'Wall Spread (ms)',
+  loadSpreadMs: 'Load Spread (ms)',
+  saveSpreadMs: 'Save Spread (ms)',
+  warmSpreadMs: 'Warm Spread (ms)',
+  editSpreadMs: 'Edit Spread (ms)'
 }
 
 /**
@@ -148,7 +169,16 @@ export function generateMarkdownTable (suiteName, suiteResults) {
   const metrics = Object.keys(firstVal)
   const displayHeaders = metrics.map(m => HEADER_LABELS[m] || m)
 
-  const firstColHeader = suiteName === 'ssrThroughput' || suiteName === 'ssr-throughput' ? 'Workload' : 'Framework'
+  let firstColHeader = 'Framework'
+  if (suiteName === 'ssrThroughput' || suiteName === 'ssr-throughput') {
+    firstColHeader = 'Workload'
+  }
+  if (suiteName === 'build-performance') {
+    firstColHeader = 'Scenario'
+  }
+  if (suiteName === 'manifest-store' || suiteName === 'locale-chunks') {
+    firstColHeader = 'Strategy'
+  }
 
   md += `| ${firstColHeader} | ${displayHeaders.join(' | ')} |\n`
   md += `| ${'--- | '.repeat(metrics.length + 1).slice(0, -1)}\n`

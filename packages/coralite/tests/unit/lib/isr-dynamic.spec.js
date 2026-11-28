@@ -42,6 +42,45 @@ function dataDrivenPage (options = {}) {
 </script>`
 }
 
+/**
+ * Builds a dynamic page whose skip predicate is independent of server() state.
+ *
+ * @param {string} keyHook - Name of the content-identity hook to declare.
+ * @returns {string} Page HTML.
+ */
+function skipRenderPage (keyHook) {
+  return `<!DOCTYPE html>
+<html><head><title>{{ title }}</title></head><body><h1>{{ title }}</h1></body></html>
+
+<script type="module">
+  export async function paths ({ app }) {
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+    const files = await fs.readdir(path.join(app.options.projectRoot, 'data'))
+    return files
+      .filter(function (file) { return file.endsWith('.json') })
+      .sort()
+      .map(function (file) { return { id: file.replace('.json', '') } })
+  }
+
+  export function shouldSkipRender ({ route, previousContentKey }) {
+    const key = route.params.id + ':' + globalThis.__coralite__.isrRevisions[route.params.id]
+    return key === previousContentKey
+  }
+
+  export async function server ({ route, app }) {
+    const fs = await import('node:fs/promises')
+    const path = await import('node:path')
+    const raw = await fs.readFile(path.join(app.options.projectRoot, 'data', route.params.id + '.json'), 'utf8')
+    const record = JSON.parse(raw)
+    globalThis.__coralite__.isrSkipCalls++
+    return { title: record.title, revision: record.revision }
+  }
+
+  export function ${keyHook} ({ route, state }) { return route.params.id + ':' + state.revision }
+</script>`
+}
+
 describe('Route-aware incremental builds', () => {
   let project
   let dataDir
@@ -296,6 +335,71 @@ describe('Route-aware incremental builds', () => {
         return true
       }
     )
+  })
+
+  it('skips server() on warm builds when shouldSkipRender() returns true', async () => {
+    await writeRecord('alpha', {
+      title: 'Alpha v1',
+      revision: 'r1'
+    })
+    await writeRecord('beta', {
+      title: 'Beta v1',
+      revision: 'r1'
+    })
+    await mkdir(join(project.pagesDir, 'posts'), { recursive: true })
+
+    const coraliteGlobal = globalThis.__coralite__ || (globalThis.__coralite__ = {})
+    coraliteGlobal.isrRevisions = {
+      alpha: 'r1',
+      beta: 'r1'
+    }
+    coraliteGlobal.isrSkipCalls = 0
+
+    await project.writePage('posts/[id].html', skipRenderPage('contentKey'))
+    const coralite = await project.createCoralite({ output: undefined })
+
+    const first = await coralite.build()
+    assert.equal(first.length, 2)
+    assert.equal(coraliteGlobal.isrSkipCalls, 2)
+
+    const warm = await coralite.build()
+    assert.ok(warm.every(result => result.status === 'skipped'))
+    assert.equal(coraliteGlobal.isrSkipCalls, 2)
+
+    coraliteGlobal.isrRevisions.beta = 'r2'
+    await writeRecord('beta', {
+      title: 'Beta v2',
+      revision: 'r2'
+    })
+    const changed = await coralite.build()
+    const alpha = changed.find(result => result.route?.params?.id === 'alpha')
+    const beta = changed.find(result => result.route?.params?.id === 'beta')
+    assert.equal(alpha.status, 'skipped')
+    assert.equal(beta.status, undefined)
+    assert.ok(beta.content.includes('Beta v2'))
+    assert.equal(coraliteGlobal.isrSkipCalls, 3)
+  })
+
+  it('honors the legacy cacheKey() alias with shouldSkipRender()', async () => {
+    await writeRecord('alpha', {
+      title: 'Alpha v1',
+      revision: 'r1'
+    })
+    await mkdir(join(project.pagesDir, 'posts'), { recursive: true })
+
+    const coraliteGlobal = globalThis.__coralite__ || (globalThis.__coralite__ = {})
+    coraliteGlobal.isrRevisions = { alpha: 'r1' }
+    coraliteGlobal.isrSkipCalls = 0
+
+    await project.writePage('posts/[id].html', skipRenderPage('cacheKey'))
+    const coralite = await project.createCoralite({ output: undefined })
+
+    await coralite.build()
+    assert.equal(coraliteGlobal.isrSkipCalls, 1)
+
+    const warm = await coralite.build()
+    assert.equal(warm[0].status, 'skipped')
+    assert.equal(coraliteGlobal.isrSkipCalls, 1)
   })
 
   it('accepts a revision alias for virtual pagination entries', async () => {

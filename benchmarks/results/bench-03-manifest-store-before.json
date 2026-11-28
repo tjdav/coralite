@@ -1,0 +1,30 @@
+{
+  "taskId": "bench-03-manifest-store-before",
+  "phase": "before",
+  "commit": "fb0d5c39",
+  "source": {
+    "suiteHash": "78f8a7744afa",
+    "dirty": false,
+    "dirtyEntries": 0
+  },
+  "runAt": "2026-11-28T08:10:19.391Z",
+  "machine": {
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "cores": 24,
+    "os": "Linux 7.0.0-44-generic",
+    "nodeVersion": "v24.16.0"
+  },
+  "results": {
+    "manifest-store": {
+      "legacy": {
+        "loadMs": 117.8,
+        "loadSpreadMs": 17.2,
+        "saveMs": 153.6,
+        "saveSpreadMs": 30.4,
+        "bytes": 30264242,
+        "entries": 45000,
+        "shards": 1
+      }
+    }
+  }
+}

@@ -50,7 +50,9 @@
               <tr><td><code>paths</code></td><td><code>export function</code></td><td>Build</td><td>Enumerates the parameter sets to compile for a dynamic route.</td></tr>
               <tr><td><code>meta</code></td><td><code>export const</code></td><td>Build</td><td>Declares page metadata and seeds default state.</td></tr>
               <tr><td><code>server</code></td><td><code>export function</code></td><td>Build</td><td>Loads data for the page and can emit a redirect.</td></tr>
-              <tr><td><code>cacheKey</code></td><td><code>export function</code></td><td>Build</td><td>Computes the incremental cache key for each dynamic output.</td></tr>
+              <tr><td><code>contentKey</code></td><td><code>export function</code></td><td>Build</td><td>Identifies the rendered output for incremental builds.</td></tr>
+              <tr><td><code>cacheKey</code></td><td><code>export function</code></td><td>Build</td><td>Deprecated alias for <code>contentKey</code>.</td></tr>
+              <tr><td><code>shouldSkipRender</code></td><td><code>export function</code></td><td>Build</td><td>Decides whether a cached output can be reused before <code>server()</code> runs.</td></tr>
               <tr><td><code>getters</code></td><td><code>export const</code></td><td>Build + browser</td><td>Derives page state for tokens.</td></tr>
               <tr><td><code>style</code></td><td><code>export const</code></td><td>Build + browser</td><td>Writes custom properties and inline styles on the root element.</td></tr>
               <tr><td><code>provide</code></td><td><code>export const</code></td><td>Build + browser</td><td>Provides context to every descendant component.</td></tr>
@@ -154,21 +156,37 @@ export function server ({ state }) {
 
         <p>A relative target must start with <code>/</code>; absolute <code>http://</code> and <code>https://</code> targets are allowed. Anything else fails the build.</p>
 
-        <h2 id="cachekey">cacheKey()</h2>
+        <h2 id="contentkey">contentKey()</h2>
 
-        <p>Dynamic pages render one output per <code>paths()</code> entry. Incremental builds key each output by its sorted <code>route.params</code> and a stable serialization of the state resolved after <code>server()</code>. Changing data for one record therefore rebuilds only that record's output and leaves the rest skipped.</p>
+        <p>Dynamic pages render one output per <code>paths()</code> entry. Incremental builds identify each output by a content key stored in the manifest. By default it is an xxHash of the sorted <code>route.params</code>, the route path and pattern, and a stable serialization of the state resolved after <code>server()</code>. Changing data for one record therefore rebuilds only that record's output and leaves the rest skipped.</p>
 
-        <p>Declare <code>cacheKey</code> when <code>server()</code> returns large or non-serializable state, or when the output depends on data that is not represented in state. The handler receives <code>{ route, state }</code>, may be asynchronous, and must return a string or number. Its return value replaces the default key entirely, so include every field that identifies the output. Returning anything else is <a href="/reference/diagnostics/#coralite-e404"><code>CORALITE-E404</code></a>.</p>
+        <p>Declare <code>contentKey</code> when <code>server()</code> returns large or non-serializable state, or when the output depends on data that is not represented in state. The handler receives <code>{ route, state }</code>, may be asynchronous, and must return a string or number. Its return value replaces the default key entirely, so include every field that identifies the output. Returning anything else is <a href="/reference/diagnostics/#coralite-e404"><code>CORALITE-E404</code></a>. <code>cacheKey()</code> is a deprecated alias with identical behavior, kept for pages written against Coralite 1.5.</p>
 
         <code-block language="javascript" filename="src/pages/posts/[id].html">
-export function cacheKey ({ route, state }) {
+export function contentKey ({ route, state }) {
   return `${route.params.id}:${state.revision}`
 }
         </code-block>
 
         <p>The same export opts a static page into explicit cache invalidation. If it is omitted on a static page, only the source-file hash decides whether the page rebuilds.</p>
 
-        <p>The manifest records the resolved key per output. A cache-key change writes the page again; structural changes to <code>paths()</code> still add or remove outputs. Changing the key semantics invalidates older manifests through the manifest version, so the first build after an upgrade rebuilds once.</p>
+        <p>The manifest records the resolved key per output. A content-key change writes the page again; structural changes to <code>paths()</code> still add or remove outputs. Changing the key semantics invalidates older manifests through the manifest version, so the first build after an upgrade rebuilds once.</p>
+
+        <h2 id="shouldskiprender">shouldSkipRender()</h2>
+
+        <p><code>contentKey()</code> runs after <code>server()</code>, so a warm build still resolves state for every output even when none need rendering. Declare <code>shouldSkipRender</code> to make that decision earlier: it receives <code>{ route, page, previousContentKey }</code>, where <code>previousContentKey</code> is the key the manifest recorded for this output during the last successful build. Return <code>true</code> to reuse the cached output and skip <code>server()</code>, getters and component rendering entirely; return <code>false</code> to take the normal build path. The handler may be asynchronous and must return a boolean; anything else is <a href="/reference/diagnostics/#coralite-e404"><code>CORALITE-E404</code></a>.</p>
+
+        <p>The predicate cannot see state resolved by <code>server()</code>, so it must read every input that can change the output from the route or page context. Declare <code>contentKey()</code> as well and return the same key from both checks; otherwise the cached key will not match and the page will keep rebuilding.</p>
+
+        <code-block language="javascript" filename="src/pages/posts/[id].html">
+export function contentKey ({ route, state }) {
+  return `${route.params.id}:${state.revision}`
+}
+
+export function shouldSkipRender ({ route, previousContentKey }) {
+  return `${route.params.id}:${revisionFor(route.params.id)}` === previousContentKey
+}
+        </code-block>
 
         <h2 id="getters-style-provide">getters, style and provide</h2>
 
@@ -239,7 +257,7 @@ export function client ({ refs, signal, emit }) {
         <ul>
           <li><a href="/reference/diagnostics/#coralite-e107"><code>CORALITE-E107</code></a> reports a wrong export form, a rejected block, or more than one page controller script.</li>
           <li><a href="/reference/diagnostics/#coralite-e402"><code>CORALITE-E402</code></a> reports a <code>paths()</code> result that is not an array of parameter objects.</li>
-          <li><a href="/reference/diagnostics/#coralite-e404"><code>CORALITE-E404</code></a> reports a <code>cacheKey()</code> result that is not a string or number.</li>
+          <li><a href="/reference/diagnostics/#coralite-e404"><code>CORALITE-E404</code></a> reports a <code>contentKey()</code> result that is not a string or number, or a <code>shouldSkipRender()</code> result that is not a boolean.</li>
           <li><a href="/reference/diagnostics/#coralite-e401"><code>CORALITE-E401</code></a> reports request or response globals, which pages do not receive.</li>
           <li><a href="/reference/diagnostics/#coralite-page-201"><code>CORALITE-PAGE-201</code></a> reports page code that reaches into component internals.</li>
         </ul>
@@ -266,7 +284,8 @@ export function client ({ refs, signal, emit }) {
         <a href="#paths">paths()</a>
         <a href="#meta">meta</a>
         <a href="#server">server()</a>
-        <a href="#cachekey">cacheKey()</a>
+        <a href="#contentkey">contentKey()</a>
+        <a href="#shouldskiprender">shouldSkipRender()</a>
         <a href="#getters-style-provide">getters, style and provide</a>
         <a href="#client">client()</a>
         <a href="#boundary">The page boundary</a>

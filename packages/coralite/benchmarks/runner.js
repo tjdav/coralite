@@ -1,5 +1,6 @@
 import process from 'node:process'
 import fs from 'node:fs'
+import crypto from 'node:crypto'
 import path from 'node:path'
 import os from 'node:os'
 import { execSync } from 'node:child_process'
@@ -11,6 +12,9 @@ import { runBundleHydrationSuite } from './suites/02-bundle-hydration/bench.js'
 import { runInternalSuite } from './suites/04-internal/bench.js'
 import { runStressLifecycleSuite } from './suites/05-stress-lifecycle/bench.js'
 import { runHydrationPayloadSuite } from './suites/06-hydration-payload/bench.js'
+import { runBuildPerformanceSuite } from './suites/07-build-performance/bench.js'
+import { runManifestStoreSuite } from './suites/08-manifest-store/bench.js'
+import { runLocaleChunksSuite } from './suites/09-locale-chunks/bench.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -34,7 +38,10 @@ function parseArgs () {
     taskId: 'adhoc',
     phase: 'after',
     save: false,
-    frameworks: null
+    frameworks: null,
+    store: 'all',
+    mode: 'all',
+    variant: 'current'
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -45,6 +52,12 @@ function parseArgs () {
       flags.suite = arg.split('=')[1]
     } else if (arg === '-s' && i + 1 < args.length) {
       flags.suite = args[++i]
+    } else if (arg.startsWith('--store=')) {
+      flags.store = arg.split('=')[1]
+    } else if (arg.startsWith('--mode=')) {
+      flags.mode = arg.split('=')[1]
+    } else if (arg.startsWith('--variant=')) {
+      flags.variant = arg.split('=')[1]
     } else if (arg.startsWith('--frameworks=')) {
       flags.frameworks = arg.split('=')[1].split(',').map(s => s.trim()).filter(Boolean)
     } else if (arg === '--frameworks' && i + 1 < args.length) {
@@ -93,8 +106,11 @@ Usage:
 
 Options:
   --help, -h          Display formatted CLI usage and exit
-  --suite=<name>, -s  Run a specific benchmark suite (bundle-hydration, hydration-payload, internal, stress, or all [default: all])
+  --suite=<name>, -s  Run a specific benchmark suite (bundle-hydration, hydration-payload, internal, stress, build-performance, or all [default: all])
   --frameworks=<list> Comma-separated list of frameworks to include in bundle-hydration (coraliteDynamic, react, vue, svelte)
+  --store=<name>      Manifest store strategy for the manifest-store suite (legacy, compact, sharded, all)
+  --mode=<name>       Strategy for the locale-chunks suite (plain, locales, all)
+  --variant=<name>    Fixture variant for build-performance (legacy, current)
   --task-id=<id>      Identifier for the result file (default: adhoc)
   --phase=<phase>     Phase of run: before, after, baseline (default: after)
   --save              Write results to benchmarks/results/<task-id>.json
@@ -150,14 +166,55 @@ function getCommitHash () {
 }
 
 /**
+ * Fingerprints the benchmark suite sources and records working-tree state.
+ *
+ * @returns {Object} Suite hash and dirty-state metadata.
+ */
+function getSourceFingerprint () {
+  const files = [path.join(__dirname, 'runner.js')]
+  const walk = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const filePath = path.join(directory, entry.name)
+      if (entry.isDirectory()) {
+        walk(filePath)
+      } else if (entry.name.endsWith('.js')) {
+        files.push(filePath)
+      }
+    }
+  }
+  walk(path.join(__dirname, 'suites'))
+  for (const name of ['utils/reporter.js', 'utils/stats.js', 'utils/memory.js']) {
+    files.push(path.join(__dirname, name))
+  }
+
+  const digest = crypto.createHash('sha256')
+  for (const filePath of files.sort()) {
+    digest.update(path.relative(__dirname, filePath))
+    digest.update(fs.readFileSync(filePath))
+  }
+
+  let status = ''
+  try {
+    status = execSync('git status --porcelain', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+  } catch {}
+
+  return {
+    suiteHash: digest.digest('hex').slice(0, 12),
+    dirty: status.length > 0,
+    dirtyEntries: status ? status.split('\n').length : 0
+  }
+}
+
+/**
  * Formats raw benchmark metrics into the standard task result schema.
  *
  * @param {Object} resultsData - Raw benchmark execution metrics.
  * @param {string} taskId - Identifier for the performance task.
  * @param {string} phase - Benchmark phase (before, after, baseline).
+ * @param {Object} sourceFingerprint - Provenance captured before the run.
  * @returns {Object} Schema-compliant result object.
  */
-function formatTaskResults (resultsData, taskId, phase) {
+function formatTaskResults (resultsData, taskId, phase, sourceFingerprint) {
   const bundleRaw = resultsData.suites?.['bundle-hydration']?.coraliteDynamic
 
   const results = {}
@@ -188,10 +245,61 @@ function formatTaskResults (resultsData, taskId, phase) {
     }
   }
 
+  const buildPerformance = resultsData.suites?.['build-performance']
+  if (buildPerformance) {
+    results['build-performance'] = {}
+    for (const [scenario, metrics] of Object.entries(buildPerformance)) {
+      results['build-performance'][scenario] = {
+        wallMs: metrics.wallMs,
+        wallSpreadMs: metrics.wallSpreadMs,
+        serverCalls: metrics.serverCalls,
+        skippedPages: metrics.skippedPages,
+        renderedPages: metrics.renderedPages,
+        manifestBytes: metrics.manifestBytes,
+        outputHtmlFiles: metrics.outputHtmlFiles,
+        rows: metrics.rows
+      }
+    }
+  }
+
+  const manifestStore = resultsData.suites?.['manifest-store']
+  if (manifestStore) {
+    results['manifest-store'] = {}
+    for (const [strategy, metrics] of Object.entries(manifestStore)) {
+      results['manifest-store'][strategy] = {
+        loadMs: metrics.loadMs,
+        loadSpreadMs: metrics.loadSpreadMs,
+        saveMs: metrics.saveMs,
+        saveSpreadMs: metrics.saveSpreadMs,
+        bytes: metrics.bytes,
+        entries: metrics.entries,
+        shards: metrics.shards
+      }
+    }
+  }
+
+  const localeChunks = resultsData.suites?.['locale-chunks']
+  if (localeChunks) {
+    results['locale-chunks'] = {}
+    for (const [strategy, metrics] of Object.entries(localeChunks)) {
+      results['locale-chunks'][strategy] = {
+        warmMs: metrics.warmMs,
+        warmSpreadMs: metrics.warmSpreadMs,
+        editMs: metrics.editMs,
+        editSpreadMs: metrics.editSpreadMs,
+        renderedOnEdit: metrics.renderedOnEdit,
+        skippedOnEdit: metrics.skippedOnEdit,
+        runtimeChunkStable: metrics.runtimeChunkStable,
+        enChunkStable: metrics.enChunkStable
+      }
+    }
+  }
+
   return {
     taskId,
     phase,
     commit: getCommitHash(),
+    source: sourceFingerprint,
     runAt: resultsData.timestamp,
     machine: getMachineInfo(),
     results
@@ -205,6 +313,7 @@ function formatTaskResults (resultsData, taskId, phase) {
  */
 async function main () {
   const flags = parseArgs()
+  const sourceFingerprint = getSourceFingerprint()
 
   if (flags.help) {
     printHelp()
@@ -224,7 +333,7 @@ async function main () {
   }
 
   const selectedSuite = flags.suite.toLowerCase()
-  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle', 'hydration-payload', 'payload']
+  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle', 'hydration-payload', 'payload', 'build-performance', 'manifest-store', 'locale-chunks']
 
   if (!VALID_SUITES.includes(selectedSuite)) {
     console.error(`\n❌ Error: Unknown suite "${flags.suite}".`)
@@ -261,10 +370,28 @@ async function main () {
     triggerGC()
   }
 
+  if (selectedSuite === 'build-performance') {
+    const buildPerformanceResults = await runBuildPerformanceSuite({ rows: flags.rows, iterations: flags.iterations, variant: flags.variant })
+    resultsData.suites['build-performance'] = buildPerformanceResults
+    triggerGC()
+  }
+
+  if (selectedSuite === 'manifest-store') {
+    const manifestStoreResults = await runManifestStoreSuite({ store: flags.store, iterations: flags.iterations })
+    resultsData.suites['manifest-store'] = manifestStoreResults
+    triggerGC()
+  }
+
+  if (selectedSuite === 'locale-chunks') {
+    const localeChunksResults = await runLocaleChunksSuite({ mode: flags.mode, iterations: flags.iterations })
+    resultsData.suites['locale-chunks'] = localeChunksResults
+    triggerGC()
+  }
+
   printTerminalResults(resultsData)
   writeMarkdownResults(resultsData)
 
-  const taskResult = formatTaskResults(resultsData, flags.taskId, flags.phase)
+  const taskResult = formatTaskResults(resultsData, flags.taskId, flags.phase, sourceFingerprint)
 
   if (flags.save) {
     const resultsDir = path.resolve(__dirname, '../../../benchmarks/results')

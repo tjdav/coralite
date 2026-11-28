@@ -74,6 +74,8 @@ export async function buildCommand (config, options, logger = null) {
     exclude: config.exclude,
     plugins: Array.isArray(config.plugins) ? config.plugins : [],
     concurrency: config.build?.concurrency ?? config.concurrency,
+    manifestShards: config.build?.manifestShards,
+    i18n: config.i18n,
     assets: config.assets,
     styles: config.styles,
     csp: config.csp,

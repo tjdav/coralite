@@ -127,6 +127,38 @@
 
             <p>When writing component styles, use CSS logical properties instead of physical directions. For example, use <code>margin-inline-start</code> instead of <code>margin-left</code>, and <code>padding-inline-end</code> instead of <code>padding-right</code>. This ensures styles adapt automatically when switching between LTR and RTL directions without needing direction-specific CSS overrides.</p>
 
+            <h2 id="locale-config-chunks">Locale config chunks</h2>
+
+            <p>When a dictionary is authored in plugin client config rather than in page state, a copy edit normally changes the shared client runtime and rebuilds every page. With <code>i18n</code> configured, Coralite splits the <code>locales</code> field of each plugin's <code>client.config</code> into small hashed chunks. Only pages whose route locale matches the edited chunk are rebuilt; the shared runtime chunk stays unchanged.</p>
+
+            <code-block language="javascript" filename="coralite.config.js">
+export default defineConfig({
+  i18n: {
+    locales: ['en', 'fr'],
+    defaultLocale: 'en'
+  }
+})
+            </code-block>
+
+            <code-block language="javascript" filename="src/plugins/i18n.js">
+export default definePlugin({
+  name: 'i18n',
+  client: {
+    config: {
+      locales: {
+        en: { welcome: 'Welcome' },
+        fr: { welcome: 'Bienvenue' }
+      }
+    },
+    init: ({ config }) => {
+      window.__coralite__.plugins.i18n = { dictionary: config }
+    }
+  }
+})
+            </code-block>
+
+            <p>The locale is taken from <code>route.params.lang</code> (or <code>route.params.locale</code>); pages without either use <code>defaultLocale</code>. Locale overrides are merged into the <code>config</code> passed to plugin <code>init()</code> in the browser. This does not partition dictionaries written directly inside a plugin's <code>context</code> closure or in page state — those still change the shared runtime or the page's own cache key and rebuild every locale. Keep message bundles in <code>server()</code> when getters or templates need them.</p>
+
             <h2 id="5-what-coralite-does-not-provide">5. What Coralite Does Not Provide</h2>
 
             <p>To remain lightweight, predictable, and standards-compliant, Coralite intentionally does not ship built-in abstractions for several i18n concerns:</p>

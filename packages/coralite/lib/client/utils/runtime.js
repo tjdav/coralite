@@ -4,6 +4,7 @@
  * @param {Object} options - The options used to configure the client-side runtime.
  * @param {string} options.base - The base URL for assets.
  * @param {string} options.sharedChunkPath - The filename of the shared chunk.
+ * @param {string} [options.localeChunkPath] - Optional locale config chunk filename.
  * @param {string[]} [options.declarativeTags=[]] - The declarative tags used.
  * @param {string} [options.hydrationData='{}'] - Serialized component instance hydration data.
  * @param {string} [options.routeData='undefined'] - Serialized active route object.
@@ -20,6 +21,7 @@
 export function generateClientRuntime ({
   base,
   sharedChunkPath,
+  localeChunkPath = null,
   declarativeTags = [],
   hydrationData = '{}',
   routeData = 'undefined',
@@ -38,6 +40,9 @@ export function generateClientRuntime ({
   const sharedImports = isProd
     ? 'getClientContext, createCoraliteClass, globalClientHooks, initPlugins, setupPageRuntime, createImportCSS, formatCoraliteHTML'
     : 'getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, initPlugins, setupPageRuntime, createImportCSS, formatCoraliteHTML'
+  const localeImportBinding = localeChunkPath ? ',\n    { default: localePluginConfig }' : ''
+  const localeImportSource = localeChunkPath ? `,\n    import('${base}assets/js/${localeChunkPath}')` : ''
+  const initPluginsArgument = localeChunkPath ? 'localePluginConfig' : ''
 
   return `
 (async () => {
@@ -92,10 +97,10 @@ export function generateClientRuntime ({
 
   const [
     { ${sharedImports} },
-    { default: componentManifest }
+    { default: componentManifest }${localeImportBinding}
   ] = await Promise.all([
     import('${base}assets/js/${sharedChunkPath}'),
-    import('${base}assets/js/manifest.js')
+    import('${base}assets/js/manifest.js')${localeImportSource}
   ]);
 
   const declarativeTags = ${JSON.stringify(declarativeTags)};
@@ -415,7 +420,7 @@ ${!isProd ? `
 ` : ''}
 
   if (typeof initPlugins === 'function') {
-    await initPlugins();
+    await initPlugins(${initPluginsArgument});
   }
   if (
     typeof setupPageRuntime === 'function'

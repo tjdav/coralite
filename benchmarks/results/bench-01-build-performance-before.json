@@ -1,0 +1,51 @@
+{
+  "taskId": "bench-01-build-performance-before",
+  "phase": "before",
+  "commit": "fb0d5c39",
+  "source": {
+    "suiteHash": "78f8a7744afa",
+    "dirty": false,
+    "dirtyEntries": 0
+  },
+  "runAt": "2026-11-28T08:09:38.554Z",
+  "machine": {
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "cores": 24,
+    "os": "Linux 7.0.0-44-generic",
+    "nodeVersion": "v24.16.0"
+  },
+  "results": {
+    "build-performance": {
+      "cold": {
+        "wallMs": 615.5,
+        "wallSpreadMs": 0,
+        "serverCalls": 2000,
+        "skippedPages": 0,
+        "renderedPages": 2002,
+        "manifestBytes": 527636,
+        "outputHtmlFiles": 2002,
+        "rows": 2000
+      },
+      "warm": {
+        "wallMs": 425.2,
+        "wallSpreadMs": 63.7,
+        "serverCalls": 2000,
+        "skippedPages": 2002,
+        "renderedPages": 0,
+        "manifestBytes": 527636,
+        "outputHtmlFiles": 2002,
+        "rows": 2000
+      },
+      "oneRecordChange": {
+        "wallMs": 393.2,
+        "wallSpreadMs": 14.8,
+        "serverCalls": 2000,
+        "skippedPages": 2001,
+        "renderedPages": 1,
+        "manifestBytes": 527642,
+        "outputHtmlFiles": 2002,
+        "rows": 2000
+      }
+    }
+  }
+}

@@ -1577,3 +1577,19 @@ await updateComplete
 ```
 
 Never rely on arbitrary `setTimeout` or `requestAnimationFrame` for DOM synchronization.
+
+### 20.6 Build-Time Cache Hooks
+Incremental builds identify each dynamic output with a content key stored in the manifest. By default that key hashes the route params, path, pattern and the state resolved by `server()`. Declare `contentKey({ route, state })` (a string or number) to replace the default when state is large, non-serializable or incomplete; `cacheKey()` is a deprecated alias with identical behavior.
+
+A warm build still calls `server()` for every cache-eligible output even when every output is skipped. Declare `shouldSkipRender({ route, page, previousContentKey })` to decide before rendering: `previousContentKey` is the key recorded by the last successful build, and returning `true` reuses the cached output without running `server()`, getters or component rendering. Returning `false` takes the normal build path.
+
+The predicate cannot see state resolved by `server()`, so read every input that can change the output from the route or page context, and declare `contentKey()` with the same key formula so the stored value can match. The handler may be asynchronous and must return a boolean; other return types raise `CORALITE-E404`.
+
+### 20.7 Manifest Storage
+By default the incremental manifest is written to `.coralite/build/manifest.json` as a single compact JSON document. The experimental `build.manifestShards` option stores it instead as one `meta.json` plus that many hash-bucketed shard files under `.coralite/build/manifest-shards/`, migrating an existing single file on the first sharded build. Current benchmarks at 45,000 entries show sharding is slower to load than the compact single file and saves no bytes, so prefer the default unless you specifically need smaller individual files. Sharding changes storage layout only; cache keys, invalidation rules and output bytes are unchanged.
+
+### 20.8 Locale Config Chunks
+Set `i18n: { locales, defaultLocale }` in `defineConfig` to keep edits to plugin `client.config` locale overrides from invalidating every locale. Move per-locale values into a `locales` field on a plugin's `client.config`; Coralite emits one small hashed chunk per locale and merges the matching values into the `config` passed to that plugin's browser `init()`. A copy edit changes only that locale's chunk and the pages whose route carries `route.params.lang` or `route.params.locale`; other locales stay cached. Without this option the plugin config is baked into the shared runtime chunk as before. This feature does not partition dictionaries defined in plugin `context` closures or in page state; those still invalidate all locales. Keep message bundles in `server()` when getters need them.
+
+### 20.9 Build Workers
+Coralite renders pages concurrently in one process with `build.concurrency` (default `min(availableParallelism(), 8)`). A `build.workers` pool is not offered: page rendering depends on non-cloneable framework context (compiled functions, plugin contexts, `app`, stores) and mutates shared registries, while build hooks must stay in the process that calls `build()`. Moving rendering to workers would require reimplementing that context and marshalling every hook. See `docs/build-workers-design-spike.md` in the repository for the full analysis. For large sites, rely on the incremental cache hooks, manifest sharding and locale config chunks instead.

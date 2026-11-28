@@ -107,6 +107,48 @@ export function stableSerialize (value, seen = new WeakSet()) {
 }
 
 /**
+ * Evaluates a page's state-independent skip predicate.
+ *
+ * @param {Object} options - Skip predicate options.
+ * @param {any} [options.pageExports] - Evaluated page exports.
+ * @param {any} [options.route] - Concrete route for this output.
+ * @param {any} [options.page] - Page context.
+ * @param {any} [options.previousContentKey] - Content key stored by the previous build.
+ * @returns {Promise<boolean>} True when the cached output can be reused.
+ * @throws {CoraliteError} CORALITE-E404 when the predicate returns a non-boolean.
+ */
+export async function shouldSkipPage ({ pageExports = null, route = null, page = null, previousContentKey } = {}) {
+  if (!pageExports || typeof pageExports.shouldSkipRender !== 'function') {
+    return false
+  }
+
+  const value = await pageExports.shouldSkipRender({
+    route,
+    page,
+    previousContentKey
+  })
+
+  if (typeof value !== 'boolean') {
+    /** @type {string} */
+    let received = typeof value
+    if (value === null) {
+      received = 'null'
+    } else if (Array.isArray(value)) {
+      received = 'array'
+    }
+    throw new CoraliteError(
+      `Page shouldSkipRender() must return a boolean, received ${received}.`,
+      {
+        code: 'CORALITE-E404',
+        filePath: page?.file?.pathname
+      }
+    )
+  }
+
+  return value
+}
+
+/**
  * Creates the page-state snapshot used by the default cache key.
  *
  * The framework `page` object is excluded because it holds exports and file
@@ -139,9 +181,10 @@ function createStateSnapshot (state, page) {
 /**
  * Resolves the incremental cache key for a page output.
  *
- * A page-level `cacheKey()` handler replaces the default key entirely. Without
- * one, the key is an xxHash of the sorted route parameters, route path and
- * pattern, and the stable serialization of resolved page state.
+ * A page-level `contentKey()` handler replaces the default key entirely; the
+ * legacy `cacheKey()` name is accepted as an alias. Without one, the key is an
+ * xxHash of the sorted route parameters, route path and pattern, and the stable
+ * serialization of resolved page state.
  *
  * @param {Object} options - Cache-key options.
  * @param {any} [options.pageExports] - Evaluated page exports.
@@ -152,8 +195,15 @@ function createStateSnapshot (state, page) {
  * @throws {CoraliteError} CORALITE-E404 when a custom key returns an invalid type.
  */
 export async function createPageCacheKey ({ pageExports = null, route = null, state = null, page = null } = {}) {
-  if (pageExports && typeof pageExports.cacheKey === 'function') {
-    const value = await pageExports.cacheKey({
+  let keyHookName = null
+  if (pageExports && typeof pageExports.contentKey === 'function') {
+    keyHookName = 'contentKey'
+  } else if (pageExports && typeof pageExports.cacheKey === 'function') {
+    keyHookName = 'cacheKey'
+  }
+
+  if (keyHookName) {
+    const value = await pageExports[keyHookName]({
       route,
       state
     })
@@ -167,7 +217,7 @@ export async function createPageCacheKey ({ pageExports = null, route = null, st
         received = 'array'
       }
       throw new CoraliteError(
-        `Page cacheKey() must return a string or number, received ${received}.`,
+        `Page ${keyHookName}() must return a string or number, received ${received}.`,
         {
           code: 'CORALITE-E404',
           filePath: page?.file?.pathname

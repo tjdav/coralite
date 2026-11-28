@@ -150,6 +150,35 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
       assert.ok(!md.includes('[object Object]'))
     })
 
+    it('generateMarkdownTable renders build-performance scenarios with a Scenario column', () => {
+      const suiteData = {
+        cold: { wallMs: 120.5, serverCalls: 4, skippedPages: 0, renderedPages: 4, manifestBytes: 2048, outputHtmlFiles: 4, rows: 4 },
+        warm: { wallMs: 12.5, serverCalls: 4, skippedPages: 4, renderedPages: 0, manifestBytes: 2048, outputHtmlFiles: 4, rows: 4 }
+      }
+
+      const md = generateMarkdownTable('build-performance', suiteData)
+      assert.ok(md.includes('| Scenario |'))
+      assert.ok(md.includes('server() Calls'))
+      assert.ok(md.includes('Skipped Pages'))
+      assert.ok(md.includes('| cold |'))
+      assert.ok(md.includes('| warm |'))
+      assert.ok(!md.includes('| Framework |'))
+    })
+
+    it('generateMarkdownTable renders manifest-store strategies with a Strategy column', () => {
+      const suiteData = {
+        legacy: { loadMs: 900, saveMs: 1100, bytes: 85000000, entries: 45000, shards: 1 },
+        sharded: { loadMs: 120, saveMs: 180, bytes: 85000000, entries: 45000, shards: 16 }
+      }
+
+      const md = generateMarkdownTable('manifest-store', suiteData)
+      assert.ok(md.includes('| Strategy |'))
+      assert.ok(md.includes('Load (ms)'))
+      assert.ok(md.includes('| legacy |'))
+      assert.ok(md.includes('| sharded |'))
+      assert.ok(!md.includes('| Framework |'))
+    })
+
     it('printTerminalResults renders all three Suite 5 sub-tables without throwing', () => {
       const data = {
         suites: {
@@ -328,6 +357,7 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
       assert.ok(stdout.includes('Coralite Benchmark Runner CLI'))
       assert.ok(stdout.includes('--check-regression'))
       assert.ok(stdout.includes('--save-baseline'))
+      assert.ok(stdout.includes('build-performance'))
     })
   })
 })
