@@ -224,7 +224,12 @@ export async function runBuildPerformanceSuite ({ rows = 2000, iterations = 3, v
   try {
     await writeFixture(fixture, rows, variant)
 
-    const cold = await runBuild(fixture)
+    const coldSamples = []
+    for (let iteration = 0; iteration < iterations; iteration++) {
+      await fs.rm(fixture.cacheDir, { recursive: true, force: true })
+      await fs.rm(fixture.outputDir, { recursive: true, force: true })
+      coldSamples.push(await runBuild(fixture))
+    }
 
     const warmSamples = []
     for (let iteration = 0; iteration < iterations; iteration++) {
@@ -242,7 +247,7 @@ export async function runBuildPerformanceSuite ({ rows = 2000, iterations = 3, v
     }
 
     return {
-      cold: { ...summarize([cold]), rows },
+      cold: { ...summarize(coldSamples), rows },
       warm: { ...summarize(warmSamples), rows },
       oneRecordChange: { ...summarize(changeSamples), rows }
     }
