@@ -80,10 +80,12 @@ export async function buildCommand (config, options, logger = null) {
     styles: config.styles,
     csp: config.csp,
     incremental,
-    externalStyles: config.styles?.input?.map(input => {
-      const ext = input.split('.').pop()
-      return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')
-    }),
+    externalStyles: config.externalStyles?.length
+      ? config.externalStyles
+      : config.styles?.input?.map(input => {
+        const ext = input.split('.').pop()
+        return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')
+      }),
     baseURL: config.baseURL,
     cleanUrls: config.cleanUrls,
     output: config.output,
