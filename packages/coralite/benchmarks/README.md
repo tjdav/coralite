@@ -11,6 +11,7 @@ The benchmark suite measures key performance characteristics of Coralite:
 4. **07-build-performance**: Cold, warm and one-record-change production builds of a synthetic `paths()` site. Reports wall time, `server()` calls, skipped/rendered counts, manifest bytes and output HTML count. Run explicitly with `--suite=build-performance`; it is not part of `all`.
 5. **08-manifest-store**: Load/save cost of legacy, compact and sharded manifests at 45,000 entries. Use `--store=legacy|compact|sharded|all`; explicit suite only.
 6. **09-locale-chunks**: Warm build and one-locale dictionary edit with and without locale chunks. Use `--mode=plain|locales|all`; explicit suite only.
+7. **10-sharded-build**: Prototype comparing a serial cold build with a four-process sharded build using `dynamicPaths`; reports speedup and full-tree hash equality. Explicit suite only.
 
 ---
 
