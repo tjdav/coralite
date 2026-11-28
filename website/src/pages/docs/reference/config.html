@@ -201,6 +201,21 @@ export default defineConfig({
         ]
                 </code-block>
               </li>
+              <li><code>build</code> — Build controls. <code>concurrency</code> caps parallel page work; <code>manifestShards</code> is experimental and currently slower than the compact default.
+                <code-block language="javascript">
+        build: {
+          concurrency: 8
+        }
+                </code-block>
+              </li>
+              <li><code>i18n</code> — Opt-in per-locale config chunks for plugin dictionaries declared in <code>client.config.locales</code>.
+                <code-block language="javascript">
+        i18n: {
+          locales: ['en', 'fr'],
+          defaultLocale: 'en'
+        }
+                </code-block>
+              </li>
               <li><code>plugins</code> — Array of configured plugin instances created via <code>definePlugin</code>. Contexts defined in <code>server.context</code> and <code>client.context</code> are automatically injected into Component and Page handlers (<code>server()</code> and <code>client()</code>). Plugin context is never injected into isomorphic getters.
                 <code-block language="javascript">
         plugins: [
@@ -222,6 +237,8 @@ export default defineConfig({
                 </code-block>
               </li>
             </ul>
+
+            <p>See the <a href="/docs/guide/building/">Building Applications</a> guide for concurrency semantics, incremental invalidation rules and how to benchmark a build.</p>
 
             <h2 id="5-asset-injection">5. Asset Injection</h2>
 
