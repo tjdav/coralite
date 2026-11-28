@@ -307,8 +307,7 @@ function formatTaskResults (resultsData, taskId, phase, sourceFingerprint) {
         shards: shardedBuild.shards,
         outputMatch: shardedBuild.outputMatch,
         serialFiles: shardedBuild.serialFiles,
-        mergedFiles: shardedBuild.mergedFiles,
-        shardWallTimes: shardedBuild.shardWallTimes
+        mergedFiles: shardedBuild.mergedFiles
       }
     }
   }
