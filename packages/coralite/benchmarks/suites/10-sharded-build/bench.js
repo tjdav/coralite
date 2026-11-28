@@ -169,7 +169,7 @@ export async function runShardedBuildSuite () {
     }))
 
     const started = performance.now()
-    const shards = await Promise.all(payloads.map(payload => runWorker(payload)))
+    await Promise.all(payloads.map(payload => runWorker(payload)))
     const mergedOutput = path.join(root, 'dist-merged')
     await mergeOutputs(shardOutputsFrom(payloads), mergedOutput)
     const shardedMs = performance.now() - started
@@ -182,8 +182,7 @@ export async function runShardedBuildSuite () {
       shards: shardCount,
       outputMatch: serialTree.hash === shardedTree.hash,
       serialFiles: serialTree.files,
-      mergedFiles: shardedTree.files,
-      shardWallTimes: shards.map(value => +value.toFixed(1)).join(', ')
+      mergedFiles: shardedTree.files
     }
   } finally {
     await fs.rm(root, { recursive: true, force: true })
