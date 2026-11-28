@@ -325,6 +325,31 @@ export default {
       assert.ok(content.includes('>Hello <c-token data-coralite-bind="b0" data-coralite-bind-owner="hello-card-0">World</c-token><'))
     })
 
+    test('injects configured externalStyles into built pages', () => {
+      const pageDir = join(tmpDir, 'pages')
+      const compDir = join(tmpDir, 'components')
+      const distDir = join(tmpDir, 'dist')
+      mkdirSync(pageDir, { recursive: true })
+      mkdirSync(compDir, { recursive: true })
+      writeFileSync(join(tmpDir, 'coralite.config.js'), `
+export default {
+  components: 'components',
+  pages: 'pages',
+  output: 'dist',
+  externalStyles: ['/css/currentStyle.css']
+}
+`)
+      writeFileSync(join(pageDir, 'index.html'), '<!DOCTYPE html><html lang="en"><head><title>Home</title></head><body><h1>Home</h1></body></html>')
+
+      runCli('build', {
+        cwd: tmpDir,
+        stdio: 'pipe'
+      })
+
+      const content = readFileSync(join(distDir, 'index.html'), 'utf8')
+      assert.match(content, /<link[^>]*rel="stylesheet"[^>]*href="\/css\/currentStyle\.css"/)
+    })
+
     test('preserves unchanged pages across incremental builds and deletes stale files when source is removed', () => {
       const compDir = join(tmpDir, 'components')
       const pageDir = join(tmpDir, 'pages')
