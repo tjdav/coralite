@@ -1,0 +1,51 @@
+{
+  "taskId": "bench-01b-cold-legacy-after",
+  "phase": "after",
+  "commit": "b8e154d9",
+  "source": {
+    "suiteHash": "2cdfb30fc65d",
+    "dirty": false,
+    "dirtyEntries": 0
+  },
+  "runAt": "2026-11-28T08:25:12.689Z",
+  "machine": {
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "cores": 24,
+    "os": "Linux 7.0.0-44-generic",
+    "nodeVersion": "v24.16.0"
+  },
+  "results": {
+    "build-performance": {
+      "cold": {
+        "wallMs": 511.5,
+        "wallSpreadMs": 154,
+        "serverCalls": 2000,
+        "skippedPages": 0,
+        "renderedPages": 2002,
+        "manifestBytes": 423073,
+        "outputHtmlFiles": 2002,
+        "rows": 2000
+      },
+      "warm": {
+        "wallMs": 384.9,
+        "wallSpreadMs": 28.6,
+        "serverCalls": 2000,
+        "skippedPages": 2002,
+        "renderedPages": 0,
+        "manifestBytes": 423073,
+        "outputHtmlFiles": 2002,
+        "rows": 2000
+      },
+      "oneRecordChange": {
+        "wallMs": 389.2,
+        "wallSpreadMs": 27.4,
+        "serverCalls": 2000,
+        "skippedPages": 2001,
+        "renderedPages": 1,
+        "manifestBytes": 423079,
+        "outputHtmlFiles": 2002,
+        "rows": 2000
+      }
+    }
+  }
+}

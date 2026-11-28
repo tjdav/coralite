@@ -59,7 +59,7 @@ Do not implement `build.workers` as a config flag. The performance work already 
 - `perf(manifest): add sharded incremental manifest storage` — the compact single-file default is the measured win; sharded writes are opt-in and slower in current benchmarks.
 - `perf(plugin): partition locale config into hashed chunks` — edits to `client.config.locales` rebuild only the matching locale.
 
-None of these improve *cold* builds. Before revisiting process-level parallelism, re-measure the cold-build bottleneck. The result files under `benchmarks/results/` now record a suite fingerprint and dirty-tree state, and each pair was captured from a clean checkout (`fb0d5c39` before, `c660bd67` after) with identical harness code. Treat them as the baseline for that decision.
+None of these improve *cold* builds. An identical-fixture cold comparison (`bench-01b-cold-legacy-*`) measured 494.4 ms before and 511.5 ms after with spreads of 144.6 ms and 154.0 ms, so the earlier single-sample cold difference was noise. Before revisiting process-level parallelism, re-measure the cold-build bottleneck. The result files under `benchmarks/results/` now record a suite fingerprint and dirty-tree state, and each pair was captured from a clean checkout (`fb0d5c39` before, `c660bd67` after) with identical harness code. Treat them as the baseline for that decision.
 
 If a prototype is attempted, start with an internal `shard: { index, total, paths }` build option, enumerate dynamic params once in the orchestrator, spawn children with disjoint `dynamicPaths`, use a per-shard `cacheDir`, and merge outputs, manifest entries and results deterministically in the parent. Validate with full-dist byte equality, not just in-memory `content`.
 

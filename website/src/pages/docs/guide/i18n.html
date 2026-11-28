@@ -157,7 +157,7 @@ export default definePlugin({
 })
             </code-block>
 
-            <p>The locale is taken from <code>route.params.lang</code> (or <code>route.params.locale</code>); pages without either use <code>defaultLocale</code>. Locale overrides are merged into the <code>config</code> passed to plugin <code>init()</code> in the browser. Getters still need dictionaries from page state or ubiquitous plugin context, so keep message bundles in <code>server()</code> when they are used in templates.</p>
+            <p>The locale is taken from <code>route.params.lang</code> (or <code>route.params.locale</code>); pages without either use <code>defaultLocale</code>. Locale overrides are merged into the <code>config</code> passed to plugin <code>init()</code> in the browser. This does not partition dictionaries written directly inside a plugin's <code>context</code> closure or in page state — those still change the shared runtime or the page's own cache key and rebuild every locale. Keep message bundles in <code>server()</code> when getters or templates need them.</p>
 
             <h2 id="5-what-coralite-does-not-provide">5. What Coralite Does Not Provide</h2>
 
