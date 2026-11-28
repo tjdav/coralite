@@ -1,8 +1,13 @@
 {
   "taskId": "bench-04-locale-chunks-after",
   "phase": "after",
-  "commit": "92e25f0c",
-  "runAt": "2026-11-28T07:06:05.668Z",
+  "commit": "c660bd67",
+  "source": {
+    "suiteHash": "78f8a7744afa",
+    "dirty": false,
+    "dirtyEntries": 0
+  },
+  "runAt": "2026-11-28T08:11:07.735Z",
   "machine": {
     "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
     "cores": 24,
@@ -12,8 +17,10 @@
   "results": {
     "locale-chunks": {
       "locales": {
-        "warmMs": 21.5,
-        "editMs": 20.8,
+        "warmMs": 20.5,
+        "warmSpreadMs": 4.1,
+        "editMs": 20.1,
+        "editSpreadMs": 4.6,
         "renderedOnEdit": 1,
         "skippedOnEdit": 1,
         "runtimeChunkStable": true,

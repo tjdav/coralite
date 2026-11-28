@@ -211,9 +211,10 @@ function getSourceFingerprint () {
  * @param {Object} resultsData - Raw benchmark execution metrics.
  * @param {string} taskId - Identifier for the performance task.
  * @param {string} phase - Benchmark phase (before, after, baseline).
+ * @param {Object} sourceFingerprint - Provenance captured before the run.
  * @returns {Object} Schema-compliant result object.
  */
-function formatTaskResults (resultsData, taskId, phase) {
+function formatTaskResults (resultsData, taskId, phase, sourceFingerprint) {
   const bundleRaw = resultsData.suites?.['bundle-hydration']?.coraliteDynamic
 
   const results = {}
@@ -298,7 +299,7 @@ function formatTaskResults (resultsData, taskId, phase) {
     taskId,
     phase,
     commit: getCommitHash(),
-    source: getSourceFingerprint(),
+    source: sourceFingerprint,
     runAt: resultsData.timestamp,
     machine: getMachineInfo(),
     results
@@ -312,6 +313,7 @@ function formatTaskResults (resultsData, taskId, phase) {
  */
 async function main () {
   const flags = parseArgs()
+  const sourceFingerprint = getSourceFingerprint()
 
   if (flags.help) {
     printHelp()
@@ -389,7 +391,7 @@ async function main () {
   printTerminalResults(resultsData)
   writeMarkdownResults(resultsData)
 
-  const taskResult = formatTaskResults(resultsData, flags.taskId, flags.phase)
+  const taskResult = formatTaskResults(resultsData, flags.taskId, flags.phase, sourceFingerprint)
 
   if (flags.save) {
     const resultsDir = path.resolve(__dirname, '../../../benchmarks/results')

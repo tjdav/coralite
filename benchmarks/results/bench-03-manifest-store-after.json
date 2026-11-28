@@ -1,8 +1,13 @@
 {
   "taskId": "bench-03-manifest-store-after",
   "phase": "after",
-  "commit": "d05a3519",
-  "runAt": "2026-11-28T06:44:50.999Z",
+  "commit": "c660bd67",
+  "source": {
+    "suiteHash": "78f8a7744afa",
+    "dirty": false,
+    "dirtyEntries": 0
+  },
+  "runAt": "2026-11-28T08:11:03.286Z",
   "machine": {
     "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
     "cores": 24,
@@ -12,22 +17,28 @@
   "results": {
     "manifest-store": {
       "legacy": {
-        "loadMs": 120.5,
-        "saveMs": 158.9,
+        "loadMs": 114.6,
+        "loadSpreadMs": 13.9,
+        "saveMs": 150.4,
+        "saveSpreadMs": 26.2,
         "bytes": 30264242,
         "entries": 45000,
         "shards": 1
       },
       "compact": {
-        "loadMs": 98,
-        "saveMs": 103.6,
+        "loadMs": 104.5,
+        "loadSpreadMs": 25.3,
+        "saveMs": 104.5,
+        "saveSpreadMs": 8.5,
         "bytes": 20762140,
         "entries": 45000,
         "shards": 1
       },
       "sharded": {
-        "loadMs": 137.5,
-        "saveMs": 114.7,
+        "loadMs": 127.9,
+        "loadSpreadMs": 36.6,
+        "saveMs": 105.7,
+        "saveSpreadMs": 9.8,
         "bytes": 20762738,
         "entries": 45000,
         "shards": 16
