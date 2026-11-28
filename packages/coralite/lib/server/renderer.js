@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { basename, dirname, join, relative } from 'node:path'
 import { availableParallelism } from 'node:os'
-import { readFile, writeFile, mkdir, rename, access } from 'node:fs/promises'
+import { readFile, mkdir, access } from 'node:fs/promises'
 import pLimit from 'p-limit'
 import serialize from 'serialize-javascript'
 import {
@@ -62,6 +62,7 @@ import { applyAstBoundAttribute } from '../shared/tags.js'
 import { resolvePageMetaDefaults } from '../shared/page-meta.js'
 import { checkFileChange, hash, MANIFEST_VERSION } from './utils/manifest.js'
 import { createPageCacheKey, shouldSkipPage } from './utils/cache-key.js'
+import { createManifestStore } from './utils/manifest-store.js'
 import {
   isCoraliteElement,
   isCoraliteNode,
@@ -3347,33 +3348,15 @@ export function createRenderer ({
     // Phase 0: Manifest Loading
     const projectRoot = app.options.projectRoot || process.cwd()
     const cacheDir = normalizedOptions.cacheDir || join(projectRoot, '.coralite')
-    const manifestPath = join(cacheDir, 'manifest.json')
-    let manifest = {
-      version: MANIFEST_VERSION,
-      physical: {},
-      virtual: {},
-      dependencies: {},
-      components: {}
-    }
-
-    try {
-      const content = await readFile(manifestPath, 'utf8')
-      const parsed = JSON.parse(content)
-      if (parsed && parsed.version === MANIFEST_VERSION) {
-        manifest = parsed
-        if (!manifest.components) {
-          manifest.components = {}
-        }
-      }
-    } catch (e) {
-      // Manifest missing (cold start) or corrupt, use default
-      if (e.code !== 'ENOENT') {
-        handleError({
-          level: 'WARN',
-          message: `Could not parse manifest at ${manifestPath}: ${e.message}. Starting with fresh manifest.`
-        })
-      }
-    }
+    const manifestStore = createManifestStore({
+      cacheDir,
+      shards: normalizedOptions.manifestShards,
+      onWarn: message => handleError({
+        level: 'WARN',
+        message
+      })
+    })
+    const manifest = await manifestStore.load()
 
     // Phase 1: Discovery & Pre-Render Staging
     const componentBuildInfo = {
@@ -4332,9 +4315,7 @@ export function createRenderer ({
         await mkdir(cacheDir, { recursive: true })
         newManifest.components = globalScriptResult?.manifest || {}
         newManifest.failed = failedPages.map(p => p.path.pathname)
-        const tempManifestPath = `${manifestPath}.tmp`
-        await writeFile(tempManifestPath, JSON.stringify(newManifest, null, 2))
-        await rename(tempManifestPath, manifestPath)
+        await manifestStore.save(newManifest)
       } catch (e) {
         handleError({
           level: 'WARN',

@@ -1,0 +1,23 @@
+{
+  "taskId": "bench-03-manifest-store-before",
+  "phase": "before",
+  "commit": "d05a3519",
+  "runAt": "2026-11-28T06:43:41.796Z",
+  "machine": {
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "cores": 24,
+    "os": "Linux 7.0.0-44-generic",
+    "nodeVersion": "v24.16.0"
+  },
+  "results": {
+    "manifest-store": {
+      "legacy": {
+        "loadMs": 122.5,
+        "saveMs": 162.9,
+        "bytes": 30264242,
+        "entries": 45000,
+        "shards": 1
+      }
+    }
+  }
+}

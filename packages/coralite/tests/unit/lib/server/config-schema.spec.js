@@ -276,7 +276,8 @@ describe('config-schema.spec.js - Unified config schema validation', () => {
         processors: {}
       },
       build: {
-        concurrency: 4
+        concurrency: 4,
+        manifestShards: 8
       }
     })
 
@@ -284,6 +285,7 @@ describe('config-schema.spec.js - Unified config schema validation', () => {
     assert.strictEqual(valid.server.host, 'localhost')
     assert.deepStrictEqual(valid.styles.input, ['./src/styles/app.css', './src/styles/admin.css'])
     assert.strictEqual(valid.build.concurrency, 4)
+    assert.strictEqual(valid.build.manifestShards, 8)
 
     assert.throws(
       () => defineConfig({
@@ -335,6 +337,16 @@ describe('config-schema.spec.js - Unified config schema validation', () => {
         build: { concurrency: 0 }
       }),
       /Config property "build\.concurrency" must be a positive number/
+    )
+
+    assert.throws(
+      () => defineConfig({
+        output: 'dist',
+        components: 'components',
+        pages: 'pages',
+        build: { manifestShards: 0 }
+      }),
+      /Config property "build\.manifestShards" must be a positive integer/
     )
   })
 

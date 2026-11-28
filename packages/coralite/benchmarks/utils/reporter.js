@@ -45,7 +45,12 @@ const HEADER_LABELS = {
   renderedPages: 'Rendered Pages',
   manifestBytes: 'Manifest (bytes)',
   outputHtmlFiles: 'Output HTML',
-  rows: 'Rows'
+  rows: 'Rows',
+  loadMs: 'Load (ms)',
+  saveMs: 'Save (ms)',
+  bytes: 'Bytes',
+  entries: 'Entries',
+  shards: 'Shards'
 }
 
 /**
@@ -161,6 +166,9 @@ export function generateMarkdownTable (suiteName, suiteResults) {
   }
   if (suiteName === 'build-performance') {
     firstColHeader = 'Scenario'
+  }
+  if (suiteName === 'manifest-store') {
+    firstColHeader = 'Strategy'
   }
 
   md += `| ${firstColHeader} | ${displayHeaders.join(' | ')} |\n`

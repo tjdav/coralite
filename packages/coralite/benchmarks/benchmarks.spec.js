@@ -165,6 +165,20 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
       assert.ok(!md.includes('| Framework |'))
     })
 
+    it('generateMarkdownTable renders manifest-store strategies with a Strategy column', () => {
+      const suiteData = {
+        legacy: { loadMs: 900, saveMs: 1100, bytes: 85000000, entries: 45000, shards: 1 },
+        sharded: { loadMs: 120, saveMs: 180, bytes: 85000000, entries: 45000, shards: 16 }
+      }
+
+      const md = generateMarkdownTable('manifest-store', suiteData)
+      assert.ok(md.includes('| Strategy |'))
+      assert.ok(md.includes('Load (ms)'))
+      assert.ok(md.includes('| legacy |'))
+      assert.ok(md.includes('| sharded |'))
+      assert.ok(!md.includes('| Framework |'))
+    })
+
     it('printTerminalResults renders all three Suite 5 sub-tables without throwing', () => {
       const data = {
         suites: {

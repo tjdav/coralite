@@ -12,6 +12,7 @@ import { runInternalSuite } from './suites/04-internal/bench.js'
 import { runStressLifecycleSuite } from './suites/05-stress-lifecycle/bench.js'
 import { runHydrationPayloadSuite } from './suites/06-hydration-payload/bench.js'
 import { runBuildPerformanceSuite } from './suites/07-build-performance/bench.js'
+import { runManifestStoreSuite } from './suites/08-manifest-store/bench.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -35,7 +36,8 @@ function parseArgs () {
     taskId: 'adhoc',
     phase: 'after',
     save: false,
-    frameworks: null
+    frameworks: null,
+    store: 'all'
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -46,6 +48,8 @@ function parseArgs () {
       flags.suite = arg.split('=')[1]
     } else if (arg === '-s' && i + 1 < args.length) {
       flags.suite = args[++i]
+    } else if (arg.startsWith('--store=')) {
+      flags.store = arg.split('=')[1]
     } else if (arg.startsWith('--frameworks=')) {
       flags.frameworks = arg.split('=')[1].split(',').map(s => s.trim()).filter(Boolean)
     } else if (arg === '--frameworks' && i + 1 < args.length) {
@@ -96,6 +100,7 @@ Options:
   --help, -h          Display formatted CLI usage and exit
   --suite=<name>, -s  Run a specific benchmark suite (bundle-hydration, hydration-payload, internal, stress, build-performance, or all [default: all])
   --frameworks=<list> Comma-separated list of frameworks to include in bundle-hydration (coraliteDynamic, react, vue, svelte)
+  --store=<name>      Manifest store strategy for the manifest-store suite (legacy, compact, sharded, all)
   --task-id=<id>      Identifier for the result file (default: adhoc)
   --phase=<phase>     Phase of run: before, after, baseline (default: after)
   --save              Write results to benchmarks/results/<task-id>.json
@@ -205,6 +210,20 @@ function formatTaskResults (resultsData, taskId, phase) {
     }
   }
 
+  const manifestStore = resultsData.suites?.['manifest-store']
+  if (manifestStore) {
+    results['manifest-store'] = {}
+    for (const [strategy, metrics] of Object.entries(manifestStore)) {
+      results['manifest-store'][strategy] = {
+        loadMs: metrics.loadMs,
+        saveMs: metrics.saveMs,
+        bytes: metrics.bytes,
+        entries: metrics.entries,
+        shards: metrics.shards
+      }
+    }
+  }
+
   return {
     taskId,
     phase,
@@ -241,7 +260,7 @@ async function main () {
   }
 
   const selectedSuite = flags.suite.toLowerCase()
-  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle', 'hydration-payload', 'payload', 'build-performance']
+  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle', 'hydration-payload', 'payload', 'build-performance', 'manifest-store']
 
   if (!VALID_SUITES.includes(selectedSuite)) {
     console.error(`\n❌ Error: Unknown suite "${flags.suite}".`)
@@ -281,6 +300,12 @@ async function main () {
   if (selectedSuite === 'build-performance') {
     const buildPerformanceResults = await runBuildPerformanceSuite({ rows: flags.rows })
     resultsData.suites['build-performance'] = buildPerformanceResults
+    triggerGC()
+  }
+
+  if (selectedSuite === 'manifest-store') {
+    const manifestStoreResults = await runManifestStoreSuite({ store: flags.store })
+    resultsData.suites['manifest-store'] = manifestStoreResults
     triggerGC()
   }
 

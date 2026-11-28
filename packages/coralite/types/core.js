@@ -174,11 +174,12 @@
  * @property {'full' | 'minimal'} [listStrategy='full'] - Reconciliation strategy.
  * @property {string} [projectRoot] - The root directory of the project.
  * @property {string} [cacheDir] - Directory used to persist the incremental build manifest. Defaults to `<projectRoot>/.coralite`.
+ * @property {number} [manifestShards] - Hash buckets for sharded manifest storage; 1 keeps a single JSON file.
  * @property {CoralitePath} [path] - Internal path mapping.
  * @property {{ port?: number, host?: string }} [server] - Script-specific server options.
  * @property {CoraliteDevConfig} [dev] - Development-server route and cache controls.
  * @property {{ input?: string[], processors?: Object }} [styles] - Script-specific styles options.
- * @property {{ concurrency?: number }} [build] - Script-specific build options.
+ * @property {{ concurrency?: number, manifestShards?: number }} [build] - Script-specific build options.
  * @property {Record<string, any>} [store] - Global store config shape and initial values.
  */
 

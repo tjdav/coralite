@@ -325,6 +325,9 @@ export function defineConfig (options, { onError } = {}) {
     if (options.build.concurrency !== undefined && (typeof options.build.concurrency !== 'number' || options.build.concurrency <= 0)) {
       throw new CoraliteError('Config property "build.concurrency" must be a positive number')
     }
+    if (options.build.manifestShards !== undefined && (!Number.isInteger(options.build.manifestShards) || options.build.manifestShards < 1)) {
+      throw new CoraliteError('Config property "build.manifestShards" must be a positive integer')
+    }
   }
 
   // Validate csp config

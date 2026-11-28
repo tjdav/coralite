@@ -11,6 +11,7 @@ Fast local checks (~30–60s) for regressions during development. Runs the survi
 - **`04-internal`** — micro-benchmarks via mitata (AST interpolation, Lazy Proxy, AST DOM creation)
 - **`05-stress-lifecycle`** — selective hydration island scaling, state streaming, mount/unmount lifecycle
 - **`07-build-performance`** — cold, warm and one-record-change production builds of a synthetic `paths()` site, including `server()` call counts and manifest size. Explicit `--suite=build-performance` only; it is not part of `all`.
+- **`08-manifest-store`** — load/save cost of legacy pretty-printed, compact and sharded manifests at 45,000 entries. Use `--store=legacy|compact|sharded|all`; explicit suite only.
 
 Run only the payload suite:
 
@@ -24,6 +25,12 @@ Build performance example (use distinct task-ids for before/after — `--phase` 
 
 ```sh
 pnpm bench:internal --suite=build-performance --rows=2000 --task-id=bench-01-build-performance-before --phase=before --save
+```
+
+Manifest storage comparison (the `legacy` strategy reproduces the previous pretty-printed single file):
+
+```sh
+pnpm bench:internal --suite=manifest-store --store=sharded --task-id=bench-03-manifest-store-after --phase=after --save
 ```
 
 ### Suites removed in rc.6
