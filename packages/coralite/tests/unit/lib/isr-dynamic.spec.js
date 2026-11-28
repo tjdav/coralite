@@ -81,6 +81,25 @@ function skipRenderPage (keyHook) {
 </script>`
 }
 
+/**
+ * Builds a locale page whose state holds either the active slice or the full dictionary.
+ *
+ * @param {boolean} slice - Whether server() returns only messages[lang].
+ * @returns {string} Page HTML.
+ */
+function localeDictionaryPage (slice) {
+  return `<!DOCTYPE html>
+<html lang="en"><head><title>{{ title }}</title></head><body><h1>{{ title }}</h1></body></html>
+<script type="module">
+  export function paths () { return [{ lang: 'en' }, { lang: 'fr' }] }
+
+  export function server ({ route }) {
+    const messages = globalThis.__coralite__.i18nMessages
+    return { title: route.params.lang, dictionary: ${slice ? 'messages[route.params.lang]' : 'messages'} }
+  }
+</script>`
+}
+
 describe('Route-aware incremental builds', () => {
   let project
   let dataDir
@@ -400,6 +419,44 @@ describe('Route-aware incremental builds', () => {
     const warm = await coralite.build()
     assert.equal(warm[0].status, 'skipped')
     assert.equal(coraliteGlobal.isrSkipCalls, 1)
+  })
+
+  it('invalidates only the edited locale when state holds the selected dictionary slice', async () => {
+    const coraliteGlobal = globalThis.__coralite__ || (globalThis.__coralite__ = {})
+    coraliteGlobal.i18nMessages = {
+      en: { welcome: 'Hello' },
+      fr: { welcome: 'Bonjour' }
+    }
+    await mkdir(join(project.pagesDir, '[lang]'), { recursive: true })
+    await project.writePage('[lang]/index.html', localeDictionaryPage(true))
+
+    const coralite = await project.createCoralite({ output: undefined })
+    await coralite.build()
+    const warm = await coralite.build()
+    assert.ok(warm.every(result => result.status === 'skipped'))
+
+    coraliteGlobal.i18nMessages.fr = { welcome: 'Salut' }
+    const changed = await coralite.build()
+    assert.equal(changed.find(result => result.route.params.lang === 'en').status, 'skipped')
+    assert.equal(changed.find(result => result.route.params.lang === 'fr').status, undefined)
+  })
+
+  it('invalidates all locales when state holds the whole dictionary', async () => {
+    const coraliteGlobal = globalThis.__coralite__ || (globalThis.__coralite__ = {})
+    coraliteGlobal.i18nMessages = {
+      en: { welcome: 'Hello' },
+      fr: { welcome: 'Bonjour' }
+    }
+    await mkdir(join(project.pagesDir, '[lang]'), { recursive: true })
+    await project.writePage('[lang]/index.html', localeDictionaryPage(false))
+
+    const coralite = await project.createCoralite({ output: undefined })
+    await coralite.build()
+    await coralite.build()
+
+    coraliteGlobal.i18nMessages.fr = { welcome: 'Salut' }
+    const changed = await coralite.build()
+    assert.ok(changed.every(result => result.status === undefined))
   })
 
   it('accepts a revision alias for virtual pagination entries', async () => {

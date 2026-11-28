@@ -157,7 +157,9 @@ export default definePlugin({
 })
             </code-block>
 
-            <p>The locale is taken from <code>route.params.lang</code> (or <code>route.params.locale</code>); pages without either use <code>defaultLocale</code>. Locale overrides are merged into the <code>config</code> passed to plugin <code>init()</code> in the browser. This does not partition dictionaries written directly inside a plugin's <code>context</code> closure or in page state — those still change the shared runtime or the page's own cache key and rebuild every locale. Keep message bundles in <code>server()</code> when getters or templates need them.</p>
+            <p>The locale is taken from <code>route.params.lang</code> (or <code>route.params.locale</code>); pages without either use <code>defaultLocale</code>. Locale overrides are merged into the <code>config</code> passed to plugin <code>init()</code> in the browser. This does not partition dictionaries written directly inside a plugin's <code>context</code> closure: those are baked into the shared runtime chunk and still rebuild every locale. Keep dictionaries in page state when getters or templates need them.</p>
+
+            <p>State dictionaries are already per-page. Return only the active locale's slice from <code>server()</code> — <code>messages[route.params.lang]</code> — so the content key changes only for that locale. Returning the whole multi-locale object would put every translation into every page's key, so a single copy edit would rebuild all locales. If the full object must be kept in state, declare a <code>contentKey()</code> that hashes only the active locale's slice.</p>
 
             <h2 id="5-what-coralite-does-not-provide">5. What Coralite Does Not Provide</h2>
 
