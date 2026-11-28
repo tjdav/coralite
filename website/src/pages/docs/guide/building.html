@@ -239,7 +239,47 @@ const [page] = await coralite.build('/dashboard/', { nonce })
 
         <p>The component tree and state model do not change between rows. Only the adapter and the platform-facing components change.</p>
 
-        <h2 id="8-next">8. Next</h2>
+        <h2 id="8-build-performance">8. Build performance</h2>
+
+        <p>Production builds are incremental: unchanged pages are reused, and the manifest records what each output depends on. A few configuration options control how much work a build does and how that work is measured.</p>
+
+        <h3 id="concurrency">Concurrency and workers</h3>
+
+        <p><code>build.concurrency</code> caps how many pages are processed at once; when it is not set, Coralite uses <code>min(availableParallelism(), 8)</code>. A <code>build()</code> call can override it per build with <code>maxConcurrent</code>, and <code>onBeforeBuild</code> can change that option before rendering starts. Concurrency interleaves asynchronous work; SSR itself still runs on one event loop.</p>
+
+        <p>There is deliberately no <code>build.workers</code> flag. Page rendering depends on non-cloneable framework context and parent-affine plugin hooks, so moving it into workers would require reimplementing the renderer in each worker. The full analysis and a bounded process-sharding proposal are in the <a href="https://github.com/tjdav/coralite/blob/main/docs/build-workers-design-spike.md">build workers design spike</a>.</p>
+
+        <h3 id="incremental-invalidation">Incremental invalidation</h3>
+
+        <p>An output is rebuilt when any of its recorded inputs changes:</p>
+
+        <ul>
+          <li><strong>Source hash:</strong> the page or component HTML changed.</li>
+          <li><strong>Content key:</strong> <code>contentKey()</code> replaced the default hash of route params and resolved state. A page can also declare <code>shouldSkipRender()</code> to avoid calling <code>server()</code> for unchanged outputs; see the <a href="/reference/page-api/">page API reference</a> for the contract.</li>
+          <li><strong>Runtime chunk:</strong> the shared client runtime changed.</li>
+          <li><strong>Locale chunk:</strong> when <code>i18n</code> is enabled, only pages of the locale whose config chunk changed are rebuilt.</li>
+          <li><strong>Component hashes and assets:</strong> a component, stylesheet, page script or injected asset changed. This is also the self-healing path when an output file is missing from disk.</li>
+        </ul>
+
+        <p>Skipped pages carry their metadata forward, so a warm build does not lose chunk references or tracked assets.</p>
+
+        <h3 id="manifest-storage">Manifest storage</h3>
+
+        <p>The incremental manifest is written compactly by default. <code>build.manifestShards</code> is an experimental option that stores it as hash-bucketed shard files; at 45,000 entries the sharded form measured slower to load than the compact single file and saved no bytes, so the default is recommended unless smaller individual files are required.</p>
+
+        <h3 id="benchmarking-a-build">Benchmarking a build</h3>
+
+        <p>Coralite ships internal suites for cold, warm and one-record-change builds, manifest storage, and locale chunk isolation:</p>
+
+        <code-block language="bash">
+pnpm bench:internal --suite=build-performance --rows=2000 --iterations=5 --task-id=my-build --phase=before --save
+pnpm bench:internal --suite=manifest-store --store=all --iterations=5 --task-id=my-manifest --phase=after --save
+pnpm bench:internal --suite=locale-chunks --mode=all --iterations=5 --task-id=my-locales --phase=after --save
+        </code-block>
+
+        <p>Use distinct task IDs for before and after runs: <code>--phase</code> is metadata only and does not change the filename. Each saved result records the commit, a fingerprint of the benchmark suite sources, and whether the working tree was dirty, so pairs from different runs can be compared. Results are committed under <code>benchmarks/results/</code>; see the <a href="https://github.com/tjdav/coralite/blob/main/benchmarks/README.md">benchmark README</a> for the full suite list.</p>
+
+        <h2 id="9-next">9. Next</h2>
 
         <ul>
           <li><a href="/docs/guide/targets/">One Runtime, Every Platform</a> for the shared platform and the plugin boundaries.</li>
@@ -265,7 +305,12 @@ const [page] = await coralite.build('/dashboard/', { nonce })
         <a href="#5-mobile-shell">5. Mobile shell</a>
         <a href="#6-request-time-rendering">6. Request-time rendering</a>
         <a href="#7-choosing-a-delivery">7. Choosing a delivery</a>
-        <a href="#8-next">8. Next</a>
+        <a href="#8-build-performance">8. Build performance</a>
+        <a href="#concurrency">Concurrency and workers</a>
+        <a href="#incremental-invalidation">Incremental invalidation</a>
+        <a href="#manifest-storage">Manifest storage</a>
+        <a href="#benchmarking-a-build">Benchmarking a build</a>
+        <a href="#9-next">9. Next</a>
       </div>
     </div>
   </docs-layout>
