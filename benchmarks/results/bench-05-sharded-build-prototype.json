@@ -1,0 +1,30 @@
+{
+  "taskId": "bench-05-sharded-build-prototype",
+  "phase": "after",
+  "commit": "408bcced",
+  "source": {
+    "suiteHash": "926c366b1241",
+    "dirty": false,
+    "dirtyEntries": 0
+  },
+  "runAt": "2026-11-28T14:58:38.993Z",
+  "machine": {
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "cores": 24,
+    "os": "Linux 7.0.0-44-generic",
+    "nodeVersion": "v24.16.0"
+  },
+  "results": {
+    "sharded-build": {
+      "prototype": {
+        "serialMs": 1095.8,
+        "shardedMs": 830.2,
+        "speedup": 1.32,
+        "shards": 4,
+        "outputMatch": true,
+        "serialFiles": 2006,
+        "mergedFiles": 2006
+      }
+    }
+  }
+}

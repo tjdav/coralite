@@ -59,7 +59,14 @@ const HEADER_LABELS = {
   loadSpreadMs: 'Load Spread (ms)',
   saveSpreadMs: 'Save Spread (ms)',
   warmSpreadMs: 'Warm Spread (ms)',
-  editSpreadMs: 'Edit Spread (ms)'
+  editSpreadMs: 'Edit Spread (ms)',
+  serialMs: 'Serial (ms)',
+  shardedMs: 'Sharded (ms)',
+  speedup: 'Speedup',
+  outputMatch: 'Output Match',
+  serialFiles: 'Serial Files',
+  mergedFiles: 'Merged Files',
+  shardWallTimes: 'Shard Times (ms)'
 }
 
 /**

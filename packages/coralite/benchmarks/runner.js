@@ -15,6 +15,7 @@ import { runHydrationPayloadSuite } from './suites/06-hydration-payload/bench.js
 import { runBuildPerformanceSuite } from './suites/07-build-performance/bench.js'
 import { runManifestStoreSuite } from './suites/08-manifest-store/bench.js'
 import { runLocaleChunksSuite } from './suites/09-locale-chunks/bench.js'
+import { runShardedBuildSuite } from './suites/10-sharded-build/bench.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -111,6 +112,7 @@ Options:
   --store=<name>      Manifest store strategy for the manifest-store suite (legacy, compact, sharded, all)
   --mode=<name>       Strategy for the locale-chunks suite (plain, locales, all)
   --variant=<name>    Fixture variant for build-performance (legacy, current)
+  --suite=sharded-build  Cold-build process-sharding prototype
   --task-id=<id>      Identifier for the result file (default: adhoc)
   --phase=<phase>     Phase of run: before, after, baseline (default: after)
   --save              Write results to benchmarks/results/<task-id>.json
@@ -295,6 +297,21 @@ function formatTaskResults (resultsData, taskId, phase, sourceFingerprint) {
     }
   }
 
+  const shardedBuild = resultsData.suites?.['sharded-build']
+  if (shardedBuild) {
+    results['sharded-build'] = {
+      prototype: {
+        serialMs: shardedBuild.serialMs,
+        shardedMs: shardedBuild.shardedMs,
+        speedup: shardedBuild.speedup,
+        shards: shardedBuild.shards,
+        outputMatch: shardedBuild.outputMatch,
+        serialFiles: shardedBuild.serialFiles,
+        mergedFiles: shardedBuild.mergedFiles
+      }
+    }
+  }
+
   return {
     taskId,
     phase,
@@ -333,7 +350,7 @@ async function main () {
   }
 
   const selectedSuite = flags.suite.toLowerCase()
-  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle', 'hydration-payload', 'payload', 'build-performance', 'manifest-store', 'locale-chunks']
+  const VALID_SUITES = ['all', 'bundle-hydration', 'bundle', 'hydration', 'internal', 'stress', 'lifecycle', 'hydration-payload', 'payload', 'build-performance', 'manifest-store', 'locale-chunks', 'sharded-build']
 
   if (!VALID_SUITES.includes(selectedSuite)) {
     console.error(`\n❌ Error: Unknown suite "${flags.suite}".`)
@@ -385,6 +402,11 @@ async function main () {
   if (selectedSuite === 'locale-chunks') {
     const localeChunksResults = await runLocaleChunksSuite({ mode: flags.mode, iterations: flags.iterations })
     resultsData.suites['locale-chunks'] = localeChunksResults
+    triggerGC()
+  }
+
+  if (selectedSuite === 'sharded-build') {
+    resultsData.suites['sharded-build'] = await runShardedBuildSuite()
     triggerGC()
   }
 
